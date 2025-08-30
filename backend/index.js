@@ -2,7 +2,8 @@ import express from 'express';
 import bodyparser from 'body-parser';
 import mongoose  from 'mongoose';
 import userRouter from './routes/userRouter.js';
-import jwt from 'jsonwebtoken';
+import productRouter from './routes/productRouter.js';
+import verifyJWT from './middleware/auth.js';
 
 const app = express();
 
@@ -20,23 +21,11 @@ mongoose.connect('mongodb+srv://admin:123@cluster0.v1eieer.mongodb.net/?retryWri
 
 app.use(bodyparser.json());
 
-app.use(
-    (req, res, next) => {
-        const header = req.header("Authorization");
-        if (header != null) {
-            const token = header.replace("Bearer ", "");
-            jwt.verify(token, "random456", (err, decoded) => {
-                console.log(decoded);
-                if(decoded != null){
-                    req.user = decoded;
-                }
-            });
-        }
-        next();
-    }
-)
+app.use(verifyJWT)
 
 app.use("/users", userRouter);
+
+app.use("/products", productRouter);
 
 app.listen(3000,
     () => {
