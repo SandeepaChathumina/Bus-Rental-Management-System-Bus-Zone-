@@ -1,71 +1,53 @@
-import User from '../models/user.js';
+// controllers/userController.js
+import User from '../models/User.js';
 
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    res.json({ users });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
-export function saveUser(req, res) {
+export const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
-    if(req.body.role == "admin" ){
-        if(req.user == null){
-            res.status(403).json({message: "Please login as admin to create another admin user"});
-            return;
-        }
-        if(req.user != "admin"){
-            res.status(403).json({message: "Only admin can create another admin user"});
-            return;
-        }
-    } 
-    
-    const hashedPassword = bcrypt.hashSync(req.body.password, 10);
-    const user = new User({
-        email: req.body.email,
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
-        password: hashedPassword,
-        role: req.body.role,
-    });
+export const updateUserById = async (req, res) => {
+  try {
+    const { firstName, lastName, phone, role } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    user.save().then(
-        ()=>{
-            res.json({message: "User added successfully"});
-        }
-      ).catch(
-        ()=>{
-            res.status(500).json({message: "Error occured while adding user", error: error});
-        }
-      )
-}
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (phone) user.phone = phone;
+    if (role) user.role = role; // admin can change roles
 
-export function loginUser(req, res) {
-    const email = req.body.email;
-    const password = req.body.password;
+    await user.save();
+    res.json({ user: user.toJSON() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
-    User.findOne({
-        email: email
-    }).then(
-        (user)=>{ 
-            if(user == null) {
-                res.status(404).json({message: "User not found"});
-            }else{
-                const isPasswordValid = bcrypt.compareSync(password, user.password);
-                if(isPasswordValid) {
-                    const userData = {
-                        email: user.email,
-                        firstName: user.firstName,
-                        lastName: user.lastName,
-                        role: user.role,
-                        phone: user.phone,
-                        isDisabled: user.isDisabled,
-                        isEmailVerified: user.isEmailVerified
-                    };
-
-                    const token = jwt.sign(userData,"random456")
-                    res.json({message: "Login successful", token: token});
-
-                    
-                }else{
-                    res.status(403).json({message: "Invalid password"});
-                }
-            }
-    })
-}
+export const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

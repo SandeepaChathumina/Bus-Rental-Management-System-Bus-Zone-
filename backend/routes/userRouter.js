@@ -1,9 +1,23 @@
+// routes/userRoutes.js
 import express from 'express';
-import { loginUser, saveUser } from '../controllers/userController.js';
+import {
+  getAllUsers,
+  getUserById,
+  updateUserById,
+  deleteUser
+} from '../controllers/userController.js';
+import { protect } from '../middleware/authMiddleware.js';
+import { authorizeRoles } from '../middleware/roleMiddleware.js';
 
-const userRouter = express.Router();
+const router = express.Router();
 
-userRouter.post("/", saveUser);
-userRouter.post("/login", loginUser);
+// All routes below require authentication
+router.use(protect);
 
-export default userRouter;
+// Admin-only
+router.get('/', authorizeRoles('admin'), getAllUsers);
+router.get('/:id', authorizeRoles('admin'), getUserById);
+router.put('/:id', authorizeRoles('admin'), updateUserById);
+router.delete('/:id', authorizeRoles('admin'), deleteUser);
+
+export default router;
