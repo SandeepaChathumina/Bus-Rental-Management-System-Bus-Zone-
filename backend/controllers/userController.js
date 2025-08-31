@@ -1,21 +1,16 @@
 import User from '../models/user.js';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import DriverProfile from '../models/driverProfile.js';
+import StaffProfile from '../models/staffProfile.js';
+import generateToken from '../utils/generateToken.js';
 
-// Generate JWT
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
-  });
-};
-
-// Register a new user
+// Register a new user with role-specific profiles
 const registerUser = async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName, phone, nic, address, role } = req.body;
+    const { username, email, password, firstName, lastName, phone, nic, address, role, 
+            licenseNumber, licenseExpiry, emergencyContact, staffRole, employeeId } = req.body;
 
     // Check if user exists
-    const userExists = await User.findOne({ $or: [{ email }, { username }] });
+    const userExists = await User.findOne({ $or: [{ email }, { username }, { nic }] });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -24,7 +19,7 @@ const registerUser = async (req, res) => {
     const user = await User.create({
       username,
       email,
-      password: await bcrypt.hash(password, 10),
+      password,
       firstName,
       lastName,
       phone,
@@ -33,15 +28,39 @@ const registerUser = async (req, res) => {
       role: role || 'passenger'
     });
 
+    // Create role-specific profile if needed
+    if (role === 'driver' && licenseNumber && licenseExpiry) {
+      await DriverProfile.create({
+        user: user._id,
+        licenseNumber,
+        licenseExpiry: new Date(licenseExpiry),
+        emergencyContact
+      });
+    }
+
+    if (role === 'staff' && staffRole && employeeId) {
+      await StaffProfile.create({
+        user: user._id,
+        staffRole,
+        employeeId
+      });
+    }
+
     if (user) {
+      // Populate with profile data if available
+      let userWithProfile = user.toJSON();
+      
+      if (role === 'driver') {
+        const driverProfile = await DriverProfile.findOne({ user: user._id });
+        userWithProfile.driverProfile = driverProfile;
+      } else if (role === 'staff') {
+        const staffProfile = await StaffProfile.findOne({ user: user._id });
+        userWithProfile.staffProfile = staffProfile;
+      }
+
       res.status(201).json({
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        token: generateToken(user._id),
+        ...userWithProfile,
+        token: generateToken(user)
       });
     }
   } catch (error) {
@@ -55,84 +74,128 @@ const loginUser = async (req, res) => {
     const { username, password } = req.body;
 
     const user = await User.findOne({ username });
-
-    if (user && (await bcrypt.compare(password, user.password))) {
-      res.json({
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        token: generateToken(user._id),
-      });
-    } else {
-      res.status(401).json({ message: 'Invalid username or password' });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid username or password' });
     }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid username or password' });
+    }
+
+    // Get role-specific profile
+    let userData = user.toJSON();
+    
+    if (user.role === 'driver') {
+      const driverProfile = await DriverProfile.findOne({ user: user._id });
+      userData.driverProfile = driverProfile;
+    } else if (user.role === 'staff') {
+      const staffProfile = await StaffProfile.findOne({ user: user._id });
+      userData.staffProfile = staffProfile;
+    }
+
+    res.json({
+      ...userData,
+      token: generateToken(user)
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Get all users (admin only)
+// Get all users with their profiles
 const getUsers = async (req, res) => {
   try {
     const users = await User.find({}).select('-password');
-    res.json(users);
+    
+    // Get profiles for each user
+    const usersWithProfiles = await Promise.all(users.map(async (user) => {
+      const userObj = user.toObject();
+      
+      if (user.role === 'driver') {
+        userObj.driverProfile = await DriverProfile.findOne({ user: user._id });
+      } else if (user.role === 'staff') {
+        userObj.staffProfile = await StaffProfile.findOne({ user: user._id });
+      }
+      
+      return userObj;
+    }));
+
+    res.json(usersWithProfiles);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Get user by ID
+// Get user by ID with profile
 const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
-    
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
+
+    const userObj = user.toObject();
+    
+    if (user.role === 'driver') {
+      userObj.driverProfile = await DriverProfile.findOne({ user: user._id });
+    } else if (user.role === 'staff') {
+      userObj.staffProfile = await StaffProfile.findOne({ user: user._id });
+    }
+
+    res.json(userObj);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Update user
+// Update user and their profile
 const updateUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-
-    if (user) {
-      user.username = req.body.username || user.username;
-      user.email = req.body.email || user.email;
-      user.firstName = req.body.firstName || user.firstName;
-      user.lastName = req.body.lastName || user.lastName;
-      user.phone = req.body.phone || user.phone;
-      user.nic = req.body.nic || user.nic;
-      user.address = req.body.address || user.address;
-      user.role = req.body.role || user.role;
-      user.isActive = req.body.isActive !== undefined ? req.body.isActive : user.isActive;
-
-      if (req.body.password) {
-        user.password = await bcrypt.hash(req.body.password, 10);
-      }
-
-      const updatedUser = await user.save();
-      
-      res.json({
-        _id: updatedUser._id,
-        username: updatedUser.username,
-        email: updatedUser.email,
-        firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName,
-        role: updatedUser.role,
-        isActive: updatedUser.isActive
-      });
-    } else {
-      res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
+
+    // Update basic user info
+    const updatableFields = ['username', 'email', 'firstName', 'lastName', 'phone', 'nic', 'address', 'role', 'isActive'];
+    updatableFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        user[field] = req.body[field];
+      }
+    });
+
+    // Update password if provided
+    if (req.body.password) {
+      user.password = req.body.password;
+    }
+
+    const updatedUser = await user.save();
+
+    // Update role-specific profile
+    if (user.role === 'driver' && req.body.driverProfile) {
+      await DriverProfile.findOneAndUpdate(
+        { user: user._id },
+        { ...req.body.driverProfile },
+        { upsert: true, new: true }
+      );
+    } else if (user.role === 'staff' && req.body.staffProfile) {
+      await StaffProfile.findOneAndUpdate(
+        { user: user._id },
+        { ...req.body.staffProfile },
+        { upsert: true, new: true }
+      );
+    }
+
+    // Get updated user with profile
+    const userObj = updatedUser.toObject();
+    if (user.role === 'driver') {
+      userObj.driverProfile = await DriverProfile.findOne({ user: user._id });
+    } else if (user.role === 'staff') {
+      userObj.staffProfile = await StaffProfile.findOne({ user: user._id });
+    }
+
+    res.json(userObj);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -142,14 +205,14 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-
-    if (user) {
-      user.isActive = false;
-      await user.save();
-      res.json({ message: 'User removed' });
-    } else {
-      res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
+
+    user.isActive = false;
+    await user.save();
+    
+    res.json({ message: 'User deactivated successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -160,7 +223,6 @@ const getUserReport = async (req, res) => {
   try {
     const users = await User.find({}).select('-password');
     
-    // Simple report - count users by role
     const report = {
       totalUsers: users.length,
       byRole: {
@@ -170,7 +232,15 @@ const getUserReport = async (req, res) => {
         passenger: users.filter(u => u.role === 'passenger').length
       },
       activeUsers: users.filter(u => u.isActive).length,
-      users: users
+      users: await Promise.all(users.map(async (user) => {
+        const userObj = user.toObject();
+        if (user.role === 'driver') {
+          userObj.driverProfile = await DriverProfile.findOne({ user: user._id });
+        } else if (user.role === 'staff') {
+          userObj.staffProfile = await StaffProfile.findOne({ user: user._id });
+        }
+        return userObj;
+      }))
     };
     
     res.json(report);
