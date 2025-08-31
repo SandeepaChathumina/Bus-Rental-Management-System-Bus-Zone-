@@ -33,3 +33,8 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, console.log(`Server running on port ${PORT}`));
+// Add this import at the top
+import busRouter from './routes/busRouter.js';
+
+// Add this route after other routes
+app.use('/api/buses', busRouter);
