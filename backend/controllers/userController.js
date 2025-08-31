@@ -3,19 +3,19 @@ import DriverProfile from '../models/driverProfile.js';
 import StaffProfile from '../models/staffProfile.js';
 import generateToken from '../utils/generateToken.js';
 
-// Register a new user with role-specific profiles
+
 const registerUser = async (req, res) => {
   try {
     const { username, email, password, firstName, lastName, phone, nic, address, role, 
             licenseNumber, licenseExpiry, emergencyContact, staffRole, employeeId } = req.body;
 
-    // Check if user exists
+    
     const userExists = await User.findOne({ $or: [{ email }, { username }, { nic }] });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create user
+   
     const user = await User.create({
       username,
       email,

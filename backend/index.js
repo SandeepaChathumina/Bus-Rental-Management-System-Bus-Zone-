@@ -4,6 +4,7 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import userRouter from './routes/userRouter.js';
 import authRouter from './routes/authRouter.js';
+import notificationRouter from './routes/notificationRouter.js';
 
 // Load environment variables first
 dotenv.config();
@@ -24,6 +25,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
+app.use('/api/notifications', notificationRouter);
 
 // Basic route
 app.get('/', (req, res) => {
