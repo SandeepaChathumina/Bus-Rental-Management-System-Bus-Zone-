@@ -1,29 +1,35 @@
-// index.js
 import express from 'express';
 import dotenv from 'dotenv';
-import connectDB from './config/db.js';
-import authRoutes from './routes/authRouter.js';
-import userRoutes from './routes/userRouter.js';
 import cors from 'cors';
+import connectDB from './config/db.js';
+import userRouter from './routes/userRouter.js';
+import authRouter from './routes/authRouter.js';
 
+// Load environment variables first
 dotenv.config();
+
+// Debug: Check if environment variables are loaded
+console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'Loaded' : 'Not loaded');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'Loaded' : 'Not loaded');
+console.log('PORT:', process.env.PORT);
+
 connectDB();
 
 const app = express();
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
+// Routes
+app.use('/api/auth', authRouter);
+app.use('/api/users', userRouter);
 
-app.get('/', (req, res) => res.send('BusZone+ backend running'));
-
-// error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Server error' });
+// Basic route
+app.get('/', (req, res) => {
+  res.send('Bus Rental Management System API is running...');
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+
+app.listen(PORT, console.log(`Server running on port ${PORT}`));
