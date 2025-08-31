@@ -4,6 +4,7 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import userRouter from './routes/userRouter.js';
 import authRouter from './routes/authRouter.js';
+import bookingRouter from './routes/bookingRouter.js';
 
 // Load environment variables first
 dotenv.config();
@@ -24,6 +25,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
+app.use('/api/bookings', bookingRouter);
 
 // Basic route
 app.get('/', (req, res) => {
