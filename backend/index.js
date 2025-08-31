@@ -38,3 +38,8 @@ import busRouter from './routes/busRouter.js';
 
 // Add this route after other routes
 app.use('/api/buses', busRouter);
+// Add this import at the top with other imports
+import maintenanceRouter from './routes/maintenanceRouter.js';
+
+// Add this route after other routes
+app.use('/api/maintenance', maintenanceRouter);
