@@ -1,23 +1,25 @@
-// routes/userRoutes.js
 import express from 'express';
 import {
-  getAllUsers,
+  registerUser,
+  loginUser,
+  getUsers,
   getUserById,
-  updateUserById,
-  deleteUser
+  updateUser,
+  deleteUser,
+  getUserReport
 } from '../controllers/userController.js';
-import { protect } from '../middleware/authMiddleware.js';
-import { authorizeRoles } from '../middleware/roleMiddleware.js';
+import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// All routes below require authentication
-router.use(protect);
-
-// Admin-only
-router.get('/', authorizeRoles('admin'), getAllUsers);
-router.get('/:id', authorizeRoles('admin'), getUserById);
-router.put('/:id', authorizeRoles('admin'), updateUserById);
-router.delete('/:id', authorizeRoles('admin'), deleteUser);
+router.post('/register', registerUser);
+router.post('/login', loginUser);
+router.get('/report', protect, admin, getUserReport);
+router.route('/')
+  .get(protect, admin, getUsers);
+router.route('/:id')
+  .get(protect, getUserById)
+  .put(protect, updateUser)
+  .delete(protect, admin, deleteUser);
 
 export default router;
