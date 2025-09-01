@@ -100,10 +100,6 @@ const loginUser = async (req, res) => {
 const getUsers = async (req, res) => {
   try {
     const users = await User.find({}).select('-password');
-
-const getUsers = async (req, res) => {
-  try {
-    const users = await User.find({}).select('-password');
     
     const usersWithProfiles = await Promise.all(users.map(async (user) => {
       const userObj = user.toObject();
