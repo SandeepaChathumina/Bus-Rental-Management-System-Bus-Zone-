@@ -15,8 +15,7 @@ const router = express.Router();
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.get('/report', protect, admin, getUserReport);
-router.route('/')
-  .get(protect, admin, getUsers);
+router.route('/').get(protect, admin, getUsers);
 router.route('/:id')
   .get(protect, getUserById)
   .put(protect, updateUser)
