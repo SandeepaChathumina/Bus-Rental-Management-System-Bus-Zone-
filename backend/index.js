@@ -5,6 +5,7 @@ import connectDB from './config/db.js';
 import userRouter from './routes/userRouter.js';
 import authRouter from './routes/authRouter.js';
 import bookingRouter from './routes/bookingRouter.js';
+import busRouter from './routes/busRouter.js';
 
 // Load environment variables first
 dotenv.config();
@@ -26,6 +27,7 @@ app.use(express.json());
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
 app.use('/api/bookings', bookingRouter);
+app.use('/api/buses', busRouter);
 
 // Basic route
 app.get('/', (req, res) => {
@@ -35,8 +37,7 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, console.log(`Server running on port ${PORT}`));
-// Add this import at the top
-import busRouter from './routes/busRouter.js';
 
-// Add this route after other routes
-app.use('/api/buses', busRouter);
+
+
+
