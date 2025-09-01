@@ -1,11 +1,9 @@
-// controllers/authController.js
 import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
 import { validationResult } from 'express-validator';
 
 export const register = async (req, res) => {
   try {
-    // basic express-validator usage is optional (see route)
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
@@ -17,7 +15,6 @@ export const register = async (req, res) => {
     const existing = await User.findOne({ email });
     if (existing) return res.status(400).json({ message: 'Email already registered' });
 
-    // only allow assigning roles by admin — if client passes role during public register, enforce default
     const safeRole = (req.user && req.user.role === 'admin' && role) ? role : 'passenger';
 
     const user = await User.create({ firstName, lastName, email, password, role: safeRole });
@@ -49,7 +46,6 @@ export const login = async (req, res) => {
 };
 
 export const getMe = async (req, res) => {
-  // protect middleware sets req.user
   return res.json({ user: req.user });
 };
 
@@ -58,13 +54,12 @@ export const updateMe = async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // allow updating these fields
     const updatable = ['firstName', 'lastName', 'phone', 'password'];
     updatable.forEach(field => {
       if (req.body[field]) user[field] = req.body[field];
     });
 
-    await user.save(); // triggers pre('save') hash if password changed
+    await user.save(); 
     return res.json({ user: user.toJSON() });
   } catch (err) {
     console.error(err);

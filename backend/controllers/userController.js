@@ -3,19 +3,16 @@ import DriverProfile from '../models/driverProfile.js';
 import StaffProfile from '../models/staffProfile.js';
 import generateToken from '../utils/generateToken.js';
 
-// Register a new user with role-specific profiles
 const registerUser = async (req, res) => {
   try {
     const { username, email, password, firstName, lastName, phone, nic, address, role, 
             licenseNumber, licenseExpiry, emergencyContact, staffRole, employeeId } = req.body;
 
-    // Check if user exists
     const userExists = await User.findOne({ $or: [{ email }, { username }, { nic }] });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create user
     const user = await User.create({
       username,
       email,
@@ -28,7 +25,6 @@ const registerUser = async (req, res) => {
       role: role || 'passenger'
     });
 
-    // Create role-specific profile if needed
     if (role === 'driver' && licenseNumber && licenseExpiry) {
       await DriverProfile.create({
         user: user._id,
@@ -47,7 +43,7 @@ const registerUser = async (req, res) => {
     }
 
     if (user) {
-      // Populate with profile data if available
+      
       let userWithProfile = user.toJSON();
       
       if (role === 'driver') {
@@ -68,7 +64,6 @@ const registerUser = async (req, res) => {
   }
 };
 
-// Login user
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -83,7 +78,6 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
 
-    // Get role-specific profile
     let userData = user.toJSON();
     
     if (user.role === 'driver') {
@@ -103,12 +97,14 @@ const loginUser = async (req, res) => {
   }
 };
 
-// Get all users with their profiles
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.find({}).select('-password');
+
 const getUsers = async (req, res) => {
   try {
     const users = await User.find({}).select('-password');
     
-    // Get profiles for each user
     const usersWithProfiles = await Promise.all(users.map(async (user) => {
       const userObj = user.toObject();
       
@@ -127,7 +123,6 @@ const getUsers = async (req, res) => {
   }
 };
 
-// Get user by ID with profile
 const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
@@ -149,7 +144,6 @@ const getUserById = async (req, res) => {
   }
 };
 
-// Update user and their profile
 const updateUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -157,7 +151,6 @@ const updateUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Update basic user info
     const updatableFields = ['username', 'email', 'firstName', 'lastName', 'phone', 'nic', 'address', 'role', 'isActive'];
     updatableFields.forEach(field => {
       if (req.body[field] !== undefined) {
@@ -165,14 +158,12 @@ const updateUser = async (req, res) => {
       }
     });
 
-    // Update password if provided
     if (req.body.password) {
       user.password = req.body.password;
     }
 
     const updatedUser = await user.save();
 
-    // Update role-specific profile
     if (user.role === 'driver' && req.body.driverProfile) {
       await DriverProfile.findOneAndUpdate(
         { user: user._id },
@@ -187,7 +178,6 @@ const updateUser = async (req, res) => {
       );
     }
 
-    // Get updated user with profile
     const userObj = updatedUser.toObject();
     if (user.role === 'driver') {
       userObj.driverProfile = await DriverProfile.findOne({ user: user._id });
@@ -201,7 +191,6 @@ const updateUser = async (req, res) => {
   }
 };
 
-// Delete user (soft delete)
 const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -218,7 +207,6 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// Generate user report
 const getUserReport = async (req, res) => {
   try {
     const users = await User.find({}).select('-password');
