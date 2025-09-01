@@ -4,6 +4,7 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import userRouter from './routes/userRouter.js';
 import authRouter from './routes/authRouter.js';
+import feedbackRouter from './routes/feedbackRouter.js';
 import bookingRouter from './routes/bookingRouter.js';
 import busRouter from './routes/busRouter.js';
 import notificationRouter from './routes/notificationRouter.js';
@@ -23,6 +24,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
+app.use('/api/feedbacks', feedbackRouter);
 app.use('/api/bookings', bookingRouter);
 app.use('/api/buses', busRouter);
 app.use('/api/notifications', notificationRouter);

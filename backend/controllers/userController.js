@@ -3,19 +3,16 @@ import DriverProfile from '../models/driverProfile.js';
 import StaffProfile from '../models/staffProfile.js';
 import generateToken from '../utils/generateToken.js';
 
-
 const registerUser = async (req, res) => {
   try {
     const { username, email, password, firstName, lastName, phone, nic, address, role, 
             licenseNumber, licenseExpiry, emergencyContact, staffRole, employeeId } = req.body;
 
-    
     const userExists = await User.findOne({ $or: [{ email }, { username }, { nic }] });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-   
     const user = await User.create({
       username,
       email,
@@ -27,7 +24,6 @@ const registerUser = async (req, res) => {
       address,
       role: role || 'passenger'
     });
-
 
     if (role === 'driver' && licenseNumber && licenseExpiry) {
       await DriverProfile.create({
@@ -47,7 +43,7 @@ const registerUser = async (req, res) => {
     }
 
     if (user) {
-    
+      
       let userWithProfile = user.toJSON();
       
       if (role === 'driver') {
@@ -68,7 +64,6 @@ const registerUser = async (req, res) => {
   }
 };
 
-
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -83,7 +78,6 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
 
-   
     let userData = user.toJSON();
     
     if (user.role === 'driver') {
@@ -103,12 +97,14 @@ const loginUser = async (req, res) => {
   }
 };
 
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.find({}).select('-password');
 
 const getUsers = async (req, res) => {
   try {
     const users = await User.find({}).select('-password');
     
-  
     const usersWithProfiles = await Promise.all(users.map(async (user) => {
       const userObj = user.toObject();
       
@@ -126,7 +122,6 @@ const getUsers = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 const getUserById = async (req, res) => {
   try {
@@ -149,7 +144,6 @@ const getUserById = async (req, res) => {
   }
 };
 
-
 const updateUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -157,7 +151,6 @@ const updateUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-  
     const updatableFields = ['username', 'email', 'firstName', 'lastName', 'phone', 'nic', 'address', 'role', 'isActive'];
     updatableFields.forEach(field => {
       if (req.body[field] !== undefined) {
@@ -165,13 +158,11 @@ const updateUser = async (req, res) => {
       }
     });
 
-  
     if (req.body.password) {
       user.password = req.body.password;
     }
 
     const updatedUser = await user.save();
-
 
     if (user.role === 'driver' && req.body.driverProfile) {
       await DriverProfile.findOneAndUpdate(
@@ -187,7 +178,6 @@ const updateUser = async (req, res) => {
       );
     }
 
-   
     const userObj = updatedUser.toObject();
     if (user.role === 'driver') {
       userObj.driverProfile = await DriverProfile.findOne({ user: user._id });
@@ -200,7 +190,6 @@ const updateUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 const deleteUser = async (req, res) => {
   try {
@@ -217,7 +206,6 @@ const deleteUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 const getUserReport = async (req, res) => {
   try {
