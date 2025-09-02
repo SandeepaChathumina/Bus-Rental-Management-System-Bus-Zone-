@@ -9,7 +9,8 @@ import bookingRouter from './routes/bookingRouter.js';
 import busRouter from './routes/busRouter.js';
 import notificationRouter from './routes/notificationRouter.js';
 import attendanceRouter from './routes/attendanceRouter.js';
-
+import lostItemRouter from './routes/lostItemRouter.js';
+import paymentRouter from './routes/paymentRouter.js';
 
 dotenv.config();
 
@@ -31,6 +32,8 @@ app.use('/api/bookings', bookingRouter);
 app.use('/api/buses', busRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/attendance', attendanceRouter);
+app.use('/api/lost-items', lostItemRouter);
+app.use('/api/payments',paymentRouter);
 
 app.get('/', (req, res) => {
   res.send('Bus Rental Management System API is running...');

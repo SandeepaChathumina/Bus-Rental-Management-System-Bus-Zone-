@@ -241,4 +241,4 @@ export {
   updateUser,
   deleteUser,
   getUserReport
-  };
+};
