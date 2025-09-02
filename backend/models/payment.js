@@ -10,6 +10,11 @@ const paymentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Booking'
   },
+  // Add maintenance reference
+  maintenance: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Maintenance'
+  },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -65,6 +70,12 @@ const paymentSchema = new mongoose.Schema({
       enum: ['pending', 'processed', 'failed']
     }
   }],
+  // Payment type to distinguish between booking and maintenance payments
+  paymentType: {
+    type: String,
+    enum: ['booking', 'maintenance'],
+    default: 'booking'
+  },
   // Soft delete fields
   isDeleted: {
     type: Boolean,

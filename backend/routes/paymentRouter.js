@@ -1,9 +1,13 @@
 import express from 'express';
 import {
   processPayment,
+  processMaintenancePayment,
   getUserPayments,
   getPaymentById,
   getAllPayments,
+  getAllBookingPayments,
+  getAllMaintenancePayments,
+  getPaymentStatistics,
   getInvoice,
   processRefund,
   softDeletePayment,
@@ -15,20 +19,24 @@ import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Client endpoints
+// Client endpoints (require authentication)
 router.post('/booking', protect, processPayment);
+router.post('/maintenance', protect, processMaintenancePayment);
 router.get('/my-payments', protect, getUserPayments);
 router.get('/invoice/:paymentId', protect, getInvoice);
 
-// Admin endpoints
+// Admin endpoints (require authentication + admin privileges)
 router.get('/all', protect, admin, getAllPayments);
+router.get('/bookings/all', protect, admin, getAllBookingPayments);
+router.get('/maintenance/all', protect, admin, getAllMaintenancePayments);
+router.get('/stats/overview', protect, admin, getPaymentStatistics);
 router.get('/:id', protect, admin, getPaymentById);
-router.post('/refund', protect, admin, processRefund);
+router.post('/:id/refund', protect, admin, processRefund);
 
-// Soft delete routes
+// Soft delete and recycle bin routes (admin only)
 router.patch('/:id/soft-delete', protect, admin, softDeletePayment);
 router.patch('/:id/restore', protect, admin, restorePayment);
 router.get('/recycle-bin/all', protect, admin, getRecycleBinPayments);
-router.delete('/:id/permanent', protect, admin, permanentDeletePayment);
+router.delete('/:id/permanent-delete', protect, admin, permanentDeletePayment);
 
 export default router;
