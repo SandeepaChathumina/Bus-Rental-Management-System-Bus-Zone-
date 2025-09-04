@@ -26,6 +26,15 @@ const driverProfileSchema = new mongoose.Schema({
   experience: {
     type: Number, // years of experience
     default: 0
+  },
+  hourlyRate: {
+  type: Number,
+  default: 25 // Default hourly rate
+  },
+   bankAccount: {
+  bankName: String,
+  accountNumber: String,
+  routingNumber: String
   }
 }, {
   timestamps: true

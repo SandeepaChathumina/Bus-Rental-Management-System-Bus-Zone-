@@ -13,7 +13,12 @@ import {
   softDeletePayment,
   restorePayment,
   getRecycleBinPayments,
-  permanentDeletePayment
+  permanentDeletePayment,
+  processDriverSalary,
+  getDriverSalaries,
+  getAllSalaryPayments,
+  getSalaryInvoice,
+  getDriverSalaryInvoices
 } from '../controllers/paymentController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -38,5 +43,16 @@ router.patch('/:id/soft-delete', protect, admin, softDeletePayment);
 router.patch('/:id/restore', protect, admin, restorePayment);
 router.get('/recycle-bin/all', protect, admin, getRecycleBinPayments);
 router.delete('/:id/permanent-delete', protect, admin, permanentDeletePayment);
+
+// Add these routes to paymentRouter.js
+
+// Salary payment routes
+router.post('/salary', protect, admin, processDriverSalary);
+router.get('/salary/my-salaries', protect, getDriverSalaries);
+router.get('/salary/all', protect, admin, getAllSalaryPayments);
+
+// Invoice routes
+router.get('/salary/invoice/:paymentId', protect, getSalaryInvoice);
+router.get('/salary/invoices/my-invoices', protect, getDriverSalaryInvoices);
 
 export default router;
