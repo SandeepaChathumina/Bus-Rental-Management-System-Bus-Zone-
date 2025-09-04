@@ -1,4 +1,3 @@
-// src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Header from './components/Header';
@@ -8,6 +7,8 @@ import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import AdminPage from './pages/AdminPage';
 import { AuthProvider } from './context/AuthContext';
+import AttendanceManagement from './components/AttendanceManagement';
+import AdvancedBusRentalHomepage from './pages/HomePage';
 
 function App() {
   return (
@@ -22,6 +23,9 @@ function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/attendance" element={<AttendanceManagement />} />
+              <Route path="/home" element={<AdvancedBusRentalHomepage />} />
+
             </Routes>
           </main>
           <Toaster position="top-right" />
