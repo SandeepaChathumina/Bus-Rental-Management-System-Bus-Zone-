@@ -20,6 +20,16 @@ const paymentSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  // Add driver reference for salary payments
+   driver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'DriverProfile'  // ← Changed this line
+  },
+  // Add schedule reference for salary payments
+  schedule: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Schedule'
+  },
   amount: {
     type: Number,
     required: true
@@ -70,10 +80,10 @@ const paymentSchema = new mongoose.Schema({
       enum: ['pending', 'processed', 'failed']
     }
   }],
-  // Payment type to distinguish between booking and maintenance payments
+  // Payment type to distinguish between booking, maintenance, and salary payments
   paymentType: {
     type: String,
-    enum: ['booking', 'maintenance'],
+    enum: ['booking', 'maintenance', 'salary'],
     default: 'booking'
   },
   // Soft delete fields

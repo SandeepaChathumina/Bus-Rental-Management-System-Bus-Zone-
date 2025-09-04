@@ -139,3 +139,40 @@ export const cancelSchedule = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+// Add this function to scheduleController.js
+
+// Complete schedule and calculate driver payment
+export const completeSchedule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { actualEndTime } = req.body;
+
+    const schedule = await Schedule.findById(id);
+    if (!schedule) {
+      return res.status(404).json({ message: 'Schedule not found' });
+    }
+
+    // Update schedule status and actual end time
+    schedule.status = 'Completed';
+    if (actualEndTime) {
+      schedule.actualEndTime = actualEndTime;
+    }
+
+    const updatedSchedule = await schedule.save();
+    
+    // Calculate driver payment based on schedule duration
+    // You might want to implement a more complex payment calculation
+    const durationHours = (new Date(actualEndTime || new Date()) - schedule.scheduledStartTime) / (1000 * 60 * 60);
+    const hourlyRate = 25; // Example hourly rate - you might want to store this in driver profile
+    const calculatedPayment = durationHours * hourlyRate;
+
+    res.json({
+      message: 'Schedule marked as completed',
+      schedule: updatedSchedule,
+      calculatedPayment: Math.round(calculatedPayment * 100) / 100 // Round to 2 decimal places
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};

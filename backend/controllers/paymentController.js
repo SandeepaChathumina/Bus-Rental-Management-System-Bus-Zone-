@@ -3,6 +3,8 @@ import Payment from '../models/payment.js';
 import Invoice from '../models/invoice.js';
 import Booking from '../models/booking.js';
 import Maintenance from '../models/maintenance.js';
+import Schedule from '../models/schedule.js';
+import User from '../models/user.js';
 import { PaymentGatewayService } from '../utils/paymentGateway.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -861,6 +863,316 @@ export const permanentDeletePayment = async (req, res) => {
 
   } catch (error) {
     console.error('Permanent delete error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// Process driver salary payment (admin only) with invoice generation
+export const processDriverSalary = async (req, res) => {
+  try {
+    const { scheduleId, driverId, amount, paymentMethod, description } = req.body;
+    const adminId = req.user._id;
+
+    // Validate required fields
+    if (!scheduleId || !driverId || !amount) {
+      return res.status(400).json({ message: 'Schedule ID, driver ID, and amount are required' });
+    }
+
+    // Check if schedule exists and is completed
+    const schedule = await Schedule.findById(scheduleId)
+      .populate('busId', 'busId numberPlate')
+      .populate('driverId', 'firstName lastName');
+    
+    if (!schedule) {
+      return res.status(404).json({ message: 'Schedule not found' });
+    }
+
+    if (schedule.status !== 'Completed') {
+      return res.status(400).json({ message: 'Salary can only be paid for completed trips' });
+    }
+
+    // Check if driver exists and get driver profile
+    const driver = await User.findById(driverId);
+    const driverProfile = await DriverProfile.findOne({ user: driverId });
+    
+    if (!driver || driver.role !== 'driver') {
+      return res.status(404).json({ message: 'Driver not found' });
+    }
+
+    if (!driverProfile) {
+      return res.status(404).json({ message: 'Driver profile not found' });
+    }
+
+    // Verify the driver in schedule matches the provided driver
+    if (schedule.driverId._id.toString() !== driverId) {
+      return res.status(400).json({ 
+        message: 'Driver does not match the scheduled driver for this trip' 
+      });
+    }
+
+    // Check if salary already paid for this schedule
+    const existingSalaryPayment = await Payment.findOne({ 
+      schedule: scheduleId, 
+      paymentType: 'salary' 
+    });
+    
+    if (existingSalaryPayment) {
+      return res.status(400).json({ message: 'Salary already paid for this schedule' });
+    }
+
+    // Create salary payment record
+    const payment = new Payment({
+      paymentId: `PAY${uuidv4().slice(0, 8).toUpperCase()}`,
+      driver: driverProfile._id,
+      schedule: scheduleId,
+      user: adminId,
+      amount: amount,
+      currency: 'USD',
+      paymentMethod: paymentMethod || 'bank_transfer',
+      paymentGateway: 'none',
+      transactionId: `SAL${Date.now()}${Math.random().toString(36).substr(2, 5)}`,
+      description: description || `Salary payment for trip from ${schedule.startLocation} to ${schedule.destination}`,
+      paymentType: 'salary',
+      status: 'success'
+    });
+
+    await payment.save();
+
+    // Generate salary invoice automatically
+    try {
+      const invoice = await generateSalaryInvoice(payment, schedule, driver, driverProfile);
+      
+      res.json({
+        message: 'Driver salary paid successfully',
+        payment: {
+          _id: payment._id,
+          paymentId: payment.paymentId,
+          amount: payment.amount,
+          status: payment.status,
+          transactionId: payment.transactionId,
+          description: payment.description
+        },
+        invoice: {
+          _id: invoice._id,
+          invoiceNumber: invoice.invoiceNumber,
+          totalAmount: invoice.totalAmount,
+          issueDate: invoice.issueDate
+        }
+      });
+      
+    } catch (invoiceError) {
+      console.error('Invoice generation failed:', invoiceError);
+      // Still return success but warn about invoice issue
+      res.json({
+        message: 'Driver salary paid successfully but invoice generation failed',
+        payment: {
+          _id: payment._id,
+          paymentId: payment.paymentId,
+          amount: payment.amount,
+          status: payment.status,
+          transactionId: payment.transactionId,
+          description: payment.description
+        },
+        warning: 'Invoice could not be generated. Please contact administrator.'
+      });
+    }
+
+  } catch (error) {
+    console.error('Salary payment processing error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+// Get driver's salary payments
+export const getDriverSalaries = async (req, res) => {
+  try {
+    const driverId = req.user._id;
+    
+    const salaries = await Payment.find({ 
+      driver: driverId, 
+      paymentType: 'salary' 
+    })
+      .populate('schedule', 'scheduledStartTime scheduledEndTime startLocation destination')
+      .populate('user', 'firstName lastName') // Admin who processed payment
+      .sort({ createdAt: -1 });
+
+    res.json(salaries);
+  } catch (error) {
+    console.error('Get driver salaries error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// Get all salary payments (admin)
+export const getAllSalaryPayments = async (req, res) => {
+  try {
+    const { driverId, startDate, endDate } = req.query;
+    
+    let filter = { paymentType: 'salary' };
+    
+    // Add driver filter if provided
+    if (driverId) {
+      filter.driver = driverId;
+    }
+    
+    // Add date range filter if provided
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) {
+        filter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        filter.createdAt.$lte = new Date(endDate);
+      }
+    }
+
+    const salaries = await Payment.find(filter)
+      .populate('driver', 'firstName lastName')
+      .populate('schedule', 'scheduledStartTime scheduledEndTime startLocation destination')
+      .populate('user', 'firstName lastName') // Admin who processed payment
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: salaries.length,
+      salaries
+    });
+  } catch (error) {
+    console.error('Get all salary payments error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// Generate salary invoice function
+// Generate salary invoice function
+const generateSalaryInvoice = async (payment, schedule, driver, driverProfile) => {
+  try {
+    const invoice = new Invoice({
+      invoiceNumber: `INV-SAL${Date.now()}${Math.random().toString(36).substr(2, 5)}`,
+      payment: payment._id,
+      schedule: schedule._id,
+      user: payment.user, // Admin who processed payment
+      driver: driverProfile._id,
+      issueDate: new Date(),
+      dueDate: new Date(),
+      items: [{
+        description: `Driver Salary - Trip #${schedule._id.toString().slice(-6)}`,
+        details: `From ${schedule.startLocation} to ${schedule.destination}`,
+        quantity: 1,
+        unitPrice: payment.amount,
+        total: payment.amount
+      }],
+      subtotal: payment.amount,
+      tax: 0,
+      discount: 0,
+      totalAmount: payment.amount,
+      status: 'paid',
+      invoiceType: 'salary',
+      metadata: {
+        busId: schedule.busId?._id,
+        busNumber: schedule.busId?.numberPlate,
+        tripDate: schedule.scheduledStartTime,
+        driverHourlyRate: driverProfile.hourlyRate,
+        duration: schedule.scheduledEndTime - schedule.scheduledStartTime
+      }
+    });
+
+    await invoice.save();
+    return invoice;
+  } catch (error) {
+    console.error('Salary invoice generation error:', error);
+    throw error;
+  }
+};
+// Get salary invoice by payment ID - Driver can view own, admin can view any
+export const getSalaryInvoice = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const userId = req.user._id;
+    const user = await User.findById(userId);
+
+    // Find the payment
+    const payment = await Payment.findOne({ paymentId })
+      .populate('driver')
+      .populate('schedule');
+
+    if (!payment) {
+      return res.status(404).json({ message: 'Payment not found' });
+    }
+
+    // Check permissions
+    if (user.role === 'driver') {
+      const driverProfile = await DriverProfile.findOne({ user: userId });
+      if (!driverProfile || payment.driver._id.toString() !== driverProfile._id.toString()) {
+        return res.status(403).json({ 
+          message: 'Access denied. You can only view your own salary invoices.' 
+        });
+      }
+    }
+
+    // Find the invoice
+    const invoice = await Invoice.findOne({ payment: payment._id })
+      .populate('driver')
+      .populate('schedule', 'scheduledStartTime scheduledEndTime startLocation destination busId')
+      .populate('user', 'firstName lastName'); // Admin who processed payment
+
+    if (!invoice) {
+      return res.status(404).json({ message: 'Invoice not found for this payment' });
+    }
+
+    // Get driver details for the invoice
+    const driverProfile = await DriverProfile.findById(invoice.driver)
+      .populate('user', 'firstName lastName email phone');
+
+    const invoiceWithDetails = {
+      ...invoice.toObject(),
+      driverDetails: driverProfile ? {
+        firstName: driverProfile.user.firstName,
+        lastName: driverProfile.user.lastName,
+        email: driverProfile.user.email,
+        phone: driverProfile.user.phone,
+        licenseNumber: driverProfile.licenseNumber,
+        hourlyRate: driverProfile.hourlyRate
+      } : null
+    };
+
+    res.json({
+      success: true,
+      invoice: invoiceWithDetails
+    });
+
+  } catch (error) {
+    console.error('Get salary invoice error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// Get all salary invoices for driver
+export const getDriverSalaryInvoices = async (req, res) => {
+  try {
+    const driverId = req.user._id;
+    const driverProfile = await DriverProfile.findOne({ user: driverId });
+
+    if (!driverProfile) {
+      return res.status(404).json({ message: 'Driver profile not found' });
+    }
+
+    const invoices = await Invoice.find({ 
+      driver: driverProfile._id,
+      invoiceType: 'salary'
+    })
+      .populate('payment', 'paymentId amount paymentMethod createdAt')
+      .populate('schedule', 'scheduledStartTime scheduledEndTime startLocation destination busId')
+      .populate('user', 'firstName lastName')
+      .sort({ issueDate: -1 });
+
+    res.json({
+      success: true,
+      count: invoices.length,
+      invoices
+    });
+
+  } catch (error) {
+    console.error('Get driver salary invoices error:', error);
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
