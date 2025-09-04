@@ -13,6 +13,7 @@ import { protect, admin } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 router.post('/register', registerUser);
+router.post('/admin/register', protect, admin, registerUser);
 router.post('/login', loginUser);
 router.get('/report', protect, admin, getUserReport);
 router.route('/').get(protect, admin, getUsers);
