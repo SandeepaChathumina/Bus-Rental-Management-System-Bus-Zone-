@@ -325,7 +325,7 @@ const AdvancedBusRentalHomepage = () => {
                   <a
                     key={item}
                     href="#"
-                    className="block text-slate-300 hover:text-amber-400 py-2 text-lg font-medium transition-colors duration-300 flex items-center"
+                    className=" text-slate-300 hover:text-amber-400 py-2 text-lg font-medium transition-colors duration-300 flex items-center"
                   >
                     <ArrowRight className="h-4 w-4 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                     {item}
