@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Bus, 
   MapPin, 
@@ -58,6 +59,7 @@ const AdvancedBusRentalHomepage = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
+  const navigate = useNavigate();
 
   // Hero slider images and content
   const heroSlides = [
@@ -200,17 +202,13 @@ const AdvancedBusRentalHomepage = () => {
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
-      
-      // Check if section is in viewport for animations
       if (sectionRef.current) {
         const rect = sectionRef.current.getBoundingClientRect();
         setIsVisible(rect.top < window.innerHeight && rect.bottom >= 0);
       }
     };
-    
     window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Initial check
-    
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -297,8 +295,11 @@ const AdvancedBusRentalHomepage = () => {
                 <span className="text-sm group-hover:text-amber-400 transition-colors">+94 704 222 777</span>
               </div>
               <div className="flex items-center space-x-3">
-                <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all duration-300 hover:rotate-12">
-                  <User className="h-5 w-5" />
+                <button
+                  className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg"
+                  onClick={() => navigate('/login')}
+                >
+                  Login
                 </button>
                 <button className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-amber-500/25 relative overflow-hidden group">
                   <span className="relative z-10">Get Quote</span>
@@ -335,6 +336,15 @@ const AdvancedBusRentalHomepage = () => {
                     <Phone className="h-4 w-4 text-amber-400" />
                     <span>+94 704 222 777</span>
                   </div>
+                  <button
+                    className="w-full bg-gradient-to-r from-amber-400 to-orange-500 text-white py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigate('/login');
+                    }}
+                  >
+                    Login
+                  </button>
                   <button className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105">
                     Get Quote
                   </button>
