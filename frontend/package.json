@@ -12,7 +12,9 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.12",
     "axios": "^1.11.0",
+    "framer-motion": "^12.23.12",
     "import": "^0.0.6",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.542.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

@@ -11,3 +11,14 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
+
+.hero{
+  background: linear-gradient(to right, rgba(0,0,0,0.85), rgba(0,0,0,0.05)), url("./assets/bg1.jpg");
+  -webkit-background-size: cover;
+  background-position: center bottom;
+  background-size: cover;
+  background-repeat: no-repeat;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+}
