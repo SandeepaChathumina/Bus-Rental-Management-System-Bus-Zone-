@@ -34,7 +34,7 @@ function App() {
               <Route path="/bus/bus-details" element={<Details/>} />
               <Route path="/bus/bus-details/checkout" element={<Checkout/>} />
        <Route path="/buses" element={<BusManagement/>} />
-        <Route path="/admindash" element={<AdminDashboard/>} />
+        <Route path="/admin-dashboard" element={<AdminDashboard/>} />
             </Routes>
           </main>
           <Toaster position="top-right" />
