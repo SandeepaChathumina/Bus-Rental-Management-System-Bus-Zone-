@@ -52,6 +52,12 @@ import {
   MapPinOff
 } from 'lucide-react';
 
+// Import your background images (adjust the paths as needed)
+import b1 from "../assets/b1.jpg";
+import b2 from "../assets/b2.jpeg";
+import b6 from "../assets/b6.jpg";
+
+
 const AdvancedBusRentalHomepage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -63,34 +69,37 @@ const AdvancedBusRentalHomepage = () => {
 
   // Hero slider images and content
   const heroSlides = [
-    {
-      title: "Luxury Bus Rentals",
-      subtitle: "Premium Comfort for Every Journey",
-      description: "Experience world-class travel with our luxury fleet equipped with modern amenities",
-      cta: "Explore Fleet",
-      gradient: "from-fuchsia-900 via-purple-900 to-indigo-900",
-      accent: "from-amber-400 to-orange-500",
-      icon: <Sparkles className="h-16 w-16 text-amber-300 mb-6 mx-auto" />
-    },
-    {
-      title: "Corporate Travel Solutions",
-      subtitle: "Reliable Business Transportation",
-      description: "Streamline your corporate events and employee transport with our dedicated services",
-      cta: "Get Quote",
-      gradient: "from-emerald-900 via-teal-900 to-cyan-900",
-      accent: "from-emerald-400 to-teal-500",
-      icon: <TrendingUp className="h-16 w-16 text-emerald-300 mb-6 mx-auto" />
-    },
-    {
-      title: "Tourist & Event Charters",
-      subtitle: "Memorable Group Adventures",
-      description: "Perfect for weddings, tours, and special events with customizable packages",
-      cta: "Book Now",
-      gradient: "from-rose-900 via-pink-900 to-purple-900",
-      accent: "from-rose-400 to-pink-500",
-      icon: <Gift className="h-16 w-16 text-rose-300 mb-6 mx-auto" />
-    }
-  ];
+  {
+    title: "Luxury Bus Rentals",
+    subtitle: "Premium Comfort for Every Journey",
+    description:
+      "Experience world-class travel with our luxury fleet equipped with modern amenities",
+    cta: "Explore Fleet",
+    image: b1, // ✅ use import
+    accent: "from-amber-400 to-orange-500",
+    icon: <Sparkles className="h-16 w-16 text-amber-300 mb-6 mx-auto" />,
+  },
+  {
+    title: "Corporate Travel Solutions",
+    subtitle: "Reliable Business Transportation",
+    description:
+      "Streamline your corporate events and employee transport with our dedicated services",
+    cta: "Get Quote",
+    image: b2, // ✅ use import
+    accent: "from-emerald-400 to-teal-500",
+    icon: <TrendingUp className="h-16 w-16 text-emerald-300 mb-6 mx-auto" />,
+  },
+  {
+    title: "Tourist & Event Charters",
+    subtitle: "Memorable Group Adventures",
+    description:
+      "Perfect for weddings, tours, and special events with customizable packages",
+    cta: "Book Now",
+    image: b6, // ✅ use import
+    accent: "from-rose-400 to-pink-500",
+    icon: <Gift className="h-16 w-16 text-rose-300 mb-6 mx-auto" />,
+  },
+];
 
   const testimonials = [
     {
@@ -254,7 +263,7 @@ const AdvancedBusRentalHomepage = () => {
               </div>
               <div>
                 <div className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-                  EliteCoach
+                  BusZone+
                 </div>
                 <div className="text-xs text-slate-400">Premium Bus Rentals</div>
               </div>
@@ -364,8 +373,12 @@ const AdvancedBusRentalHomepage = () => {
               index === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
             }`}
           >
-            <div className={`absolute inset-0 bg-gradient-to-br ${slide.gradient}`}></div>
-            <div className="absolute inset-0 bg-black/40"></div>
+            {/* Background image with overlay */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url(${slide.image})` }}
+            ></div>
+            <div className="absolute inset-0 bg-black/60"></div>
             
             {/* Animated background elements */}
             <div className="absolute inset-0">
@@ -443,55 +456,6 @@ const AdvancedBusRentalHomepage = () => {
               )}
             </button>
           ))}
-        </div>
-
-        {/* Booking Form Overlay */}
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 w-full max-w-6xl px-6">
-          <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl p-8 border border-slate-700/50 shadow-2xl transform hover:-translate-y-1 transition-transform duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="relative">
-                <label className="block text-slate-300 text-sm font-medium mb-2">From</label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-amber-400" />
-                  <select className="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-300 hover:border-amber-400/50">
-                    <option>Select departure</option>
-                    <option>Colombo</option>
-                    <option>Kandy</option>
-                    <option>Galle</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="relative">
-                <label className="block text-slate-300 text-sm font-medium mb-2">To</label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-amber-400" />
-                  <select className="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-300 hover:border-amber-400/50">
-                    <option>Select destination</option>
-                    <option>Colombo</option>
-                    <option>Kandy</option>
-                    <option>Galle</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="relative">
-                <label className="block text-slate-300 text-sm font-medium mb-2">Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-amber-400" />
-                  <input
-                    type="date"
-                    className="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-300 hover:border-amber-400/50"
-                  />
-                </div>
-              </div>
-              
-              <button className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-amber-500/25 flex items-center justify-center space-x-3 mt-6 md:mt-8 group">
-                <Search className="h-5 w-5 group-hover:rotate-12 transition-transform" />
-                <span>Find Buses</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
