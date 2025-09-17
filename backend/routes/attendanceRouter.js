@@ -1,14 +1,53 @@
 import express from 'express';
-import { checkInUser, getAttendanceRecords, getUserAttendance } from '../controllers/attendanceController.js';
+import { 
+  generateQRCode, 
+  scanQRCode, 
+  getAttendanceRecords, 
+  getUserAttendance, 
+  generateAttendanceReport,
+  manualAttendance,
+  deleteAttendanceRecord
+} from '../controllers/attendanceController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
+import { body } from 'express-validator';
 
 const router = express.Router();
 
 // All routes are protected
 router.use(protect);
 
-router.post('/check-in', checkInUser); // Drivers & Staff check themselves in
-router.get('/', admin, getAttendanceRecords); // Admin sees all
-router.get('/user/:userId', getUserAttendance); // Users see their own, Admins see anyone's
+// QR code generation (Admin only)
+router.post('/generate-qr', 
+  admin,
+  [
+    body('userId').isMongoId().withMessage('Valid user ID is required')
+  ],
+  generateQRCode
+);
+
+// QR code scanning (Driver/Staff)
+router.post('/scan-qr', scanQRCode);
+
+// Get attendance records with filtering (Admin only)
+router.get('/', admin, getAttendanceRecords);
+
+// Get attendance for specific user
+router.get('/user/:userId', getUserAttendance);
+
+// Generate attendance report (Admin only)
+router.get('/report', admin, generateAttendanceReport);
+
+// Manual attendance management (Admin only)
+router.post('/manual',
+  admin,
+  [
+    body('userId').isMongoId().withMessage('Valid user ID is required'),
+    body('date').isISO8601().withMessage('Valid date is required')
+  ],
+  manualAttendance
+);
+
+// Delete attendance record (Admin only)
+router.delete('/:id', admin, deleteAttendanceRecord);
 
 export default router;
