@@ -14,7 +14,7 @@ import Checkout from './pages/checkout/Checkout';
 import Details from './pages/bus/Detailss';
 import { Bus } from 'lucide-react';
 import BusManagement from './pages/buscrud';
-import AdminDashboard from './pages/adminDash';
+import AdminDashboard from './pages/admindash';
 
 function App() {
   return (
@@ -34,7 +34,7 @@ function App() {
               <Route path="/bus/bus-details" element={<Details/>} />
               <Route path="/bus/bus-details/checkout" element={<Checkout/>} />
        <Route path="/buses" element={<BusManagement/>} />
-        <Route path="/admindash" element={<AdminDashboard/>} />
+        <Route path="/admin-dashboard" element={<AdminDashboard/>} />
             </Routes>
           </main>
           <Toaster position="top-right" />
