@@ -14,7 +14,7 @@ import Checkout from './pages/checkout/Checkout';
 import Details from './pages/bus/Detailss';
 import { Bus } from 'lucide-react';
 import BusManagement from './pages/buscrud';
-import AdminDashboard from './pages/adminDash';
+import AdminDashboard from './pages/admindash';
 
 function App() {
   return (

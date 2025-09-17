@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import UserManagement from './UserManagement'; // <-- NEW file (place in same folder)
+import { useNavigate } from 'react-router-dom';
+import UserManagement from './UserManagement'; 
 import {
   Users,
   Bus,
@@ -15,45 +16,24 @@ import {
   BarChart3,
   Settings,
   Plus,
-  Edit,
-  Trash2,
-  Eye,
+  MoreVertical,
   UserCheck,
   Clock,
-  DollarSign,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Filter,
-  Download,
   Menu,
   X,
   Home,
   LogOut,
-  Image,
-  ChevronDown,
-  ChevronRight,
-  MoreVertical
+  ChevronDown
 } from 'lucide-react';
 
-/*
-  NOTE:
-  - I preserved your original layout and components.
-  - The Users tab renders <UserManagement /> (the heavy user CRUD logic is in that file).
-  - AdminDashboard fetches total users from backend and displays it in Total Users card.
-*/
-
 const AdminDashboard = () => {
-  const { user: authUser } = useAuth();
+  const { user: authUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-
-  // real total users fetched from backend
   const [totalUsers, setTotalUsers] = useState(null);
+  const navigate = useNavigate();
 
-  // your sample dashboard stats (you can remove or fetch real stats later)
   const [dashboardStats] = useState({
     totalBuses: 48,
     activeBookings: 156,
@@ -62,13 +42,11 @@ const AdminDashboard = () => {
     occupancyRate: 78
   });
 
-  // Simulate loading for animations (keeps original behavior)
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 1200);
     return () => clearTimeout(timer);
   }, []);
 
-  // fetch real users count
   useEffect(() => {
     let mounted = true;
     const fetchTotalUsers = async () => {
@@ -86,6 +64,11 @@ const AdminDashboard = () => {
     return () => { mounted = false; };
   }, []);
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'users', label: 'User Management', icon: Users },
@@ -101,7 +84,6 @@ const AdminDashboard = () => {
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
-  // Keep your StatCard small helper (you can move to shared component later)
   const StatCard = ({ title, value, icon: Icon, trend, onClick }) => (
     <div
       onClick={onClick}
@@ -120,7 +102,6 @@ const AdminDashboard = () => {
     </div>
   );
 
-  // Dashboard content — clicking the Total Users card will open Users tab
   const DashboardContent = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -130,28 +111,19 @@ const AdminDashboard = () => {
           icon={Users}
           onClick={() => setActiveTab('users')}
         />
-        <StatCard
-          title="Total Buses"
-          value={dashboardStats.totalBuses}
-          icon={Bus}
-        />
-        <StatCard
-          title="Active Bookings"
-          value={dashboardStats.activeBookings}
-          icon={BookOpen}
-        />
-        <StatCard
-          title="Maintenance Requests"
-          value={dashboardStats.maintenanceRequests}
-          icon={Wrench}
-        />
+        <StatCard title="Total Buses" value={dashboardStats.totalBuses} icon={Bus} />
+        <StatCard title="Active Bookings" value={dashboardStats.activeBookings} icon={BookOpen} />
+        <StatCard title="Maintenance Requests" value={dashboardStats.maintenanceRequests} icon={Wrench} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Quick Actions */}
         <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-white">Quick Actions</h3>
-            <button className="text-slate-400 hover:text-white"><MoreVertical className="w-5 h-5" /></button>
+            <button className="text-slate-400 hover:text-white">
+              <MoreVertical className="w-5 h-5" />
+            </button>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <button className="flex flex-col items-center justify-center p-4 bg-blue-900/20 rounded-lg">
@@ -173,6 +145,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Recent Activity */}
         <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
           <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
           <p className="text-slate-400">Latest system events will show here (plug notifications as needed).</p>
@@ -181,13 +154,12 @@ const AdminDashboard = () => {
     </div>
   );
 
-  // keep renderContent minimal and load UserManagement for 'users'
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardContent />;
       case 'users':
-        return <UserManagement />; // <-- heavy user page lives here
+        return <UserManagement />;
       case 'buses':
         return <div className="text-white">Bus Management (placeholder)</div>;
       case 'maintenance':
@@ -200,7 +172,8 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-slate-900">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 shadow-lg transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} border-r border-slate-800`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 shadow-lg transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} border-r border-slate-800 overflow-y-auto`}>
+
         <div className="flex items-center justify-between h-16 px-6 border-b border-slate-800">
           <div className="flex items-center">
             <img src="https://via.placeholder.com/40x40?text=BZ+" alt="BusZone+" className="h-8 w-8 mr-2 rounded" />
@@ -226,12 +199,6 @@ const AdminDashboard = () => {
             );
           })}
         </nav>
-
-        <div className="absolute bottom-4 left-4 right-4">
-          <button className="w-full flex items-center px-4 py-3 text-left rounded-lg text-red-400 hover:bg-red-900/20 hover:text-red-300">
-            <LogOut className="w-5 h-5 mr-3" /> <span className="font-medium">Logout</span>
-          </button>
-        </div>
       </div>
 
       {/* Main */}
@@ -245,6 +212,7 @@ const AdminDashboard = () => {
               <h2 className="text-xl font-semibold text-white capitalize">{menuItems.find(i => i.id === activeTab)?.label || 'Dashboard'}</h2>
             </div>
 
+            {/* Right side */}
             <div className="flex items-center space-x-4">
               <div className="relative">
                 <button className="p-1 rounded-full hover:bg-slate-800">
@@ -252,28 +220,31 @@ const AdminDashboard = () => {
                 </button>
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center animate-pulse">3</span>
               </div>
-              <div className="flex items-center space-x-3 cursor-pointer group">
+
+              <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-blue-600 rounded-full" />
                 <div className="hidden md:block">
                   <p className="text-sm font-medium text-white">{authUser?.firstName || 'Admin'}</p>
                   <p className="text-xs text-slate-400">{authUser?.role || 'Super Admin'}</p>
                 </div>
-                <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors duration-200" />
+                <ChevronDown className="w-4 h-4 text-slate-400" />
               </div>
+
+              <button
+                onClick={handleLogout}
+                className="flex items-center px-3 py-2 rounded-lg text-red-400 hover:bg-red-900/30 hover:text-red-300 text-sm"
+              >
+                <LogOut className="w-4 h-4 mr-2" /> Logout
+              </button>
             </div>
           </div>
         </header>
 
         <main className="p-6">
-          {isLoading ? (
-            <div className="text-slate-400">Loading dashboard...</div>
-          ) : (
-            renderContent()
-          )}
+          {isLoading ? <div className="text-slate-400">Loading dashboard...</div> : renderContent()}
         </main>
       </div>
 
-      {/* Mobile overlay */}
       {sidebarOpen && <div className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden" onClick={() => setSidebarOpen(false)}></div>}
     </div>
   );
