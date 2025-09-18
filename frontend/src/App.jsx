@@ -33,8 +33,8 @@ function App() {
               <Route path="/bus" element={<Bus/>} />
               <Route path="/bus/bus-details" element={<Details/>} />
               <Route path="/bus/bus-details/checkout" element={<Checkout/>} />
-       <Route path="/buses" element={<BusManagement/>} />
-        <Route path="/admin-dashboard" element={<AdminDashboard/>} />
+              <Route path="/buses" element={<BusManagement/>} />
+              <Route path="/admin-dashboard" element={<AdminDashboard/>} />
             </Routes>
           </main>
           <Toaster position="top-right" />
