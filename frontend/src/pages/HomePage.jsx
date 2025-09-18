@@ -53,9 +53,9 @@ import {
 } from 'lucide-react';
 
 // Import your background images (adjust the paths as needed)
-import b1 from "../assets/b1.jpg";
-import b2 from "../assets/b2.jpeg";
-import b6 from "../assets/b6.jpg";
+import busimg1 from "../assets/busimg1.jpg";
+import busimg2 from "../assets/busimg2.jpg";
+import busimg3 from "../assets/busimg3.jpg";
 
 
 const AdvancedBusRentalHomepage = () => {
@@ -75,7 +75,7 @@ const AdvancedBusRentalHomepage = () => {
     description:
       "Experience world-class travel with our luxury fleet equipped with modern amenities",
     cta: "Explore Fleet",
-    image: b1, // ✅ use import
+    image: busimg1, // ✅ use import
     accent: "from-amber-400 to-orange-500",
     icon: <Sparkles className="h-16 w-16 text-amber-300 mb-6 mx-auto" />,
   },
@@ -85,7 +85,7 @@ const AdvancedBusRentalHomepage = () => {
     description:
       "Streamline your corporate events and employee transport with our dedicated services",
     cta: "Get Quote",
-    image: b2, // ✅ use import
+    image: busimg2, // ✅ use import
     accent: "from-emerald-400 to-teal-500",
     icon: <TrendingUp className="h-16 w-16 text-emerald-300 mb-6 mx-auto" />,
   },
@@ -95,7 +95,7 @@ const AdvancedBusRentalHomepage = () => {
     description:
       "Perfect for weddings, tours, and special events with customizable packages",
     cta: "Book Now",
-    image: b6, // ✅ use import
+    image: busimg3, // ✅ use import
     accent: "from-rose-400 to-pink-500",
     icon: <Gift className="h-16 w-16 text-rose-300 mb-6 mx-auto" />,
   },
