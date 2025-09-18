@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import UserManagement from './UserManagement'; 
+import UserManagement from './UserManagement';
+import AttendanceManagement from '../components/AttendanceManagement'; 
 import {
   Users,
   Bus,
@@ -81,7 +82,8 @@ const AdminDashboard = () => {
     { id: 'feedback', label: 'Feedback', icon: MessageSquare },
     { id: 'lost-found', label: 'Lost & Found', icon: Search },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'attendance', label: 'Attendance', icon: Clock },
   ];
 
   const StatCard = ({ title, value, icon: Icon, trend, onClick }) => (
@@ -164,6 +166,8 @@ const AdminDashboard = () => {
         return <div className="text-white">Bus Management (placeholder)</div>;
       case 'maintenance':
         return <div className="text-white">Maintenance (placeholder)</div>;
+      case 'attendance':
+        return <AttendanceManagement />;
       default:
         return <div className="text-white">Module under development</div>;
     }
@@ -248,6 +252,8 @@ const AdminDashboard = () => {
       {sidebarOpen && <div className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden" onClick={() => setSidebarOpen(false)}></div>}
     </div>
   );
+
+  
 };
 
 export default AdminDashboard;
