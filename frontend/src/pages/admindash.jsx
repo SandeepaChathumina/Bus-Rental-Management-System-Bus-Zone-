@@ -174,8 +174,9 @@ const AdminDashboard = () => {
       title: '',
       message: '',
       type: 'general',
-      targetUserType: 'all',
-      expiryDate: '',
+      targetAudience: 'all',
+      deliveryChannel: 'in_app',
+      expiresAt: '',
       isActive: true
     });
   
@@ -189,15 +190,25 @@ const AdminDashboard = () => {
   
     const fetchNotifications = async () => {
       try {
-        // Simulate API call with mock data
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/notifications`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setNotifications(response.data.data || response.data);
+        setFilteredNotifications(response.data.data || response.data);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+        toast.error('Failed to fetch notifications');
+        // Fallback to mock data if API fails
         const mockNotifications = [
           {
             _id: '1',
             title: 'System Maintenance',
             message: 'The system will be down for maintenance on Saturday from 2-4 AM',
             type: 'alert',
-            targetUserType: 'all',
-            expiryDate: '2023-12-31T23:59:59',
+            targetAudience: 'all',
+            deliveryChannel: 'in_app',
+            expiresAt: '2023-12-31T23:59:59',
             isActive: true,
             createdAt: '2023-10-15T08:30:00'
           },
@@ -206,28 +217,15 @@ const AdminDashboard = () => {
             title: 'New Features Released',
             message: 'Check out the new dashboard features we just released',
             type: 'general',
-            targetUserType: 'admin',
-            expiryDate: null,
+            targetAudience: 'admins',
+            deliveryChannel: 'email',
+            expiresAt: null,
             isActive: true,
             createdAt: '2023-10-10T10:15:00'
-          },
-          {
-            _id: '3',
-            title: 'Holiday Discount',
-            message: 'Get 20% off on all bookings during the holiday season',
-            type: 'discount',
-            targetUserType: 'passenger',
-            expiryDate: '2023-12-25T23:59:59',
-            isActive: false,
-            createdAt: '2023-10-05T14:20:00'
           }
         ];
-        
         setNotifications(mockNotifications);
         setFilteredNotifications(mockNotifications);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
-        toast.error('Failed to fetch notifications');
       } finally {
         setLoading(false);
       }
@@ -236,7 +234,6 @@ const AdminDashboard = () => {
     const filterNotifications = () => {
       let filtered = notifications;
   
-      // Filter by search term
       if (searchTerm) {
         filtered = filtered.filter(notification =>
           notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -244,14 +241,12 @@ const AdminDashboard = () => {
         );
       }
   
-      // Filter by status
       if (statusFilter !== 'all') {
         filtered = filtered.filter(notification => 
           statusFilter === 'active' ? notification.isActive : !notification.isActive
         );
       }
   
-      // Filter by type
       if (typeFilter !== 'all') {
         filtered = filtered.filter(notification => notification.type === typeFilter);
       }
@@ -262,23 +257,26 @@ const AdminDashboard = () => {
     const handleSubmit = async (e) => {
       e.preventDefault();
       try {
+        const token = localStorage.getItem('token');
+        
         if (editingNotification) {
-          // Update notification in the list
-          setNotifications(notifications.map(n => 
-            n._id === editingNotification._id ? { ...n, ...formData } : n
-          ));
+          await axios.put(
+            `${import.meta.env.VITE_BACKEND_URL}/api/notifications/${editingNotification._id}`,
+            formData,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
           toast.success('Notification updated successfully');
         } else {
-          // Add new notification
-          const newNotification = {
-            _id: Date.now().toString(),
-            ...formData,
-            createdAt: new Date().toISOString()
-          };
-          setNotifications([...notifications, newNotification]);
+          await axios.post(
+            `${import.meta.env.VITE_BACKEND_URL}/api/notifications`,
+            formData,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
           toast.success('Notification created successfully');
         }
+        
         resetForm();
+        fetchNotifications();
       } catch (error) {
         console.error('Error saving notification:', error);
         toast.error('Failed to save notification');
@@ -291,8 +289,9 @@ const AdminDashboard = () => {
         title: notification.title,
         message: notification.message,
         type: notification.type,
-        targetUserType: notification.targetUserType,
-        expiryDate: notification.expiryDate ? notification.expiryDate.split('T')[0] : '',
+        targetAudience: notification.targetAudience,
+        deliveryChannel: notification.deliveryChannel,
+        expiresAt: notification.expiresAt ? notification.expiresAt.split('T')[0] : '',
         isActive: notification.isActive
       });
       setShowForm(true);
@@ -302,8 +301,12 @@ const AdminDashboard = () => {
       if (!window.confirm('Are you sure you want to delete this notification?')) return;
       
       try {
-        setNotifications(notifications.filter(n => n._id !== id));
+        const token = localStorage.getItem('token');
+        await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/notifications/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         toast.success('Notification deleted successfully');
+        fetchNotifications();
       } catch (error) {
         console.error('Error deleting notification:', error);
         toast.error('Failed to delete notification');
@@ -315,8 +318,9 @@ const AdminDashboard = () => {
         title: '',
         message: '',
         type: 'general',
-        targetUserType: 'all',
-        expiryDate: '',
+        targetAudience: 'all',
+        deliveryChannel: 'in_app',
+        expiresAt: '',
         isActive: true
       });
       setEditingNotification(null);
@@ -325,6 +329,12 @@ const AdminDashboard = () => {
   
     const sendTestNotification = async (id) => {
       try {
+        const token = localStorage.getItem('token');
+        await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/api/notifications/${id}/test`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         toast.success('Test notification sent successfully');
       } catch (error) {
         console.error('Error sending test notification:', error);
@@ -337,9 +347,10 @@ const AdminDashboard = () => {
         Title: notification.title,
         Message: notification.message,
         Type: notification.type,
-        Target: notification.targetUserType,
+        Target: notification.targetAudience,
+        Channel: notification.deliveryChannel,
         Status: notification.isActive ? 'Active' : 'Inactive',
-        'Expiry Date': notification.expiryDate ? new Date(notification.expiryDate).toLocaleDateString() : 'Never',
+        'Expiry Date': notification.expiresAt ? new Date(notification.expiresAt).toLocaleDateString() : 'Never',
         'Created At': new Date(notification.createdAt).toLocaleString()
       }));
   
@@ -354,16 +365,27 @@ const AdminDashboard = () => {
     };
   
     const convertToCSV = (data) => {
+      if (data.length === 0) return '';
       const headers = Object.keys(data[0]).join(',');
       const rows = data.map(row => Object.values(row).map(value => `"${value}"`).join(','));
       return [headers, ...rows].join('\n');
     };
   
-    const toggleNotificationStatus = (id) => {
-      setNotifications(notifications.map(n => 
-        n._id === id ? { ...n, isActive: !n.isActive } : n
-      ));
-      toast.success('Notification status updated');
+    const toggleNotificationStatus = async (id) => {
+      try {
+        const token = localStorage.getItem('token');
+        const notification = notifications.find(n => n._id === id);
+        await axios.put(
+          `${import.meta.env.VITE_BACKEND_URL}/api/notifications/${id}`,
+          { isActive: !notification.isActive },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        toast.success('Notification status updated');
+        fetchNotifications();
+      } catch (error) {
+        console.error('Error updating notification status:', error);
+        toast.error('Failed to update notification status');
+      }
     };
   
     const notificationTypes = [
@@ -379,10 +401,18 @@ const AdminDashboard = () => {
   
     const userTypes = [
       { value: 'all', label: 'All Users' },
-      { value: 'admin', label: 'Admins' },
-      { value: 'driver', label: 'Drivers' },
+      { value: 'passengers', label: 'Passengers' },
+      { value: 'drivers', label: 'Drivers' },
       { value: 'staff', label: 'Staff' },
-      { value: 'passenger', label: 'Passengers' }
+      { value: 'admins', label: 'Admins' }
+    ];
+
+    const deliveryChannels = [
+      { value: 'in_app', label: 'In-App' },
+      { value: 'email', label: 'Email' },
+      { value: 'sms', label: 'SMS' },
+      { value: 'push', label: 'Push Notification' },
+      { value: 'all_channels', label: 'All Channels' }
     ];
   
     if (loading) {
@@ -465,6 +495,7 @@ const AdminDashboard = () => {
           </div>
         </div>
   
+        {/* Notification Form */}
         {showForm && (
           <div className="bg-slate-800 rounded-lg p-6 mb-6 border border-slate-700">
             <div className="flex justify-between items-center mb-4">
@@ -518,10 +549,10 @@ const AdminDashboard = () => {
   
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Target User Type *</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Target Audience *</label>
                   <select
-                    value={formData.targetUserType}
-                    onChange={(e) => setFormData({ ...formData, targetUserType: e.target.value })}
+                    value={formData.targetAudience}
+                    onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   >
                     {userTypes.map(userType => (
@@ -531,11 +562,26 @@ const AdminDashboard = () => {
                 </div>
   
                 <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Delivery Channel</label>
+                  <select
+                    value={formData.deliveryChannel}
+                    onChange={(e) => setFormData({ ...formData, deliveryChannel: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    {deliveryChannels.map(channel => (
+                      <option key={channel.value} value={channel.value}>{channel.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">Expiry Date</label>
                   <input
                     type="datetime-local"
-                    value={formData.expiryDate}
-                    onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                    value={formData.expiresAt}
+                    onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
@@ -593,6 +639,7 @@ const AdminDashboard = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Title</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Type</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Target</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Channel</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Expires</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
@@ -601,7 +648,7 @@ const AdminDashboard = () => {
               <tbody className="divide-y divide-slate-700">
                 {filteredNotifications.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-8 text-center text-slate-400">
+                    <td colSpan="7" className="px-6 py-8 text-center text-slate-400">
                       <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>No notifications found</p>
                       {(searchTerm || statusFilter !== 'all' || typeFilter !== 'all') && (
@@ -624,7 +671,10 @@ const AdminDashboard = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-300">
-                          {userTypes.find(t => t.value === notification.targetUserType)?.label}
+                          {userTypes.find(t => t.value === notification.targetAudience)?.label}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-300">
+                          {deliveryChannels.find(c => c.value === notification.deliveryChannel)?.label}
                         </td>
                         <td className="px-6 py-4">
                           <button
@@ -641,7 +691,7 @@ const AdminDashboard = () => {
                           </button>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-300">
-                          {notification.expiryDate ? new Date(notification.expiryDate).toLocaleDateString() : 'Never'}
+                          {notification.expiresAt ? new Date(notification.expiresAt).toLocaleDateString() : 'Never'}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex space-x-2">
