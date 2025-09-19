@@ -36,10 +36,15 @@ function App() {
               <Route path="/bus/bus-details/checkout" element={<Checkout />} />
               <Route path="/buses" element={<BusManagement />} />
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
-              <Route path="/notifications" element={<NotificationsPage />} />
-            
+              <Route path="/notifications" element={<NotificationsPage />} />   
               <Route path='/admin-notifications'element={<AdminNotificationPanel/>}/>
               <Route path='/offers' element={<SeasonalOffers/>}/>
+              <Route path="/home" element={<AdvancedBusRentalHomepage />} />
+              <Route path="/bus" element={<Bus/>} />
+              <Route path="/bus/bus-details" element={<Details/>} />
+              <Route path="/bus/bus-details/checkout" element={<Checkout/>} />
+              <Route path="/buses" element={<BusManagement/>} />
+              <Route path="/admin-dashboard" element={<AdminDashboard/>} />
             </Routes>
           </main>
           <Toaster position="top-right" />

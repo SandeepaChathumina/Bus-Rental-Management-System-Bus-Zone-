@@ -12,8 +12,10 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.12",
     "axios": "^1.11.0",
-    "framer-motion": "^12.23.12",
+    "framer-motion": "^12.23.13",
+    "html5-qrcode": "^2.3.8",
     "import": "^0.0.6",
+    "jsqr": "^1.4.0",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.542.0",
     "react": "^19.1.1",
