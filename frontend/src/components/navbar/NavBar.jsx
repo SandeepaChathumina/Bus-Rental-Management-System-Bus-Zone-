@@ -1,14 +1,16 @@
+// src/components/Navbar.jsx
 import React from 'react'
-import { Link } from 'react-router-dom';
-
+import { Link, useNavigate } from 'react-router-dom';
 import Logo from "../../assets/logo.png"
 import { LiaTimesSolid } from 'react-icons/lia';
 import { FaBars, FaPhone } from 'react-icons/fa6';
 import Theme from '../theme/Theme';
+import { FaComment } from 'react-icons/fa';
 
 const Navbar = () => {
 
     const [open, setOpen] = React.useState(false);
+    const navigate = useNavigate();
 
     const navLinks = [
         { href: "/", label: "Home" },
@@ -23,6 +25,11 @@ const Navbar = () => {
 
     const handleClose = () => {
         setOpen(false);
+    }
+
+    const handleFeedbackClick = () => {
+        handleClose(); // Close mobile menu if open
+        navigate('/feedback'); // Navigate to feedback page
     }
 
     return (
@@ -70,6 +77,23 @@ const Navbar = () => {
                             <p className="text-xs font-normal text-neutral-50 tracking-wide">+91 1234567890</p>
                         </div>
                     </div>
+                    
+                    {/* Feedback/Complaint Button */}
+                    <button 
+                        onClick={handleFeedbackClick}
+                        className="relative bg-violet-600 rounded-md px-8 py-2 w-fit cursor-pointer hover:bg-violet-700 transition-colors"
+                    >
+                        <div className="absolute top-[50%] -left-6 translate-y-[-50%] w-9 h-9 rounded-full bg-violet-600 border-4 border-neutral-100 dark:border-neutral-900 flex items-center justify-center">
+                            <FaComment className='text-neutral-50 text-sm' />
+                        </div>
+                        <div className="space-y-0.5">
+                            <p className="text-xs font-normal text-neutral-50 tracking-wide">
+                                Give Complain
+                            </p>
+                            <p className="text-xs font-normal text-neutral-50 tracking-wide">or Feedback</p>
+                        </div> 
+                    </button>
+                    
                     {/* Theme */}
                     <Theme />
                 </div>

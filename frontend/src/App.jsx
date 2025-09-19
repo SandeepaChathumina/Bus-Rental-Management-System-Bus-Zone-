@@ -1,3 +1,4 @@
+// src/App.js
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Header from './components/Header';
@@ -15,6 +16,7 @@ import Details from './pages/bus/Detailss';
 import { Bus } from 'lucide-react';
 import BusManagement from './pages/buscrud';
 import AdminDashboard from './pages/admindash';
+import Feedback from './pages/Feedback'; // Import the Feedback component
 
 function App() {
   return (
@@ -35,6 +37,7 @@ function App() {
               <Route path="/bus/bus-details/checkout" element={<Checkout/>} />
               <Route path="/buses" element={<BusManagement/>} />
               <Route path="/admin-dashboard" element={<AdminDashboard/>} />
+              <Route path="/feedback" element={<Feedback />} /> {/* Add Feedback route */}
             </Routes>
           </main>
           <Toaster position="top-right" />
