@@ -88,8 +88,7 @@ const AdminDashboard = () => {
     { id: 'feedback', label: 'Feedback', icon: MessageSquare },
     { id: 'lost-found', label: 'Lost & Found', icon: Search },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings },
-    { id: 'attendance', label: 'Attendance', icon: Clock },
+    { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
   const StatCard = ({ title, value, icon: Icon, trend, onClick }) => (
@@ -749,7 +748,7 @@ const AdminDashboard = () => {
       case 'drivers':
         return <div className="text-white p-6">Driver Assign (placeholder)</div>;
       case 'attendance':
-        return <div className="text-white p-6">Attendance (placeholder)</div>;
+        return <AttendanceManagement />;
       case 'feedback':
         return <div className="text-white p-6">Feedback (placeholder)</div>;
       case 'lost-found':
@@ -758,9 +757,6 @@ const AdminDashboard = () => {
         return <div className="text-white p-6">Analytics (placeholder)</div>;
       case 'settings':
         return <div className="text-white p-6">Settings (placeholder)</div>;
-        return <div className="text-white">Maintenance (placeholder)</div>;
-      case 'attendance':
-        return <AttendanceManagement />;
       default:
         return <div className="text-white p-6">Module under development</div>;
     }
