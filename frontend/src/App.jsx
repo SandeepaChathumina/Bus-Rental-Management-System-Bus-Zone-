@@ -12,6 +12,7 @@ import Checkout from './pages/checkout/Checkout';
 import Details from './pages/bus/Detailss';
 import BusManagement from './pages/buscrud';
 import AdminDashboard from './pages/admindash';
+import DriverDashboard from './components/DriverDashboard';
 
 import NotificationsPage from './pages/NotificationsPage';
 import AdminNotificationPanel from './pages/AdminNotificationPanel';
@@ -45,6 +46,8 @@ function App() {
               <Route path="/bus/bus-details/checkout" element={<Checkout/>} />
               <Route path="/buses" element={<BusManagement/>} />
               <Route path="/admin-dashboard" element={<AdminDashboard/>} />
+              <Route path="/driver-dashboard" element={<DriverDashboard/>} />
+
             </Routes>
           </main>
           <Toaster position="top-right" />
