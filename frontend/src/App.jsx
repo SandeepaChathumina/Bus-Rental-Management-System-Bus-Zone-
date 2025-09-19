@@ -12,8 +12,9 @@ import Checkout from './pages/checkout/Checkout';
 import Details from './pages/bus/Detailss';
 import BusManagement from './pages/buscrud';
 import AdminDashboard from './pages/admindash';
+import AboutUs from './pages/AboutUs'; // Add this import
+import ContactUs from './pages/ContactUs';
 import DriverDashboard from './components/DriverDashboard';
-
 import NotificationsPage from './pages/NotificationsPage';
 import AdminNotificationPanel from './pages/AdminNotificationPanel';
 import SeasonalOffers from './components/SeasonalOffers';
@@ -28,6 +29,8 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/about" element={<AboutUs />} /> {/* Add this route */}
+              <Route path="/contact" element={<ContactUs />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/booking" element={<Booking />} />
               <Route path="/admin" element={<AdminPage />} />
@@ -41,13 +44,16 @@ function App() {
               <Route path='/admin-notifications'element={<AdminNotificationPanel/>}/>
               <Route path='/offers' element={<SeasonalOffers/>}/>
               <Route path="/home" element={<AdvancedBusRentalHomepage />} />
+              <Route path="/bus/bus-details" element={<Details />} />
+              <Route path="/bus/bus-details/checkout" element={<Checkout />} />
+              <Route path="/buses" element={<BusManagement />} />
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
               <Route path="/bus" element={<Bus/>} />
               <Route path="/bus/bus-details" element={<Details/>} />
               <Route path="/bus/bus-details/checkout" element={<Checkout/>} />
               <Route path="/buses" element={<BusManagement/>} />
               <Route path="/admin-dashboard" element={<AdminDashboard/>} />
               <Route path="/driver-dashboard" element={<DriverDashboard/>} />
-
             </Routes>
           </main>
           <Toaster position="top-right" />

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import { FaHome, FaBus, FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaIdCard, FaLock, FaUserPlus } from 'react-icons/fa';
 import { FaUserPlus, FaHome, FaBus } from 'react-icons/fa';
 import b5Image from '../assets/b5.jpeg';
 
@@ -68,6 +69,9 @@ const RegisterPage = () => {
       </button>
 
       <div className="flex min-h-screen">
+        {/* Left Side - Branding */}
+        <div className="hidden lg:flex lg:w-2/5 relative items-center justify-center p-12">
+          {/* Background */}
         {/* Left Side - Modern Branding */}
         <div className="hidden lg:flex lg:w-3/5 relative items-center justify-center p-12">
           {/* Background with better positioning */}
@@ -76,6 +80,9 @@ const RegisterPage = () => {
             style={{ backgroundImage: `url(${b5Image})` }}
           ></div>
           
+          {/* Branding Card */}
+          <div className="relative z-10 bg-white/10 backdrop-blur-2xl rounded-3xl p-12 border border-white/20 shadow-2xl max-w-lg">
+            <div className="text-center">
           {/* Modern Glass Card */}
           <div className="relative z-10 bg-white/10 backdrop-blur-2xl rounded-3xl p-12 border border-white/20 shadow-2xl max-w-lg">
             <div className="text-center">
@@ -84,6 +91,28 @@ const RegisterPage = () => {
                 <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-3xl flex items-center justify-center shadow-2xl">
                   <FaBus className="text-4xl text-white" />
                 </div>
+                <h1 className="text-4xl font-bold text-white mb-4">Join BusZone+</h1>
+                <div className="w-16 h-1 bg-gradient-to-r from-blue-400 to-cyan-500 mx-auto rounded-full"></div>
+              </div>
+
+              <h2 className="text-2xl font-bold text-white mb-6 leading-tight">
+                Start Your Journey With Us
+              </h2>
+              <p className="text-lg text-blue-100 mb-8 leading-relaxed">
+                Create your account and experience premium bus services with advanced booking and management features
+              </p>
+
+              {/* Benefits */}
+              <div className="space-y-4 text-left">
+                {[
+                  "Easy Online Booking",
+                  "Real-time Bus Tracking", 
+                  "Secure Payment System",
+                  "24/7 Customer Support"
+                ].map((benefit, index) => (
+                  <div key={index} className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-cyan-400 rounded-full flex-shrink-0"></div>
+                    <span className="text-blue-100">{benefit}</span>
                 <h1 className="text-4xl font-bold text-white mb-4">BusZone+</h1>
                 <div className="w-16 h-1 bg-gradient-to-r from-blue-400 to-cyan-500 mx-auto rounded-full"></div>
               </div>
@@ -115,6 +144,8 @@ const RegisterPage = () => {
         </div>
 
         {/* Right Side - Registration Form */}
+        <div className="w-full lg:w-3/5 flex items-center justify-center p-8">
+          <div className="w-full max-w-2xl">
         <div className="w-full lg:w-2/5 flex items-center justify-center p-8">
           <div className="w-full max-w-md">
             {/* Mobile Header */}
@@ -128,6 +159,11 @@ const RegisterPage = () => {
             {/* Registration Card */}
             <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-10 border border-white/20">
               <div className="text-center mb-8">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center">
+                  <FaUserPlus className="text-2xl text-white" />
+                </div>
+                <h2 className="text-3xl font-bold text-gray-800 mb-3">Create Account</h2>
+                <p className="text-gray-600 text-lg">Join thousands of satisfied customers</p>
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-2xl flex items-center justify-center">
                   <FaUserPlus className="text-2xl text-blue-600" />
                 </div>
@@ -137,6 +173,47 @@ const RegisterPage = () => {
 
               {/* Registration Form */}
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Name Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 mb-3">
+                      <FaUser className="inline mr-2 text-blue-500" />
+                      First Name
+                    </label>
+                    <input
+                      id="firstName"
+                      name="firstName"
+                      type="text"
+                      required
+                      className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500"
+                      placeholder="Enter first name"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 mb-3">
+                      <FaUser className="inline mr-2 text-blue-500" />
+                      Last Name
+                    </label>
+                    <input
+                      id="lastName"
+                      name="lastName"
+                      type="text"
+                      required
+                      className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500"
+                      placeholder="Enter last name"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                {/* Username and Email */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-3">
+                      <FaUser className="inline mr-2 text-blue-500" />
                 <div className="space-y-5">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -181,11 +258,16 @@ const RegisterPage = () => {
                       type="text"
                       required
                       className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500"
+                      placeholder="Choose username"
                       placeholder="Username"
                       value={formData.username}
                       onChange={handleChange}
                     />
                   </div>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-3">
+                      <FaEnvelope className="inline mr-2 text-blue-500" />
+                      Email Address
 
                   <div>
                     <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-3">
@@ -197,12 +279,19 @@ const RegisterPage = () => {
                       type="email"
                       required
                       className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500"
+                      placeholder="Enter email address"
                       placeholder="Email Address"
                       value={formData.email}
                       onChange={handleChange}
                     />
                   </div>
+                </div>
 
+                {/* Phone and NIC */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-3">
+                      <FaPhone className="inline mr-2 text-blue-500" />
                   <div>
                     <label htmlFor="nic" className="block text-sm font-semibold text-gray-700 mb-3">
                       NIC Number
@@ -228,11 +317,66 @@ const RegisterPage = () => {
                       name="phone"
                       type="text"
                       className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500"
+                      placeholder="Enter phone number"
                       placeholder="Phone Number"
                       value={formData.phone}
                       onChange={handleChange}
                     />
                   </div>
+                  <div>
+                    <label htmlFor="nic" className="block text-sm font-semibold text-gray-700 mb-3">
+                      <FaIdCard className="inline mr-2 text-blue-500" />
+                      NIC Number
+                    </label>
+                    <input
+                      id="nic"
+                      name="nic"
+                      type="text"
+                      required
+                      className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500"
+                      placeholder="Enter NIC number"
+                      value={formData.nic}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                {/* Address */}
+                <div>
+                  <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-3">
+                    <FaMapMarkerAlt className="inline mr-2 text-blue-500" />
+                    Address
+                  </label>
+                  <input
+                    id="address"
+                    name="address"
+                    type="text"
+                    className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500"
+                    placeholder="Enter your address"
+                    value={formData.address}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-3">
+                    <FaLock className="inline mr-2 text-blue-500" />
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500"
+                    placeholder="Create a strong password"
+                    value={formData.password}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                {/* Submit Button */}
 
                   <div>
                     <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-3">
@@ -277,6 +421,10 @@ const RegisterPage = () => {
                       Creating Account...
                     </div>
                   ) : (
+                    <div className="flex items-center justify-center gap-3">
+                      <FaUserPlus className="text-lg" />
+                      Create Account
+                    </div>
                     'Create Account'
                   )}
                 </button>
