@@ -26,7 +26,7 @@ const Offer = () => {
             <h1 className="text-2xl font-medium mb-6">
                 Special Offer
             </h1>
-            <Link to={"/offer"} className='text-violet-600'>View All</Link>
+            <Link to={"/offers"} className='text-violet-600'>View All</Link>
         </div>
 
         <div className="grid grid-cols-2 gap-16">
