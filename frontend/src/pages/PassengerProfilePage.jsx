@@ -1,4 +1,4 @@
-// Create a new file: src/pages/ProfilePage.jsx
+// src/pages/PassengerProfilePage.jsx
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -12,11 +12,12 @@ import {
   Save, 
   Edit, 
   X,
-  Home
+  Home,
+  Calendar
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const ProfilePage = () => {
+const PassengerProfilePage = () => {
   const { user, logout } = useAuth();
   const [profileData, setProfileData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
@@ -47,8 +48,10 @@ const ProfilePage = () => {
 
     if (user) {
       fetchUserData();
+    } else {
+      navigate('/login');
     }
-  }, [user]);
+  }, [user, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -62,7 +65,7 @@ const ProfilePage = () => {
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
-      const { password, ...updateData } = profileData; // Don't send password in update
+      const { password, ...updateData } = profileData;
       
       await axios.put(
         `${import.meta.env.VITE_BACKEND_URL}/api/users/${user._id}`,
@@ -92,6 +95,14 @@ const ProfilePage = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
         <div className="text-white text-lg">Loading profile...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-white text-lg">Please login to view your profile</div>
       </div>
     );
   }
@@ -224,6 +235,16 @@ const ProfilePage = () => {
                 )}
               </div>
 
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <Calendar className="inline mr-2 text-blue-500" size={16} />
+                  Member Since
+                </label>
+                <p className="px-4 py-3 bg-gray-100 rounded-xl text-gray-800">
+                  {profileData.createdAt ? new Date(profileData.createdAt).toLocaleDateString() : 'N/A'}
+                </p>
+              </div>
+
               <div className="flex justify-center space-x-4 pt-6">
                 {isEditing ? (
                   <>
@@ -261,4 +282,4 @@ const ProfilePage = () => {
   );
 };
 
-export default ProfilePage;
+export default PassengerProfilePage;
