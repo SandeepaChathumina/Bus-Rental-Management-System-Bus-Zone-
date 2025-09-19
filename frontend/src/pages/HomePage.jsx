@@ -378,7 +378,7 @@ const AdvancedBusRentalHomepage = () => {
                 { name: "Services", active: false, link: "#" },
                 { name: "Corporate", active: false, link: "#" },
                 { name: "About", active: false, link: "/about" }, // Update this line
-                { name: "Contact", active: false, link: "#" },
+                { name: "Contact", active: false, link: "/contact" },
               ].map((item) => (
                 <a
                   key={item.name}
@@ -425,11 +425,7 @@ const AdvancedBusRentalHomepage = () => {
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="lg:hidden p-2 text-slate-300 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all duration-300"
             >
-              {isMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
 
@@ -438,20 +434,21 @@ const AdvancedBusRentalHomepage = () => {
             <div className="lg:hidden absolute top-full left-0 right-0 bg-slate-900/98 backdrop-blur-xl border-b border-slate-700/50 animate-fade-in">
               <div className="px-6 py-6 space-y-4">
                 {[
-                  "Home",
-                  "Fleet",
-                  "Services",
-                  "Corporate",
-                  "About",
-                  "Contact",
+                  { name: 'Home', link: '/' },
+                  { name: 'Fleet', link: '#' },
+                  { name: 'Services', link: '#' },
+                  { name: 'Corporate', link: '#' },
+                  { name: 'About', link: '/about' },
+                  { name: 'Contact', link: '/contact' }
                 ].map((item) => (
                   <a
-                    key={item}
-                    href={item === "About" ? "/about" : "#"}
-                    className=" text-slate-300 hover:text-blue-400 py-2 text-lg font-medium transition-colors duration-300 flex items-center"
+                    key={item.name}
+                    href={item.link}
+                    className="text-slate-300 hover:text-blue-400 py-2 text-lg font-medium transition-colors duration-300 flex items-center group"
+                    onClick={() => setIsMenuOpen(false)}
                   >
                     <ArrowRight className="h-4 w-4 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    {item}
+                    {item.name}
                   </a>
                 ))}
                 <div className="pt-6 border-t border-slate-700 space-y-4">
@@ -463,7 +460,7 @@ const AdvancedBusRentalHomepage = () => {
                     className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 text-white py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105"
                     onClick={() => {
                       setIsMenuOpen(false);
-                      navigate("/login");
+                      navigate('/login');
                     }}
                   >
                     Login

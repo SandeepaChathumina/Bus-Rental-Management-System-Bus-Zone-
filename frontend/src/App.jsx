@@ -15,6 +15,7 @@ import Details from './pages/bus/Detailss';
 import BusManagement from './pages/buscrud';
 import AdminDashboard from './pages/admindash';
 import AboutUs from './pages/AboutUs'; // Add this import
+import ContactUs from './pages/ContactUs';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/about" element={<AboutUs />} /> {/* Add this route */}
+              <Route path="/contact" element={<ContactUs />} />
               <Route path="/booking" element={<Booking />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/attendance" element={<AttendanceManagement />} />
