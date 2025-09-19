@@ -298,6 +298,79 @@ const getUserReport = async (req, res) => {
   }
 };
 
+// ==================== CHECK USERNAME AVAILABILITY ====================
+const checkUsernameAvailability = async (req, res) => {
+  try {
+    const { username } = req.query;
+    
+    if (!username) {
+      return res.status(400).json({ message: 'Username parameter is required' });
+    }
+    
+    const existingUser = await User.findOne({ username });
+    
+    return res.json({ available: !existingUser });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== CHECK EMAIL AVAILABILITY ====================
+const checkEmailAvailability = async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email parameter is required' });
+    }
+    
+    const existingUser = await User.findOne({ email });
+    
+    return res.json({ available: !existingUser });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== CHECK PHONE AVAILABILITY ====================
+const checkPhoneAvailability = async (req, res) => {
+  try {
+    const { phone } = req.query;
+    
+    if (!phone) {
+      return res.status(400).json({ message: 'Phone parameter is required' });
+    }
+    
+    // If phone is empty string, consider it available (since it's optional)
+    if (phone === '') {
+      return res.json({ available: true });
+    }
+    
+    const existingUser = await User.findOne({ phone });
+    
+    return res.json({ available: !existingUser });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== CHECK NIC AVAILABILITY ====================
+const checkNICAvailability = async (req, res) => {
+  try {
+    const { nic } = req.query;
+    
+    if (!nic) {
+      return res.status(400).json({ message: 'NIC parameter is required' });
+    }
+    
+    const existingUser = await User.findOne({ nic });
+    
+    return res.json({ available: !existingUser });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export {
   registerUser,
   loginUser,
@@ -305,5 +378,9 @@ export {
   getUserById,
   updateUser,
   deleteUser,
-  getUserReport
+  getUserReport,
+  checkUsernameAvailability,
+  checkEmailAvailability,
+  checkPhoneAvailability,
+  checkNICAvailability
 };

@@ -5,7 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import HomePage from './pages/HomePage';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
+import ProfilePage from './pages/PassengerProfilePage';
 import AdminPage from './pages/AdminPage';
 import AttendanceManagement from './components/AttendanceManagement';
 import Booking from './pages/bookingContainer/Booking';
@@ -20,6 +20,7 @@ import DriverDashboard from './components/DriverDashboard';
 import NotificationsPage from './pages/NotificationsPage';
 import AdminNotificationPanel from './pages/AdminNotificationPanel';
 import SeasonalOffers from './components/SeasonalOffers';
+
 
 // Remove the non-existent import and adjust the route
 import Bus from './pages/bus/Bus';
@@ -36,7 +37,7 @@ function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/about" element={<AboutUs />} />
               <Route path="/contact" element={<ContactUs />} />
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<PassengerProfilePage />} />
               <Route path="/booking" element={<Booking />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/attendance" element={<AttendanceManagement />} />
