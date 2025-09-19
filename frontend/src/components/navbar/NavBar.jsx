@@ -1,14 +1,10 @@
 // src/components/Navbar.jsx
-import React from 'react'
-import { Link, useNavigate } from 'react-router-dom';
-import Logo from "../../assets/logo.png"
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LiaTimesSolid } from 'react-icons/lia';
-import { FaBars, FaPhone } from 'react-icons/fa6';
+import { FaBars, FaPhone, FaComment } from 'react-icons/fa6';
 import { Phone } from 'lucide-react';
 import Theme from '../theme/Theme';
-import { FaComment } from 'react-icons/fa';
 import NotificationBell from '../NotificationBell';
 import Logo from "../../assets/logo.png";
 
@@ -16,15 +12,6 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
-    const [open, setOpen] = React.useState(false);
-    const navigate = useNavigate();
-
-    const navLinks = [
-        { href: "/", label: "Home" },
-        { href: "/about", label: "About" },
-        { href: "/bus", label: "Bus" },
-        { href: "/services", label: "Services" },
-    ]
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/about", label: "About" },
@@ -40,17 +27,11 @@ const Navbar = () => {
     setOpen(false);
   };
 
-    const handleFeedbackClick = () => {
-        handleClose(); // Close mobile menu if open
-        navigate('/feedback'); // Navigate to feedback page
-    }
+  const handleFeedbackClick = () => {
+    handleClose();
+    navigate('/feedback');
+  }
 
-    return (
-        <div className='w-full h-[8ch] bg-neutral-100 dark:bg-neutral-900 flex items-center md:flex-row lg:px-28 md:px-16 sm:px-7 px-4 fixed top-0 z-50'>
-            {/* Logo section */}
-            <Link to={"/"} className='mr-16'>
-                <img src={Logo} alt="logo" className="w-28 h-auto object-contain" />
-            </Link>
   return (
     <div className='w-full h-[8ch] bg-neutral-100 dark:bg-neutral-900 flex items-center md:flex-row lg:px-28 md:px-16 sm:px-7 px-4 fixed top-0 z-50'>
       {/* Logo section */}
@@ -79,38 +60,6 @@ const Navbar = () => {
           ))}
         </ul>
 
-                <div className="flex md:items-center items-start gap-x-5 gap-y-2 flex-wrap md:flex-row flex-col text-base font-medium text-neutral-800">
-                    <div className="relative bg-violet-600 rounded-md px-8 py-2 w-fit cursor-pointer">
-                        <div className="absolute top-[50%] -left-6 translate-y-[-50%] w-9 h-9 rounded-full bg-violet-600 border-4 border-neutral-100 dark:border-neutral-900 flex items-center justify-center">
-                            <FaPhone className='text-neutral-50 text-sm' />
-                        </div>
-                        <div className="space-y-0.5">
-                            <p className="text-xs text-neutral-200 font-light">
-                                Need Help?
-                            </p>
-                            <p className="text-xs font-normal text-neutral-50 tracking-wide">+91 1234567890</p>
-                        </div>
-                    </div>
-                    
-                    {/* Feedback/Complaint Button */}
-                    <button 
-                        onClick={handleFeedbackClick}
-                        className="relative bg-violet-600 rounded-md px-8 py-2 w-fit cursor-pointer hover:bg-violet-700 transition-colors"
-                    >
-                        <div className="absolute top-[50%] -left-6 translate-y-[-50%] w-9 h-9 rounded-full bg-violet-600 border-4 border-neutral-100 dark:border-neutral-900 flex items-center justify-center">
-                            <FaComment className='text-neutral-50 text-sm' />
-                        </div>
-                        <div className="space-y-0.5">
-                            <p className="text-xs font-normal text-neutral-50 tracking-wide">
-                                Give Complain
-                            </p>
-                            <p className="text-xs font-normal text-neutral-50 tracking-wide">or Feedback</p>
-                        </div> 
-                    </button>
-                    
-                    {/* Theme */}
-                    <Theme />
-                </div>
         <div className="flex md:items-center items-start gap-x-5 gap-y-2 flex-wrap md:flex-row flex-col text-base font-medium text-neutral-800">
           <div className="relative bg-violet-600 rounded-md px-8 py-2 w-fit cursor-pointer">
             <div className="absolute top-[50%] -left-6 translate-y-[-50%] w-9 h-9 rounded-full bg-violet-600 border-4 border-neutral-100 dark:border-neutral-900 flex items-center justify-center">
@@ -123,6 +72,24 @@ const Navbar = () => {
               <p className="text-xs font-normal text-neutral-50 tracking-wide">+91 1234567890</p>
             </div>
           </div>
+          
+          {/* Feedback/Complaint Button */}
+          <button 
+            onClick={handleFeedbackClick}
+            className="relative bg-violet-600 rounded-md px-8 py-2 w-fit cursor-pointer hover:bg-violet-700 transition-colors"
+          >
+            <div className="absolute top-[50%] -left-6 translate-y-[-50%] w-9 h-9 rounded-full bg-violet-600 border-4 border-neutral-100 dark:border-neutral-900 flex items-center justify-center">
+              <FaComment className='text-neutral-50 text-sm' />
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-xs font-normal text-neutral-50 tracking-wide">
+                Give Complain
+              </p>
+              <p className="text-xs font-normal text-neutral-50 tracking-wide">or Feedback</p>
+            </div> 
+          </button>
+          
+          {/* Theme */}
           <Theme />
         </div>
       </div>
