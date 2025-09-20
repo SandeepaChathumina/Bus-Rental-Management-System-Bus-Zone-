@@ -6,7 +6,11 @@ import {
   getUserById,
   updateUser,
   deleteUser,
-  getUserReport
+  getUserReport,
+  checkUsernameAvailability,
+  checkEmailAvailability,
+  checkPhoneAvailability,
+  checkNICAvailability
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -17,6 +21,10 @@ router.get('/me', protect, (req, res) => {
 });
 
 router.post('/register', registerUser);
+router.get('/check-username', checkUsernameAvailability);
+router.get('/check-email', checkEmailAvailability);
+router.get('/check-phone', checkPhoneAvailability);
+router.get('/check-nic', checkNICAvailability);
 router.post('/admin/register', protect, admin, registerUser);
 router.post('/login', loginUser);
 router.get('/report', protect, admin, getUserReport);

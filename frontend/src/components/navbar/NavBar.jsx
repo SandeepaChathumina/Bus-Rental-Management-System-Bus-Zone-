@@ -4,13 +4,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { LiaTimesSolid } from 'react-icons/lia';
 import { FaBars, FaPhone, FaComment } from 'react-icons/fa6';
 import { Phone } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import Theme from '../theme/Theme';
 import NotificationBell from '../NotificationBell';
 import Logo from "../../assets/logo.png";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -25,12 +28,28 @@ const Navbar = () => {
 
   const handleClose = () => {
     setOpen(false);
+    setShowProfileDropdown(false);
   };
 
   const handleFeedbackClick = () => {
     handleClose();
     navigate('/feedback');
-  }
+  };
+
+  const handleProfileClick = () => {
+    handleClose();
+    navigate('/profile');
+  };
+
+  const handleLogout = () => {
+    logout();
+    handleClose();
+    navigate('/');
+  };
+
+  const toggleProfileDropdown = () => {
+    setShowProfileDropdown(!showProfileDropdown);
+  };
 
   return (
     <div className='w-full h-[8ch] bg-neutral-100 dark:bg-neutral-900 flex items-center md:flex-row lg:px-28 md:px-16 sm:px-7 px-4 fixed top-0 z-50'>
@@ -105,19 +124,64 @@ const Navbar = () => {
           </div>
           <span className="text-sm group-hover:text-amber-400 transition-colors">+94 704 222 777</span>
         </div>
-        <div className="flex items-center space-x-3">
-          <button
-            className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg"
-            onClick={() => navigate('/login')}
-          >
-            Login
-          </button>
-          <button className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-amber-500/25 relative overflow-hidden group">
-            <span className="relative z-10">Get Quote</span>
-            <span className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-          </button>
-        </div>
+        
+        {/* User section - Show profile when logged in, hide login buttons */}
+        {user ? (
+          <div className="flex items-center space-x-3">
+            {/* Profile Icon with Dropdown */}
+            <div className="relative">
+              <button
+                onClick={toggleProfileDropdown}
+                className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold shadow-lg hover:scale-105 transition-transform"
+                title="View Profile"
+              >
+                {user.firstName ? user.firstName.charAt(0).toUpperCase() : 'U'}
+              </button>
+              
+              {/* Profile Dropdown */}
+              {showProfileDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-slate-700">
+                  <div className="px-4 py-2 border-b border-gray-200 dark:border-slate-700">
+                    <p className="text-sm font-medium text-gray-800 dark:text-white">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 capitalize">
+                      {user.role}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleProfileClick}
+                    className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                  >
+                    <FaUser className="mr-2" />
+                    View Profile
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-slate-700"
+                  >
+                    <FaSignOutAlt className="mr-2" />
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          // This section is now empty since we're hiding login/register buttons
+          <div className="flex items-center space-x-3">
+            {/* Login/Register buttons are hidden when not logged in */}
+          </div>
+        )}
       </div>
+
+      {/* Close dropdown when clicking outside */}
+      {showProfileDropdown && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowProfileDropdown(false)}
+        />
+      )}
     </div>
   );
 };
