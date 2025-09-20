@@ -1,102 +1,110 @@
-// src/context/AuthContext.jsx
+// src/context/AuthContext.jsx - UPDATED
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Check authentication status on app load
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // Fetch user data
-      fetchUserData();
-    } else {
-      setLoading(false);
-    }
+    checkAuthStatus();
   }, []);
 
-  const fetchUserData = async () => {
+  const checkAuthStatus = async () => {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/users/me`);
-      setUser(response.data);
+      
+      if (response.data) {
+        setUser(response.data);
+      }
     } catch (error) {
-      console.error('Error fetching user data:', error);
-      logout();
+      console.error('Auth check failed:', error);
+      localStorage.removeItem('token');
+      delete axios.defaults.headers.common['Authorization'];
+      setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
-  // In AuthContext.jsx, update the login function
-const login = async (credentials) => {
-  try {
-    const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/login`, credentials);
-    const { token, user } = response.data;
-    
-    localStorage.setItem('token', token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    setUser(user); // This should store the complete user object
-    
-    return { success: true, user }; // Return user data
-  } catch (error) {
-    return { 
-      success: false, 
-      message: error.response?.data?.message || 'Login failed' 
-    };
-  }
-};
+  const login = async (credentials) => {
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/login`, credentials);
+      const { token, user: userData } = response.data;
+      
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setUser(userData); // This should trigger re-render
+
+      window.dispatchEvent(new CustomEvent('authChange', { detail: userData }));
+      
+      return { success: true, user: userData };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Login failed' 
+      };
+    }
+  };
 
   const register = async (userData) => {
-  try {
-    const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/register`, userData);
-    const { token, user } = response.data;
-    
-    localStorage.setItem('token', token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    setUser(user);
-    
-    return { success: true };
-  } catch (error) {
-    // Check if it's an email duplication error
-    const errorMessage = error.response?.data?.message || 'Registration failed';
-    
-    if (errorMessage.includes('email') && errorMessage.includes('already')) {
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/register`, userData);
+      const { token, user: userData } = response.data;
+      
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setUser(userData);
+      
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Registration failed';
+      
+      if (errorMessage.includes('email') && errorMessage.includes('already')) {
+        return { 
+          success: false, 
+          message: 'Email is already registered. Please use a different email.' 
+        };
+      }
+      
+      if (errorMessage.includes('phone') && errorMessage.includes('duplicate')) {
+        return { 
+          success: false, 
+          message: 'Phone number is already registered. Please use a different phone number.' 
+        };
+      }
+      
+      if (errorMessage.includes('nic') && errorMessage.includes('duplicate')) {
+        return { 
+          success: false, 
+          message: 'NIC is already registered. Please use a different NIC number.' 
+        };
+      }
+      
       return { 
         success: false, 
-        message: 'Email is already registered. Please use a different email.' 
+        message: errorMessage 
       };
     }
-    
-    // Check if it's a phone duplication error
-    if (errorMessage.includes('phone') && errorMessage.includes('duplicate')) {
-      return { 
-        success: false, 
-        message: 'Phone number is already registered. Please use a different phone number.' 
-      };
-    }
-    
-    // Check if it's a NIC duplication error
-    if (errorMessage.includes('nic') && errorMessage.includes('duplicate')) {
-      return { 
-        success: false, 
-        message: 'NIC is already registered. Please use a different NIC number.' 
-      };
-    }
-    
-    return { 
-      success: false, 
-      message: errorMessage 
-    };
-  }
-};
+  };
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -109,12 +117,13 @@ const login = async (credentials) => {
     login,
     register,
     logout,
-    loading
+    loading,
+    checkAuthStatus
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

@@ -4,7 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import HomePage from './pages/HomePage';
 import RegisterPage from './pages/RegisterPage';
-import LoginPage from './pages/LoginPage';
+import LoginPage from './pages/loginPage';
 import PassengerProfilePage from './pages/PassengerProfilePage'; // Correct import name
 import AdminPage from './pages/AdminPage';
 import AttendanceManagement from './components/AttendanceManagement';
@@ -46,8 +46,9 @@ function App() {
               <Route path="/admin-dashboard" element={<AdminDashboard/>} />
               <Route path="/feedback" element={<Feedback />} />
               <Route path="/notifications" element={<NotificationsPage />} />   
-              <Route path='/admin-notifications' element={<AdminNotificationPanel/>}/>
               <Route path='/offers' element={<SeasonalOffers/>}/>
+              <Route path='/admin-notifications' element={<AdminNotificationPanel/>}/>
+              
               <Route path="/driver-dashboard" element={<DriverDashboard/>} />
             </Routes>
           </main>
