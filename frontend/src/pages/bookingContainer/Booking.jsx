@@ -1,4 +1,4 @@
-// src/pages/bookingContainer/Booking.jsx - COMPLETE REDESIGN
+// src/pages/bookingContainer/Booking.jsx - UPDATED
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -149,6 +149,10 @@ const BookingNavbar = () => {
     navigate('/login');
   };
 
+  const handleNotificationsClick = () => {
+    navigate('/notifications');
+  };
+
   const toggleProfileDropdown = () => {
     setShowProfileDropdown(!showProfileDropdown);
   };
@@ -202,7 +206,10 @@ const BookingNavbar = () => {
       {/* Right side section */}
       <div className="flex items-center space-x-6 ml-auto">
         {/* Notification Bell */}
-        <button className="relative p-2 text-slate-300 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all duration-300">
+        <button 
+          onClick={handleNotificationsClick}
+          className="relative p-2 text-slate-300 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all duration-300"
+        >
           <Bell className="h-5 w-5" />
           <span className="absolute -top-1 -right-1 bg-cyan-400 w-2 h-2 rounded-full animate-ping"></span>
         </button>
