@@ -14,8 +14,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import axios from 'axios';
-import Navbar from '../components/navbar/Navbar';
-import Footer from '../components/footer/Footer';
+
 
 // Import seasonal images (you'll need to add these images to your assets folder)
 // For now, using placeholder images from a service
@@ -193,7 +192,7 @@ const SeasonalOffersPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-16">
-      <Navbar />
+    
       
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
@@ -365,7 +364,7 @@ const SeasonalOffersPage = () => {
         )}
       </div>
       
-      <Footer />
+      
     </div>
   );
 };

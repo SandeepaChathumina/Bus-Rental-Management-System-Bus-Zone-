@@ -5,32 +5,41 @@ import axios from 'axios';
 const AuthContext = createContext();
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Check authentication status on app load
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUserData();
-    } else {
-      setLoading(false);
-    }
+    checkAuthStatus();
   }, []);
 
-  const fetchUserData = async () => {
+  const checkAuthStatus = async () => {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/users/me`);
-      setUser(response.data);
+      
+      if (response.data) {
+        setUser(response.data);
+      }
     } catch (error) {
-      console.error('Error fetching user data:', error);
-      // Don't logout on error, just set loading to false
+      console.error('Auth check failed:', error);
       localStorage.removeItem('token');
       delete axios.defaults.headers.common['Authorization'];
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -43,7 +52,9 @@ export const AuthProvider = ({ children }) => {
       
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(userData);
+      setUser(userData); // This should trigger re-render
+
+      window.dispatchEvent(new CustomEvent('authChange', { detail: userData }));
       
       return { success: true, user: userData };
     } catch (error) {
@@ -107,7 +118,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     loading,
-    fetchUserData // Expose this for manual refresh if needed
+    checkAuthStatus
   };
 
   return (

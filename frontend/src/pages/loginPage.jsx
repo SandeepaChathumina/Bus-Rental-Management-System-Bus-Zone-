@@ -27,7 +27,8 @@ const LoginPage = () => {
     setCredentials({ ...credentials, role });
   };
 
-  // In LoginPage.jsx, update the handleSubmit function
+ // In LoginPage.jsx - Update the handleSubmit function
+// In LoginPage.jsx - Simple fix
 const handleSubmit = async (e) => {
   e.preventDefault();
   setLoading(true);
@@ -37,23 +38,25 @@ const handleSubmit = async (e) => {
   if (result.success) {
     toast.success('Login successful!');
     
-    // Navigate based on user role
-    const userRole = result.user?.role || credentials.role;
-    
-    switch (userRole) {
-      case 'admin':
-        navigate('/admin-dashboard');
-        break;
-      case 'driver':
-        navigate('/driver-dashboard');
-        break;
-      case 'staff':
-        navigate('/staff-dashboard');
-        break;
-      case 'passenger':
-      default:
-        navigate('/booking');
-    }
+    // Short delay to ensure state updates propagate
+    setTimeout(() => {
+      const userRole = result.user?.role || credentials.role;
+      
+      switch (userRole) {
+        case 'admin':
+          navigate('/admin-dashboard', { replace: true });
+          break;
+        case 'driver':
+          navigate('/driver-dashboard', { replace: true });
+          break;
+        case 'staff':
+          navigate('/staff-dashboard', { replace: true });
+          break;
+        case 'passenger':
+        default:
+          navigate('/booking', { replace: true });
+      }
+    }, 100);
   } else {
     toast.error(result.message);
   }
