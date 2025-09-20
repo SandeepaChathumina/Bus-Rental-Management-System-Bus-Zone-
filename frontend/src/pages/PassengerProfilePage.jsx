@@ -13,12 +13,13 @@ import {
   Edit, 
   X,
   Home,
-  Calendar
+  Calendar,
+  Loader
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const PassengerProfilePage = () => {
-  const { user, logout } = useAuth();
+  const { user: authUser, logout } = useAuth();
   const [profileData, setProfileData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -27,10 +28,15 @@ const PassengerProfilePage = () => {
 
   useEffect(() => {
     const fetchUserData = async () => {
+      if (!authUser) {
+        navigate('/login');
+        return;
+      }
+
       try {
         const token = localStorage.getItem('token');
         const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/users/${user._id}`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/users/${authUser._id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`
@@ -41,17 +47,17 @@ const PassengerProfilePage = () => {
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast.error('Failed to load profile data');
+        if (error.response?.status === 401) {
+          logout();
+          navigate('/login');
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    if (user) {
-      fetchUserData();
-    } else {
-      navigate('/login');
-    }
-  }, [user, navigate]);
+    fetchUserData();
+  }, [authUser, navigate, logout]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -68,7 +74,7 @@ const PassengerProfilePage = () => {
       const { password, ...updateData } = profileData;
       
       await axios.put(
-        `${import.meta.env.VITE_BACKEND_URL}/api/users/${user._id}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/users/${authUser._id}`,
         updateData,
         {
           headers: {
@@ -94,12 +100,15 @@ const PassengerProfilePage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-white text-lg">Loading profile...</div>
+        <div className="flex flex-col items-center">
+          <Loader className="text-white text-4xl animate-spin mb-4" />
+          <div className="text-white text-lg">Loading profile...</div>
+        </div>
       </div>
     );
   }
 
-  if (!user) {
+  if (!authUser) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
         <div className="text-white text-lg">Please login to view your profile</div>

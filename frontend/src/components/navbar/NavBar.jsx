@@ -1,8 +1,8 @@
-// src/components/Navbar.jsx
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+// src/components/Navbar.jsx - UPDATED
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LiaTimesSolid } from 'react-icons/lia';
-import { FaBars, FaPhone, FaComment } from 'react-icons/fa6';
+import { FaBars, FaPhone, FaComment, FaUser, FaSignOutAlt } from 'react-icons/fa';
 import { Phone } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import Theme from '../theme/Theme';
@@ -13,7 +13,15 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const location = useLocation();
+  const { user, logout, fetchUserData } = useAuth();
+
+  // Refresh user data when location changes (page navigation)
+  useEffect(() => {
+    if (user) {
+      fetchUserData();
+    }
+  }, [location.pathname]);
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -38,12 +46,14 @@ const Navbar = () => {
 
   const handleProfileClick = () => {
     handleClose();
+    setShowProfileDropdown(false);
     navigate('/profile');
   };
 
   const handleLogout = () => {
     logout();
     handleClose();
+    setShowProfileDropdown(false);
     navigate('/');
   };
 
@@ -125,7 +135,7 @@ const Navbar = () => {
           <span className="text-sm group-hover:text-amber-400 transition-colors">+94 704 222 777</span>
         </div>
         
-        {/* User section - Show profile when logged in, hide login buttons */}
+        {/* User section */}
         {user ? (
           <div className="flex items-center space-x-3">
             {/* Profile Icon with Dropdown */}
@@ -168,9 +178,20 @@ const Navbar = () => {
             </div>
           </div>
         ) : (
-          // This section is now empty since we're hiding login/register buttons
+          // Show login/register buttons when not logged in
           <div className="flex items-center space-x-3">
-            {/* Login/Register buttons are hidden when not logged in */}
+            <Link
+              to="/login"
+              className="px-4 py-2 text-sm text-amber-600 hover:text-amber-700 font-medium"
+            >
+              Login
+            </Link>
+            <Link
+              to="/register"
+              className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm font-medium"
+            >
+              Register
+            </Link>
           </div>
         )}
       </div>
