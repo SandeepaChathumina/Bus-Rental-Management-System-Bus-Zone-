@@ -30,12 +30,15 @@ const NotificationsPage = () => {
       const notificationsData = response.data.data || [];
       const userRole = user?.role || "passenger";
 
+      // Filter notifications based on user role
       const filteredData = notificationsData.filter(
         (n) =>
           n.isActive &&
           (n.targetAudience === "all" ||
-            n.targetAudience === userRole ||
-            n.targetAudience === "all_users")
+           n.targetAudience === "all_users" ||
+           n.targetAudience === userRole ||
+           (userRole === "admin" && n.createdBy === user.id) || // Admins see their own notifications
+           (n.specificUsers && n.specificUsers.includes(user.id))) // Notifications for specific users
       );
 
       const sortedData = filteredData.sort(
@@ -82,14 +85,35 @@ const NotificationsPage = () => {
     setFilteredNotifications(filtered);
   }, [searchTerm, filter, notifications]);
 
-  const markAsRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
-    );
+  const markAsRead = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.patch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/notifications/${id}/read`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
+      );
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
   };
 
-  const deleteNotification = (id) => {
-    setNotifications((prev) => prev.filter((n) => n._id !== id));
+  const deleteNotification = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/api/notifications/${id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setNotifications((prev) => prev.filter((n) => n._id !== id));
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+    }
   };
 
   const formatTime = (dateString) => {
@@ -224,12 +248,15 @@ const NotificationsPage = () => {
                             <Eye className="h-3 w-3" />
                           </button>
                         )}
-                        <button
-                          onClick={() => deleteNotification(n._id)}
-                          className="px-2 py-1 rounded bg-red-900 text-red-300 hover:bg-red-800 transition"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
+                        {/* Only allow admins or creators to delete notifications */}
+                        {(user.role === "admin" || n.createdBy === user.id) && (
+                          <button
+                            onClick={() => deleteNotification(n._id)}
+                            className="px-2 py-1 rounded bg-red-900 text-red-300 hover:bg-red-800 transition"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
