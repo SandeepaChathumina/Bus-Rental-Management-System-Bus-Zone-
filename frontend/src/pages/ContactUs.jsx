@@ -8,9 +8,16 @@ import {
   ArrowLeft,
   MessageCircle,
   User,
-  Map
+  Map,
+  Bus,
+  Facebook,
+  Instagram,
+  Twitter,
+  Linkedin
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+import aboutImage from "../assets/contactus.jpg";
 
 const ContactUs = () => {
   const navigate = useNavigate();
@@ -34,6 +41,121 @@ const ContactUs = () => {
     console.log('Form submitted:', formData);
     alert('Thank you for your message! We will get back to you soon.');
     setFormData({ name: '', email: '', subject: '', message: '' });
+  };
+
+  // Footer Component from AboutUs Page
+  const Footer = () => {
+    return (
+      <footer className="w-full px-6 lg:px-8 py-12 bg-slate-900">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-8">
+          <div className="space-y-5 col-span-2">
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-3 rounded-xl shadow-lg">
+                  <Bus className="h-8 w-8 text-white" />
+                </div>
+                <div className="absolute -top-1 -right-1 bg-cyan-400 w-4 h-4 rounded-full"></div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+                  BusZone+
+                </div>
+                <div className="text-xs text-slate-400">
+                  Premium Bus Rentals
+                </div>
+              </div>
+            </div>
+            <p className="text-neutral-400 text-base font-normal pr-10">
+              Experience luxury, reliability, and comfort with our premium bus rental services. 
+              We provide exceptional transportation solutions for all your needs.
+            </p>
+          </div>
+
+          <div className="space-y-5">
+            <h1 className="text-lg font-medium text-white">About Us</h1>
+            <ul className="space-y-3 text-neutral-400 text-base font-normal">
+              <li>
+                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>About Us</a>
+              </li>
+              <li>
+                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Contact Us</a>
+              </li>
+              <li>
+                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Privacy Policy</a>
+              </li>
+              <li>
+                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Terms and Conditions</a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="space-y-5">
+            <h1 className="text-lg font-medium text-white">Services</h1>
+            <ul className="space-y-3 text-neutral-400 text-base font-normal">
+              <li>
+                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Safety Guarantee</a>
+              </li>
+              <li>
+                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>FAQ & Support</a>
+              </li>
+              <li>
+                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Luxury Buses</a>
+              </li>
+              <li>
+                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Enough Facilities</a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="space-y-5">
+            <h1 className="text-lg font-medium text-white">Get In Touch</h1>
+            <div className="space-y-4">
+              <div className="flex gap-x-3">
+                <MapPin className='text-lg text-blue-400 mt-1 flex-shrink-0' />
+                <div className="flex flex-col">
+                  <p className="text-sm text-neutral-400">
+                    For Support & Reservations
+                  </p>
+                  <p className="text-sm text-neutral-300">
+                    123, Main Street, Anytown, USA
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-x-3">
+                <Phone className='text-lg text-blue-400 mt-1 flex-shrink-0' />
+                <div className="flex flex-col">
+                  <p className="text-sm text-neutral-400">
+                    Call Us Anytime
+                  </p>
+                  <p className="text-sm text-neutral-300">
+                    +94 704 222 777
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-x-3">
+                <Mail className='text-lg text-blue-400 mt-1 flex-shrink-0' />
+                <div className="flex flex-col">
+                  <p className="text-sm text-neutral-400">
+                    Email Us
+                  </p>
+                  <p className="text-sm text-neutral-300">
+                    info@buszoneplus.com
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-slate-700 text-center">
+          <p className="text-neutral-500 text-sm">
+            © {new Date().getFullYear()} BusZone+. All rights reserved.
+          </p>
+        </div>
+      </footer>
+    );
   };
 
   return (
@@ -65,15 +187,23 @@ const ContactUs = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <div className="py-16 bg-gradient-to-r from-slate-900 to-slate-800">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-          <h1 className="text-5xl font-bold mb-6">
-            Contact <span className="bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">Us</span>
-          </h1>
-          <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-            Get in touch with us for any inquiries, quotes, or assistance. Our team is ready to help you with your transportation needs.
-          </p>
+      {/* Hero Section with Darkened Image */}
+      <div className="relative py-0 overflow-hidden">
+        <div className="relative h-96 w-full">
+          <div className="absolute inset-0 bg-black/70 z-10"></div>
+          <img 
+            src={aboutImage} 
+            alt="Contact BusZone+" 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6">
+              Contact <span className="bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">Us</span>
+            </h1>
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+              Get in touch with us for any inquiries, quotes, or assistance. Our team is ready to help you with your transportation needs.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -136,17 +266,17 @@ const ContactUs = () => {
               <div className="mt-12">
                 <h3 className="text-xl font-semibold mb-4">Follow Us</h3>
                 <div className="flex space-x-4">
-                  <a href="#" className="bg-slate-800 hover:bg-blue-500 p-3 rounded-xl transition-colors">
-                    <span className="text-white">FB</span>
+                  <a href="#" className="bg-slate-800 hover:bg-blue-500 p-3 rounded-xl transition-colors flex items-center justify-center">
+                    <Facebook className="h-5 w-5 text-white" />
                   </a>
-                  <a href="#" className="bg-slate-800 hover:bg-blue-500 p-3 rounded-xl transition-colors">
-                    <span className="text-white">IG</span>
+                  <a href="#" className="bg-slate-800 hover:bg-pink-500 p-3 rounded-xl transition-colors flex items-center justify-center">
+                    <Instagram className="h-5 w-5 text-white" />
                   </a>
-                  <a href="#" className="bg-slate-800 hover:bg-blue-500 p-3 rounded-xl transition-colors">
-                    <span className="text-white">TW</span>
+                  <a href="#" className="bg-slate-800 hover:bg-blue-400 p-3 rounded-xl transition-colors flex items-center justify-center">
+                    <Twitter className="h-5 w-5 text-white" />
                   </a>
-                  <a href="#" className="bg-slate-800 hover:bg-blue-500 p-3 rounded-xl transition-colors">
-                    <span className="text-white">LI</span>
+                  <a href="#" className="bg-slate-800 hover:bg-blue-600 p-3 rounded-xl transition-colors flex items-center justify-center">
+                    <Linkedin className="h-5 w-5 text-white" />
                   </a>
                 </div>
               </div>
@@ -305,21 +435,8 @@ const ContactUs = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-slate-900 py-12 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center space-x-3 mb-6">
-            <div className="bg-gradient-to-r from-blue-400 to-cyan-500 p-2 rounded-lg">
-              <MapPin className="h-6 w-6 text-white" />
-            </div>
-            <div className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
-              BusZone+
-            </div>
-          </div>
-          <p className="text-slate-400 mb-6">Premium Transportation Solutions</p>
-          <p className="text-slate-500 text-sm">© {new Date().getFullYear()} BusZone+ (Laksiri Tours). All rights reserved.</p>
-        </div>
-      </footer>
+      {/* Footer from AboutUs Page */}
+      <Footer />
     </div>
   );
 };

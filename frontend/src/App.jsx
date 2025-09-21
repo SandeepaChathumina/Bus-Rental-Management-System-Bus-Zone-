@@ -23,6 +23,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import AdminNotificationPanel from './pages/AdminNotificationPanel';
 import SeasonalOffers from './components/SeasonalOffers';
 import Bus from './pages/bus/Bus';
+import Services from './pages/services';
 import BusZoneDashboard from './pages/staffdash';
 import MaintenanceManagement from './pages/MaintenanceManagement';
 import NotificationBell from './components/NotificationBell';
@@ -41,6 +42,7 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path='/services' element={<Services/>}/>
               <Route path="/about" element={<AboutUs />} />
               <Route path="/contact" element={<ContactUs />} />
               <Route path="/feedback" element={<Feedback />} />
