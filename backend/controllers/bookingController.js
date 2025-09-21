@@ -1,18 +1,74 @@
 import Booking from '../models/booking.js';
 import Bus from '../models/bus.js';
+import Schedule from '../models/schedule.js';
+import User from '../models/user.js';
 import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
+
+// Get available buses for a route and date
+export const getAvailableBuses = async (req, res) => {
+  try {
+    const { from, to, travelDate, passengers } = req.query;
+
+    if (!from || !to || !travelDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required parameters: from, to, travelDate'
+      });
+    }
+
+    // For now, return sample data since we don't have schedules implemented
+    const sampleBuses = [
+      {
+        _id: '1',
+        busType: 'Deluxe',
+        numberPlate: 'CAB-1234',
+        capacity: 45,
+        amenities: ['wifi', 'ac', 'refreshments'],
+        availableSeats: 35,
+        departureTime: '08:00',
+        arrivalTime: '12:00',
+        fare: 1200
+      },
+      {
+        _id: '2',
+        busType: 'Luxury',
+        numberPlate: 'CAB-5678',
+        capacity: 30,
+        amenities: ['wifi', 'ac', 'refreshments', 'entertainment'],
+        availableSeats: 25,
+        departureTime: '14:00',
+        arrivalTime: '18:00',
+        fare: 1800
+      }
+    ];
+
+    res.json({
+      success: true,
+      availableBuses: sampleBuses,
+      count: sampleBuses.length,
+      message: 'Buses found'
+    });
+
+  } catch (error) {
+    console.error('Get available buses error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error: ' + error.message 
+    });
+  }
+};
 
 // Create new booking
 export const createBooking = async (req, res) => {
   try {
-    const { busId, travelDate, seats, totalAmount } = req.body;
+    const { busId, travelDate, seats, totalAmount, numberOfPassengers, route } = req.body;
     const userId = req.user._id;
 
     // Validate required fields
-    if (!busId || !travelDate || !seats || !totalAmount) {
+    if (!busId || !travelDate || !seats || !totalAmount || !numberOfPassengers || !route) {
       return res.status(400).json({ 
-        message: 'Missing required fields: busId, travelDate, seats, totalAmount' 
+        message: 'Missing required fields: busId, travelDate, seats, totalAmount, numberOfPassengers, route' 
       });
     }
 
@@ -56,6 +112,8 @@ export const createBooking = async (req, res) => {
       travelDate,
       seats,
       totalAmount,
+      numberOfPassengers,
+      route,
       paymentStatus: 'Pending'
     });
 
@@ -209,5 +267,189 @@ export const cancelBooking = async (req, res) => {
     }
     
     res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// Update booking
+export const updateBooking = async (req, res) => {
+  try {
+    const { seats, specialRequests } = req.body;
+    const bookingId = req.params.id;
+
+    const booking = await Booking.findById(bookingId);
+    
+    if (!booking) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Booking not found' 
+      });
+    }
+
+    // Check authorization
+    if (req.user.role !== 'admin' && booking.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this booking'
+      });
+    }
+
+    if (seats) {
+      // Validate seats
+      if (seats.length !== booking.numberOfPassengers) {
+        return res.status(400).json({
+          success: false,
+          message: 'Number of seats must match number of passengers'
+        });
+      }
+
+      const seatNumbers = seats.map(seat => seat.seatNumber);
+      const uniqueSeats = new Set(seatNumbers);
+      if (uniqueSeats.size !== seatNumbers.length) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Duplicate seat numbers are not allowed' 
+        });
+      }
+
+      booking.seats = seats;
+    }
+
+    if (specialRequests !== undefined) {
+      booking.specialRequests = specialRequests;
+    }
+
+    const updatedBooking = await booking.save();
+
+    res.json({
+      success: true,
+      message: 'Booking updated successfully',
+      booking: updatedBooking
+    });
+  } catch (error) {
+    console.error('Update booking error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error: ' + error.message 
+    });
+  }
+};
+
+// Get booking statistics
+export const getBookingStats = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
+    // Sample statistics data
+    const stats = {
+      totalBookings: 150,
+      totalRevenue: 125000,
+      confirmedBookings: 120,
+      cancelledBookings: 15,
+      pendingBookings: 15
+    };
+
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('Get booking stats error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error: ' + error.message 
+    });
+  }
+};
+
+// Get bookings by date range
+export const getBookingsByDateRange = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Start date and end date are required'
+      });
+    }
+
+    const query = {
+      travelDate: {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      }
+    };
+
+    const bookings = await Booking.find(query)
+      .populate('user', 'firstName lastName email')
+      .populate('bus', 'busType numberPlate')
+      .sort({ travelDate: 1 });
+
+    res.json({
+      success: true,
+      bookings,
+      total: bookings.length
+    });
+  } catch (error) {
+    console.error('Get bookings by date range error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error: ' + error.message 
+    });
+  }
+};
+
+// Verify booking by QR code
+export const verifyBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+
+    const booking = await Booking.findOne({ bookingId })
+      .populate('user', 'firstName lastName')
+      .populate('bus', 'numberPlate busType');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    if (booking.bookingStatus !== 'Confirmed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking is not confirmed'
+      });
+    }
+
+    res.json({
+      success: true,
+      booking: {
+        bookingId: booking.bookingId,
+        passenger: booking.seats[0]?.passengerName,
+        busNumber: booking.bus.numberPlate,
+        seats: booking.seats.map(seat => seat.seatNumber),
+        travelDate: booking.travelDate
+      },
+      message: 'Booking verified successfully'
+    });
+  } catch (error) {
+    console.error('Verify booking error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error: ' + error.message 
+    });
   }
 };

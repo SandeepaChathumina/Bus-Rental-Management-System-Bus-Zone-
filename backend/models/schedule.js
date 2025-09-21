@@ -1,46 +1,55 @@
 import mongoose from 'mongoose';
 
 const scheduleSchema = new mongoose.Schema({
-  bookingId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Booking',
-    required: true
-  },
-  busId: {
+  bus: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Bus',
     required: true
   },
-  driverId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+  route: {
+    from: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    to: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    distance: Number,
+    estimatedDuration: String
   },
-  startLocation: {
+  departureTime: {
     type: String,
     required: true
   },
-  destination: {
+  arrivalTime: {
     type: String,
     required: true
   },
-  scheduledStartTime: {
-    type: Date,
-    required: true
+  fare: {
+    type: Number,
+    required: true,
+    min: 0
   },
-  scheduledEndTime: {
-    type: Date,
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ['Scheduled', 'In Progress', 'Completed', 'Cancelled'],
-    default: 'Scheduled'
+  monday: { type: Boolean, default: false },
+  tuesday: { type: Boolean, default: false },
+  wednesday: { type: Boolean, default: false },
+  thursday: { type: Boolean, default: false },
+  friday: { type: Boolean, default: false },
+  saturday: { type: Boolean, default: false },
+  sunday: { type: Boolean, default: false },
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true
 });
 
-const Schedule = mongoose.model('Schedule', scheduleSchema);
+// Index for better query performance
+scheduleSchema.index({ bus: 1 });
+scheduleSchema.index({ 'route.from': 1, 'route.to': 1 });
 
-export default Schedule;
+export default mongoose.model('Schedule', scheduleSchema);
