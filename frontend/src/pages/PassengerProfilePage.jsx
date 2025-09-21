@@ -14,7 +14,10 @@ import {
   X,
   Home,
   Calendar,
-  Loader
+  Loader,
+  Eye,
+  EyeOff,
+  Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,9 +25,21 @@ const PassengerProfilePage = () => {
   const { user: authUser, logout } = useAuth();
   const [profileData, setProfileData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
   const navigate = useNavigate();
+
+  // Password state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -51,6 +66,11 @@ const PassengerProfilePage = () => {
           logout();
           navigate('/login');
         }
+        if (error.response?.status === 404) {
+          toast.error('User not found');
+          logout();
+          navigate('/login');
+        }
       } finally {
         setLoading(false);
       }
@@ -62,6 +82,14 @@ const PassengerProfilePage = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProfileData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
       ...prev,
       [name]: value
     }));
@@ -90,6 +118,60 @@ const PassengerProfilePage = () => {
       toast.error('Failed to update profile');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePasswordUpdate = async () => {
+    // Validate passwords
+    if (!passwordData.currentPassword) {
+      toast.error('Please enter your current password');
+      return;
+    }
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    
+    if (passwordData.newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters long');
+      return;
+    }
+    
+    setUpdatingPassword(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `${import.meta.env.VITE_BACKEND_URL}/api/users/update-password`,
+        {
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      
+      toast.success('Password updated successfully');
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setShowPasswordSection(false);
+    } catch (error) {
+      console.error('Error updating password:', error);
+      if (error.response?.status === 401) {
+        toast.error('Current password is incorrect');
+      } else if (error.response?.status === 500) {
+        toast.error('Server error. Please try again later.');
+      } else {
+        toast.error('Failed to update password');
+      }
+    } finally {
+      setUpdatingPassword(false);
     }
   };
 
@@ -222,7 +304,7 @@ const PassengerProfilePage = () => {
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-gray-800"
                   />
                 ) : (
-                  <p className="px-4 py-3 bg-gray-100 rounded-xl text-gray-800">{profileData.phone || 'Not provided'}</p>
+                    <p className="px-4 py-3 bg-gray-100 rounded-xl text-gray-800">{profileData.phone || 'Not provided'}</p>
                 )}
               </div>
 
@@ -253,6 +335,122 @@ const PassengerProfilePage = () => {
                   {profileData.createdAt ? new Date(profileData.createdAt).toLocaleDateString() : 'N/A'}
                 </p>
               </div>
+
+              {/* Password Update Section */}
+              {showPasswordSection ? (
+                <div className="pt-6 border-t border-gray-200">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                    <Lock className="mr-2 text-blue-500" size={20} />
+                    Change Password
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Current Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showCurrentPassword ? "text" : "password"}
+                          name="currentPassword"
+                          value={passwordData.currentPassword}
+                          onChange={handlePasswordChange}
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-gray-800 pr-10"
+                          placeholder="Enter your current password"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        >
+                          {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        New Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showNewPassword ? "text" : "password"}
+                          name="newPassword"
+                          value={passwordData.newPassword}
+                          onChange={handlePasswordChange}
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-gray-800 pr-10"
+                          placeholder="Enter your new password"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                        >
+                          {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Confirm New Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? "text" : "password"}
+                          name="confirmPassword"
+                          value={passwordData.confirmPassword}
+                          onChange={handlePasswordChange}
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-gray-800 pr-10"
+                          placeholder="Confirm your new password"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex space-x-4 pt-2">
+                      <button
+                        onClick={handlePasswordUpdate}
+                        disabled={updatingPassword}
+                        className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      >
+                        <Save className="mr-2" size={16} />
+                        {updatingPassword ? 'Updating...' : 'Update Password'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowPasswordSection(false);
+                          setPasswordData({
+                            currentPassword: '',
+                            newPassword: '',
+                            confirmPassword: ''
+                          });
+                        }}
+                        className="flex items-center px-6 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors"
+                      >
+                        <X className="mr-2" size={16} />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="pt-6 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowPasswordSection(true)}
+                    className="flex items-center px-6 py-3 bg-amber-600 text-white rounded-xl font-semibold hover:bg-amber-700 transition-colors"
+                  >
+                    <Lock className="mr-2" size={16} />
+                    Change Password
+                  </button>
+                </div>
+              )}
 
               <div className="flex justify-center space-x-4 pt-6">
                 {isEditing ? (

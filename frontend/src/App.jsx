@@ -2,10 +2,12 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
+
+// Pages / Components
 import HomePage from './pages/HomePage';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/loginPage';
-import PassengerProfilePage from './pages/PassengerProfilePage'; // Correct import name
+import PassengerProfilePage from './pages/PassengerProfilePage';
 import AdminPage from './pages/AdminPage';
 import AttendanceManagement from './components/AttendanceManagement';
 import Booking from './pages/bookingContainer/Booking';
@@ -22,6 +24,12 @@ import AdminNotificationPanel from './pages/AdminNotificationPanel';
 import SeasonalOffers from './components/SeasonalOffers';
 import Bus from './pages/bus/Bus';
 import Services from './pages/services';
+import BusZoneDashboard from './pages/staffdash';
+import MaintenanceManagement from './pages/MaintenanceManagement';
+import NotificationBell from './components/NotificationBell';
+
+// ✅ Import ProtectedRoute
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -30,28 +38,115 @@ function App() {
         <div className="min-h-screen bg-gray-50">
           <main>
             <Routes>
+              {/* Public routes */}
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path='/services' element={<Services/>}/>
               <Route path="/about" element={<AboutUs />} />
               <Route path="/contact" element={<ContactUs />} />
-              <Route path="/profile" element={<PassengerProfilePage />} /> {/* Correct component name */}
-              <Route path="/booking" element={<Booking />} />
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/attendance" element={<AttendanceManagement />} />
-              <Route path="/home" element={<HomePage />} />
-              <Route path="/bus" element={<Bus/>} />
-              <Route path="/bus/bus-details" element={<Details/>} />
-              <Route path="/bus/bus-details/checkout" element={<Checkout/>} />
-              <Route path="/buses" element={<BusManagement/>} />
-              <Route path="/admin-dashboard" element={<AdminDashboard/>} />
               <Route path="/feedback" element={<Feedback />} />
-              <Route path="/notifications" element={<NotificationsPage />} />   
-              <Route path='/offers' element={<SeasonalOffers/>}/>
-              <Route path='/admin-notifications' element={<AdminNotificationPanel/>}/>
-              
-              <Route path="/driver-dashboard" element={<DriverDashboard/>} />
+              <Route path="/offers" element={<SeasonalOffers />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/bus" element={<Bus />} />
+              <Route path="/bus/bus-details" element={<Details />} />
+              <Route path="/bus/bus-details/checkout" element={<Checkout />} />
+
+              {/* Passenger only (plus admin override) */}
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute allowedRoles={['passenger', 'admin']}>
+                    <PassengerProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/booking"
+                element={
+                  <ProtectedRoute allowedRoles={['passenger', 'admin']}>
+                    <Booking />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Driver only (plus admin override) */}
+              <Route
+                path="/driver-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['driver', 'admin']}>
+                    <DriverDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Staff only (plus admin override) */}
+              <Route
+                path="/staffdash"
+                element={
+                  <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                    <BusZoneDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Admin only */}
+              <Route
+                path="/admin-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/notifications"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminNotificationPanel />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/buses"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <BusManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/attendance"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AttendanceManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/maintain"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <MaintenanceManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notification-bell"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <NotificationBell />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </main>
           <Toaster position="top-right" />
