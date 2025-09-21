@@ -537,6 +537,18 @@ const BookingNavbar = () => {
     navigate('/login');
   };
 
+  const handleNotificationsClick = () => {
+    navigate('/notifications');
+  };
+
+  const handleMyBookingsClick = () => {
+    navigate('/my-bookings');
+  };
+
+  const handleFeedbackClick = () => {
+    navigate('/feedback');
+  };
+
   const toggleProfileDropdown = () => {
     setShowProfileDropdown(!showProfileDropdown);
   };
@@ -575,6 +587,22 @@ const BookingNavbar = () => {
 
       {/* Right side section */}
       <div className="flex items-center space-x-6 ml-auto">
+        {/* My Bookings Button */}
+        <button 
+          onClick={handleMyBookingsClick}
+          className="hidden md:flex items-center px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition-all duration-300"
+        >
+          <span className="text-sm font-medium">My Bookings</span>
+        </button>
+
+        {/* Feedback Button */}
+        <button 
+          onClick={handleFeedbackClick}
+          className="hidden md:flex items-center px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition-all duration-300"
+        >
+          <span className="text-sm font-medium">Feedback</span>
+        </button>
+
         {/* Notification Bell */}
         <NotificationBell />
         
