@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import UserManagement from './UserManagement';
-import BusManagement from './BusManagement'; // Add this import
+import BusManagement from './BusManagement';
 import AttendanceManagement from '../components/AttendanceManagement'; 
 import AdminNotificationPanel from './AdminNotificationPanel';
 import {
@@ -55,18 +55,15 @@ const AdminDashboard = () => {
   const [error, setError] = useState('');
 
   const [dashboardStats, setDashboardStats] = useState({
-
-  // Refs for textareas to manage cursor position
-  const textareaRefs = useRef({});
-
-  const [dashboardStats] = useState({
-
     totalBuses: 48,
     activeBookings: 156,
     maintenanceRequests: 12,
     revenue: 1256000,
     occupancyRate: 78
   });
+
+  // Refs for textareas to manage cursor position
+  const textareaRefs = useRef({});
 
   // Backend URL with fallback
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
@@ -154,19 +151,11 @@ const AdminDashboard = () => {
               type: 'complaint',
               userId: { 
                 _id: '68b5240faf8b3f2810a46257',
-
-                firstName: 'Unknown', 
-                lastName: 'User' 
-              },
-              user_id: '68b5240faf8b3f2810a46257',
-              send_date: new Date('2025-09-20T01:58:00').toISOString(),
-
                 firstName: 'John', 
                 lastName: 'Doe' 
               },
               user_id: '68b5240faf8b3f2810a46257',
               send_date: new Date('2025-09-21T20:50:57').toISOString(),
-
               status: 'replied',
               admin_reply: 'Thank you for bringing this to our attention. We have scheduled the bus for immediate safety inspection and maintenance.',
               reply_date: new Date('2025-09-21T21:21:00').toISOString(),
