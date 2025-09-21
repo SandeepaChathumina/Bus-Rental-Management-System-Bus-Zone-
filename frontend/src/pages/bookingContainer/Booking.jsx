@@ -1,6 +1,7 @@
 // src/pages/bookingContainer/Booking.jsx - UPDATED
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import BookingSearch from './BookingSearch';
 import { 
   Phone, 
   Mail, 
@@ -750,78 +751,8 @@ const BookingHero = () => {
 };
 
 // Search Component
-const BookingSearch = () => {
-  return (
-    <div className="bg-gradient-to-r from-slate-900 to-slate-800 py-12">
-      <div className="max-w-6xl mx-auto px-6 lg:px-8">
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-3xl p-8 border border-slate-700/50 shadow-xl">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Find Your Perfect Ride</h2>
-            <p className="text-slate-400">Search and book luxury buses with ease</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="space-y-2">
-              <label className="text-slate-300 text-sm font-medium">From</label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                <select className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">Select Location</option>
-                  <option value="colombo">Colombo</option>
-                  <option value="kandy">Kandy</option>
-                  <option value="galle">Galle</option>
-                  <option value="jaffna">Jaffna</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-slate-300 text-sm font-medium">To</label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                <select className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">Select Location</option>
-                  <option value="colombo">Colombo</option>
-                  <option value="kandy">Kandy</option>
-                  <option value="galle">Galle</option>
-                  <option value="jaffna">Jaffna</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-slate-300 text-sm font-medium">Date</label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                <input 
-                  type="date" 
-                  className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-slate-300 text-sm font-medium">Time</label>
-              <div className="relative">
-                <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                <input 
-                  type="time" 
-                  className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                />
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-8">
-            <button className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 text-white py-4 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center">
-              Check Availability
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+// Remove the entire BookingSearch component from this file and use:
+<BookingSearch />
 
 // Main Booking Component
 const Booking = () => {
