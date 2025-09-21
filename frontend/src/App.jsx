@@ -21,6 +21,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import AdminNotificationPanel from './pages/AdminNotificationPanel';
 import SeasonalOffers from './components/SeasonalOffers';
 import Bus from './pages/bus/Bus';
+import NotificationBell   from './components/NotificationBell';
 
 function App() {
   return (
@@ -47,9 +48,9 @@ function App() {
               <Route path="/feedback" element={<Feedback />} />
               <Route path="/notifications" element={<NotificationsPage />} />   
               <Route path='/offers' element={<SeasonalOffers/>}/>
-              <Route path='/admin-notifications' element={<AdminNotificationPanel/>}/>
-              
+             <Route path="/admin/notifications" element={<AdminNotificationPanel />} />
               <Route path="/driver-dashboard" element={<DriverDashboard/>} />
+              <Route path='/notification-bell' element={<NotificationBell/>}/>
             </Routes>
           </main>
           <Toaster position="top-right" />
