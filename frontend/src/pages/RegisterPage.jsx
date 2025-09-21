@@ -336,7 +336,7 @@ const RegisterPage = () => {
   };
 
   const handleHomeClick = () => {
-    navigate('/home');
+    navigate('/');
   };
 
   // Helper function to determine border color

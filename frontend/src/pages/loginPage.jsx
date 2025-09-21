@@ -65,7 +65,7 @@ const handleSubmit = async (e) => {
 };
 
   const handleHomeClick = () => {
-    navigate('/home');
+    navigate('/');
   };
 
   return (

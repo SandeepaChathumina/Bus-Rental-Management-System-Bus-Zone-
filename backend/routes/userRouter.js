@@ -16,6 +16,7 @@ import { protect, admin } from '../middleware/authMiddleware.js';
 import User from '../models/user.js';
 import DriverProfile from '../models/driverProfile.js';
 import StaffProfile from '../models/staffProfile.js';
+import bcrypt from 'bcryptjs';
 
 const router = express.Router();
 
@@ -39,6 +40,32 @@ router.get('/me', protect, async (req, res) => {
     res.json(user);
   } catch (err) {
     console.error('GET /me error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Add this route to your users.js file
+router.put('/update-password', protect, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Verify current password
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+    
+    // Update password using the User model's method
+    await user.updatePassword(newPassword);
+    
+    res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error updating password:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
