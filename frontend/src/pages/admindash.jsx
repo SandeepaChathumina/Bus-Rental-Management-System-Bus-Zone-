@@ -4,8 +4,9 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import UserManagement from './UserManagement';
+import BusManagement from './BusManagement'; // Add this import
 import AttendanceManagement from '../components/AttendanceManagement'; 
-import AdminNotificationPanel from './AdminNotificationPanel'; // Import the notification panel
+import AdminNotificationPanel from './AdminNotificationPanel';
 import {
   Users,
   Bus,
@@ -57,7 +58,7 @@ const AdminDashboard = () => {
   const [replyingTo, setReplyingTo] = useState(null);
   const [error, setError] = useState('');
 
-  const [dashboardStats] = useState({
+  const [dashboardStats, setDashboardStats] = useState({
     totalBuses: 48,
     activeBookings: 156,
     maintenanceRequests: 12,
@@ -75,29 +76,52 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     let mounted = true;
-    const fetchTotalUsers = async () => {
+    
+    const fetchDashboardData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${BACKEND_URL}/api/users`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        
+        // Fetch users
+        const usersResponse = await fetch(`${BACKEND_URL}/api/users`, {
+          headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch users');
+        if (!usersResponse.ok) throw new Error('Failed to fetch users');
+        const usersData = await usersResponse.json();
+        
+        // Fetch bus stats
+        const busStatsResponse = await fetch(`${BACKEND_URL}/api/buses/stats`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        let busStats = { totalBuses: 0, availableBuses: 0, inServiceBuses: 0, maintenanceBuses: 0 };
+        
+        if (busStatsResponse.ok) {
+          busStats = await busStatsResponse.json();
         }
         
-        const data = await response.json();
         if (!mounted) return;
-        const arr = data || [];
+        
+        const arr = usersData || [];
         setTotalUsers(Array.isArray(arr) ? arr.length : (arr.count || 0));
+        
+        // Update dashboard stats with real bus data
+        setDashboardStats(prev => ({
+          ...prev,
+          totalBuses: busStats.totalBuses,
+          maintenanceRequests: busStats.maintenanceBuses
+        }));
+        
       } catch (err) {
-        console.error('Failed to fetch total users', err);
-        if (mounted) setTotalUsers(0);
+        console.error('Failed to fetch dashboard data', err);
+        if (mounted) {
+          setTotalUsers(0);
+          // Keep the placeholder values if fetch fails
+        }
       }
     };
-    fetchTotalUsers();
+    
+    fetchDashboardData();
     return () => { mounted = false; };
   }, []);
 
@@ -127,11 +151,11 @@ const AdminDashboard = () => {
               description: 'bus is uncomfortable',
               type: 'complaint',
               userId: { 
-                _id: '68b5240faf8b3f2810a46257', // Specific user ID from your screenshot
+                _id: '68b5240faf8b3f2810a46257',
                 firstName: 'Unknown', 
                 lastName: 'User' 
               },
-              user_id: '68b5240faf8b3f2810a46257', // Add user_id field to match your screenshot
+              user_id: '68b5240faf8b3f2810a46257',
               send_date: new Date('2025-09-20T01:58:00').toISOString(),
               status: 'replied',
               admin_reply: 'I fixed it',
@@ -443,7 +467,10 @@ const AdminDashboard = () => {
               <Plus className="w-6 h-6 text-blue-400 mb-2" />
               <span className="text-sm font-medium text-blue-300">Add User</span>
             </button>
-            <button className="flex flex-col items-center justify-center p-4 bg-green-900/20 rounded-lg">
+            <button
+              className="flex flex-col items-center justify-center p-4 bg-green-900/20 rounded-lg"
+              onClick={() => setActiveTab('buses')}
+            >
               <Plus className="w-6 h-6 text-green-400 mb-2" />
               <span className="text-sm font-medium text-green-300">Add Bus</span>
             </button>
@@ -684,9 +711,9 @@ const AdminDashboard = () => {
       case 'users':
         return <UserManagement />;
       case 'notifications':
-        return <AdminNotificationPanel />; // Render the notification panel directly
+        return <AdminNotificationPanel />;
       case 'buses':
-        return <div className="text-white p-6">Bus Management (placeholder)</div>;
+        return <BusManagement />;
       case 'bookings':
         return <div className="text-white p-6">Bookings (placeholder)</div>;
       case 'maintenance':

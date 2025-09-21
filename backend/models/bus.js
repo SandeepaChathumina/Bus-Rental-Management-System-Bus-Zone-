@@ -47,17 +47,19 @@ const busSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Auto-increment busId - FIXED
+// Auto-increment busId
 busSchema.pre('save', async function(next) {
   if (this.isNew && !this.busId) {
     try {
       const lastBus = await this.constructor.findOne().sort({ busId: -1 });
       this.busId = lastBus ? lastBus.busId + 1 : 1;
+      next();
     } catch (error) {
-      return next(error);
+      next(error);
     }
+  } else {
+    next();
   }
-  next();
 });
 
 const Bus = mongoose.model('Bus', busSchema);
