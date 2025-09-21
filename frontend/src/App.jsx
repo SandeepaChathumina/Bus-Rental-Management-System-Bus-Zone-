@@ -21,6 +21,8 @@ import NotificationsPage from './pages/NotificationsPage';
 import AdminNotificationPanel from './pages/AdminNotificationPanel';
 import SeasonalOffers from './components/SeasonalOffers';
 import Bus from './pages/bus/Bus';
+import BusZoneDashboard from './pages/staffdash';
+import MaintenanceManagement from './pages/MaintenanceManagement';
 import NotificationBell   from './components/NotificationBell';
 
 function App() {
@@ -50,6 +52,9 @@ function App() {
               <Route path='/offers' element={<SeasonalOffers/>}/>
              <Route path="/admin/notifications" element={<AdminNotificationPanel />} />
               <Route path="/driver-dashboard" element={<DriverDashboard/>} />
+              <Route path="/staffdash" element={<BusZoneDashboard/>} />
+               <Route path="/maintain" element={<MaintenanceManagement/>} />
+
               <Route path='/notification-bell' element={<NotificationBell/>}/>
             </Routes>
           </main>
