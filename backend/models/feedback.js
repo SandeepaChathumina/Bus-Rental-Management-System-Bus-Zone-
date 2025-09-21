@@ -6,6 +6,11 @@ const feedbackSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  booking_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Booking',
+    default: null
+  },
   type: {
     type: String,
     enum: ['feedback', 'complaint'],
@@ -18,6 +23,12 @@ const feedbackSchema = new mongoose.Schema({
   description: {
     type: String,
     required: true
+  },
+  rating: {
+    type: Number,
+    min: 1,
+    max: 5,
+    default: null // Only for feedback type
   },
   status: {
     type: String,
@@ -48,6 +59,9 @@ const feedbackSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Add index for better performance on public testimonials query
+feedbackSchema.index({ type: 1, status: 1, rating: -1, send_date: -1 });
 
 const Feedback = mongoose.model('Feedback', feedbackSchema);
 export default Feedback;

@@ -1,6 +1,5 @@
 // src/pages/AdminDashboard.jsx
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import UserManagement from './UserManagement';
@@ -34,9 +33,6 @@ import {
   XCircle,
   Edit,
   Trash2,
-  Filter,
-  Download,
-  Save,
   User
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -53,9 +49,12 @@ const AdminDashboard = () => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [filteredFeedbacks, setFilteredFeedbacks] = useState([]);
   const [filterType, setFilterType] = useState('all');
-  const [replyText, setReplyText] = useState('');
+  const [replyTexts, setReplyTexts] = useState({});
   const [replyingTo, setReplyingTo] = useState(null);
   const [error, setError] = useState('');
+
+  // Refs for textareas to manage cursor position
+  const textareaRefs = useRef({});
 
   const [dashboardStats] = useState({
     totalBuses: 48,
@@ -123,37 +122,37 @@ const AdminDashboard = () => {
           const mockFeedbacks = [
             {
               _id: '1',
-              title: 'Bad bus',
-              description: 'bus is uncomfortable',
+              title: 'AD3412 Bus is not safe',
+              description: 'Bus has serious safety concerns and needs immediate attention',
               type: 'complaint',
               userId: { 
-                _id: '68b5240faf8b3f2810a46257', // Specific user ID from your screenshot
-                firstName: 'Unknown', 
-                lastName: 'User' 
+                _id: '68b5240faf8b3f2810a46257',
+                firstName: 'John', 
+                lastName: 'Doe' 
               },
-              user_id: '68b5240faf8b3f2810a46257', // Add user_id field to match your screenshot
-              send_date: new Date('2025-09-20T01:58:00').toISOString(),
+              user_id: '68b5240faf8b3f2810a46257',
+              send_date: new Date('2025-09-21T20:50:57').toISOString(),
               status: 'replied',
-              admin_reply: 'I fixed it',
-              reply_date: new Date('2025-09-20T02:01:00').toISOString(),
-              booking_reference: 'BZ-2025-001'
+              admin_reply: 'Thank you for bringing this to our attention. We have scheduled the bus for immediate safety inspection and maintenance.',
+              reply_date: new Date('2025-09-21T21:21:00').toISOString(),
+              booking_reference: 'AD3412'
             },
             {
               _id: '2',
-              title: 'Good Driver',
-              description: '345A bus driver mr.nimal driving is very safty',
+              title: 'Good Sheets',
+              description: '247BC Bus have good sheets and it\'s very comfortable',
               type: 'feedback',
               userId: { 
-                _id: '68b5240faf8b3f2810a46257',
-                firstName: 'Unknown', 
-                lastName: 'User' 
+                _id: 'user_hgpwcldsy',
+                firstName: 'Jane', 
+                lastName: 'Smith' 
               },
-              user_id: '68b5240faf8b3f2810a46257',
-              send_date: new Date('2025-09-21T00:00:00').toISOString(),
+              user_id: 'user_hgpwcldsy',
+              send_date: new Date('2025-09-20T02:42:00').toISOString(),
               status: 'pending',
               admin_reply: null,
               reply_date: null,
-              booking_reference: 'BZ-2025-003'
+              booking_reference: 'BZ-2025-002'
             }
           ];
           setFeedbacks(mockFeedbacks);
@@ -173,7 +172,6 @@ const AdminDashboard = () => {
           firstName: 'Unknown',
           lastName: 'User'
         },
-        // Ensure user_id field exists - FIXED: Prioritize user_id from backend
         user_id: feedback.user_id || (feedback.userId ? feedback.userId._id : null)
       }));
       
@@ -186,37 +184,37 @@ const AdminDashboard = () => {
       const mockFeedbacks = [
         {
           _id: '1',
-          title: 'Bad bus',
-          description: 'bus is uncomfortable',
+          title: 'AD3412 Bus is not safe',
+          description: 'Bus has serious safety concerns and needs immediate attention',
           type: 'complaint',
           userId: { 
             _id: '68b5240faf8b3f2810a46257',
-            firstName: 'Unknown', 
-            lastName: 'User' 
+            firstName: 'John', 
+            lastName: 'Doe' 
           },
           user_id: '68b5240faf8b3f2810a46257',
-          send_date: new Date('2025-09-20T01:58:00').toISOString(),
+          send_date: new Date('2025-09-21T20:50:57').toISOString(),
           status: 'replied',
-          admin_reply: 'I fixed it',
-          reply_date: new Date('2025-09-20T02:01:00').toISOString(),
-          booking_reference: 'BZ-2025-001'
+          admin_reply: 'Thank you for bringing this to our attention. We have scheduled the bus for immediate safety inspection and maintenance.',
+          reply_date: new Date('2025-09-21T21:21:00').toISOString(),
+          booking_reference: 'AD3412'
         },
         {
           _id: '2',
-          title: 'Good Driver',
-          description: '345A bus driver mr.nimal driving is very safty',
+          title: 'Good Sheets',
+          description: '247BC Bus have good sheets and it\'s very comfortable',
           type: 'feedback',
           userId: { 
-            _id: '68b5240faf8b3f2810a46257',
-            firstName: 'Unknown', 
-            lastName: 'User' 
+            _id: 'user_hgpwcldsy',
+            firstName: 'Jane', 
+            lastName: 'Smith' 
           },
-          user_id: '68b5240faf8b3f2810a46257',
-          send_date: new Date('2025-09-21T00:00:00').toISOString(),
+          user_id: 'user_hgpwcldsy',
+          send_date: new Date('2025-09-20T02:42:00').toISOString(),
           status: 'pending',
           admin_reply: null,
           reply_date: null,
-          booking_reference: 'BZ-2025-003'
+          booking_reference: 'BZ-2025-002'
         }
       ];
       setFeedbacks(mockFeedbacks);
@@ -238,6 +236,8 @@ const AdminDashboard = () => {
   }, [filterType, feedbacks]);
 
   const handleReply = async (feedbackId) => {
+    const replyText = replyTexts[feedbackId] || '';
+    
     if (!replyText.trim()) {
       setError('Please enter a response before sending.');
       return;
@@ -263,20 +263,21 @@ const AdminDashboard = () => {
             ? { ...f, admin_reply: replyText, reply_date: new Date().toISOString(), status: 'replied' } 
             : f
         ));
-        setReplyText('');
+        setReplyTexts(prev => ({ ...prev, [feedbackId]: '' }));
         setReplyingTo(null);
         setError('Reply sent successfully (demo mode)');
+        toast.success('Reply sent successfully!');
         return;
       }
 
       // Update the feedback with the new reply
-        setFeedbacks(prev => prev.map(f => 
-          f._id === feedbackId 
-            ? { ...f, admin_reply: replyText, reply_date: new Date().toISOString(), status: 'replied' } 
-            : f
-        ));
+      setFeedbacks(prev => prev.map(f => 
+        f._id === feedbackId 
+          ? { ...f, admin_reply: replyText, reply_date: new Date().toISOString(), status: 'replied' } 
+          : f
+      ));
       
-      setReplyText('');
+      setReplyTexts(prev => ({ ...prev, [feedbackId]: '' }));
       setReplyingTo(null);
       setError('');
       
@@ -289,16 +290,16 @@ const AdminDashboard = () => {
           ? { ...f, admin_reply: replyText, reply_date: new Date().toISOString(), status: 'replied' } 
           : f
       ));
-      setReplyText('');
+      setReplyTexts(prev => ({ ...prev, [feedbackId]: '' }));
       setReplyingTo(null);
       setError('Reply sent successfully (demo mode - backend offline)');
+      toast.success('Reply sent successfully!');
     }
   };
 
   const toggleResolve = async (feedbackId, currentStatus) => {
     try {
       const token = localStorage.getItem('token');
-      // FIXED: Use correct status values - 'closed' and 'replied'
       const newStatus = currentStatus === 'closed' ? 'replied' : 'closed';
       
       const response = await fetch(`${BACKEND_URL}/api/feedbacks/${feedbackId}`, {
@@ -313,7 +314,6 @@ const AdminDashboard = () => {
       });
 
       if (!response.ok) {
-        // Simulate success for demo purposes
         setFeedbacks(prev => prev.map(f => 
           f._id === feedbackId ? { ...f, status: newStatus } : f
         ));
@@ -321,7 +321,6 @@ const AdminDashboard = () => {
         return;
       }
 
-      // Update the local state with the new status
       setFeedbacks(prev => prev.map(f => 
         f._id === feedbackId ? { ...f, status: newStatus } : f
       ));
@@ -329,7 +328,7 @@ const AdminDashboard = () => {
       setError('');
     } catch (err) {
       console.error('Failed to update feedback status', err);
-      // Simulate success for demo purposes
+      const newStatus = currentStatus === 'closed' ? 'replied' : 'closed';
       setFeedbacks(prev => prev.map(f => 
         f._id === feedbackId ? { ...f, status: newStatus } : f
       ));
@@ -337,7 +336,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Delete feedback function
   const handleDeleteFeedback = async (feedbackId) => {
     if (!window.confirm('Are you sure you want to delete this feedback/complaint? This action cannot be undone.')) {
       return;
@@ -353,7 +351,6 @@ const AdminDashboard = () => {
       });
 
       if (!response.ok) {
-        // Simulate success for demo purposes
         setFeedbacks(prev => prev.filter(f => f._id !== feedbackId));
         setFilteredFeedbacks(prev => prev.filter(f => f._id !== feedbackId));
         setError('Feedback deleted successfully (demo mode)');
@@ -361,7 +358,6 @@ const AdminDashboard = () => {
         return;
       }
 
-      // Remove the feedback from the local state
       setFeedbacks(prev => prev.filter(f => f._id !== feedbackId));
       setFilteredFeedbacks(prev => prev.filter(f => f._id !== feedbackId));
       setError('');
@@ -369,7 +365,6 @@ const AdminDashboard = () => {
       toast.success('Feedback deleted successfully');
     } catch (err) {
       console.error('Failed to delete feedback', err);
-      // Simulate success for demo purposes
       setFeedbacks(prev => prev.filter(f => f._id !== feedbackId));
       setFilteredFeedbacks(prev => prev.filter(f => f._id !== feedbackId));
       setError('Feedback deleted successfully (demo mode - backend offline)');
@@ -430,7 +425,6 @@ const AdminDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Quick Actions */}
         <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-white">Quick Actions</h3>
@@ -455,10 +449,9 @@ const AdminDashboard = () => {
               <BarChart3 className="w-6 h-6 text-orange-400 mb-2" />
               <span className="text-sm font-medium text-orange-300">Reports</span>
             </button>
-        </div>
+          </div>
         </div>
 
-        {/* Recent Activity */}
         <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
           <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
           <p className="text-slate-400">Latest system events will show here (plug notifications as needed).</p>
@@ -473,9 +466,47 @@ const AdminDashboard = () => {
   );
 
   const FeedbackCard = ({ feedback }) => {
-    // FIXED: Get user ID from the correct source
-    const userId = feedback.user_id || (feedback.userId ? feedback.userId._id : 'Unknown');
-    
+    const handleTextChange = (e) => {
+      const feedbackId = feedback._id;
+      const newValue = e.target.value;
+      const cursorPosition = e.target.selectionStart;
+      
+      // Update the text without losing cursor position
+      setReplyTexts(prev => ({ ...prev, [feedbackId]: newValue }));
+      
+      // Restore cursor position after React re-render
+      setTimeout(() => {
+        const textarea = textareaRefs.current[feedbackId];
+        if (textarea) {
+          textarea.setSelectionRange(cursorPosition, cursorPosition);
+        }
+      }, 0);
+    };
+
+    const handleKeyDown = (e) => {
+      // Prevent any unwanted behavior on key presses
+      e.stopPropagation();
+    };
+
+    const handleSendReply = () => {
+      handleReply(feedback._id);
+    };
+
+    const formatDate = (dateString) => {
+      if (!dateString) return 'Unknown Date';
+      try {
+        return new Date(dateString).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (error) {
+        return 'Invalid Date';
+      }
+    };
+
     return (
       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
         <div className="flex items-start justify-between">
@@ -487,24 +518,17 @@ const AdminDashboard = () => {
               <h3 className="text-lg font-medium text-white">{feedback.title}</h3>
               <p className="text-slate-300 mt-1">{feedback.description}</p>
               
-              {/* User ID and date display - FIXED: Use the correct field name */}
-              <div className="mt-3 flex flex-col gap-1 text-sm text-slate-400">
-                <div className="flex items-center">
-                  <User className="h-3.5 w-3.5 mr-1.5" />
-                  <span>Client ID: {userId}</span>
-                </div>
-                <div>
-                  <span>{new Date(feedback.send_date).toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                  })}</span>
-                </div>
+              <div className="flex items-center mt-2 text-sm text-slate-400">
+                <span>{formatDate(feedback.send_date)}</span>
+              </div>
+              
+              <div className="mt-2 flex items-center text-sm text-slate-400">
+                <User className="h-3.5 w-3.5 mr-1.5" />
+                <span>User ID: {feedback.user_id || feedback.userId?._id || 'Unknown'}</span>
               </div>
             </div>
           </div>
           
-          {/* Status badge */}
           <div className="flex items-center space-x-2">
             {feedback.status === 'closed' && (
               <span className="px-2 py-1 bg-green-900/30 text-green-400 text-xs rounded-full flex items-center">
@@ -530,93 +554,112 @@ const AdminDashboard = () => {
               <div className="flex items-center text-sm text-slate-300 mb-2">
                 <span className="font-medium">Admin Response</span>
                 <span className="mx-2">•</span>
-                <span>{new Date(feedback.reply_date).toLocaleDateString('en-GB', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}</span>
+                <span>{formatDate(feedback.reply_date)}</span>
               </div>
               <p className="text-slate-100">{feedback.admin_reply}</p>
             </div>
           </div>
         )}
 
-        <div className="mt-4 pl-12 flex flex-wrap gap-2">
+        <div className="mt-4 pl-12">
           {replyingTo === feedback._id ? (
             <div className="space-y-3 w-full">
-              <textarea
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                placeholder="Type your response here..."
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
-              />
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleReply(feedback._id)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center"
-                >
-                  <Send size={16} className="mr-2" />
-                  Send Response
-                </button>
-                <button
-                  onClick={() => {
-                    setReplyingTo(null);
-                    setReplyText('');
-                    setError('');
+              <div className="bg-slate-700 border border-slate-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500">
+                <textarea
+                  ref={(el) => {
+                    if (el) textareaRefs.current[feedback._id] = el;
                   }}
-                  className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg"
-                >
-                  Cancel
-                </button>
+                  value={replyTexts[feedback._id] || ''}
+                  onChange={handleTextChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Type your response here..."
+                  rows={6}
+                  maxLength={1000}
+                  className="w-full min-h-[150px] p-4 bg-transparent text-white placeholder-slate-400 border-none outline-none resize-none text-sm"
+                  style={{
+                    direction: 'ltr',
+                    textAlign: 'left',
+                    unicodeBidi: 'normal',
+                    writingMode: 'horizontal-tb'
+                  }}
+                  autoFocus
+                  spellCheck="false"
+                />
+                <div className="flex justify-between items-center px-4 py-3 bg-slate-800/50 border-t border-slate-600">
+                  <span className="text-xs text-slate-400">
+                    {(replyTexts[feedback._id] || '').length}/1000 characters
+                  </span>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => {
+                        setReplyingTo(null);
+                        setReplyTexts(prev => ({ ...prev, [feedback._id]: '' }));
+                        setError('');
+                      }}
+                      className="px-4 py-2 text-sm bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSendReply}
+                      className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!replyTexts[feedback._id]?.trim()}
+                    >
+                      <Send size={16} className="mr-2" />
+                      Send Reply
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
-            <>
-              <div className="flex space-x-2">
-                {!feedback.admin_reply && (
-                  <button
-                    onClick={() => {
-                      setReplyingTo(feedback._id);
-                      setError('');
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center"
-                  >
-                    <MessageCircle size={16} className="mr-2" />
-                    Reply
-                  </button>
+            <div className="flex flex-wrap gap-2">
+              {!feedback.admin_reply && (
+                <button
+                  onClick={() => {
+                    setReplyingTo(feedback._id);
+                    setError('');
+                    // Initialize empty text for this feedback if it doesn't exist
+                    setReplyTexts(prev => ({ 
+                      ...prev, 
+                      [feedback._id]: prev[feedback._id] || '' 
+                    }));
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center hover:bg-blue-700 transition-colors"
+                >
+                  <MessageCircle size={16} className="mr-2" />
+                  Reply
+                </button>
+              )}
+              <button
+                onClick={() => toggleResolve(feedback._id, feedback.status)}
+                className={`px-4 py-2 rounded-lg flex items-center hover:opacity-90 transition-opacity ${
+                  feedback.status === 'closed' 
+                    ? 'bg-orange-600 text-white' 
+                    : 'bg-green-600 text-white'
+                }`}
+              >
+                {feedback.status === 'closed' ? (
+                  <>
+                    <XCircle size={16} className="mr-2" />
+                    Reopen
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={16} className="mr-2" />
+                    Mark Resolved
+                  </>
                 )}
-                <button
-                  onClick={() => toggleResolve(feedback._id, feedback.status)}
-                  className={`px-4 py-2 rounded-lg flex items-center ${
-                    feedback.status === 'closed' 
-                      ? 'bg-orange-600 text-white' 
-                      : 'bg-green-600 text-white'
-                  }`}
-                >
-                  {feedback.status === 'closed' ? (
-                    <>
-                      <XCircle size={16} className="mr-2" />
-                      Reopen
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle size={16} className="mr-2" />
-                      Mark Resolved
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => handleDeleteFeedback(feedback._id)}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg flex items-center"
-                >
-                  <Trash2 size={16} className="mr-2" />
-                  Delete
-                </button>
-              </div>
-            </>
+              </button>
+              <button
+                onClick={() => handleDeleteFeedback(feedback._id)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg flex items-center hover:bg-red-700 transition-colors"
+                title="Delete Feedback"
+              >
+                <Trash2 size={16} className="mr-2" />
+                Delete
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -712,7 +755,6 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-slate-900">
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 shadow-lg transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} border-r border-slate-800 overflow-y-auto`}>
-
         <div className="flex items-center justify-between h-16 px-6 border-b border-slate-800">
           <div className="flex items-center">
             <img src="https://via.placeholder.com/40x40?text=BZ+" alt="BusZone+" className="h-8 w-8 mr-2 rounded" />
@@ -740,7 +782,7 @@ const AdminDashboard = () => {
         </nav>
       </div>
 
-      {/* Main */}
+      {/* Main Content */}
       <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
         <header className="border-b border-slate-800 bg-slate-900">
           <div className="flex items-center justify-between h-16 px-6">
@@ -751,7 +793,6 @@ const AdminDashboard = () => {
               <h2 className="text-xl font-semibold text-white capitalize">{menuItems.find(i => i.id === activeTab)?.label || 'Dashboard'}</h2>
             </div>
 
-            {/* Right side */}
             <div className="flex items-center space-x-4">
               <div className="relative">
                 <button className="p-1 rounded-full hover:bg-slate-800">
