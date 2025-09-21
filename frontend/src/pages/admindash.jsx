@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import UserManagement from './UserManagement';
 import AttendanceManagement from '../components/AttendanceManagement'; 
+import AdminNotificationPanel from './AdminNotificationPanel'; // Import the notification panel
 import {
   Users,
   Bus,
@@ -683,7 +684,7 @@ const AdminDashboard = () => {
       case 'users':
         return <UserManagement />;
       case 'notifications':
-        return <div className="text-white p-6">Notifications (placeholder)</div>;
+        return <AdminNotificationPanel />; // Render the notification panel directly
       case 'buses':
         return <div className="text-white p-6">Bus Management (placeholder)</div>;
       case 'bookings':
