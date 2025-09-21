@@ -422,7 +422,7 @@ const Feedback = () => {
               className="flex items-center space-x-2 px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all shadow-md hover:shadow-lg backdrop-blur-sm"
             >
               <Plus className="h-4 w-4" />
-              <span>New Feedback</span>
+              <span>New Feedback or complaint</span>
             </button>
           </div>
 

@@ -67,6 +67,8 @@ const AdvancedBusRentalHomepage = () => {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [testimonials, setTestimonials] = useState([]);
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(true);
   const sectionRef = useRef(null);
   const navigate = useNavigate();
 
@@ -101,15 +103,16 @@ const AdvancedBusRentalHomepage = () => {
     },
   ];
 
-  const testimonials = [
+  // Default testimonials as fallback
+  const defaultTestimonials = [
     {
       name: "Sarah Johnson",
       role: "Event Coordinator",
       company: "Premier Events Ltd",
       text: "Absolutely exceptional service! The buses were immaculate and the drivers were professional. Made our corporate event seamless.",
       rating: 5,
-      image:
-        "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
+      image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
+      type: "default"
     },
     {
       name: "Michael Chen",
@@ -117,8 +120,8 @@ const AdvancedBusRentalHomepage = () => {
       company: "GlobalTech Solutions",
       text: "We've been using their services for 2 years. Reliability, comfort, and competitive pricing - everything we need!",
       rating: 5,
-      image:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+      type: "default"
     },
     {
       name: "Emily Rodriguez",
@@ -126,8 +129,8 @@ const AdvancedBusRentalHomepage = () => {
       company: "Elegant Occasions",
       text: "They made our destination wedding transportation flawless. Guests were impressed with the luxury buses!",
       rating: 5,
-      image:
-        "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=100&h-100&fit=crop&crop=face",
+      image: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=100&h=100&fit=crop&crop=face",
+      type: "default"
     },
   ];
 
@@ -303,6 +306,141 @@ const AdvancedBusRentalHomepage = () => {
     },
   ];
 
+  // Fetch positive feedbacks from backend
+  const fetchPositiveFeedbacks = async () => {
+    setLoadingFeedbacks(true);
+    console.log('Fetching positive feedbacks...');
+    
+    try {
+      // Multiple API endpoint attempts for better compatibility
+      const apiEndpoints = [
+        `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/feedbacks/testimonials`,
+        `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/feedbacks`
+      ];
+
+      let response = null;
+      let allFeedbacks = [];
+
+      // Try the testimonials endpoint first (if it exists)
+      try {
+        response = await fetch(apiEndpoints[0], {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          allFeedbacks = Array.isArray(data) ? data : [];
+          console.log('Fetched from testimonials endpoint:', allFeedbacks.length);
+        }
+      } catch (err) {
+        console.log('Testimonials endpoint not available, trying general endpoint...');
+      }
+
+      // If testimonials endpoint failed, try the general feedbacks endpoint
+      if (allFeedbacks.length === 0) {
+        try {
+          // Try without auth first (for public access)
+          response = await fetch(apiEndpoints[1], {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+
+          if (!response.ok) {
+            // If that fails, try with auth token if available
+            const token = localStorage.getItem('token');
+            if (token) {
+              response = await fetch(apiEndpoints[1], {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+            }
+          }
+
+          if (response && response.ok) {
+            const data = await response.json();
+            allFeedbacks = Array.isArray(data) ? data : [];
+            console.log('Fetched from general endpoint:', allFeedbacks.length);
+          }
+        } catch (err) {
+          console.log('General endpoint also failed:', err);
+        }
+      }
+
+      if (allFeedbacks.length > 0) {
+        // Filter and transform positive feedbacks
+        const positiveFeedbacks = allFeedbacks
+          .filter(feedback => {
+            // Filter criteria for good testimonials
+            const isPositive = feedback.type === 'feedback';
+            const hasGoodRating = !feedback.rating || feedback.rating >= 4;
+            const isReplied = feedback.status === 'replied' || feedback.admin_reply;
+            
+            console.log('Feedback filter:', {
+              id: feedback._id,
+              type: feedback.type,
+              rating: feedback.rating,
+              status: feedback.status,
+              hasReply: !!feedback.admin_reply,
+              passes: isPositive && hasGoodRating
+            });
+            
+            return isPositive && hasGoodRating;
+          })
+          .map(feedback => ({
+            name: feedback.client_id?.firstName && feedback.client_id?.lastName 
+              ? `${feedback.client_id.firstName} ${feedback.client_id.lastName}`
+              : feedback.client_id?.username 
+              ? feedback.client_id.username
+              : feedback.customer?.name
+              ? feedback.customer.name
+              : 'Anonymous Customer',
+            role: "Verified Customer",
+            company: "BusZone+ Customer",
+            text: feedback.description,
+            rating: feedback.rating || 5,
+            image: `https://images.unsplash.com/photo-${Math.floor(Math.random() * 1000) + 1494790108755}-2616b612b786?w=100&h=100&fit=crop&crop=face`,
+            type: "customer",
+            date: feedback.send_date || feedback.createdAt,
+            title: feedback.title,
+            isReplied: !!(feedback.admin_reply || feedback.status === 'replied')
+          }))
+          .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+          .slice(0, 6); // Limit to 6 most recent
+
+        console.log('Filtered positive feedbacks:', positiveFeedbacks.length);
+
+        if (positiveFeedbacks.length > 0) {
+          // Combine with some default testimonials for variety
+          const combinedTestimonials = [
+            ...positiveFeedbacks,
+            ...defaultTestimonials.slice(0, Math.max(0, 3 - positiveFeedbacks.length))
+          ];
+          setTestimonials(combinedTestimonials);
+          console.log('Set combined testimonials:', combinedTestimonials.length);
+        } else {
+          console.log('No positive feedbacks found, using defaults');
+          setTestimonials(defaultTestimonials);
+        }
+      } else {
+        console.log('No feedbacks fetched, using default testimonials');
+        setTestimonials(defaultTestimonials);
+      }
+    } catch (error) {
+      console.error('Error fetching feedbacks:', error);
+      setTestimonials(defaultTestimonials);
+    } finally {
+      setLoadingFeedbacks(false);
+    }
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -324,10 +462,17 @@ const AdvancedBusRentalHomepage = () => {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-    }, 4000);
-    return () => clearInterval(interval);
+    if (testimonials.length > 0) {
+      const interval = setInterval(() => {
+        setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [testimonials.length]);
+
+  // Fetch feedbacks on component mount
+  useEffect(() => {
+    fetchPositiveFeedbacks();
   }, []);
 
   const nextSlide = () => {
@@ -874,22 +1019,40 @@ const AdvancedBusRentalHomepage = () => {
         </div>
       </div>
 
-      {/* Testimonials Slider */}
+      {/* Customer Testimonials Slider - Updated with Backend Integration */}
       <div className="bg-gradient-to-r from-slate-900 to-slate-800 py-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
+            <div className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-blue-400/20 to-cyan-500/20 border border-blue-400/30 mb-6">
+              <span className="text-blue-400 font-semibold">Testimonials</span>
+            </div>
             <h2 className="text-4xl font-bold text-white mb-4">
               What Our Clients Say
             </h2>
             <p className="text-slate-400 text-lg">
-              Trusted by thousands of satisfied customers
+              {testimonials.some(t => t.type === 'customer') 
+                ? "Real feedback from our satisfied customers" 
+                : "Trusted by thousands of satisfied customers"}
             </p>
+            {loadingFeedbacks && (
+              <div className="flex items-center justify-center mt-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
+                <span className="ml-2 text-slate-400 text-sm">Loading customer testimonials...</span>
+              </div>
+            )}
+            
+            {/* Debug info - remove in production */}
+            <div className="mt-2 text-xs text-slate-500">
+              Showing {testimonials.length} testimonial(s) | 
+              Real customers: {testimonials.filter(t => t.type === 'customer').length} | 
+              Backend: {import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}
+            </div>
           </div>
 
           <div className="relative max-w-4xl mx-auto">
-            {testimonials.map((testimonial, index) => (
+            {testimonials.length > 0 && testimonials.map((testimonial, index) => (
               <div
-                key={index}
+                key={`${testimonial.name}-${index}`}
                 className={`transition-all duration-700 ease-in-out ${
                   index === currentTestimonial
                     ? "opacity-100"
@@ -897,53 +1060,104 @@ const AdvancedBusRentalHomepage = () => {
                 }`}
               >
                 <div className="bg-slate-900/50 backdrop-blur-sm p-8 rounded-3xl border border-slate-700/50">
-                  <div className="flex items-center mb-6">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className="h-5 w-5 text-yellow-400 fill-current"
-                      />
-                    ))}
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center">
+                      {[...Array(testimonial.rating || 5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className="h-5 w-5 text-yellow-400 fill-current"
+                        />
+                      ))}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {testimonial.type === 'customer' && (
+                        <div className="flex items-center space-x-1 text-xs text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-full">
+                          <CheckCircle className="h-3 w-3" />
+                          <span>Real Customer</span>
+                        </div>
+                      )}
+                      {testimonial.isReplied && (
+                        <div className="flex items-center space-x-1 text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded-full">
+                          <CheckCircle className="h-3 w-3" />
+                          <span>Verified</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <p className="text-xl text-slate-300 mb-8 leading-relaxed italic">
-                    "{testimonial.text}"
-                  </p>
+                  <div className="mb-6">
+                    {testimonial.title && (
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        "{testimonial.title}"
+                      </h3>
+                    )}
+                    <p className="text-xl text-slate-300 leading-relaxed italic">
+                      "{testimonial.text}"
+                    </p>
+                  </div>
 
-                  <div className="flex items-center">
-                    <img
-                      src={testimonial.image}
-                      alt={testimonial.name}
-                      className="w-16 h-16 rounded-full mr-4 border-2 border-blue-400"
-                    />
-                    <div>
-                      <div className="font-bold text-white text-lg">
-                        {testimonial.name}
-                      </div>
-                      <div className="text-blue-400 font-medium">
-                        {testimonial.role}
-                      </div>
-                      <div className="text-slate-400 text-sm">
-                        {testimonial.company}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <img
+                        src={testimonial.image}
+                        alt={testimonial.name}
+                        className="w-16 h-16 rounded-full mr-4 border-2 border-blue-400"
+                        onError={(e) => {
+                          e.target.src = `https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face`;
+                        }}
+                      />
+                      <div>
+                        <div className="font-bold text-white text-lg">
+                          {testimonial.name}
+                        </div>
+                        <div className="text-blue-400 font-medium">
+                          {testimonial.role}
+                        </div>
+                        <div className="text-slate-400 text-sm">
+                          {testimonial.company}
+                        </div>
                       </div>
                     </div>
+                    
+                    {testimonial.date && (
+                      <div className="text-slate-500 text-xs">
+                        {new Date(testimonial.date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             ))}
 
-            <div className="flex justify-center mt-8 space-x-2">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentTestimonial(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    index === currentTestimonial
-                      ? "bg-blue-400"
-                      : "bg-slate-600"
-                  }`}
-                />
-              ))}
+            {testimonials.length > 1 && (
+              <div className="flex justify-center mt-8 space-x-2">
+                {testimonials.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentTestimonial(index)}
+                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                      index === currentTestimonial
+                        ? "bg-blue-400"
+                        : "bg-slate-600"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Add Feedback Button */}
+            <div className="text-center mt-8">
+              <button
+                onClick={() => navigate('/feedback')}
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                <ThumbsUp className="h-4 w-4" />
+                <span>Share Your Experience</span>
+              </button>
             </div>
           </div>
         </div>
