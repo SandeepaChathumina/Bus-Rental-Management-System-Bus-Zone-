@@ -1,6 +1,6 @@
-// pages/SeasonalOffersPage.jsx
+// pages/SeasonalOffersPage.jsx - COMPLETE FIXED VERSION
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -11,13 +11,64 @@ import {
   Star,
   Zap,
   Gift,
-  ChevronRight
+  ChevronRight,
+  Phone,
+  Mail,
+  MapPin,
+  Bus
 } from 'lucide-react';
 import axios from 'axios';
 
+// Simple Navbar component
+const Navbar = () => {
+  const navigate = useNavigate();
+  
+  return (
+    <nav className="fixed top-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md z-50 border-b border-slate-700/50">
+      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+        <Link to="/" className="flex items-center space-x-3">
+          <div className="relative">
+            <div className="bg-gradient-to-r from-blue-400 to-cyan-500 p-2 rounded-xl shadow-lg">
+              <Bus className="h-6 w-6 text-white" />
+            </div>
+            <div className="absolute -top-1 -right-1 bg-cyan-400 w-3 h-3 rounded-full"></div>
+          </div>
+          <div>
+            <div className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+              BusZone+
+            </div>
+            <div className="text-xs text-slate-400">
+              Premium Bus Rentals
+            </div>
+          </div>
+        </Link>
 
-// Import seasonal images (you'll need to add these images to your assets folder)
-// For now, using placeholder images from a service
+        <div className="flex items-center space-x-6">
+          <Link to="/" className="text-slate-300 hover:text-white transition-colors">Home</Link>
+          <Link to="/booking" className="text-slate-300 hover:text-white transition-colors">Booking</Link>
+          <Link to="/offers" className="text-amber-400 font-semibold">Offers</Link>
+          <Link to="/contact" className="text-slate-300 hover:text-white transition-colors">Contact</Link>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+// Simple Footer component
+const Footer = () => {
+  return (
+    <footer className="bg-slate-900 border-t border-slate-800 mt-16">
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center text-slate-400">
+          <p>© 2024 BusZone+. All rights reserved.</p>
+          <p className="mt-2">Discover the world with our seasonal offers</p>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
+// Fallback local images
 const seasonalImages = {
   summer: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
   winter: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=400&h=300&fit=crop',
@@ -31,6 +82,7 @@ const SeasonalOffersPage = () => {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSeason, setSelectedSeason] = useState('all');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchAllSeasonalOffers();
@@ -38,15 +90,26 @@ const SeasonalOffersPage = () => {
 
   const fetchAllSeasonalOffers = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/notifications/seasonal-offers`);
+      // Check if environment variable exists
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      
+      if (!backendUrl) {
+        console.warn('Backend URL not configured, using demo data');
+        throw new Error('Backend URL not configured');
+      }
+      
+      const response = await axios.get(`${backendUrl}/api/notifications/seasonal-offers`);
       setOffers(response.data);
+      setError(null);
     } catch (error) {
       console.error('Error fetching seasonal offers:', error);
+      setError('Failed to load offers. Showing demo data.');
+      
       // Enhanced mock data with seasonal types
       const mockOffers = [
         {
           _id: '1',
-          title: '☀️ Summer Special Discount',
+          title: 'Summer Special Discount',
           message: 'Beat the heat with our summer special! Get 25% off on all bookings to coastal destinations. Perfect for family vacations and beach getaways.',
           type: 'summer',
           targetUserType: 'passenger',
@@ -59,7 +122,7 @@ const SeasonalOffersPage = () => {
         },
         {
           _id: '2',
-          title: '❄️ Winter Holiday Package',
+          title: 'Winter Holiday Package',
           message: 'Cozy up this winter with 30% discount on holiday packages. Perfect for Christmas and New Year celebrations in mountain destinations.',
           type: 'winter',
           targetUserType: 'passenger',
@@ -71,7 +134,7 @@ const SeasonalOffersPage = () => {
         },
         {
           _id: '3',
-          title: '🌸 Spring Break Deal',
+          title: 'Spring Break Deal',
           message: 'Spring into savings! Special 20% discount for students during spring break. Valid with student ID on educational routes.',
           type: 'spring',
           targetUserType: 'student',
@@ -82,7 +145,7 @@ const SeasonalOffersPage = () => {
         },
         {
           _id: '4',
-          title: '🍂 Autumn Adventure Offer',
+          title: 'Autumn Adventure Offer',
           message: 'Experience the golden hues of autumn with 15% off on all adventure routes. Explore mountainous landscapes and fall foliage.',
           type: 'autumn',
           targetUserType: 'passenger',
@@ -93,7 +156,7 @@ const SeasonalOffersPage = () => {
         },
         {
           _id: '5',
-          title: '🌧️ Monsoon Magic Discount',
+          title: 'Monsoon Magic Discount',
           message: 'Don\'t let the rain dampen your plans! 10% discount on rainy day travels. Enjoy our premium service while staying dry.',
           type: 'monsoon',
           targetUserType: 'passenger',
@@ -104,7 +167,7 @@ const SeasonalOffersPage = () => {
         },
         {
           _id: '6',
-          title: '🎉 Year-End Celebration',
+          title: 'Year-End Celebration',
           message: 'Ring in the new year with 35% off on all bookings for celebrations. Perfect for party destinations and city tours.',
           type: 'winter',
           targetUserType: 'passenger',
@@ -192,9 +255,16 @@ const SeasonalOffersPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-16">
-    
+      <Navbar />
       
       <div className="container mx-auto px-4 py-8">
+        {/* Error message */}
+        {error && (
+          <div className="bg-amber-900/30 border border-amber-700 text-amber-200 px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
+        
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           <div className="flex items-center mb-4 lg:mb-0">
@@ -264,12 +334,15 @@ const SeasonalOffersPage = () => {
                 key={offer._id} 
                 className="group relative bg-slate-800 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-500 hover:scale-105"
               >
-                {/* Background Image */}
-                <div className="relative h-40 overflow-hidden">
+                {/* Background Image with fallback */}
+                <div className="relative h-40 overflow-hidden bg-slate-700">
                   <img 
                     src={getSeasonImage(offer.type)} 
                     alt={offer.type} 
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
                   />
                   <div className={`absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/80`}></div>
                   
@@ -300,7 +373,7 @@ const SeasonalOffersPage = () => {
                     {offer.title}
                   </h3>
                   
-                  <p className="text-slate-300 mb-4 leading-relaxed line-clamp-3">
+                  <p className="text-slate-300 mb-4 leading-relaxed">
                     {offer.message}
                   </p>
                   
@@ -364,7 +437,7 @@ const SeasonalOffersPage = () => {
         )}
       </div>
       
-      
+      <Footer />
     </div>
   );
 };
