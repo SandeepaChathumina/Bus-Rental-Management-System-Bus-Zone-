@@ -6,11 +6,6 @@ const feedbackSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  booking_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Booking',
-    default: null
-  },
   type: {
     type: String,
     enum: ['feedback', 'complaint'],
