@@ -1,79 +1,45 @@
 import mongoose from 'mongoose';
 
 const notificationSchema = new mongoose.Schema({
-  type: {
-    type: String,
-    enum: ['discount', 'package', 'alert', 'reminder', 'booking_confirmation', 'promotional', 'seasonal_offer'],
-    required: true
-  },
   title: {
     type: String,
     required: true,
-    maxLength: 255
+    trim: true,
+    maxlength: 255
   },
   message: {
     type: String,
-    required: true
+    required: true,
+    trim: true
+  },
+  type: {
+    type: String,
+    enum: ['general', 'discount', 'promotional', 'alert', 'booking', 'reminder', 'package', 'seasonal'],
+    default: 'general'
   },
   targetAudience: {
     type: String,
     enum: ['all', 'passengers', 'drivers', 'staff', 'admins'],
     default: 'all'
   },
-  deliveryChannel: {
-    type: String,
-    enum: ['email', 'sms', 'in_app', 'push', 'all_channels'],
-    default: 'in_app'
-  },
-  isPublic: {
+  isActive: {
     type: Boolean,
-    default: false
+    default: true
   },
-  status: {
-    type: String,
-    enum: ['draft', 'scheduled', 'sent', 'failed', 'expired'],
-    default: 'draft'
-  },
-  sendAt: {
-    type: Date,
-    default: Date.now
-  },
-  expiresAt: {
-    type: Date
-  },
-  
-  isSeasonal: {
-    type: Boolean,
-    default: false
-  },
-  promotionCode: {
-    type: String
-  },
-  discountPercentage: {
-    type: Number,
-    min: 0,
-    max: 100
-  },
-
-  relatedEntityType: {
-    type: String,
-    enum: ['booking', 'payment', 'maintenance', 'user']
-  },
-  relatedEntityId: {
-    type: mongoose.Schema.Types.ObjectId
-  },
-  
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-
-  readStatus: {
-    type: Boolean,
-    default: false
+  expiresAt: {
+    type: Date,
+    default: null
   },
-  clickCount: {
+  readBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  clicks: {
     type: Number,
     default: 0
   }
@@ -81,10 +47,12 @@ const notificationSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Index for better performance
+notificationSchema.index({ isActive: 1, createdAt: -1 });
+notificationSchema.index({ targetAudience: 1 });
+notificationSchema.index({ expiresAt: 1 });
 
-notificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-
-
+// Method to check if notification is expired
 notificationSchema.methods.isExpired = function() {
   return this.expiresAt && new Date() > this.expiresAt;
 };

@@ -4,31 +4,41 @@ import {
   getNotifications,
   getMyNotifications,
   getNotificationById,
+  markAsRead,
+  markAllAsRead,
+  trackClick,
   updateNotification,
   deleteNotification,
-  getNotificationReport,
-  getPromotionalNotifications,
-  searchNotifications
+  toggleNotificationStatus,
+  getNotificationStats
 } from '../controllers/notificationController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.get('/promotional', getPromotionalNotifications);
+// Public routes (if any)
 
-
+// Protected routes
 router.use(protect);
 
-
 router.get('/my-notifications', getMyNotifications);
+router.get('/stats', getNotificationStats);
+router.patch('/:id/read', markAsRead);
+router.patch('/read-all', markAllAsRead);
+router.patch('/:id/click', trackClick);
 router.get('/:id', getNotificationById);
 
+// Admin only routes
+router.use(admin); // All routes below this require admin role
 
-router.post('/', admin, createNotification);
-router.get('/', admin, getNotifications);
-router.get('/admin/report', admin, getNotificationReport);
-router.get('/admin/search', admin, searchNotifications);
-router.put('/:id', admin, updateNotification);
-router.delete('/:id', admin, deleteNotification);
+router.route('/')
+  .post(createNotification)
+  .get(getNotifications);
+
+router.route('/:id')
+  .put(updateNotification)
+  .delete(deleteNotification);
+
+router.patch('/:id/status', toggleNotificationStatus);
 
 export default router;

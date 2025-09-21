@@ -18,16 +18,20 @@ import {
   Download,
   Edit
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const DriverDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState('schedule');
+  const [notificationCount, setNotificationCount] = useState(3);
   const [userData] = useState({
     name: "Robert Johnson",
     id: "DRV-7824",
     profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
   });
+
+  const navigate = useNavigate();
 
   // Check screen size on mount and resize
   useEffect(() => {
@@ -65,6 +69,11 @@ const DriverDashboard = () => {
     if (isMobile) {
       setIsSidebarOpen(false);
     }
+  };
+
+  // Handle notification click
+  const handleNotificationClick = () => {
+    navigate('/notifications');
   };
 
   return (
@@ -170,9 +179,17 @@ const DriverDashboard = () => {
           </div>
           
           <div className="flex items-center space-x-3 md:space-x-4">
-            <button className="relative p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+            {/* Notification Bell - Added to Header */}
+            <button 
+              onClick={handleNotificationClick}
+              className="relative p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            >
               <Bell className="h-5 w-5 md:h-6 md:w-6" />
-              <span className="absolute -top-1 -right-1 bg-red-500 w-4 h-4 rounded-full text-xs flex items-center justify-center">3</span>
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 w-4 h-4 rounded-full text-xs flex items-center justify-center">
+                  {notificationCount}
+                </span>
+              )}
             </button>
             
             <div className="flex items-center space-x-3 bg-slate-800 p-2 rounded-xl">

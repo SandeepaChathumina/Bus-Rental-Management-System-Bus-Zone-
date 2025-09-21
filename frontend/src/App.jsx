@@ -4,7 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import HomePage from './pages/HomePage';
 import RegisterPage from './pages/RegisterPage';
-import LoginPage from './pages/LoginPage';
+import LoginPage from './pages/loginPage';
 import PassengerProfilePage from './pages/PassengerProfilePage'; // Correct import name
 import AdminPage from './pages/AdminPage';
 import AttendanceManagement from './components/AttendanceManagement';
@@ -23,11 +23,7 @@ import SeasonalOffers from './components/SeasonalOffers';
 import Bus from './pages/bus/Bus';
 import BusZoneDashboard from './pages/staffdash';
 import MaintenanceManagement from './pages/MaintenanceManagement';
-
-
-
-
-
+import NotificationBell   from './components/NotificationBell';
 
 function App() {
   return (
@@ -53,13 +49,13 @@ function App() {
               <Route path="/admin-dashboard" element={<AdminDashboard/>} />
               <Route path="/feedback" element={<Feedback />} />
               <Route path="/notifications" element={<NotificationsPage />} />   
-              <Route path='/admin-notifications' element={<AdminNotificationPanel/>}/>
               <Route path='/offers' element={<SeasonalOffers/>}/>
+             <Route path="/admin/notifications" element={<AdminNotificationPanel />} />
               <Route path="/driver-dashboard" element={<DriverDashboard/>} />
               <Route path="/staffdash" element={<BusZoneDashboard/>} />
                <Route path="/maintain" element={<MaintenanceManagement/>} />
-             
 
+              <Route path='/notification-bell' element={<NotificationBell/>}/>
             </Routes>
           </main>
           <Toaster position="top-right" />
