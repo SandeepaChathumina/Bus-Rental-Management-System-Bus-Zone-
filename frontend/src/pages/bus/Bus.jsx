@@ -2,16 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { 
-  Clock, 
   Users, 
   Wifi, 
   Snowflake, 
   Coffee, 
-  Shield,
-  Star,
   MapPin,
-  Calendar,
-  ArrowRight
+  ArrowRight,
+  Check
 } from 'lucide-react';
 import Bus1 from "../../../src/assets/bus1.png";
 
@@ -25,6 +22,7 @@ const Bus = () => {
   const [busTypeFilter, setBusTypeFilter] = useState('');
   const [sortBy, setSortBy] = useState('price');
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedBus, setSelectedBus] = useState(null);
 
   // Get search parameters from URL or navigation state
   const searchParams = location.state?.searchParams || {};
@@ -81,7 +79,7 @@ const Bus = () => {
         case 'capacity':
           return b.capacity - a.capacity;
         case 'rating':
-          return b.rating - a.rating;
+          return (b.rating || 0) - (a.rating || 0);
         default:
           return 0;
       }
@@ -114,8 +112,12 @@ const Bus = () => {
   };
 
   const getBusImage = (busType) => {
-    // You can customize this based on your actual images
     return Bus1;
+  };
+
+  const handleSelectBus = (bus) => {
+    setSelectedBus(bus._id);
+    console.log('Selected bus:', bus);
   };
 
   if (isLoading) {
@@ -189,7 +191,14 @@ const Bus = () => {
         {/* Bus Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBuses.map((bus) => (
-            <div key={bus._id} className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50 hover:border-blue-500/30 transition-all duration-300">
+            <div 
+              key={bus._id} 
+              className={`bg-slate-800/50 rounded-2xl p-6 border transition-all duration-300 ${
+                selectedBus === bus._id 
+                  ? 'border-blue-500 ring-2 ring-blue-500/20' 
+                  : 'border-slate-700/50 hover:border-blue-500/30'
+              }`}
+            >
               {/* Bus Image */}
               <div className="mb-4">
                 <img
@@ -256,24 +265,72 @@ const Bus = () => {
               {/* Price and Action */}
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-2xl font-bold text-white">Rs. {bus.pricePerDay}</div>
+                  <div className="text-2xl font-bold text-white">Rs. {bus.pricePerDay || 0}</div>
                   <div className="text-slate-400 text-sm">per day</div>
                 </div>
+                
+                {/* Select Button */}
+                <button
+                  onClick={() => handleSelectBus(bus)}
+                  className={`px-6 py-2 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
+                    selectedBus === bus._id
+                      ? 'bg-green-500 hover:bg-green-600 text-white'
+                      : 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 text-white'
+                  }`}
+                >
+                  {selectedBus === bus._id ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      <span>Selected</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Select</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Details Link */}
+              <div className="mt-3 text-center">
                 <Link
                   to={`/bus/bus-details/${bus._id}`}
                   state={{ 
                     busData: bus,
                     searchParams: searchParams
                   }}
-                  className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 text-white px-6 py-2 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2"
+                  className="text-blue-400 hover:text-blue-300 text-sm underline"
                 >
-                  <span>View Details</span>
-                  <ArrowRight className="h-4 w-4" />
+                  View full details
                 </Link>
               </div>
             </div>
           ))}
         </div>
+
+        {/* Selected Bus Action */}
+        {selectedBus && (
+          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800 rounded-xl p-4 shadow-2xl border border-slate-700 z-50">
+            <div className="flex items-center justify-between space-x-4">
+              <div className="text-white">
+                <span className="text-slate-400">Selected: </span>
+                {buses.find(b => b._id === selectedBus)?.busType} Coach
+              </div>
+              <Link
+                to={`/bus/bus-details/${selectedBus}`}
+                state={{ 
+                  busData: buses.find(b => b._id === selectedBus),
+                  searchParams: searchParams
+                }}
+                className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors flex items-center space-x-2"
+              >
+                <span>Proceed to Booking</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        )}
 
         {filteredBuses.length === 0 && (
           <div className="text-center py-12">
