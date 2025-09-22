@@ -12,6 +12,7 @@ import attendanceRouter from './routes/attendanceRouter.js';
 import lostItemRouter from './routes/lostItemRouter.js';
 import paymentRouter from './routes/paymentRouter.js';
 import scheduleRouter from './routes/scheduleRouter.js';
+import staffProfileRoutes from './routes/staffProfileRoutes.js';
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
+app.use('/api/staff-profiles', staffProfileRoutes);
 app.use('/api/feedbacks', feedbackRouter);
 app.use('/api/bookings', bookingRouter);
 app.use('/api/buses', busRouter);

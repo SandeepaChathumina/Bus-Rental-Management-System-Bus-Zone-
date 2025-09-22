@@ -44,6 +44,25 @@ router.get('/me', protect, async (req, res) => {
   }
 });
 
+// Add this route to userRouter.js
+router.get('/staff/profile', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .select('-password')
+      .populate('staffProfile')
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching staff profile:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Add this route to your users.js file
 router.put('/update-password', protect, async (req, res) => {
   try {
