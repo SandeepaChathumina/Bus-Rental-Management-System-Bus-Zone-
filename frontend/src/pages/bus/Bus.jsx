@@ -1,87 +1,88 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { 
-  Clock, 
-  Users, 
-  Wifi, 
-  Snowflake, 
-  Coffee, 
-  Shield,
-  Star,
-  MapPin,
-  Calendar,
+  Users,
   ArrowRight
 } from 'lucide-react';
 import Bus1 from "../../../src/assets/bus1.png";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+
 const Bus = () => {
-  const location = useLocation();
   const [buses, setBuses] = useState([]);
   const [filteredBuses, setFilteredBuses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [busTypeFilter, setBusTypeFilter] = useState('');
-  const [sortBy, setSortBy] = useState('price');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Sample bus data - replace with API call
-  const sampleBuses = [
-    {
-      id: 1,
-      name: "Deluxe Coach",
-      type: "Deluxe",
-      capacity: 45,
-      amenities: ["wifi", "ac", "refreshments", "entertainment"],
-      rating: 4.5,
-      reviews: 124,
-      price: 1200,
-      departureTime: "08:00",
-      arrivalTime: "12:00",
-      numberPlate: "CAB-1234"
-    },
-    {
-      id: 2,
-      name: "Luxury Sleeper",
-      type: "Luxury",
-      capacity: 30,
-      amenities: ["wifi", "ac", "refreshments", "leather", "charging"],
-      rating: 4.8,
-      reviews: 89,
-      price: 1800,
-      departureTime: "22:00",
-      arrivalTime: "06:00",
-      numberPlate: "CAB-5678"
-    },
-    {
-      id: 3,
-      name: "Standard Coach",
-      type: "Standard",
-      capacity: 52,
-      amenities: ["ac", "charging"],
-      rating: 4.2,
-      reviews: 203,
-      price: 800,
-      departureTime: "14:00",
-      arrivalTime: "18:00",
-      numberPlate: "CAB-9012"
-    }
-  ];
-
+  // Fetch buses from API
   useEffect(() => {
-    // Simulate API call
-    const loadBuses = async () => {
+    const fetchBuses = async () => {
       setIsLoading(true);
       try {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setBuses(sampleBuses);
-        setFilteredBuses(sampleBuses);
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${BACKEND_URL}/api/buses`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Filter only available buses
+        const availableBuses = response.data.buses
+          .filter(bus => bus.status === 'Available')
+          .map(bus => ({
+            ...bus,
+            // Add sample data for demonstration
+            price: bus.busType === 'Luxury' ? 1800 : 
+                   bus.busType === 'Deluxe' ? 1200 : 800,
+            amenities: bus.busType === 'Luxury' ? 
+                      ["wifi", "ac", "refreshments", "entertainment", "charging", "leather"] :
+                      bus.busType === 'Deluxe' ? 
+                      ["wifi", "ac", "refreshments", "entertainment"] :
+                      ["ac", "charging"]
+          }));
+        
+        setBuses(availableBuses);
+        setFilteredBuses(availableBuses);
       } catch (error) {
         console.error('Error loading buses:', error);
+        // Fallback to sample data if API fails
+        const sampleBuses = [
+          {
+            _id: 1,
+            name: "Deluxe Coach",
+            busType: "Deluxe",
+            capacity: 45,
+            amenities: ["wifi", "ac", "refreshments", "entertainment"],
+            price: 1200,
+            numberPlate: "CAB-1234"
+          },
+          {
+            _id: 2,
+            name: "Luxury Sleeper",
+            busType: "Luxury",
+            capacity: 30,
+            amenities: ["wifi", "ac", "refreshments", "leather", "charging"],
+            price: 1800,
+            numberPlate: "CAB-5678"
+          },
+          {
+            _id: 3,
+            name: "Standard Coach",
+            busType: "Standard",
+            capacity: 52,
+            amenities: ["ac", "charging"],
+            price: 800,
+            numberPlate: "CAB-9012"
+          }
+        ];
+        setBuses(sampleBuses);
+        setFilteredBuses(sampleBuses);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadBuses();
+    fetchBuses();
   }, []);
 
   useEffect(() => {
@@ -90,39 +91,25 @@ const Bus = () => {
     // Apply search filter
     if (searchTerm) {
       results = results.filter(bus =>
-        bus.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        bus.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (bus.name || bus.busType + ' Bus').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        bus.busType.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bus.numberPlate.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Apply type filter
     if (busTypeFilter) {
-      results = results.filter(bus => bus.type.toLowerCase() === busTypeFilter.toLowerCase());
+      results = results.filter(bus => bus.busType.toLowerCase() === busTypeFilter.toLowerCase());
     }
 
-    // Apply sorting
-    results.sort((a, b) => {
-      switch (sortBy) {
-        case 'price':
-          return a.price - b.price;
-        case 'rating':
-          return b.rating - a.rating;
-        case 'departure':
-          return a.departureTime.localeCompare(b.departureTime);
-        default:
-          return 0;
-      }
-    });
-
     setFilteredBuses(results);
-  }, [buses, searchTerm, busTypeFilter, sortBy]);
+  }, [buses, searchTerm, busTypeFilter]);
 
   const getAmenityIcon = (amenity) => {
     switch (amenity) {
-      case 'wifi': return <Wifi className="h-4 w-4" />;
-      case 'ac': return <Snowflake className="h-4 w-4" />;
-      case 'refreshments': return <Coffee className="h-4 w-4" />;
+      case 'wifi': return <div className="text-sm">📶</div>;
+      case 'ac': return <div className="text-sm">❄️</div>;
+      case 'refreshments': return <div className="text-sm">☕</div>;
       case 'charging': return <div className="text-sm">🔋</div>;
       case 'entertainment': return <div className="text-sm">📺</div>;
       case 'leather': return <div className="text-sm">💺</div>;
@@ -158,7 +145,7 @@ const Bus = () => {
 
         {/* Search and Filters */}
         <div className="bg-slate-800/50 rounded-2xl p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
               <input
                 type="text"
@@ -179,28 +166,18 @@ const Bus = () => {
               <option value="deluxe">Deluxe</option>
               <option value="luxury">Luxury</option>
             </select>
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="price">Sort by Price</option>
-              <option value="rating">Sort by Rating</option>
-              <option value="departure">Sort by Departure</option>
-            </select>
           </div>
         </div>
 
         {/* Bus Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBuses.map((bus) => (
-            <div key={bus.id} className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50 hover:border-blue-500/30 transition-all duration-300">
+            <div key={bus._id} className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50 hover:border-blue-500/30 transition-all duration-300">
               {/* Bus Image */}
               <div className="mb-4">
                 <img
-                  src={Bus1}
-                  alt={bus.name}
+                  src={bus.vehiclePhoto || Bus1}
+                  alt={bus.name || bus.busType + ' Bus'}
                   className="w-full h-48 object-cover rounded-xl"
                 />
               </div>
@@ -208,44 +185,21 @@ const Bus = () => {
               {/* Bus Info */}
               <div className="mb-4">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-bold text-white">{bus.name}</h3>
+                  <h3 className="text-xl font-bold text-white">{bus.name || `${bus.busType} Bus`}</h3>
                   <span className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-sm">
-                    {bus.type}
+                    {bus.busType}
                   </span>
                 </div>
                 
-                <div className="flex items-center mb-3">
-                  <div className="flex items-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`h-4 w-4 ${
-                          star <= Math.floor(bus.rating)
-                            ? 'text-yellow-400 fill-current'
-                            : 'text-slate-400'
-                        }`}
-                      />
-                    ))}
-                    <span className="text-slate-400 ml-2 text-sm">
-                      ({bus.reviews} reviews)
-                    </span>
-                  </div>
-                </div>
-
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center text-slate-400 text-sm">
                     <Users className="h-4 w-4 mr-1" />
                     {bus.capacity} seats
                   </div>
-                  <div className="flex items-center text-slate-400 text-sm">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {bus.departureTime} - {bus.arrivalTime}
-                  </div>
                 </div>
 
                 <div className="flex items-center text-slate-400 text-sm mb-3">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  Plate: {bus.numberPlate}
+                  <span>Plate: {bus.numberPlate}</span>
                 </div>
               </div>
 
@@ -270,13 +224,14 @@ const Bus = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-2xl font-bold text-white">Rs. {bus.price}</div>
-                  <div className="text-slate-400 text-sm">per person</div>
+                  <div className="text-slate-400 text-sm">per seat</div>
                 </div>
                 <Link
                   to={`/bus/bus-details?id=${bus.id}`}
+                  state={{ busData: bus }}
                   className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 text-white px-6 py-2 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2"
                 >
-                  <span>View Details</span>
+                  <span>View Seats</span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
@@ -291,7 +246,6 @@ const Bus = () => {
               onClick={() => {
                 setSearchTerm('');
                 setBusTypeFilter('');
-                setSortBy('price');
               }}
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors"
             >

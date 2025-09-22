@@ -23,16 +23,13 @@ import {
   Route,
   Navigation
 } from 'lucide-react';
-import Seat from '../../components/seat/Seat';
 
 const BusDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [bus, setBus] = useState(null);
-  const [selectedSeats, setSelectedSeats] = useState([]);
   const [passengerDetails, setPassengerDetails] = useState([]);
-  const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [routeInfo, setRouteInfo] = useState(null);
 
@@ -130,52 +127,16 @@ const BusDetails = () => {
     loadBusDetails();
   }, [id, location.state]);
 
-  const handleSeatSelect = (seatNumber) => {
-    if (selectedSeats.includes(seatNumber)) {
-      setSelectedSeats(selectedSeats.filter(seat => seat !== seatNumber));
-    } else if (selectedSeats.length < passengerDetails.length) {
-      setSelectedSeats([...selectedSeats, seatNumber]);
-    }
-  };
-
-  const handlePassengerChange = (index, field, value) => {
-    const updatedPassengers = [...passengerDetails];
-    updatedPassengers[index][field] = value;
-    setPassengerDetails(updatedPassengers);
-  };
-
-  const handleProceedToPayment = () => {
-    if (selectedSeats.length !== passengerDetails.length) {
-      alert('Please select seats for all passengers');
-      return;
-    }
-
-    const allPassengersValid = passengerDetails.every((passenger, index) => {
-      if (!passenger.name || !passenger.nic) {
-        alert(`Please fill in all details for passenger ${index + 1}`);
-        return false;
+  const handleSelectBus = () => {
+    // Navigate to seat selection page or directly to passenger details
+    navigate('/seat-selection', {
+      state: {
+        bus,
+        searchParams: location.state?.searchParams,
+        routeInfo,
+        passengerCount: passengerDetails.length
       }
-      return true;
     });
-
-    if (allPassengersValid) {
-      // Assign seat numbers to passengers
-      const passengersWithSeats = passengerDetails.map((passenger, index) => ({
-        ...passenger,
-        seatNumber: selectedSeats[index]
-      }));
-
-      navigate('/passenger-details', {
-        state: {
-          bus,
-          passengers: passengersWithSeats,
-          selectedSeats,
-          searchParams: location.state?.searchParams,
-          routeInfo,
-          totalAmount: bus.price * passengerDetails.length
-        }
-      });
-    }
   };
 
   if (isLoading) {
@@ -283,27 +244,6 @@ const BusDetails = () => {
                 </div>
               )}
 
-              {/* Schedule */}
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-white mb-4">Schedule</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-slate-700/50 p-4 rounded-xl">
-                    <div className="flex items-center text-slate-400 mb-1">
-                      <Clock className="h-4 w-4 mr-2" />
-                      Departure
-                    </div>
-                    <div className="text-white font-semibold">{routeInfo?.departureTime || bus.departureTime}</div>
-                  </div>
-                  <div className="bg-slate-700/50 p-4 rounded-xl">
-                    <div className="flex items-center text-slate-400 mb-1">
-                      <Clock className="h-4 w-4 mr-2" />
-                      Arrival
-                    </div>
-                    <div className="text-white font-semibold">{routeInfo?.arrivalTime || bus.arrivalTime}</div>
-                  </div>
-                </div>
-              </div>
-
               {/* Amenities */}
               <div>
                 <h3 className="text-xl font-bold text-white mb-4">Amenities</h3>
@@ -325,152 +265,80 @@ const BusDetails = () => {
             </div>
           </div>
 
-          {/* Right Column - Booking Process */}
+          {/* Right Column - Select Button and Basic Info */}
           <div className="space-y-6">
-            {/* Step 1: Select Seats */}
-            {currentStep === 1 && (
-              <div className="bg-slate-800/50 rounded-2xl p-6">
-                <h3 className="text-xl font-bold text-white mb-4">Select Seats</h3>
-                <p className="text-slate-400 mb-6">
-                  Choose {passengerDetails.length} seat(s) for your journey
-                </p>
-                
-                <Seat 
-                  selectedSeats={selectedSeats}
-                  onSeatSelect={handleSeatSelect}
-                  totalSeats={bus.capacity}
-                  maxSeats={passengerDetails.length}
-                />
-                
-                <div className="mt-6 flex justify-between items-center">
-                  <div className="text-slate-300">
-                    Selected: {selectedSeats.length} of {passengerDetails.length}
-                  </div>
-                  <button
-                    onClick={() => setCurrentStep(2)}
-                    disabled={selectedSeats.length !== passengerDetails.length}
-                    className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-xl font-semibold transition-colors"
-                  >
-                    Continue to Passenger Details
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Passenger Details */}
-            {currentStep === 2 && (
-              <div className="bg-slate-800/50 rounded-2xl p-6">
-                <h3 className="text-xl font-bold text-white mb-4">Passenger Details</h3>
-                <p className="text-slate-400 mb-6">
-                  Please provide details for all passengers
-                </p>
-
-                <div className="space-y-4">
-                  {passengerDetails.map((passenger, index) => (
-                    <div key={passenger.id} className="bg-slate-700/30 p-4 rounded-xl">
-                      <h4 className="text-lg font-semibold text-white mb-3">
-                        Passenger {index + 1} - Seat {selectedSeats[index]}
-                      </h4>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-slate-400 text-sm mb-1 flex items-center">
-                            <FaUser className="mr-2" />
-                            Full Name *
-                          </label>
-                          <input
-                            type="text"
-                            value={passenger.name}
-                            onChange={(e) => handlePassengerChange(index, 'name', e.target.value)}
-                            className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-slate-400 text-sm mb-1 flex items-center">
-                            <FaIdCard className="mr-2" />
-                            NIC Number *
-                          </label>
-                          <input
-                            type="text"
-                            value={passenger.nic}
-                            onChange={(e) => handlePassengerChange(index, 'nic', e.target.value)}
-                            className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-slate-400 text-sm mb-1">Age</label>
-                          <input
-                            type="number"
-                            value={passenger.age}
-                            onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
-                            className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            min="1"
-                            max="120"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-slate-400 text-sm mb-1 flex items-center">
-                            <FaVenusMars className="mr-2" />
-                            Gender
-                          </label>
-                          <select
-                            value={passenger.gender}
-                            onChange={(e) => handlePassengerChange(index, 'gender', e.target.value)}
-                            className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="">Select Gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 flex justify-between">
-                  <button
-                    onClick={() => setCurrentStep(1)}
-                    className="bg-slate-600 hover:bg-slate-500 text-white px-6 py-2 rounded-xl font-semibold transition-colors"
-                  >
-                    Back to Seat Selection
-                  </button>
-                  <button
-                    onClick={handleProceedToPayment}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors flex items-center"
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Proceed to Payment
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Price Summary */}
+            {/* Bus Selection Card */}
             <div className="bg-slate-800/50 rounded-2xl p-6">
-              <h3 className="text-xl font-bold text-white mb-4">Price Summary</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Base Fare (x{passengerDetails.length})</span>
-                  <span className="text-white">Rs. {bus.price * passengerDetails.length}</span>
+              <h3 className="text-xl font-bold text-white mb-4">Bus Information</h3>
+              
+              <div className="space-y-4 mb-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Bus Type:</span>
+                  <span className="text-white font-semibold">{bus.type}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Taxes & Fees</span>
-                  <span className="text-white">Rs. 0</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Capacity:</span>
+                  <span className="text-white font-semibold">{bus.capacity} seats</span>
                 </div>
-                <div className="border-t border-slate-600 pt-3 mt-3">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span className="text-white">Total Amount</span>
-                    <span className="text-blue-400">Rs. {bus.price * passengerDetails.length}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Price per seat:</span>
+                  <span className="text-blue-400 font-bold">Rs. {bus.price}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Rating:</span>
+                  <div className="flex items-center">
+                    <FaStar className="text-yellow-400 mr-1" />
+                    <span className="text-white font-semibold">{bus.rating}</span>
+                    <span className="text-slate-400 ml-1">({bus.reviews} reviews)</span>
                   </div>
                 </div>
+                {passengerDetails.length > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Passengers:</span>
+                    <span className="text-white font-semibold">{passengerDetails.length}</span>
+                  </div>
+                )}
               </div>
+
+              {/* Select Button */}
+              <button
+                onClick={handleSelectBus}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center"
+              >
+                <CreditCard className="mr-2 h-5 w-5" />
+                Select This Bus
+              </button>
+
+              {/* Quick Info */}
+              <div className="mt-4 p-3 bg-slate-700/30 rounded-lg">
+                <div className="flex items-center text-slate-300 text-sm">
+                  <Shield className="h-4 w-4 mr-2 text-green-400" />
+                  Free cancellation up to 24 hours before departure
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Information */}
+            <div className="bg-slate-800/50 rounded-2xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4">Important Information</h3>
+              <ul className="space-y-2 text-slate-300">
+                <li className="flex items-start">
+                  <div className="text-blue-400 mr-2">•</div>
+                  Please arrive at the boarding point 15 minutes before departure
+                </li>
+                <li className="flex items-start">
+                  <div className="text-blue-400 mr-2">•</div>
+                  Valid photo ID required for all passengers
+                </li>
+                <li className="flex items-start">
+                  <div className="text-blue-400 mr-2">•</div>
+                  Luggage allowance: 1 cabin bag + 1 check-in bag per passenger
+                </li>
+                <li className="flex items-start">
+                  <div className="text-blue-400 mr-2">•</div>
+                  Children under 5 travel free (without separate seat)
+                </li>
+              </ul>
             </div>
           </div>
         </div>
