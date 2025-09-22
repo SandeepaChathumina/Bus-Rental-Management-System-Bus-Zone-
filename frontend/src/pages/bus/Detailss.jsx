@@ -1,21 +1,29 @@
+// BusDetails.jsx (updated)
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
 import Bus from '../../assets/bus9.png';
 import { 
-  FaArrowLeft
+  FaStar, 
+  FaArrowLeft,
+  FaUser,
+  FaIdCard,
+  FaVenusMars,
+  FaCalendarAlt
 } from 'react-icons/fa';
 import { 
+  Clock, 
   Users, 
   Wifi, 
   Snowflake, 
-  Coffee,
+  Coffee, 
+  Shield,
   MapPin,
-  Navigation,
-  Route
+  CreditCard,
+  AlertCircle,
+  Route,
+  Navigation
 } from 'lucide-react';
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+import Seat from '../../components/seat/Seat';
 
 const BusDetails = () => {
   const { id } = useParams();
@@ -23,59 +31,94 @@ const BusDetails = () => {
   const location = useLocation();
   const [bus, setBus] = useState(null);
   const [selectedSeats, setSelectedSeats] = useState([]);
+  const [passengerDetails, setPassengerDetails] = useState([]);
+  const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [routeInfo, setRouteInfo] = useState(null);
+
+  // Predefined distances between major cities (in km)
+  const predefinedDistances = {
+    'colombo-kandy': { distance: 116, duration: 180 },
+    'colombo-galle': { distance: 116, duration: 120 },
+    'kandy-nuwara-eliya': { distance: 77, duration: 120 },
+    'colombo-jaffna': { distance: 396, duration: 480 },
+    'colombo-anuradhapura': { distance: 206, duration: 240 },
+    'colombo-trincomalee': { distance: 265, duration: 300 },
+    'colombo-matara': { distance: 160, duration: 180 },
+    'colombo-ratnapura': { distance: 101, duration: 150 },
+    'kandy-galle': { distance: 200, duration: 240 },
+    'kandy-matara': { distance: 200, duration: 240 },
+  };
+
+  // Sample bus data
+  const sampleBus = {
+    id: 1,
+    name: "Deluxe Coach",
+    type: "Deluxe",
+    capacity: 45,
+    amenities: ["wifi", "ac", "refreshments", "entertainment", "charging"],
+    rating: 4.5,
+    reviews: 124,
+    price: 1200,
+    departureTime: "08:00",
+    arrivalTime: "12:00",
+    numberPlate: "CAB-1234",
+  };
 
   useEffect(() => {
     const loadBusDetails = async () => {
       setIsLoading(true);
       try {
-        // Try to fetch bus details from API first
-        try {
-          const token = localStorage.getItem('token');
-          const response = await axios.get(`${BACKEND_URL}/api/buses/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          
-          const busData = {
-            ...response.data.bus,
-            price: response.data.bus.busType === 'Luxury' ? 1800 : 
-                   response.data.bus.busType === 'Deluxe' ? 1200 : 800,
-            amenities: response.data.bus.busType === 'Luxury' ? 
-                      ["wifi", "ac", "refreshments", "entertainment", "charging", "leather"] :
-                      response.data.bus.busType === 'Deluxe' ? 
-                      ["wifi", "ac", "refreshments", "entertainment"] :
-                      ["ac", "charging"]
-          };
-          
-          setBus(busData);
-        } catch (apiError) {
-          console.error('API error, using passed data:', apiError);
-          if (location.state?.busData) {
-            setBus(location.state.busData);
-          } else {
-            const sampleBus = {
-              _id: id,
-              name: "Deluxe Coach",
-              busType: "Deluxe",
-              capacity: 45,
-              amenities: ["wifi", "ac", "refreshments", "entertainment", "charging"],
-              price: 1200,
-              numberPlate: "CAB-1234",
-            };
-            setBus(sampleBus);
-          }
-        }
+        await new Promise(resolve => setTimeout(resolve, 800));
+        setBus(sampleBus);
         
         // Get search params from navigation state
         const searchParams = location.state?.searchParams;
         if (searchParams) {
+          // Calculate route information based on search params
+          const from = searchParams.from.toLowerCase();
+          const to = searchParams.to.toLowerCase();
+          const key = `${from}-${to}`;
+          const reverseKey = `${to}-${from}`;
+          
+          // Get distance information from predefined data
+          let distanceData = predefinedDistances[key] || predefinedDistances[reverseKey];
+          
+          // If no predefined data exists, use default values
+          if (!distanceData) {
+            distanceData = { distance: 150, duration: 180 }; // Default values
+          }
+          
+          // Calculate arrival time based on departure time and duration
+          const departureTime = sampleBus.departureTime;
+          const [hours, minutes] = departureTime.split(':').map(Number);
+          const departureDate = new Date();
+          departureDate.setHours(hours, minutes, 0, 0);
+          
+          const arrivalDate = new Date(departureDate.getTime() + distanceData.duration * 60000);
+          const arrivalTime = arrivalDate.toTimeString().substring(0, 5);
+          
           setRouteInfo({
             from: searchParams.from,
             to: searchParams.to,
-            distance: 150,
-            duration: 180
+            distance: Math.round(distanceData.distance),
+            duration: Math.round(distanceData.duration),
+            departureTime: sampleBus.departureTime,
+            arrivalTime: arrivalTime
           });
+          
+          // Initialize passenger details based on search params
+          if (searchParams.passengers) {
+            const initialPassengers = Array(searchParams.passengers).fill().map((_, index) => ({
+              id: index + 1,
+              name: '',
+              nic: '',
+              age: '',
+              gender: '',
+              seatNumber: ''
+            }));
+            setPassengerDetails(initialPassengers);
+          }
         }
       } catch (error) {
         console.error('Error loading bus details:', error);
@@ -90,52 +133,49 @@ const BusDetails = () => {
   const handleSeatSelect = (seatNumber) => {
     if (selectedSeats.includes(seatNumber)) {
       setSelectedSeats(selectedSeats.filter(seat => seat !== seatNumber));
-    } else {
+    } else if (selectedSeats.length < passengerDetails.length) {
       setSelectedSeats([...selectedSeats, seatNumber]);
     }
   };
 
-  // Generate seats based on bus capacity
-  const generateSeats = () => {
-    if (!bus) return [];
-    
-    const seats = [];
-    const rows = Math.ceil(bus.capacity / 4);
-    
-    for (let row = 1; row <= rows; row++) {
-      const rowSeats = [];
-      const seatsInRow = row === rows ? bus.capacity % 4 || 4 : 4;
-      
-      for (let seat = 1; seat <= seatsInRow; seat++) {
-        const seatNumber = (row - 1) * 4 + seat;
-        rowSeats.push({
-          number: seatNumber,
-          isSelected: selectedSeats.includes(seatNumber),
-          isAvailable: true // All seats are available for demo
-        });
-      }
-      seats.push(rowSeats);
-    }
-    
-    return seats;
+  const handlePassengerChange = (index, field, value) => {
+    const updatedPassengers = [...passengerDetails];
+    updatedPassengers[index][field] = value;
+    setPassengerDetails(updatedPassengers);
   };
 
-  const Seat = ({ seat, onSelect }) => {
-    return (
-      <button
-        onClick={() => onSelect(seat.number)}
-        disabled={!seat.isAvailable}
-        className={`w-12 h-12 m-1 rounded-lg flex items-center justify-center text-sm font-semibold transition-all duration-200 ${
-          seat.isSelected 
-            ? 'bg-blue-500 text-white' 
-            : seat.isAvailable 
-            ? 'bg-green-500 text-white hover:bg-green-600' 
-            : 'bg-red-500 text-white cursor-not-allowed'
-        }`}
-      >
-        {seat.number}
-      </button>
-    );
+  const handleProceedToPayment = () => {
+    if (selectedSeats.length !== passengerDetails.length) {
+      alert('Please select seats for all passengers');
+      return;
+    }
+
+    const allPassengersValid = passengerDetails.every((passenger, index) => {
+      if (!passenger.name || !passenger.nic) {
+        alert(`Please fill in all details for passenger ${index + 1}`);
+        return false;
+      }
+      return true;
+    });
+
+    if (allPassengersValid) {
+      // Assign seat numbers to passengers
+      const passengersWithSeats = passengerDetails.map((passenger, index) => ({
+        ...passenger,
+        seatNumber: selectedSeats[index]
+      }));
+
+      navigate('/passenger-details', {
+        state: {
+          bus,
+          passengers: passengersWithSeats,
+          selectedSeats,
+          searchParams: location.state?.searchParams,
+          routeInfo,
+          totalAmount: bus.price * passengerDetails.length
+        }
+      });
+    }
   };
 
   if (isLoading) {
@@ -158,6 +198,7 @@ const BusDetails = () => {
     return (
       <div className="min-h-screen bg-slate-950 pt-32 pb-16 px-6">
         <div className="max-w-6xl mx-auto text-center">
+          <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-white mb-4">Bus not found</h2>
           <button
             onClick={() => navigate('/bus')}
@@ -169,8 +210,6 @@ const BusDetails = () => {
       </div>
     );
   }
-
-  const seats = generateSeats();
 
   return (
     <div className="min-h-screen bg-slate-950 pt-32 pb-16 px-6">
@@ -185,10 +224,10 @@ const BusDetails = () => {
             Back
           </button>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-white">{bus.name || `${bus.busType} Bus`}</h1>
-            <p className="text-slate-400">{bus.busType} Coach - {bus.capacity} Seats</p>
+            <h1 className="text-3xl font-bold text-white">{bus.name}</h1>
+            <p className="text-slate-400">{bus.type} Coach</p>
           </div>
-          <div className="w-20"></div>
+          <div className="w-20"></div> {/* Spacer for alignment */}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -197,8 +236,8 @@ const BusDetails = () => {
             {/* Bus Image */}
             <div className="bg-slate-800/50 rounded-2xl p-6">
               <img
-                src={bus.vehiclePhoto || Bus}
-                alt={bus.name || bus.busType + ' Bus'}
+                src={Bus}
+                alt={bus.name}
                 className="w-full h-64 object-cover rounded-xl mb-4"
               />
               
@@ -233,7 +272,7 @@ const BusDetails = () => {
                     </div>
                     <div className="bg-slate-700/50 p-4 rounded-xl">
                       <div className="text-slate-400 text-sm mb-1 flex items-center">
-                        <span className="mr-1">⏱️</span>
+                        <Clock className="mr-1 h-4 w-4" />
                         Duration
                       </div>
                       <div className="text-white font-semibold">
@@ -244,28 +283,23 @@ const BusDetails = () => {
                 </div>
               )}
 
-              {/* Bus Details */}
+              {/* Schedule */}
               <div className="mb-6">
-                <h3 className="text-xl font-bold text-white mb-4">Bus Details</h3>
+                <h3 className="text-xl font-bold text-white mb-4">Schedule</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-slate-700/50 p-4 rounded-xl">
-                    <div className="text-slate-400 text-sm mb-1">Number Plate</div>
-                    <div className="text-white font-semibold">{bus.numberPlate}</div>
-                  </div>
-                  <div className="bg-slate-700/50 p-4 rounded-xl">
-                    <div className="text-slate-400 text-sm mb-1 flex items-center">
-                      <Users className="mr-1 h-4 w-4" />
-                      Capacity
+                    <div className="flex items-center text-slate-400 mb-1">
+                      <Clock className="h-4 w-4 mr-2" />
+                      Departure
                     </div>
-                    <div className="text-white font-semibold">{bus.capacity} seats</div>
+                    <div className="text-white font-semibold">{routeInfo?.departureTime || bus.departureTime}</div>
                   </div>
                   <div className="bg-slate-700/50 p-4 rounded-xl">
-                    <div className="text-slate-400 text-sm mb-1">Engine Number</div>
-                    <div className="text-white font-semibold">{bus.engineNumber || 'N/A'}</div>
-                  </div>
-                  <div className="bg-slate-700/50 p-4 rounded-xl">
-                    <div className="text-slate-400 text-sm mb-1">Bus Type</div>
-                    <div className="text-white font-semibold">{bus.busType}</div>
+                    <div className="flex items-center text-slate-400 mb-1">
+                      <Clock className="h-4 w-4 mr-2" />
+                      Arrival
+                    </div>
+                    <div className="text-white font-semibold">{routeInfo?.arrivalTime || bus.arrivalTime}</div>
                   </div>
                 </div>
               </div>
@@ -282,7 +316,6 @@ const BusDetails = () => {
                         {amenity === 'refreshments' && <Coffee className="h-4 w-4" />}
                         {amenity === 'charging' && <div className="text-sm">🔋</div>}
                         {amenity === 'entertainment' && <div className="text-sm">📺</div>}
-                        {amenity === 'leather' && <div className="text-sm">💺</div>}
                       </div>
                       <span className="text-slate-300 text-sm capitalize">{amenity}</span>
                     </div>
@@ -292,78 +325,140 @@ const BusDetails = () => {
             </div>
           </div>
 
-          {/* Right Column - Seat Selection */}
+          {/* Right Column - Booking Process */}
           <div className="space-y-6">
-            {/* Seat Selection */}
-            <div className="bg-slate-800/50 rounded-2xl p-6">
-              <h3 className="text-xl font-bold text-white mb-4">Select Seats</h3>
-              <p className="text-slate-400 mb-6">
-                Choose your preferred seats
-              </p>
-              
-              {/* Seat Layout */}
-              <div className="mb-6">
-                <div className="bg-slate-700/30 p-4 rounded-xl mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-slate-300">Driver</span>
-                    <span className="text-slate-300">Front</span>
+            {/* Step 1: Select Seats */}
+            {currentStep === 1 && (
+              <div className="bg-slate-800/50 rounded-2xl p-6">
+                <h3 className="text-xl font-bold text-white mb-4">Select Seats</h3>
+                <p className="text-slate-400 mb-6">
+                  Choose {passengerDetails.length} seat(s) for your journey
+                </p>
+                
+                <Seat 
+                  selectedSeats={selectedSeats}
+                  onSeatSelect={handleSeatSelect}
+                  totalSeats={bus.capacity}
+                  maxSeats={passengerDetails.length}
+                />
+                
+                <div className="mt-6 flex justify-between items-center">
+                  <div className="text-slate-300">
+                    Selected: {selectedSeats.length} of {passengerDetails.length}
                   </div>
-                  
-                  <div className="flex justify-center mb-4">
-                    <div className="w-32 h-8 bg-slate-600 rounded-lg flex items-center justify-center text-slate-300 text-sm">
-                      Entrance
-                    </div>
-                  </div>
+                  <button
+                    onClick={() => setCurrentStep(2)}
+                    disabled={selectedSeats.length !== passengerDetails.length}
+                    className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-xl font-semibold transition-colors"
+                  >
+                    Continue to Passenger Details
+                  </button>
+                </div>
+              </div>
+            )}
 
-                  {/* Seats Grid */}
-                  <div className="space-y-4">
-                    {seats.map((row, rowIndex) => (
-                      <div key={rowIndex} className="flex justify-center space-x-2">
-                        {row.map((seat, seatIndex) => (
-                          <React.Fragment key={seat.number}>
-                            <Seat seat={seat} onSelect={handleSeatSelect} />
-                            {seatIndex === 1 && <div className="w-8"></div>}
-                          </React.Fragment>
-                        ))}
+            {/* Step 2: Passenger Details */}
+            {currentStep === 2 && (
+              <div className="bg-slate-800/50 rounded-2xl p-6">
+                <h3 className="text-xl font-bold text-white mb-4">Passenger Details</h3>
+                <p className="text-slate-400 mb-6">
+                  Please provide details for all passengers
+                </p>
+
+                <div className="space-y-4">
+                  {passengerDetails.map((passenger, index) => (
+                    <div key={passenger.id} className="bg-slate-700/30 p-4 rounded-xl">
+                      <h4 className="text-lg font-semibold text-white mb-3">
+                        Passenger {index + 1} - Seat {selectedSeats[index]}
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-slate-400 text-sm mb-1 flex items-center">
+                            <FaUser className="mr-2" />
+                            Full Name *
+                          </label>
+                          <input
+                            type="text"
+                            value={passenger.name}
+                            onChange={(e) => handlePassengerChange(index, 'name', e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-slate-400 text-sm mb-1 flex items-center">
+                            <FaIdCard className="mr-2" />
+                            NIC Number *
+                          </label>
+                          <input
+                            type="text"
+                            value={passenger.nic}
+                            onChange={(e) => handlePassengerChange(index, 'nic', e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-slate-400 text-sm mb-1">Age</label>
+                          <input
+                            type="number"
+                            value={passenger.age}
+                            onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            min="1"
+                            max="120"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-slate-400 text-sm mb-1 flex items-center">
+                            <FaVenusMars className="mr-2" />
+                            Gender
+                          </label>
+                          <select
+                            value={passenger.gender}
+                            onChange={(e) => handlePassengerChange(index, 'gender', e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Seat Legend */}
-                <div className="flex justify-center space-x-6 text-sm">
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
-                    <span className="text-slate-300">Available</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-blue-500 rounded mr-2"></div>
-                    <span className="text-slate-300">Selected</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-red-500 rounded mr-2"></div>
-                    <span className="text-slate-300">Occupied</span>
-                  </div>
+                <div className="mt-6 flex justify-between">
+                  <button
+                    onClick={() => setCurrentStep(1)}
+                    className="bg-slate-600 hover:bg-slate-500 text-white px-6 py-2 rounded-xl font-semibold transition-colors"
+                  >
+                    Back to Seat Selection
+                  </button>
+                  <button
+                    onClick={handleProceedToPayment}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors flex items-center"
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Proceed to Payment
+                  </button>
                 </div>
               </div>
-
-              <div className="flex justify-between items-center">
-                <div className="text-slate-300">
-                  Selected: {selectedSeats.length} seat(s)
-                </div>
-                <div className="text-xl font-bold text-white">
-                  Total: Rs. {bus.price * selectedSeats.length}
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Price Summary */}
             <div className="bg-slate-800/50 rounded-2xl p-6">
               <h3 className="text-xl font-bold text-white mb-4">Price Summary</h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Base Fare (x{selectedSeats.length})</span>
-                  <span className="text-white">Rs. {bus.price * selectedSeats.length}</span>
+                  <span className="text-slate-400">Base Fare (x{passengerDetails.length})</span>
+                  <span className="text-white">Rs. {bus.price * passengerDetails.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Taxes & Fees</span>
@@ -372,7 +467,7 @@ const BusDetails = () => {
                 <div className="border-t border-slate-600 pt-3 mt-3">
                   <div className="flex justify-between text-lg font-bold">
                     <span className="text-white">Total Amount</span>
-                    <span className="text-blue-400">Rs. {bus.price * selectedSeats.length}</span>
+                    <span className="text-blue-400">Rs. {bus.price * passengerDetails.length}</span>
                   </div>
                 </div>
               </div>
