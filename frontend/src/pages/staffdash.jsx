@@ -1,779 +1,857 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Filter,
+  Download,
+  Save,
+  X,
+  Wrench,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  User,
+  Bus,
+  Calendar,
+  DollarSign,
+  BarChart3,
+  ChevronDown,
+  MoreVertical
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 
-const BusZoneDashboard = () => {
-  const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [maintenanceData, setMaintenanceData] = useState([]);
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
-  // Mock data for demonstration
+const MaintenanceManagement = () => {
+  const [maintenances, setMaintenances] = useState([]);
+  const [filteredMaintenances, setFilteredMaintenances] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingMaintenance, setEditingMaintenance] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterPriority, setFilterPriority] = useState('all');
+  const [activeBuses, setActiveBuses] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    byStatus: [],
+    byPriority: [],
+    summary: { pending: 0, inProgress: 0, completed: 0 }
+  });
+  const [costStats, setCostStats] = useState({
+    overall: { totalSpent: 0, averageCost: 0, totalRequests: 0, minCost: 0, maxCost: 0 },
+    monthly: [],
+    byPriority: []
+  });
+  const [activeTab, setActiveTab] = useState('list'); // 'list', 'stats', 'cost'
+
+  const [formData, setFormData] = useState({
+    user: '',
+    bus: '',
+    description: '',
+    priority: 'Medium',
+    estimatedCost: '',
+    estimatedCompletionDate: '',
+    status: 'Pending'
+  });
+
   useEffect(() => {
-    // Simulate fetching notifications
-    const mockNotifications = [
-      { id: 1, message: 'Bus #BZ-102 requires maintenance', time: '10 mins ago', read: false, priority: 'high' },
-      { id: 2, message: 'New booking confirmed for Friday', time: '1 hour ago', read: false, priority: 'medium' },
-      { id: 3, message: 'Payment received from customer #2894', time: '2 hours ago', read: true, priority: 'low' },
-      { id: 4, message: 'Driver assignment needed for trip #4821', time: '5 hours ago', read: true, priority: 'high' },
-    ];
-
-    // Simulate fetching maintenance data
-    const mockMaintenanceData = [
-      { id: 1, busId: 'BZ-101', type: 'Routine Service', status: 'Completed', date: '2023-06-15', dueIn: '0 days' },
-      { id: 2, busId: 'BZ-102', type: 'Engine Repair', status: 'In Progress', date: '2023-06-18', dueIn: '2 days' },
-      { id: 3, busId: 'BZ-105', type: 'Tire Replacement', status: 'Scheduled', date: '2023-06-20', dueIn: '5 days' },
-      { id: 4, busId: 'BZ-108', type: 'Brake Inspection', status: 'Pending', date: '2023-06-22', dueIn: '7 days' },
-    ];
-
-    setNotifications(mockNotifications);
-    setMaintenanceData(mockMaintenanceData);
+    fetchMaintenances();
+    fetchActiveBuses();
+    fetchStats();
+    fetchCostStats();
   }, []);
 
-  const toggleNotifications = () => {
-    setShowNotifications(!showNotifications);
-    
-    // Mark notifications as read when opening
-    if (!showNotifications) {
-      const updatedNotifications = notifications.map(notif => ({ ...notif, read: true }));
-      setNotifications(updatedNotifications);
+  useEffect(() => {
+    filterMaintenances();
+  }, [maintenances, searchTerm, filterStatus, filterPriority]);
+
+  const fetchMaintenances = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/maintenance`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMaintenances(response.data.maintenances || []);
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch maintenance requests', error);
+      toast.error('Failed to fetch maintenance requests');
+      setLoading(false);
     }
   };
 
-  const getStatusClass = (status) => {
+  const fetchActiveBuses = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/maintenance/active-buses`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setActiveBuses(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch active buses', error);
+      toast.error('Failed to fetch active buses');
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/maintenance/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setStats(response.data);
+    } catch (error) {
+      console.error('Failed to fetch maintenance stats', error);
+    }
+  };
+
+  const fetchCostStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/maintenance/cost-stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCostStats(response.data);
+    } catch (error) {
+      console.error('Failed to fetch cost stats', error);
+    }
+  };
+
+  const filterMaintenances = () => {
+    let filtered = maintenances;
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(maintenance =>
+        maintenance.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (maintenance.user && (
+          maintenance.user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          maintenance.user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (maintenance.user.staffProfile && maintenance.user.staffProfile.employeeId.toLowerCase().includes(searchTerm.toLowerCase()))
+        )) ||
+        (maintenance.bus && (
+          maintenance.bus.numberPlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          maintenance.bus.busType.toLowerCase().includes(searchTerm.toLowerCase())
+        ))
+      );
+    }
+
+    // Filter by status
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(maintenance => maintenance.status === filterStatus);
+    }
+
+    // Filter by priority
+    if (filterPriority !== 'all') {
+      filtered = filtered.filter(maintenance => maintenance.priority === filterPriority);
+    }
+
+    setFilteredMaintenances(filtered);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const payload = {
+        ...formData,
+        userId: formData.user, // This should be the staff ID
+        busId: formData.bus,
+        estimatedCost: parseFloat(formData.estimatedCost)
+      };
+
+      if (editingMaintenance) {
+        // Update existing maintenance
+        await axios.put(`${BACKEND_URL}/api/maintenance/${editingMaintenance._id}`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success('Maintenance request updated successfully');
+      } else {
+        // Create new maintenance
+        await axios.post(`${BACKEND_URL}/api/maintenance`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success('Maintenance request created successfully');
+      }
+
+      setShowModal(false);
+      setEditingMaintenance(null);
+      setFormData({
+        user: '',
+        bus: '',
+        description: '',
+        priority: 'Medium',
+        estimatedCost: '',
+        estimatedCompletionDate: '',
+        status: 'Pending'
+      });
+      fetchMaintenances();
+      fetchStats();
+      fetchCostStats();
+    } catch (error) {
+      console.error('Failed to save maintenance request', error);
+      toast.error(error.response?.data?.message || 'Failed to save maintenance request');
+    }
+  };
+
+  const handleEdit = (maintenance) => {
+    setEditingMaintenance(maintenance);
+    setFormData({
+      user: maintenance.user._id,
+      bus: maintenance.bus._id,
+      description: maintenance.description,
+      priority: maintenance.priority,
+      estimatedCost: maintenance.estimatedCost,
+      estimatedCompletionDate: maintenance.estimatedCompletionDate ? new Date(maintenance.estimatedCompletionDate).toISOString().split('T')[0] : '',
+      status: maintenance.status,
+      actualCost: maintenance.actualCost || '',
+      actualCompletionDate: maintenance.actualCompletionDate ? new Date(maintenance.actualCompletionDate).toISOString().split('T')[0] : ''
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this maintenance request?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${BACKEND_URL}/api/maintenance/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Maintenance request deleted successfully');
+      fetchMaintenances();
+      fetchStats();
+      fetchCostStats();
+    } catch (error) {
+      console.error('Failed to delete maintenance request', error);
+      toast.error('Failed to delete maintenance request');
+    }
+  };
+
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const getStatusIcon = (status) => {
     switch (status) {
-      case 'Completed': return 'status-badge status-completed';
-      case 'In Progress': return 'status-badge status-in-progress';
-      case 'Scheduled': return 'status-badge status-scheduled';
-      case 'Pending': return 'status-badge status-pending';
-      default: return 'status-badge';
+      case 'Completed':
+        return <CheckCircle className="w-4 h-4 text-green-400" />;
+      case 'In Progress':
+        return <Clock className="w-4 h-4 text-blue-400" />;
+      case 'Pending':
+        return <AlertCircle className="w-4 h-4 text-yellow-400" />;
+      case 'Cancelled':
+        return <XCircle className="w-4 h-4 text-red-400" />;
+      default:
+        return <AlertCircle className="w-4 h-4 text-gray-400" />;
     }
   };
 
-  const getPriorityIcon = (priority) => {
-    switch (priority) {
-      case 'high': return '🔴';
-      case 'medium': return '🟡';
-      case 'low': return '🔵';
-      default: return '';
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Completed':
+        return 'bg-green-900/30 text-green-400';
+      case 'In Progress':
+        return 'bg-blue-900/30 text-blue-400';
+      case 'Pending':
+        return 'bg-yellow-900/30 text-yellow-400';
+      case 'Cancelled':
+        return 'bg-red-900/30 text-red-400';
+      default:
+        return 'bg-gray-900/30 text-gray-400';
     }
   };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'Critical':
+        return 'bg-red-900/30 text-red-400';
+      case 'High':
+        return 'bg-orange-900/30 text-orange-400';
+      case 'Medium':
+        return 'bg-yellow-900/30 text-yellow-400';
+      case 'Low':
+        return 'bg-green-900/30 text-green-400';
+      default:
+        return 'bg-gray-900/30 text-gray-400';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-slate-400">Loading maintenance requests...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="dashboard-container">
+    <div className="space-y-6">
       {/* Header */}
-      <header className="dashboard-header">
-        <div className="header-left">
-          <div className="logo">
-            <span className="logo-icon">🚌</span>
-            <h1>BusZone+</h1>
-          </div>
-          <nav className="main-nav">
-            <a href="#" className="nav-link active">Dashboard</a>
-            <a href="#" className="nav-link">Bookings</a>
-            <a href="#" className="nav-link">Fleet</a>
-            <a href="#" className="nav-link">Maintenance</a>
-            <a href="#" className="nav-link">Reports</a>
-          </nav>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Maintenance Management</h2>
+          <p className="text-slate-400">Manage bus maintenance requests</p>
         </div>
-        
-        <div className="header-controls">
-          <div className="search-bar">
-            <input type="text" placeholder="Search..." />
-            <span className="search-icon">🔍</span>
-          </div>
-          
-          <div className="notifications-wrapper">
-            <button 
-              className="notifications-btn"
-              onClick={toggleNotifications}
-            >
-              <span className="bell-icon">🔔</span>
-              {notifications.filter(n => !n.read).length > 0 && (
-                <span className="notification-badge">
-                  {notifications.filter(n => !n.read).length}
-                </span>
-              )}
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          New Request
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-slate-700">
+        <button
+          className={`px-4 py-2 font-medium ${activeTab === 'list' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'}`}
+          onClick={() => setActiveTab('list')}
+        >
+          Maintenance List
+        </button>
+        <button
+          className={`px-4 py-2 font-medium ${activeTab === 'stats' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'}`}
+          onClick={() => setActiveTab('stats')}
+        >
+          Statistics
+        </button>
+        <button
+          className={`px-4 py-2 font-medium ${activeTab === 'cost' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'}`}
+          onClick={() => setActiveTab('cost')}
+        >
+          Cost Analysis
+        </button>
+      </div>
+
+      {activeTab === 'list' && (
+        <>
+          {/* Filters */}
+          <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search by description, staff ID, or bus..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Filter className="text-slate-400 w-5 h-5" />
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <select
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value)}
+                className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Priority</option>
+                <option value="Critical">Critical</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+            <button className="flex items-center px-4 py-2 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-700">
+              <Download className="w-5 h-5 mr-2" />
+              Export
             </button>
+          </div>
+
+          {/* Maintenance List */}
+          <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-700">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Staff ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Bus</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Priority</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Est. Cost</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Est. Completion</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700">
+                  {filteredMaintenances.map((maintenance) => (
+                    <tr key={maintenance._id} className="hover:bg-slate-750">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{maintenance.maintenanceId || 'N/A'}</td>
+                      <td className="px-6 py-4 text-sm text-slate-300 max-w-xs truncate">{maintenance.description}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                        {maintenance.user && maintenance.user.staffProfile 
+                          ? maintenance.user.staffProfile.employeeId 
+                          : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                        {maintenance.bus ? `${maintenance.bus.numberPlate} (${maintenance.bus.busType})` : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(maintenance.priority)}`}>
+                          {maintenance.priority}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(maintenance.status)}`}>
+                          {getStatusIcon(maintenance.status)}
+                          <span className="ml-1.5">{maintenance.status}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                        {formatCurrency(maintenance.estimatedCost)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                        {formatDate(maintenance.estimatedCompletionDate)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleEdit(maintenance)}
+                            className="text-blue-400 hover:text-blue-300"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(maintenance._id)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             
-            {showNotifications && (
-              <div className="notifications-dropdown">
-                <div className="notifications-header">
-                  <h3>Notifications</h3>
-                  <span className="close-btn" onClick={() => setShowNotifications(false)}>×</span>
-                </div>
-                <div className="notifications-list">
-                  {notifications.length > 0 ? (
-                    notifications.map(notif => (
-                      <div 
-                        key={notif.id} 
-                        className={`notification-item ${notif.read ? '' : 'unread'} ${notif.priority}`}
-                      >
-                        <div className="notification-priority">
-                          {getPriorityIcon(notif.priority)}
-                        </div>
-                        <div className="notification-content">
-                          <p>{notif.message}</p>
-                          <span className="notification-time">{notif.time}</span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="no-notifications">No notifications</p>
-                  )}
-                </div>
-                <div className="notifications-footer">
-                  <a href="#">View all notifications</a>
-                </div>
+            {filteredMaintenances.length === 0 && (
+              <div className="text-center py-12">
+                <Wrench className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-400">No maintenance requests found</h3>
+                <p className="text-slate-500 mt-1">
+                  {searchTerm || filterStatus !== 'all' || filterPriority !== 'all'
+                    ? 'Try adjusting your search or filter criteria' 
+                    : 'Get started by creating your first maintenance request'
+                  }
+                </p>
               </div>
             )}
           </div>
-          
-          <div className="user-profile">
-            <div className="user-info">
-              <span className="user-name">Staff User</span>
-              <span className="user-role">Administrator</span>
-            </div>
-            <div className="avatar">SU</div>
-          </div>
-        </div>
-      </header>
+        </>
+      )}
 
-      {/* Main Dashboard Content */}
-      <main className="dashboard-main">
-        {/* Stats Overview */}
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon booking">📋</div>
-            <div className="stat-content">
-              <h3>Active Bookings</h3>
-              <p className="stat-number">24</p>
-              <span className="stat-trend up">+12% from last week</span>
+      {activeTab === 'stats' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-300">Total Requests</p>
+                <h3 className="text-2xl font-bold text-white mt-1">{stats.total}</h3>
+              </div>
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-slate-900/30">
+                <BarChart3 className="w-6 h-6 text-slate-300" />
+              </div>
             </div>
           </div>
-          
-          <div className="stat-card">
-            <div className="stat-icon bus">🚌</div>
-            <div className="stat-content">
-              <h3>Available Buses</h3>
-              <p className="stat-number">18</p>
-              <span className="stat-trend down">-3% from last week</span>
-            </div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-icon maintenance">🔧</div>
-            <div className="stat-content">
-              <h3>Maintenance Due</h3>
-              <p className="stat-number">5</p>
-              <span className="stat-trend">No change</span>
-            </div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-icon revenue">💰</div>
-            <div className="stat-content">
-              <h3>Revenue This Month</h3>
-              <p className="stat-number">$12,580</p>
-              <span className="stat-trend up">+8% from last month</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Maintenance Section */}
-        <section className="maintenance-section">
-          <div className="section-header">
-            <h2>Maintenance Overview</h2>
-            <button className="btn-primary">
-              <span className="btn-icon">+</span>
-              Schedule Maintenance
-            </button>
-          </div>
-          
-          <div className="table-container">
-            <div className="table-header">
-              <span>Bus ID</span>
-              <span>Maintenance Type</span>
-              <span>Status</span>
-              <span>Scheduled Date</span>
-              <span>Due In</span>
-              <span>Action</span>
+          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-300">Pending</p>
+                <h3 className="text-2xl font-bold text-white mt-1">{stats.summary.pending}</h3>
+              </div>
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-yellow-900/30">
+                <AlertCircle className="w-6 h-6 text-yellow-400" />
+              </div>
             </div>
-            <div className="table-body">
-              {maintenanceData.map(item => (
-                <div key={item.id} className="table-row">
-                  <span className="bus-id">{item.busId}</span>
-                  <span>{item.type}</span>
-                  <span>
-                    <span className={getStatusClass(item.status)}>
-                      {item.status}
-                    </span>
-                  </span>
-                  <span>{item.date}</span>
-                  <span className="due-date">{item.dueIn}</span>
-                  <span>
-                    <button className="btn-sm">View Details</button>
-                  </span>
+          </div>
+
+          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-300">In Progress</p>
+                <h3 className="text-2xl font-bold text-white mt-1">{stats.summary.inProgress}</h3>
+              </div>
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-900/30">
+                <Clock className="w-6 h-6 text-blue-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-300">Completed</p>
+                <h3 className="text-2xl font-bold text-white mt-1">{stats.summary.completed}</h3>
+              </div>
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-900/30">
+                <CheckCircle className="w-6 h-6 text-green-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="md:col-span-2 bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h3 className="text-lg font-semibold text-white mb-4">Requests by Status</h3>
+            <div className="space-y-3">
+              {stats.byStatus.map((status) => (
+                <div key={status._id} className="flex items-center justify-between">
+                  <span className="text-slate-300">{status._id}</span>
+                  <div className="flex items-center">
+                    <span className="text-white font-medium mr-2">{status.count}</span>
+                    <div className="w-20 bg-slate-700 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${getStatusColor(status._id).split(' ')[0]}`}
+                        style={{ width: `${(status.count / stats.total) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
-        </section>
-      </main>
 
-      <style jsx>{`
-        /* Global Styles */
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        
-        body {
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          color: #333;
-          background-color: #f5f7f9;
-        }
-        
-        /* Dashboard Container */
-        .dashboard-container {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-        }
-        
-        /* Header Styles */
-        .dashboard-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0.8rem 2rem;
-          background: linear-gradient(135deg, #0a1929 0%, #1a3a5f 100%);
-          color: white;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .header-left {
-          display: flex;
-          align-items: center;
-          gap: 2rem;
-        }
-        
-        .logo {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        
-        .logo-icon {
-          font-size: 1.8rem;
-        }
-        
-        .logo h1 {
-          font-weight: 700;
-          font-size: 1.5rem;
-          background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        
-        .main-nav {
-          display: flex;
-          gap: 1.5rem;
-        }
-        
-        .nav-link {
-          color: rgba(255, 255, 255, 0.8);
-          text-decoration: none;
-          font-weight: 500;
-          padding: 0.5rem 0;
-          position: relative;
-          transition: color 0.3s;
-        }
-        
-        .nav-link:hover, .nav-link.active {
-          color: white;
-        }
-        
-        .nav-link.active::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          height: 2px;
-          background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-        }
-        
-        .header-controls {
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
-        }
-        
-        .search-bar {
-          position: relative;
-        }
-        
-        .search-bar input {
-          padding: 0.5rem 1rem 0.5rem 2.5rem;
-          border-radius: 20px;
-          border: none;
-          background: rgba(255, 255, 255, 0.1);
-          color: white;
-          outline: none;
-          transition: background 0.3s;
-        }
-        
-        .search-bar input:focus {
-          background: rgba(255, 255, 255, 0.2);
-        }
-        
-        .search-bar input::placeholder {
-          color: rgba(255, 255, 255, 0.6);
-        }
-        
-        .search-icon {
-          position: absolute;
-          left: 0.8rem;
-          top: 50%;
-          transform: translateY(-50%);
-          font-size: 0.9rem;
-        }
-        
-        /* Notifications */
-        .notifications-wrapper {
-          position: relative;
-        }
-        
-        .notifications-btn {
-          position: relative;
-          background: rgba(255, 255, 255, 0.1);
-          border: none;
-          cursor: pointer;
-          font-size: 1.2rem;
-          padding: 0.5rem;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          transition: background 0.3s;
-        }
-        
-        .notifications-btn:hover {
-          background: rgba(255, 255, 255, 0.2);
-        }
-        
-        .notification-badge {
-          position: absolute;
-          top: 0;
-          right: 0;
-          background: #e74c3c;
-          color: white;
-          border-radius: 50%;
-          width: 18px;
-          height: 18px;
-          font-size: 0.7rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-        }
-        
-        .notifications-dropdown {
-          position: absolute;
-          top: 100%;
-          right: 0;
-          width: 380px;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-          z-index: 1000;
-          margin-top: 0.8rem;
-          color: #333;
-          overflow: hidden;
-        }
-        
-        .notifications-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1.2rem;
-          border-bottom: 1px solid #eee;
-          background: #f8f9fa;
-        }
-        
-        .notifications-header h3 {
-          font-size: 1.1rem;
-          color: #2c3e50;
-        }
-        
-        .close-btn {
-          cursor: pointer;
-          font-size: 1.5rem;
-          line-height: 1;
-          color: #6c757d;
-        }
-        
-        .notifications-list {
-          max-height: 350px;
-          overflow-y: auto;
-        }
-        
-        .notification-item {
-          display: flex;
-          padding: 1rem;
-          border-bottom: 1px solid #f0f0f0;
-          gap: 0.8rem;
-        }
-        
-        .notification-item.unread {
-          background: #f8f9fa;
-        }
-        
-        .notification-item.high {
-          border-left: 3px solid #e74c3c;
-        }
-        
-        .notification-item.medium {
-          border-left: 3px solid #f39c12;
-        }
-        
-        .notification-item.low {
-          border-left: 3px solid #3498db;
-        }
-        
-        .notification-priority {
-          font-size: 0.8rem;
-          padding-top: 0.2rem;
-        }
-        
-        .notification-content p {
-          margin-bottom: 0.3rem;
-          font-size: 0.95rem;
-        }
-        
-        .notification-time {
-          font-size: 0.8rem;
-          color: #6c757d;
-        }
-        
-        .no-notifications {
-          padding: 1.5rem;
-          text-align: center;
-          color: #6c757d;
-        }
-        
-        .notifications-footer {
-          padding: 0.8rem;
-          text-align: center;
-          border-top: 1px solid #eee;
-        }
-        
-        .notifications-footer a {
-          color: #3498db;
-          text-decoration: none;
-          font-size: 0.9rem;
-        }
-        
-        /* User Profile */
-        .user-profile {
-          display: flex;
-          align-items: center;
-          gap: 0.8rem;
-        }
-        
-        .user-info {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-        }
-        
-        .user-name {
-          font-weight: 600;
-        }
-        
-        .user-role {
-          font-size: 0.8rem;
-          color: rgba(255, 255, 255, 0.7);
-        }
-        
-        .avatar {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-        }
-        
-        /* Main Content */
-        .dashboard-main {
-          padding: 2rem;
-          flex: 1;
-        }
-        
-        /* Stats Grid */
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 1.5rem;
-          margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-          background: white;
-          padding: 1.5rem;
-          border-radius: 12px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .stat-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-        }
-        
-        .stat-icon {
-          width: 60px;
-          height: 60px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.8rem;
-        }
-        
-        .stat-icon.booking {
-          background: rgba(52, 152, 219, 0.1);
-          color: #3498db;
-        }
-        
-        .stat-icon.bus {
-          background: rgba(46, 204, 113, 0.1);
-          color: #2ecc71;
-        }
-        
-        .stat-icon.maintenance {
-          background: rgba(243, 156, 18, 0.1);
-          color: #f39c12;
-        }
-        
-        .stat-icon.revenue {
-          background: rgba(155, 89, 182, 0.1);
-          color: #9b59b6;
-        }
-        
-        .stat-content h3 {
-          font-size: 0.9rem;
-          color: #6c757d;
-          margin-bottom: 0.5rem;
-          font-weight: 500;
-        }
-        
-        .stat-number {
-          font-size: 1.8rem;
-          font-weight: 700;
-          color: #2c3e50;
-          margin-bottom: 0.3rem;
-        }
-        
-        .stat-trend {
-          font-size: 0.85rem;
-          font-weight: 500;
-        }
-        
-        .stat-trend.up {
-          color: #27ae60;
-        }
-        
-        .stat-trend.down {
-          color: #e74c3c;
-        }
-        
-        /* Maintenance Section */
-        .maintenance-section {
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-          overflow: hidden;
-        }
-        
-        .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1.5rem;
-          border-bottom: 1px solid #eee;
-          background: linear-gradient(90deg, #0a1929 0%, #1a3a5f 100%);
-          color: white;
-        }
-        
-        .section-header h2 {
-          font-size: 1.4rem;
-          font-weight: 600;
-        }
-        
-        .btn-primary {
-          background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-          color: white;
-          border: none;
-          padding: 0.6rem 1.2rem;
-          border-radius: 6px;
-          cursor: pointer;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          transition: opacity 0.3s;
-        }
-        
-        .btn-primary:hover {
-          opacity: 0.9;
-        }
-        
-        .btn-icon {
-          font-weight: bold;
-        }
-        
-        /* Table Styles */
-        .table-container {
-          overflow-x: auto;
-        }
-        
-        .table-header {
-          display: grid;
-          grid-template-columns: 1fr 1.5fr 1fr 1fr 0.8fr 1fr;
-          padding: 1rem 1.5rem;
-          background: #f8f9fa;
-          font-weight: 600;
-          color: #2c3e50;
-          font-size: 0.9rem;
-        }
-        
-        .table-body {
-          display: flex;
-          flex-direction: column;
-        }
-        
-        .table-row {
-          display: grid;
-          grid-template-columns: 1fr 1.5fr 1fr 1fr 0.8fr 1fr;
-          padding: 1rem 1.5rem;
-          border-bottom: 1px solid #f0f0f0;
-          align-items: center;
-          transition: background 0.2s;
-        }
-        
-        .table-row:hover {
-          background: #f8f9fa;
-        }
-        
-        .bus-id {
-          font-weight: 600;
-          color: #2c3e50;
-        }
-        
-        .due-date {
-          font-weight: 500;
-        }
-        
-        .status-badge {
-          padding: 0.3rem 0.8rem;
-          border-radius: 20px;
-          font-size: 0.8rem;
-          font-weight: 500;
-          display: inline-block;
-        }
-        
-        .status-completed {
-          background: #e8f5e9;
-          color: #2e7d32;
-        }
-        
-        .status-in-progress {
-          background: #e3f2fd;
-          color: #1565c0;
-        }
-        
-        .status-scheduled {
-          background: #fff3e0;
-          color: #ef6c00;
-        }
-        
-        .status-pending {
-          background: #ffebee;
-          color: #c62828;
-        }
-        
-        .btn-sm {
-          background: white;
-          border: 1px solid #ddd;
-          padding: 0.4rem 0.8rem;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 0.85rem;
-          transition: background 0.2s;
-        }
-        
-        .btn-sm:hover {
-          background: #f8f9fa;
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 1200px) {
-          .dashboard-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-            padding: 1rem;
-          }
-          
-          .header-left {
-            width: 100%;
-            justify-content: space-between;
-          }
-          
-          .header-controls {
-            width: 100%;
-            justify-content: space-between;
-          }
-        }
-        
-        @media (max-width: 768px) {
-          .main-nav {
-            display: none;
-          }
-          
-          .stats-grid {
-            grid-template-columns: 1fr;
-          }
-          
-          .section-header {
-            flex-direction: column;
-            gap: 1rem;
-            align-items: flex-start;
-          }
-          
-          .table-header, .table-row {
-            grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
-          }
-          
-          .notifications-dropdown {
-            width: 300px;
-            right: -50px;
-          }
-        }
-      `}</style>
+          <div className="md:col-span-2 bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h3 className="text-lg font-semibold text-white mb-4">Requests by Priority</h3>
+            <div className="space-y-3">
+              {stats.byPriority.map((priority) => (
+                <div key={priority._id} className="flex items-center justify-between">
+                  <span className="text-slate-300">{priority._id}</span>
+                  <div className="flex items-center">
+                    <span className="text-white font-medium mr-2">{priority.count}</span>
+                    <div className="w-20 bg-slate-700 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${getPriorityColor(priority._id).split(' ')[0]}`}
+                        style={{ width: `${(priority.count / stats.total) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'cost' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h3 className="text-lg font-semibold text-white mb-4">Cost Overview</h3>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-300">Total Spent</span>
+                <span className="text-white font-bold">{formatCurrency(costStats.overall.totalSpent)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-300">Average Cost</span>
+                <span className="text-white font-bold">{formatCurrency(costStats.overall.averageCost)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-300">Total Requests</span>
+                <span className="text-white font-bold">{costStats.overall.totalRequests}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-300">Min Cost</span>
+                <span className="text-white font-bold">{formatCurrency(costStats.overall.minCost)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-300">Max Cost</span>
+                <span className="text-white font-bold">{formatCurrency(costStats.overall.maxCost)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h3 className="text-lg font-semibold text-white mb-4">Cost by Priority</h3>
+            <div className="space-y-4">
+              {costStats.byPriority.map((item) => (
+                <div key={item._id} className="flex justify-between items-center">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(item._id)}`}>
+                    {item._id}
+                  </span>
+                  <div className="text-right">
+                    <div className="text-white font-bold">{formatCurrency(item.totalCost)}</div>
+                    <div className="text-slate-400 text-xs">{item.count} requests</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="md:col-span-2 bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h3 className="text-lg font-semibold text-white mb-4">Monthly Costs</h3>
+            {costStats.monthly.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-700">
+                      <th className="px-4 py-2 text-left text-sm font-medium text-slate-300">Period</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium text-slate-300">Total Cost</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium text-slate-300">Requests</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {costStats.monthly.map((month) => (
+                      <tr key={`${month._id.year}-${month._id.month}`} className="border-b border-slate-700">
+                        <td className="px-4 py-3 text-sm text-slate-300">
+                          {new Date(month._id.year, month._id.month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-white font-medium">
+                          {formatCurrency(month.totalCost)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-300">
+                          {month.count}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-slate-400 text-center py-4">No cost data available</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Maintenance Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900 opacity-75 z-40" onClick={() => setShowModal(false)}></div>
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0 z-50 relative">
+            <div className="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-slate-800 shadow-xl rounded-2xl border border-slate-700">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-white">
+                  {editingMaintenance ? 'Edit Maintenance Request' : 'Create Maintenance Request'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditingMaintenance(null);
+                    setFormData({
+                      user: '',
+                      bus: '',
+                      description: '',
+                      priority: 'Medium',
+                      estimatedCost: '',
+                      estimatedCompletionDate: '',
+                      status: 'Pending'
+                    });
+                  }}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Staff ID *</label>
+                    <input
+                      type="text"
+                      name="user"
+                      value={formData.user}
+                      onChange={handleInputChange}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter staff ID"
+                      required
+                      disabled={editingMaintenance}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Bus *</label>
+                    <select
+                      name="bus"
+                      value={formData.bus}
+                      onChange={handleInputChange}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                      disabled={editingMaintenance}
+                    >
+                      <option value="">Select Bus</option>
+                      {activeBuses.map((bus) => (
+                        <option key={bus._id} value={bus._id}>
+                          {bus.numberPlate} ({bus.busType} - {bus.capacity} seats)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Description *</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Describe the maintenance issue..."
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Priority</label>
+                    <select
+                      name="priority"
+                      value={formData.priority}
+                      onChange={handleInputChange}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                      <option value="Critical">Critical</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Estimated Cost ($) *</label>
+                    <input
+                      type="number"
+                      name="estimatedCost"
+                      value={formData.estimatedCost}
+                      onChange={handleInputChange}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Estimated Completion Date</label>
+                    <input
+                      type="date"
+                      name="estimatedCompletionDate"
+                      value={formData.estimatedCompletionDate}
+                      onChange={handleInputChange}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>
+                    <select
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </div>
+
+                {editingMaintenance && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">Actual Cost ($)</label>
+                      <input
+                        type="number"
+                        name="actualCost"
+                        value={formData.actualCost || ''}
+                        onChange={handleInputChange}
+                        className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">Actual Completion Date</label>
+                      <input
+                        type="date"
+                        name="actualCompletionDate"
+                        value={formData.actualCompletionDate || ''}
+                        onChange={handleInputChange}
+                        className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowModal(false);
+                      setEditingMaintenance(null);
+                      setFormData({
+                        user: '',
+                        bus: '',
+                        description: '',
+                        priority: 'Medium',
+                        estimatedCost: '',
+                        estimatedCompletionDate: '',
+                        status: 'Pending'
+                      });
+                    }}
+                    className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {editingMaintenance ? 'Update' : 'Create'} Request
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default BusZoneDashboard;
+export default MaintenanceManagement;
