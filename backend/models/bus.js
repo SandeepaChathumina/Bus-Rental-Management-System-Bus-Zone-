@@ -30,6 +30,12 @@ const busSchema = new mongoose.Schema({
     trim: true,
     uppercase: true
   },
+  pricePerDay: {
+    type: Number,
+    required: true,
+    min: 0,
+    default: 0
+  },
   vehiclePhoto: {
     type: String,
     default: ''

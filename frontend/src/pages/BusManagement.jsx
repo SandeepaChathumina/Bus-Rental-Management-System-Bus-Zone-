@@ -33,6 +33,7 @@ const BusManagement = () => {
     engineNumber: '',
     capacity: '',
     numberPlate: '',
+    pricePerDay: '',
     vehiclePhoto: '',
     status: 'Available'
   });
@@ -85,15 +86,26 @@ const BusManagement = () => {
     try {
       const token = localStorage.getItem('token');
       
+      // Prepare data according to backend expectations
+      const submitData = {
+        busType: formData.busType,
+        engineNumber: formData.engineNumber,
+        capacity: parseInt(formData.capacity),
+        numberPlate: formData.numberPlate,
+        pricePerDay: parseFloat(formData.pricePerDay) || 0,
+        vehiclePhoto: formData.vehiclePhoto || '',
+        status: formData.status
+      };
+      
       if (editingBus) {
         // Update existing bus
-        await axios.put(`${BACKEND_URL}/api/buses/${editingBus._id}`, formData, {
+        await axios.put(`${BACKEND_URL}/api/buses/${editingBus._id}`, submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success('Bus updated successfully');
       } else {
         // Create new bus
-        await axios.post(`${BACKEND_URL}/api/buses`, formData, {
+        await axios.post(`${BACKEND_URL}/api/buses`, submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success('Bus created successfully');
@@ -106,6 +118,7 @@ const BusManagement = () => {
         engineNumber: '',
         capacity: '',
         numberPlate: '',
+        pricePerDay: '',
         vehiclePhoto: '',
         status: 'Available'
       });
@@ -121,8 +134,9 @@ const BusManagement = () => {
     setFormData({
       busType: bus.busType,
       engineNumber: bus.engineNumber,
-      capacity: bus.capacity,
+      capacity: bus.capacity.toString(),
       numberPlate: bus.numberPlate,
+      pricePerDay: bus.pricePerDay.toString(),
       vehiclePhoto: bus.vehiclePhoto || '',
       status: bus.status
     });
@@ -250,6 +264,7 @@ const BusManagement = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Type</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Engine Number</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Capacity</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Price/Day</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
               </tr>
@@ -262,6 +277,7 @@ const BusManagement = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">{bus.busType}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">{bus.engineNumber}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">{bus.capacity} seats</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">${bus.pricePerDay}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(bus.status)}`}>
                       {getStatusIcon(bus.status)}
@@ -325,6 +341,7 @@ const BusManagement = () => {
                       engineNumber: '',
                       capacity: '',
                       numberPlate: '',
+                      pricePerDay: '',
                       vehiclePhoto: '',
                       status: 'Available'
                     });
@@ -395,6 +412,21 @@ const BusManagement = () => {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Price Per Day ($)</label>
+                  <input
+                    type="number"
+                    name="pricePerDay"
+                    value={formData.pricePerDay}
+                    onChange={handleInputChange}
+                    min="0"
+                    step="0.01"
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter price per day"
+                    required
+                  />
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>
                   <select
                     name="status"
@@ -433,6 +465,7 @@ const BusManagement = () => {
                         engineNumber: '',
                         capacity: '',
                         numberPlate: '',
+                        pricePerDay: '',
                         vehiclePhoto: '',
                         status: 'Available'
                       });
