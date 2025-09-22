@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Plus,
@@ -20,13 +22,29 @@ import {
   DollarSign,
   BarChart3,
   ChevronDown,
-  MoreVertical
+  MoreVertical,
+  Menu,
+  Home,
+  LogOut,
+  Bell,
+  Settings,
+  Users,
+  BookOpen,
+  UserCheck,
+  MessageSquare
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
-const MaintenanceManagement = () => {
+const StaffDashboard = () => {
+  const { user: authUser, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState('maintenance');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+
+  // Maintenance state
   const [maintenances, setMaintenances] = useState([]);
   const [filteredMaintenances, setFilteredMaintenances] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +65,7 @@ const MaintenanceManagement = () => {
     monthly: [],
     byPriority: []
   });
-  const [activeTab, setActiveTab] = useState('list'); // 'list', 'stats', 'cost'
+  const [maintenanceActiveTab, setMaintenanceActiveTab] = useState('list');
 
   const [formData, setFormData] = useState({
     user: '',
@@ -59,12 +77,29 @@ const MaintenanceManagement = () => {
     status: 'Pending'
   });
 
+  const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'maintenance', label: 'Maintenance', icon: Wrench },
+    { id: 'buses', label: 'Bus View', icon: Bus },
+    { id: 'schedule', label: 'Schedule', icon: Calendar },
+    { id: 'reports', label: 'Reports', icon: BarChart3 },
+    { id: 'profile', label: 'My Profile', icon: User },
+    { id: 'settings', label: 'Settings', icon: Settings }
+  ];
+
   useEffect(() => {
-    fetchMaintenances();
-    fetchActiveBuses();
-    fetchStats();
-    fetchCostStats();
+    const timer = setTimeout(() => setIsLoading(false), 1200);
+    return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'maintenance') {
+      fetchMaintenances();
+      fetchActiveBuses();
+      fetchStats();
+      fetchCostStats();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     filterMaintenances();
@@ -125,7 +160,6 @@ const MaintenanceManagement = () => {
   const filterMaintenances = () => {
     let filtered = maintenances;
 
-    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(maintenance =>
         maintenance.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -141,12 +175,10 @@ const MaintenanceManagement = () => {
       );
     }
 
-    // Filter by status
     if (filterStatus !== 'all') {
       filtered = filtered.filter(maintenance => maintenance.status === filterStatus);
     }
 
-    // Filter by priority
     if (filterPriority !== 'all') {
       filtered = filtered.filter(maintenance => maintenance.priority === filterPriority);
     }
@@ -160,19 +192,17 @@ const MaintenanceManagement = () => {
       const token = localStorage.getItem('token');
       const payload = {
         ...formData,
-        userId: formData.user, // This should be the staff ID
+        userId: formData.user,
         busId: formData.bus,
         estimatedCost: parseFloat(formData.estimatedCost)
       };
 
       if (editingMaintenance) {
-        // Update existing maintenance
         await axios.put(`${BACKEND_URL}/api/maintenance/${editingMaintenance._id}`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success('Maintenance request updated successfully');
       } else {
-        // Create new maintenance
         await axios.post(`${BACKEND_URL}/api/maintenance`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -294,18 +324,33 @@ const MaintenanceManagement = () => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
-    }).format(amount);
+    }).format(amount || 0);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-slate-400">Loading maintenance requests...</div>
-      </div>
-    );
-  }
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
 
-  return (
+  const StatCard = ({ title, value, icon: Icon, trend, onClick }) => (
+    <div
+      onClick={onClick}
+      className="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-slate-300">{title}</p>
+          <h3 className="text-2xl font-bold text-white mt-1">{value}</h3>
+          {trend && <p className="text-xs text-slate-400 mt-1">{trend}</p>}
+        </div>
+        <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-slate-900/30">
+          <Icon className="w-6 h-6 text-slate-300" />
+        </div>
+      </div>
+    </div>
+  );
+
+  const MaintenanceContent = () => (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
@@ -315,7 +360,7 @@ const MaintenanceManagement = () => {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-5 h-5 mr-2" />
           New Request
@@ -325,26 +370,26 @@ const MaintenanceManagement = () => {
       {/* Tabs */}
       <div className="flex border-b border-slate-700">
         <button
-          className={`px-4 py-2 font-medium ${activeTab === 'list' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'}`}
-          onClick={() => setActiveTab('list')}
+          className={`px-4 py-2 font-medium ${maintenanceActiveTab === 'list' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'}`}
+          onClick={() => setMaintenanceActiveTab('list')}
         >
           Maintenance List
         </button>
         <button
-          className={`px-4 py-2 font-medium ${activeTab === 'stats' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'}`}
-          onClick={() => setActiveTab('stats')}
+          className={`px-4 py-2 font-medium ${maintenanceActiveTab === 'stats' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'}`}
+          onClick={() => setMaintenanceActiveTab('stats')}
         >
           Statistics
         </button>
         <button
-          className={`px-4 py-2 font-medium ${activeTab === 'cost' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'}`}
-          onClick={() => setActiveTab('cost')}
+          className={`px-4 py-2 font-medium ${maintenanceActiveTab === 'cost' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'}`}
+          onClick={() => setMaintenanceActiveTab('cost')}
         >
           Cost Analysis
         </button>
       </div>
 
-      {activeTab === 'list' && (
+      {maintenanceActiveTab === 'list' && (
         <>
           {/* Filters */}
           <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
@@ -385,7 +430,7 @@ const MaintenanceManagement = () => {
                 <option value="Low">Low</option>
               </select>
             </div>
-            <button className="flex items-center px-4 py-2 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-700">
+            <button className="flex items-center px-4 py-2 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors">
               <Download className="w-5 h-5 mr-2" />
               Export
             </button>
@@ -410,7 +455,7 @@ const MaintenanceManagement = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-700">
                   {filteredMaintenances.map((maintenance) => (
-                    <tr key={maintenance._id} className="hover:bg-slate-750">
+                    <tr key={maintenance._id} className="hover:bg-slate-750 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{maintenance.maintenanceId || 'N/A'}</td>
                       <td className="px-6 py-4 text-sm text-slate-300 max-w-xs truncate">{maintenance.description}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
@@ -442,13 +487,15 @@ const MaintenanceManagement = () => {
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => handleEdit(maintenance)}
-                            className="text-blue-400 hover:text-blue-300"
+                            className="text-blue-400 hover:text-blue-300 transition-colors"
+                            title="Edit"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(maintenance._id)}
-                            className="text-red-400 hover:text-red-300"
+                            className="text-red-400 hover:text-red-300 transition-colors"
+                            title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -476,55 +523,28 @@ const MaintenanceManagement = () => {
         </>
       )}
 
-      {activeTab === 'stats' && (
+      {maintenanceActiveTab === 'stats' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-300">Total Requests</p>
-                <h3 className="text-2xl font-bold text-white mt-1">{stats.total}</h3>
-              </div>
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-slate-900/30">
-                <BarChart3 className="w-6 h-6 text-slate-300" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-300">Pending</p>
-                <h3 className="text-2xl font-bold text-white mt-1">{stats.summary.pending}</h3>
-              </div>
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-yellow-900/30">
-                <AlertCircle className="w-6 h-6 text-yellow-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-300">In Progress</p>
-                <h3 className="text-2xl font-bold text-white mt-1">{stats.summary.inProgress}</h3>
-              </div>
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-900/30">
-                <Clock className="w-6 h-6 text-blue-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-300">Completed</p>
-                <h3 className="text-2xl font-bold text-white mt-1">{stats.summary.completed}</h3>
-              </div>
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-900/30">
-                <CheckCircle className="w-6 h-6 text-green-400" />
-              </div>
-            </div>
-          </div>
+          <StatCard
+            title="Total Requests"
+            value={stats.total}
+            icon={BarChart3}
+          />
+          <StatCard
+            title="Pending"
+            value={stats.summary.pending}
+            icon={AlertCircle}
+          />
+          <StatCard
+            title="In Progress"
+            value={stats.summary.inProgress}
+            icon={Clock}
+          />
+          <StatCard
+            title="Completed"
+            value={stats.summary.completed}
+            icon={CheckCircle}
+          />
 
           <div className="md:col-span-2 bg-slate-800 rounded-xl p-6 border border-slate-700">
             <h3 className="text-lg font-semibold text-white mb-4">Requests by Status</h3>
@@ -568,7 +588,7 @@ const MaintenanceManagement = () => {
         </div>
       )}
 
-      {activeTab === 'cost' && (
+      {maintenanceActiveTab === 'cost' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
             <h3 className="text-lg font-semibold text-white mb-4">Cost Overview</h3>
@@ -652,7 +672,7 @@ const MaintenanceManagement = () => {
       {/* Add/Edit Maintenance Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="fixed inset-0 bg-slate-900 opacity-75 z-40" onClick={() => setShowModal(false)}></div>
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowModal(false)}></div>
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0 z-50 relative">
             <div className="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-slate-800 shadow-xl rounded-2xl border border-slate-700">
               <div className="flex items-center justify-between mb-4">
@@ -673,7 +693,7 @@ const MaintenanceManagement = () => {
                       status: 'Pending'
                     });
                   }}
-                  className="text-slate-400 hover:text-white"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -833,16 +853,16 @@ const MaintenanceManagement = () => {
                         status: 'Pending'
                       });
                     }}
-                    className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600"
+                    className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     <Save className="w-4 h-4 mr-2" />
-                    {editingMaintenance ? 'Update' : 'Create'} Request
+                    {editingMaintenance ? 'Update' : 'Create'}
                   </button>
                 </div>
               </form>
@@ -852,6 +872,208 @@ const MaintenanceManagement = () => {
       )}
     </div>
   );
+
+  const UserProfileDropdown = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setIsOpen(false);
+        }
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-700 transition-colors"
+        >
+          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+            <User className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-left hidden md:block">
+            <div className="text-sm font-medium text-white">
+              {authUser?.firstName} {authUser?.lastName}
+            </div>
+            <div className="text-xs text-slate-400 capitalize">
+              {authUser?.role?.toLowerCase()}
+            </div>
+          </div>
+          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {isOpen && (
+          <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1 z-50">
+            <div className="px-4 py-2 border-b border-slate-700">
+              <div className="text-sm font-medium text-white">
+                {authUser?.firstName} {authUser?.lastName}
+              </div>
+              <div className="text-xs text-slate-400">{authUser?.email}</div>
+            </div>
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                setActiveTab('profile');
+              }}
+              className="flex items-center w-full px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
+            >
+              <User className="w-4 h-4 mr-3" />
+              My Profile
+            </button>
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                setActiveTab('settings');
+              }}
+              className="flex items-center w-full px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
+            >
+              <Settings className="w-4 h-4 mr-3" />
+              Settings
+            </button>
+            <div className="border-t border-slate-700 my-1"></div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-slate-700 transition-colors"
+            >
+              <LogOut className="w-4 h-4 mr-3" />
+              Sign Out
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-white">Loading Dashboard...</h2>
+          <p className="text-slate-400 mt-2">Please wait while we prepare your workspace</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-900 flex">
+      {/* Sidebar */}
+      <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-slate-800 border-r border-slate-700 transition-all duration-300 flex flex-col`}>
+        {/* Logo */}
+        <div className="p-4 border-b border-slate-700">
+          {sidebarOpen ? (
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Bus className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-white">Staff Portal</h1>
+                <p className="text-xs text-slate-400">Maintenance System</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Bus className="w-5 h-5 text-white" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4">
+          <ul className="space-y-2">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <li key={item.id}>
+                  <button
+                    onClick={() => setActiveTab(item.id)}
+                    className={`flex items-center w-full p-3 rounded-lg transition-colors ${
+                      activeTab === item.id
+                        ? 'bg-blue-600 text-white'
+                        : 'text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    {sidebarOpen && <span className="ml-3 font-medium">{item.label}</span>}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* User Profile (Bottom) */}
+        <div className="p-4 border-t border-slate-700">
+          <UserProfileDropdown />
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Header */}
+        <header className="bg-slate-800 border-b border-slate-700 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
+              >
+                <Menu className="w-5 h-5 text-slate-300" />
+              </button>
+              <h1 className="text-xl font-semibold text-white capitalize">
+                {activeTab === 'maintenance' ? 'Maintenance Management' : activeTab.replace(/([A-Z])/g, ' $1').trim()}
+              </h1>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <button className="p-2 rounded-lg hover:bg-slate-700 transition-colors relative">
+                <Bell className="w-5 h-5 text-slate-300" />
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+              </button>
+              
+              <div className="hidden md:flex items-center space-x-2 text-sm">
+                <span className="text-slate-400">Last login:</span>
+                <span className="text-slate-300">{new Date().toLocaleDateString()}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 p-6 overflow-auto">
+          {activeTab === 'maintenance' && <MaintenanceContent />}
+          
+          {activeTab !== 'maintenance' && (
+            <div className="text-center py-20">
+              <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                {activeTab === 'dashboard' && <Home className="w-12 h-12 text-slate-600" />}
+                {activeTab === 'buses' && <Bus className="w-12 h-12 text-slate-600" />}
+                {activeTab === 'schedule' && <Calendar className="w-12 h-12 text-slate-600" />}
+                {activeTab === 'reports' && <BarChart3 className="w-12 h-12 text-slate-600" />}
+                {activeTab === 'profile' && <User className="w-12 h-12 text-slate-600" />}
+                {activeTab === 'settings' && <Settings className="w-12 h-12 text-slate-600" />}
+              </div>
+              <h2 className="text-2xl font-bold text-slate-400 mb-2">
+                {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Section
+              </h2>
+              <p className="text-slate-500">
+                This section is under development and will be available soon.
+              </p>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
 };
 
-export default MaintenanceManagement;
+export default StaffDashboard;
