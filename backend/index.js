@@ -12,6 +12,8 @@ import attendanceRouter from './routes/attendanceRouter.js';
 import lostItemRouter from './routes/lostItemRouter.js';
 import paymentRouter from './routes/paymentRouter.js';
 import scheduleRouter from './routes/scheduleRouter.js';
+import routeRouter from './routes/routeRouter.js'; // Add this import
+import maintenanceRouter from './routes/maintenanceRouter.js'; // Add this import
 
 dotenv.config();
 
@@ -35,8 +37,10 @@ app.use('/api/buses', busRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/attendance', attendanceRouter);
 app.use('/api/lost-items', lostItemRouter);
-app.use('/api/payments',paymentRouter);
+app.use('/api/payments', paymentRouter);
 app.use('/api/schedules', scheduleRouter);
+app.use('/api/routes', routeRouter); // Add this route
+app.use('/api/maintenance', maintenanceRouter); // Add this route
 
 app.get('/', (req, res) => {
   res.send('Bus Rental Management System API is running...');
@@ -45,11 +49,3 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, console.log(`Server running on port ${PORT}`));
-
-// Add this route after other routes
-app.use('/api/buses', busRouter);
-// Add this import at the top with other imports
-import maintenanceRouter from './routes/maintenanceRouter.js';
-
-// Add this route after other routes
-app.use('/api/maintenance', maintenanceRouter);

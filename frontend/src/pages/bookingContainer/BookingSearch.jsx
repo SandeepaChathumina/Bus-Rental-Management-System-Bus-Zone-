@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   MapPin, 
   Calendar, 
@@ -26,72 +26,174 @@ const BookingSearch = () => {
   const [distanceInfo, setDistanceInfo] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [fromSuggestions, setFromSuggestions] = useState([]);
+  const [toSuggestions, setToSuggestions] = useState([]);
+  const [showFromSuggestions, setShowFromSuggestions] = useState(false);
+  const [showToSuggestions, setShowToSuggestions] = useState(false);
 
-  const locations = [
-    'Colombo', 'Kandy', 'Galle', 'Jaffna', 'Negombo', 'Trincomalee',
-    'Anuradhapura', 'Polonnaruwa', 'Matara', 'Hambantota', 'Ratnapura'
-  ];
+  const fromInputRef = useRef(null);
+  const toInputRef = useRef(null);
+  const googleMapsLoaded = useRef(false);
 
-  // Predefined distances between major cities (in km)
-  const predefinedDistances = {
-    'colombo-kandy': { distance: 116, duration: 180 },
-    'colombo-galle': { distance: 116, duration: 120 },
-    'kandy-nuwara-eliya': { distance: 77, duration: 120 },
-    'colombo-jaffna': { distance: 396, duration: 480 },
-    'colombo-anuradhapura': { distance: 206, duration: 240 },
-    'colombo-trincomalee': { distance: 265, duration: 300 },
-    'colombo-matara': { distance: 160, duration: 180 },
-    'colombo-ratnapura': { distance: 101, duration: 150 },
-    'kandy-galle': { distance: 200, duration: 240 },
-    'kandy-matara': { distance: 200, duration: 240 },
-  };
+  // Load Google Maps API script
+  useEffect(() => {
+    if (!window.google) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyAPAuy_l0ZxrrEJpQHZwlpuBuLFbvJuWjw&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        googleMapsLoaded.current = true;
+      };
+      document.head.appendChild(script);
+    } else {
+      googleMapsLoaded.current = true;
+    }
+  }, []);
+
+  // Initialize autocomplete for inputs
+  useEffect(() => {
+    if (googleMapsLoaded.current && window.google && fromInputRef.current && toInputRef.current) {
+      const fromAutocomplete = new window.google.maps.places.Autocomplete(fromInputRef.current, {
+        types: ['(cities)'],
+        componentRestrictions: { country: 'lk' } // Restrict to Sri Lanka
+      });
+
+      const toAutocomplete = new window.google.maps.places.Autocomplete(toInputRef.current, {
+        types: ['(cities)'],
+        componentRestrictions: { country: 'lk' } // Restrict to Sri Lanka
+      });
+
+      fromAutocomplete.addListener('place_changed', () => {
+        const place = fromAutocomplete.getPlace();
+        if (place.formatted_address) {
+          setSearchData(prev => ({ ...prev, from: place.formatted_address }));
+          setShowFromSuggestions(false);
+        }
+      });
+
+      toAutocomplete.addListener('place_changed', () => {
+        const place = toAutocomplete.getPlace();
+        if (place.formatted_address) {
+          setSearchData(prev => ({ ...prev, to: place.formatted_address }));
+          setShowToSuggestions(false);
+        }
+      });
+    }
+  }, [googleMapsLoaded.current]);
 
   const handleInputChange = (field, value) => {
     setSearchData(prev => ({
       ...prev,
       [field]: value
     }));
+    
+    // Clear previous results when locations change
+    if (field === 'from' || field === 'to') {
+      setDistanceInfo(null);
+      setApiError('');
+    }
+
+    // Show suggestions for location inputs
+    if (field === 'from' && value.length > 2) {
+      searchPlaces(value, setFromSuggestions);
+      setShowFromSuggestions(true);
+    } else if (field === 'from' && value.length <= 2) {
+      setShowFromSuggestions(false);
+    }
+
+    if (field === 'to' && value.length > 2) {
+      searchPlaces(value, setToSuggestions);
+      setShowToSuggestions(true);
+    } else if (field === 'to' && value.length <= 2) {
+      setShowToSuggestions(false);
+    }
+  };
+
+  const searchPlaces = (query, setSuggestions) => {
+    if (!window.google || !window.google.maps) return;
+
+    const service = new window.google.maps.places.AutocompleteService();
+    service.getPlacePredictions(
+      {
+        input: query,
+        componentRestrictions: { country: 'lk' },
+        types: ['(cities)']
+      },
+      (predictions, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+          setSuggestions(predictions.map(prediction => prediction.description));
+        }
+      }
+    );
+  };
+
+  const selectSuggestion = (suggestion, field) => {
+    setSearchData(prev => ({ ...prev, [field]: suggestion }));
+    if (field === 'from') {
+      setShowFromSuggestions(false);
+    } else {
+      setShowToSuggestions(false);
+    }
   };
 
   const calculateDistance = async () => {
-    if (!searchData.from || !searchData.to) return;
+    if (!searchData.from || !searchData.to) {
+      setApiError('Please select both departure and destination locations');
+      return;
+    }
     
     setIsCalculating(true);
+    setApiError('');
+    
     try {
-      // Simulate API call - in a real implementation, this would call your backend
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Use Google Maps Distance Matrix API
+      const distanceService = new window.google.maps.DistanceMatrixService();
       
-      // Create a key for the predefined distances lookup
-      const key = `${searchData.from.toLowerCase()}-${searchData.to.toLowerCase()}`;
-      const reverseKey = `${searchData.to.toLowerCase()}-${searchData.from.toLowerCase()}`;
-      
-      // Get distance information from predefined data
-      let distanceData = predefinedDistances[key] || predefinedDistances[reverseKey];
-      
-      // If no predefined data exists, use default values
-      if (!distanceData) {
-        distanceData = { distance: 150, duration: 180 }; // Default values
-      }
-      
-      // Calculate fare based on distance and bus type (standard rate)
-      const fareRates = {
-        'standard': 25, // Rs per km
-        'deluxe': 35,
-        'luxury': 50
-      };
-      
-      const baseFare = fareRates['standard']; // Using standard as default for estimation
-      const totalFare = Math.round(baseFare * distanceData.distance);
-      
-      setDistanceInfo({
-        distance: Math.round(distanceData.distance),
-        duration: Math.round(distanceData.duration),
-        fare: totalFare,
-        total: totalFare * searchData.passengers
-      });
+      distanceService.getDistanceMatrix(
+        {
+          origins: [searchData.from],
+          destinations: [searchData.to],
+          travelMode: window.google.maps.TravelMode.DRIVING,
+          unitSystem: window.google.maps.UnitSystem.METRIC,
+        },
+        (response, status) => {
+          if (status === 'OK') {
+            const element = response.rows[0].elements[0];
+            
+            if (element.status === 'OK') {
+              const distance = element.distance.value / 1000; // Convert to km
+              const duration = Math.round(element.duration.value / 60); // Convert to minutes
+              
+              // Calculate fare based on distance and bus type
+              const fareRates = {
+                'standard': 25, // Rs per km
+                'deluxe': 35,
+                'luxury': 50
+              };
+              
+              const baseFare = fareRates['standard'];
+              const totalFare = Math.round(baseFare * distance);
+              
+              setDistanceInfo({
+                distance: Math.round(distance),
+                duration: duration,
+                fare: totalFare,
+                total: totalFare * searchData.passengers
+              });
+            } else {
+              throw new Error('Could not calculate route between these locations');
+            }
+          } else {
+            throw new Error('Error calculating distance: ' + status);
+          }
+          setIsCalculating(false);
+        }
+      );
     } catch (error) {
       console.error('Error calculating distance:', error);
-    } finally {
+      setApiError(error.message);
       setIsCalculating(false);
     }
   };
@@ -100,6 +202,11 @@ const BookingSearch = () => {
     e.preventDefault();
     if (!searchData.from || !searchData.to || !searchData.travelDate) {
       alert('Please fill in all required fields');
+      return;
+    }
+
+    if (!distanceInfo) {
+      alert('Please calculate distance first');
       return;
     }
 
@@ -134,6 +241,7 @@ const BookingSearch = () => {
       to: prev.from
     }));
     setDistanceInfo(null);
+    setApiError('');
   };
 
   const isReturnTrip = searchData.tripType === 'round-trip';
@@ -145,7 +253,7 @@ const BookingSearch = () => {
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-3xl p-8 border border-slate-700/50 shadow-xl">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-white mb-2">Find Your Perfect Ride</h2>
-            <p className="text-slate-400">Search and book luxury buses with ease</p>
+            <p className="text-slate-400">Search and book luxury buses with real-time route information</p>
           </div>
           
           <form onSubmit={handleSearch} className="space-y-6">
@@ -174,22 +282,33 @@ const BookingSearch = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
               {/* From Location */}
-              <div className="lg:col-span-3">
+              <div className="lg:col-span-3 relative">
                 <label className="text-slate-300 text-sm font-medium mb-2 block">From</label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                  <select
+                  <input
+                    ref={fromInputRef}
+                    type="text"
                     value={searchData.from}
                     onChange={(e) => handleInputChange('from', e.target.value)}
+                    placeholder="Enter departure city"
                     className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
-                  >
-                    <option value="">Select Departure</option>
-                    {locations.map(location => (
-                      <option key={location} value={location}>{location}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
+                {showFromSuggestions && fromSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-600 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    {fromSuggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        onClick={() => selectSuggestion(suggestion, 'from')}
+                        className="px-4 py-3 hover:bg-slate-700 cursor-pointer text-slate-300 border-b border-slate-600 last:border-b-0"
+                      >
+                        {suggestion}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Swap Button */}
@@ -205,22 +324,33 @@ const BookingSearch = () => {
               </div>
 
               {/* To Location */}
-              <div className="lg:col-span-3">
+              <div className="lg:col-span-3 relative">
                 <label className="text-slate-300 text-sm font-medium mb-2 block">To</label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                  <select
+                  <input
+                    ref={toInputRef}
+                    type="text"
                     value={searchData.to}
                     onChange={(e) => handleInputChange('to', e.target.value)}
+                    placeholder="Enter destination city"
                     className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
-                  >
-                    <option value="">Select Destination</option>
-                    {locations.map(location => (
-                      <option key={location} value={location}>{location}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
+                {showToSuggestions && toSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-600 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    {toSuggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        onClick={() => selectSuggestion(suggestion, 'to')}
+                        className="px-4 py-3 hover:bg-slate-700 cursor-pointer text-slate-300 border-b border-slate-600 last:border-b-0"
+                      >
+                        {suggestion}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Calculate Distance Button */}
@@ -228,20 +358,29 @@ const BookingSearch = () => {
                 <button
                   type="button"
                   onClick={calculateDistance}
-                  disabled={!searchData.from || !searchData.to || isCalculating}
+                  disabled={!searchData.from || !searchData.to || isCalculating || !window.google}
                   className="flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-colors"
                 >
                   <Navigation className="mr-2 h-5 w-5" />
-                  {isCalculating ? 'Calculating...' : 'Calculate Distance & Fare'}
+                  {!window.google ? 'Loading Maps...' : isCalculating ? 'Calculating Route...' : 'Calculate Distance & Fare'}
                 </button>
               </div>
+
+              {/* API Error Message */}
+              {apiError && (
+                <div className="lg:col-span-7">
+                  <div className="p-3 rounded-xl text-center bg-red-900/20 text-red-400">
+                    {apiError}
+                  </div>
+                </div>
+              )}
 
               {/* Display Distance Information */}
               {distanceInfo && (
                 <div className="lg:col-span-7 bg-slate-700/30 rounded-xl p-4 mt-2">
                   <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
                     <Route className="mr-2 h-5 w-5 text-blue-400" />
-                    Route Information
+                    Real-time Route Information
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center p-3 bg-slate-800/50 rounded-lg">
@@ -345,10 +484,10 @@ const BookingSearch = () => {
             <h3 className="text-slate-300 text-sm font-medium mb-3">Popular Routes</h3>
             <div className="flex flex-wrap gap-2">
               {[
-                { from: 'Colombo', to: 'Kandy' },
-                { from: 'Colombo', to: 'Galle' },
-                { from: 'Kandy', to: 'Nuwara Eliya' },
-                { from: 'Colombo', to: 'Jaffna' }
+                { from: 'Colombo, Sri Lanka', to: 'Kandy, Sri Lanka' },
+                { from: 'Colombo, Sri Lanka', to: 'Galle, Sri Lanka' },
+                { from: 'Kandy, Sri Lanka', to: 'Nuwara Eliya, Sri Lanka' },
+                { from: 'Colombo, Sri Lanka', to: 'Jaffna, Sri Lanka' }
               ].map((route, index) => (
                 <button
                   key={index}
@@ -360,10 +499,11 @@ const BookingSearch = () => {
                       travelDate: new Date(Date.now() + 86400000).toISOString().split('T')[0]
                     }));
                     setDistanceInfo(null);
+                    setApiError('');
                   }}
                   className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-slate-300 text-sm transition-colors"
                 >
-                  {route.from} → {route.to}
+                  {route.from.split(',')[0]} → {route.to.split(',')[0]}
                 </button>
               ))}
             </div>
