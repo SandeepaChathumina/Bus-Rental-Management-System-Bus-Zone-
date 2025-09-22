@@ -44,13 +44,13 @@ const handleSubmit = async (e) => {
       
       switch (userRole) {
         case 'admin':
-          navigate('/admindash', { replace: true });
+          navigate('/admin-dashboard', { replace: true });
           break;
         case 'driver':
           navigate('/driver-dashboard', { replace: true });
           break;
         case 'staff':
-          navigate('/staffdash', { replace: true });
+          navigate('/staff-dashboard', { replace: true });
           break;
         case 'passenger':
         default:
