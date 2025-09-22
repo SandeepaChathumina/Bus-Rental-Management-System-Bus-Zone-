@@ -11,7 +11,6 @@ import PassengerProfilePage from './pages/PassengerProfilePage';
 import AdminPage from './pages/AdminPage';
 import AttendanceManagement from './components/AttendanceManagement';
 import Booking from './pages/bookingContainer/Booking';
-import Details from './pages/bus/Detailss';
 import BusManagement from './pages/buscrud';
 import AdminDashboard from './pages/admindash';
 import Feedback from './pages/Feedback';
@@ -49,7 +48,6 @@ function App() {
               <Route path="/offers" element={<SeasonalOffers />} />
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/bus" element={<Bus />} />
-              <Route path="/bus/bus-details" element={<Details />} />
               <Route path="/passenger-details" element={<PassengerDetails />} />
 
               {/* Passenger only (plus admin override) */}
