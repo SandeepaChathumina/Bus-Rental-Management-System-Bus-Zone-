@@ -1,3 +1,4 @@
+// BusDetails.jsx (updated)
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Bus from '../../assets/bus9.png';
@@ -18,10 +19,10 @@ import {
   Shield,
   MapPin,
   CreditCard,
-  AlertCircle
+  AlertCircle,
+  Route,
+  Navigation
 } from 'lucide-react';
-import Destination from '../../components/destination/Destination';
-import DepartTime from '../../components/departtime/DepartTime';
 import Seat from '../../components/seat/Seat';
 
 const BusDetails = () => {
@@ -33,8 +34,23 @@ const BusDetails = () => {
   const [passengerDetails, setPassengerDetails] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [routeInfo, setRouteInfo] = useState(null);
 
-  // Sample bus data - replace with API call
+  // Predefined distances between major cities (in km)
+  const predefinedDistances = {
+    'colombo-kandy': { distance: 116, duration: 180 },
+    'colombo-galle': { distance: 116, duration: 120 },
+    'kandy-nuwara-eliya': { distance: 77, duration: 120 },
+    'colombo-jaffna': { distance: 396, duration: 480 },
+    'colombo-anuradhapura': { distance: 206, duration: 240 },
+    'colombo-trincomalee': { distance: 265, duration: 300 },
+    'colombo-matara': { distance: 160, duration: 180 },
+    'colombo-ratnapura': { distance: 101, duration: 150 },
+    'kandy-galle': { distance: 200, duration: 240 },
+    'kandy-matara': { distance: 200, duration: 240 },
+  };
+
+  // Sample bus data
   const sampleBus = {
     id: 1,
     name: "Deluxe Coach",
@@ -47,19 +63,6 @@ const BusDetails = () => {
     departureTime: "08:00",
     arrivalTime: "12:00",
     numberPlate: "CAB-1234",
-    route: {
-      from: "Colombo",
-      to: "Kandy",
-      distance: "120 km",
-      duration: "4 hours"
-    },
-    features: [
-      "Reclining seats",
-      "Onboard entertainment",
-      "USB charging ports",
-      "Air conditioning",
-      "Complimentary snacks"
-    ]
   };
 
   useEffect(() => {
@@ -69,18 +72,53 @@ const BusDetails = () => {
         await new Promise(resolve => setTimeout(resolve, 800));
         setBus(sampleBus);
         
-        // Initialize passenger details based on search params
+        // Get search params from navigation state
         const searchParams = location.state?.searchParams;
-        if (searchParams?.passengers) {
-          const initialPassengers = Array(searchParams.passengers).fill().map((_, index) => ({
-            id: index + 1,
-            name: '',
-            nic: '',
-            age: '',
-            gender: '',
-            seatNumber: ''
-          }));
-          setPassengerDetails(initialPassengers);
+        if (searchParams) {
+          // Calculate route information based on search params
+          const from = searchParams.from.toLowerCase();
+          const to = searchParams.to.toLowerCase();
+          const key = `${from}-${to}`;
+          const reverseKey = `${to}-${from}`;
+          
+          // Get distance information from predefined data
+          let distanceData = predefinedDistances[key] || predefinedDistances[reverseKey];
+          
+          // If no predefined data exists, use default values
+          if (!distanceData) {
+            distanceData = { distance: 150, duration: 180 }; // Default values
+          }
+          
+          // Calculate arrival time based on departure time and duration
+          const departureTime = sampleBus.departureTime;
+          const [hours, minutes] = departureTime.split(':').map(Number);
+          const departureDate = new Date();
+          departureDate.setHours(hours, minutes, 0, 0);
+          
+          const arrivalDate = new Date(departureDate.getTime() + distanceData.duration * 60000);
+          const arrivalTime = arrivalDate.toTimeString().substring(0, 5);
+          
+          setRouteInfo({
+            from: searchParams.from,
+            to: searchParams.to,
+            distance: Math.round(distanceData.distance),
+            duration: Math.round(distanceData.duration),
+            departureTime: sampleBus.departureTime,
+            arrivalTime: arrivalTime
+          });
+          
+          // Initialize passenger details based on search params
+          if (searchParams.passengers) {
+            const initialPassengers = Array(searchParams.passengers).fill().map((_, index) => ({
+              id: index + 1,
+              name: '',
+              nic: '',
+              age: '',
+              gender: '',
+              seatNumber: ''
+            }));
+            setPassengerDetails(initialPassengers);
+          }
         }
       } catch (error) {
         console.error('Error loading bus details:', error);
@@ -127,12 +165,13 @@ const BusDetails = () => {
         seatNumber: selectedSeats[index]
       }));
 
-      navigate('/checkout', {
+      navigate('/passenger-details', {
         state: {
           bus,
           passengers: passengersWithSeats,
           selectedSeats,
           searchParams: location.state?.searchParams,
+          routeInfo,
           totalAmount: bus.price * passengerDetails.length
         }
       });
@@ -203,27 +242,46 @@ const BusDetails = () => {
               />
               
               {/* Route Information */}
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-white mb-4">Route Details</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-slate-700/50 p-4 rounded-xl">
-                    <div className="text-slate-400 text-sm mb-1">From</div>
-                    <div className="text-white font-semibold">{bus.route.from}</div>
-                  </div>
-                  <div className="bg-slate-700/50 p-4 rounded-xl">
-                    <div className="text-slate-400 text-sm mb-1">To</div>
-                    <div className="text-white font-semibold">{bus.route.to}</div>
-                  </div>
-                  <div className="bg-slate-700/50 p-4 rounded-xl">
-                    <div className="text-slate-400 text-sm mb-1">Distance</div>
-                    <div className="text-white font-semibold">{bus.route.distance}</div>
-                  </div>
-                  <div className="bg-slate-700/50 p-4 rounded-xl">
-                    <div className="text-slate-400 text-sm mb-1">Duration</div>
-                    <div className="text-white font-semibold">{bus.route.duration}</div>
+              {routeInfo && (
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+                    <Route className="mr-2 text-blue-400" />
+                    Route Details
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-slate-700/50 p-4 rounded-xl">
+                      <div className="text-slate-400 text-sm mb-1 flex items-center">
+                        <MapPin className="mr-1 h-4 w-4" />
+                        From
+                      </div>
+                      <div className="text-white font-semibold">{routeInfo.from}</div>
+                    </div>
+                    <div className="bg-slate-700/50 p-4 rounded-xl">
+                      <div className="text-slate-400 text-sm mb-1 flex items-center">
+                        <MapPin className="mr-1 h-4 w-4" />
+                        To
+                      </div>
+                      <div className="text-white font-semibold">{routeInfo.to}</div>
+                    </div>
+                    <div className="bg-slate-700/50 p-4 rounded-xl">
+                      <div className="text-slate-400 text-sm mb-1 flex items-center">
+                        <Navigation className="mr-1 h-4 w-4" />
+                        Distance
+                      </div>
+                      <div className="text-white font-semibold">{routeInfo.distance} km</div>
+                    </div>
+                    <div className="bg-slate-700/50 p-4 rounded-xl">
+                      <div className="text-slate-400 text-sm mb-1 flex items-center">
+                        <Clock className="mr-1 h-4 w-4" />
+                        Duration
+                      </div>
+                      <div className="text-white font-semibold">
+                        {Math.floor(routeInfo.duration / 60)}h {routeInfo.duration % 60}m
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Schedule */}
               <div className="mb-6">
@@ -234,14 +292,14 @@ const BusDetails = () => {
                       <Clock className="h-4 w-4 mr-2" />
                       Departure
                     </div>
-                    <div className="text-white font-semibold">{bus.departureTime}</div>
+                    <div className="text-white font-semibold">{routeInfo?.departureTime || bus.departureTime}</div>
                   </div>
                   <div className="bg-slate-700/50 p-4 rounded-xl">
                     <div className="flex items-center text-slate-400 mb-1">
                       <Clock className="h-4 w-4 mr-2" />
                       Arrival
                     </div>
-                    <div className="text-white font-semibold">{bus.arrivalTime}</div>
+                    <div className="text-white font-semibold">{routeInfo?.arrivalTime || bus.arrivalTime}</div>
                   </div>
                 </div>
               </div>

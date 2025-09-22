@@ -453,3 +453,53 @@ export const verifyBooking = async (req, res) => {
     });
   }
 };
+
+// Calculate fare based on distance and bus type
+export const calculateFare = async (req, res) => {
+  try {
+    const { from, to, busType, passengers } = req.body;
+    
+    if (!from || !to || !busType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required parameters: from, to, busType'
+      });
+    }
+    
+    // Get coordinates for cities
+    const originCoords = await DistanceService.getCityCoordinates(from);
+    const destinationCoords = await DistanceService.getCityCoordinates(to);
+    
+    // Calculate distance
+    const { distance, duration } = await DistanceService.calculateDistance(
+      originCoords, 
+      destinationCoords
+    );
+    
+    // Calculate fare based on bus type and distance
+    const fareRates = {
+      'standard': 25, // Rs per km
+      'deluxe': 35,
+      'luxury': 50
+    };
+    
+    const baseFare = fareRates[busType.toLowerCase()] || fareRates.standard;
+    const totalFare = Math.round(baseFare * distance);
+    
+    res.json({
+      success: true,
+      data: {
+        distance: Math.round(distance),
+        duration: Math.round(duration),
+        fare: totalFare,
+        total: totalFare * (passengers || 1)
+      }
+    });
+  } catch (error) {
+    console.error('Fare calculation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error calculating fare: ' + error.message
+    });
+  }
+};

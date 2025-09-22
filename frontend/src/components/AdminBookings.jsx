@@ -1,0 +1,206 @@
+// components/AdminBookings.jsx
+import React, { useState, useEffect } from 'react';
+import { 
+  Eye, 
+  Edit, 
+  Trash2, 
+  Filter, 
+  Search,
+  Download,
+  Calendar
+} from 'lucide-react';
+
+const AdminBookings = () => {
+  const [bookings, setBookings] = useState([]);
+  const [filteredBookings, setFilteredBookings] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  useEffect(() => {
+    filterBookings();
+  }, [bookings, searchTerm, statusFilter]);
+
+  const fetchBookings = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bookings/admin/all`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setBookings(data);
+      }
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filterBookings = () => {
+    let results = bookings;
+    
+    // Apply search filter
+    if (searchTerm) {
+      results = results.filter(booking =>
+        booking.bookingId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.user?.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.user?.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.bus?.numberPlate.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      results = results.filter(booking => booking.bookingStatus === statusFilter);
+    }
+    
+    setFilteredBookings(results);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Confirmed': return 'bg-green-100 text-green-800';
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'Cancelled': return 'bg-red-100 text-red-800';
+      case 'Completed': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+        <h2 className="text-2xl font-bold text-white">Bookings Management</h2>
+        <div className="flex space-x-2 mt-4 md:mt-0">
+          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg">
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-slate-800 rounded-xl p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search bookings..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400"
+            />
+          </div>
+          
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
+          >
+            <option value="all">All Status</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Pending">Pending</option>
+            <option value="Cancelled">Cancelled</option>
+            <option value="Completed">Completed</option>
+          </select>
+          
+          <div className="flex items-center space-x-2">
+            <Calendar className="w-4 h-4 text-slate-400" />
+            <span className="text-slate-300">Date Range</span>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full table-auto">
+            <thead>
+              <tr className="bg-slate-700 text-left">
+                <th className="px-4 py-3 text-slate-300">Booking ID</th>
+                <th className="px-4 py-3 text-slate-300">Passenger</th>
+                <th className="px-4 py-3 text-slate-300">Bus</th>
+                <th className="px-4 py-3 text-slate-300">Route</th>
+                <th className="px-4 py-3 text-slate-300">Date</th>
+                <th className="px-4 py-3 text-slate-300">Seats</th>
+                <th className="px-4 py-3 text-slate-300">Amount</th>
+                <th className="px-4 py-3 text-slate-300">Status</th>
+                <th className="px-4 py-3 text-slate-300">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredBookings.map((booking) => (
+                <tr key={booking._id} className="border-b border-slate-700">
+                  <td className="px-4 py-3 text-white">{booking.bookingId}</td>
+                  <td className="px-4 py-3">
+                    <div className="text-white">
+                      {booking.user?.firstName} {booking.user?.lastName}
+                    </div>
+                    <div className="text-slate-400 text-sm">{booking.user?.email}</div>
+                  </td>
+                  <td className="px-4 py-3 text-white">
+                    {booking.bus?.numberPlate}
+                    <div className="text-slate-400 text-sm">{booking.bus?.busType}</div>
+                  </td>
+                  <td className="px-4 py-3 text-white">
+                    {booking.route?.from} → {booking.route?.to}
+                  </td>
+                  <td className="px-4 py-3 text-white">
+                    {new Date(booking.travelDate).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3 text-white">
+                    {booking.seats?.length || 0}
+                  </td>
+                  <td className="px-4 py-3 text-white">
+                    Rs. {booking.totalAmount}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.bookingStatus)}`}>
+                      {booking.bookingStatus}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex space-x-2">
+                      <button className="p-1 text-blue-400 hover:text-blue-300">
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button className="p-1 text-green-400 hover:text-green-300">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button className="p-1 text-red-400 hover:text-red-300">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          {filteredBookings.length === 0 && (
+            <div className="text-center py-8 text-slate-400">
+              No bookings found matching your criteria
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminBookings;
