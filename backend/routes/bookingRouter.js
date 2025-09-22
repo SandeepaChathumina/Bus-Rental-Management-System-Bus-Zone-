@@ -1,16 +1,20 @@
+// routes/bookingRouter.js
 import express from 'express';
 import {
+  getAvailableBuses,
   createBooking,
   confirmBooking,
   getUserBookings,
   getAllBookings,
   getBookingById,
   cancelBooking,
-  getAvailableBuses,
   updateBooking,
   getBookingStats,
   getBookingsByDateRange,
-  verifyBooking
+  verifyBooking,
+  calculateFare,
+  processBookingPayment,
+  getBookingInvoice
 } from '../controllers/bookingController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -27,6 +31,8 @@ router.post('/confirm', protect, confirmBooking);
 router.get('/:id', protect, getBookingById);
 router.put('/:id', protect, updateBooking);
 router.put('/:id/cancel', protect, cancelBooking);
+router.post('/:id/payment', protect, processBookingPayment);
+router.get('/:id/invoice', protect, getBookingInvoice);
 
 // Admin routes
 router.get('/admin/all', protect, admin, getAllBookings);

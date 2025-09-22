@@ -1,7 +1,17 @@
+// routes/paymentRouter.js
 import express from 'express';
 import {
+  // Stripe Payment Methods
+  createStripePaymentIntent,
+  confirmStripePayment,
+  processDirectCardPayment,
+  handleStripeWebhook,
+  
+  // Original Payment Methods
   processPayment,
   processMaintenancePayment,
+  getPaymentStatus,
+  processRefund,
   getUserPayments,
   getPaymentById,
   getAllPayments,
@@ -9,7 +19,6 @@ import {
   getAllMaintenancePayments,
   getPaymentStatistics,
   getInvoice,
-  processRefund,
   softDeletePayment,
   restorePayment,
   getRecycleBinPayments,
@@ -24,35 +33,44 @@ import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Client endpoints (require authentication)
+// STRIPE PAYMENT ROUTES
+
+// Webhook endpoint (must be raw body parser)
+router.post('/webhook/stripe', express.raw({type: 'application/json'}), handleStripeWebhook);
+
+// Stripe payment routes
+router.post('/stripe/create-intent', protect, createStripePaymentIntent);
+router.post('/stripe/confirm', protect, confirmStripePayment);
+router.post('/stripe/direct-payment', protect, processDirectCardPayment);
+
+// PAYMENT STATUS & MANAGEMENT
+router.get('/status/:paymentId', protect, getPaymentStatus);
+router.post('/:paymentId/refund', protect, processRefund);
+
+// CLIENT PAYMENT ROUTES
 router.post('/booking', protect, processPayment);
 router.post('/maintenance', protect, processMaintenancePayment);
 router.get('/my-payments', protect, getUserPayments);
 router.get('/invoice/:paymentId', protect, getInvoice);
 
-// Admin endpoints (require authentication + admin privileges)
-router.get('/all', protect, admin, getAllPayments);
-router.get('/bookings/all', protect, admin, getAllBookingPayments);
-router.get('/maintenance/all', protect, admin, getAllMaintenancePayments);
-router.get('/stats/overview', protect, admin, getPaymentStatistics);
-router.get('/:id', protect, admin, getPaymentById);
-router.post('/:id/refund', protect, admin, processRefund);
-
-// Soft delete and recycle bin routes (admin only)
-router.patch('/:id/soft-delete', protect, admin, softDeletePayment);
-router.patch('/:id/restore', protect, admin, restorePayment);
-router.get('/recycle-bin/all', protect, admin, getRecycleBinPayments);
-router.delete('/:id/permanent-delete', protect, admin, permanentDeletePayment);
-
-// Add these routes to paymentRouter.js
-
 // Salary payment routes
 router.post('/salary', protect, admin, processDriverSalary);
 router.get('/salary/my-salaries', protect, getDriverSalaries);
 router.get('/salary/all', protect, admin, getAllSalaryPayments);
-
-// Invoice routes
 router.get('/salary/invoice/:paymentId', protect, getSalaryInvoice);
 router.get('/salary/invoices/my-invoices', protect, getDriverSalaryInvoices);
+
+// ADMIN PAYMENT ROUTES
+router.get('/admin/all', protect, admin, getAllPayments);
+router.get('/admin/bookings', protect, admin, getAllBookingPayments);
+router.get('/admin/maintenance', protect, admin, getAllMaintenancePayments);
+router.get('/admin/stats', protect, admin, getPaymentStatistics);
+router.get('/admin/:id', protect, admin, getPaymentById);
+
+// RECYCLE BIN ROUTES (Admin only)
+router.patch('/admin/:id/soft-delete', protect, admin, softDeletePayment);
+router.patch('/admin/:id/restore', protect, admin, restorePayment);
+router.get('/admin/recycle-bin/all', protect, admin, getRecycleBinPayments);
+router.delete('/admin/:id/permanent-delete', protect, admin, permanentDeletePayment);
 
 export default router;

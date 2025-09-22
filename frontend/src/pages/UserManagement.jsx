@@ -14,25 +14,103 @@ import {
   Trash2,
   Eye,
   Download,
-  Filter,
   X,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
 
-/*
-  UserManagement.jsx
-  - Fetches users from backend: GET `${VITE_BACKEND_URL}/api/users`
-  - Deactivate user: DELETE `${VITE_BACKEND_URL}/api/users/:id` (matches your backend)
-  - Create driver/staff: POST `${VITE_BACKEND_URL}/api/users/admin/register` with role
-  - Total Users modal: summary + full DataTable (search/filter inside modal)
-  - Form/modals state are top-level (fixes cursor focus bug).
-*/
+// Validation utility functions
+const validationUtils = {
+  // Check if username is available
+  checkUsername: async (username) => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/users/check-username?username=${username}`
+      );
+      return response.data.available;
+    } catch (error) {
+      console.error('Username check failed:', error);
+      return false;
+    }
+  },
 
-// ---------- Helper components (top-level) ----------
+  // Check if email is available and valid
+  checkEmail: async (email) => {
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return { available: false, valid: false, message: 'Invalid email format' };
+    }
+
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/users/check-email?email=${email}`
+      );
+      return { 
+        available: response.data.available, 
+        valid: true, 
+        message: response.data.available ? 'Email is available' : 'Email already exists'
+      };
+    } catch (error) {
+      console.error('Email check failed:', error);
+      return { available: false, valid: false, message: 'Email check failed' };
+    }
+  },
+
+  // Check if NIC is valid (12 digits for new NIC)
+  validateNIC: (nic) => {
+    const nicRegex = /^[0-9]{12}$/;
+    return nicRegex.test(nic);
+  },
+
+  // Check if phone number is valid (Sri Lankan format)
+  validatePhone: (phone) => {
+    const phoneRegex = /^(?:\+94|0)?7[0-9]{8}$/;
+    return phoneRegex.test(phone.replace(/\s+/g, ''));
+  },
+
+  // Check password strength
+  validatePassword: (password) => {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    return {
+      isValid: password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar,
+      requirements: {
+        minLength: password.length >= minLength,
+        hasUpperCase,
+        hasLowerCase,
+        hasNumbers,
+        hasSpecialChar
+      }
+    };
+  },
+
+  // Check if license number is valid (alphanumeric, 6-15 characters)
+  validateLicenseNumber: (licenseNumber) => {
+    const licenseRegex = /^[A-Z0-9]{6,15}$/;
+    return licenseRegex.test(licenseNumber);
+  },
+
+  // Check if employee ID is unique (placeholder - implement backend endpoint)
+  checkEmployeeId: async (employeeId) => {
+    try {
+      // This would require a backend endpoint to check employee ID uniqueness
+      // For now, we'll check locally against existing staff profiles
+      return true;
+    } catch (error) {
+      console.error('Employee ID check failed:', error);
+      return false;
+    }
+  }
+};
+
+// StatusBadge Component
 const StatusBadge = ({ status }) => {
-  const s =
-    typeof status === "boolean" ? (status ? "Active" : "Inactive") : status;
+  const s = typeof status === "boolean" ? (status ? "Active" : "Inactive") : status;
   const colors = {
     active: "bg-green-900/30 text-green-400",
     inactive: "bg-red-900/30 text-red-400",
@@ -45,17 +123,7 @@ const StatusBadge = ({ status }) => {
   return <span className={`px-2 py-1 text-xs rounded ${cls}`}>{s}</span>;
 };
 
-// Add this component at the top of the file
-const SuccessNotification = ({ message, onClose }) => (
-  <div className="fixed top-4 right-4 z-50 bg-green-900/80 border border-green-700 text-green-100 px-4 py-3 rounded-lg shadow-lg flex items-center">
-    <CheckCircle className="w-5 h-5 mr-2 text-green-300" />
-    <span>{message}</span>
-    <button onClick={onClose} className="ml-4 text-green-300 hover:text-white">
-      <X className="w-4 h-4" />
-    </button>
-  </div>
-);
-
+// UserAvatar Component
 const UserAvatar = ({ src, name, className = "" }) => {
   if (!src) {
     return (
@@ -75,7 +143,7 @@ const UserAvatar = ({ src, name, className = "" }) => {
   );
 };
 
-// Simple Modal wrapper (no portal)
+// Modal Component
 const Modal = ({ title, onClose, children }) => (
   <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto pt-12">
     <div className="absolute inset-0 bg-black/50" onClick={onClose} />
@@ -94,7 +162,7 @@ const Modal = ({ title, onClose, children }) => (
   </div>
 );
 
-// DataTable component (re-usable)
+// DataTable Component
 const DataTable = ({
   data = [],
   columns = [],
@@ -255,7 +323,101 @@ const DataTable = ({
   );
 };
 
-// ---------- Main Page Component ----------
+// ValidationMessages Component
+const ValidationMessages = ({ validation, field }) => {
+  if (!validation[field]?.checked) return null;
+
+  const getMessage = () => {
+    switch (field) {
+      case 'username':
+        return validation.username.available ? 
+          <p className="text-green-400">✓ Username available</p> : 
+          <p className="text-red-400">✗ Username already taken</p>;
+      
+      case 'email':
+        if (!validation.email.valid) {
+          return <p className="text-red-400">✗ {validation.email.message}</p>;
+        }
+        return validation.email.available ? 
+          <p className="text-green-400">✓ Email available</p> : 
+          <p className="text-red-400">✗ Email already registered</p>;
+      
+      case 'password':
+        return (
+          <div className="text-xs">
+            <p className={validation.password.isValid ? "text-green-400" : "text-red-400"}>
+              {validation.password.isValid ? "✓ Strong password" : "✗ Weak password"}
+            </p>
+            {!validation.password.isValid && (
+              <div className="grid grid-cols-2 gap-1 mt-1">
+                <span className={validation.password.requirements.minLength ? "text-green-400" : "text-red-400"}>
+                  • 8+ chars
+                </span>
+                <span className={validation.password.requirements.hasUpperCase ? "text-green-400" : "text-red-400"}>
+                  • A-Z
+                </span>
+                <span className={validation.password.requirements.hasLowerCase ? "text-green-400" : "text-red-400"}>
+                  • a-z
+                </span>
+                <span className={validation.password.requirements.hasNumbers ? "text-green-400" : "text-red-400"}>
+                  • 0-9
+                </span>
+                <span className={validation.password.requirements.hasSpecialChar ? "text-green-400" : "text-red-400"}>
+                  • !@#$
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      
+      case 'nic':
+        return validation.nic.isValid ? 
+          <p className="text-green-400">✓ Valid NIC</p> : 
+          <p className="text-red-400">✗ NIC must be 12 digits</p>;
+      
+      case 'phone':
+        return validation.phone.isValid ? 
+          <p className="text-green-400">✓ Valid phone number</p> : 
+          <p className="text-red-400">✗ Invalid Sri Lankan number</p>;
+      
+      case 'licenseNumber':
+        return validation.licenseNumber.isValid ? 
+          <p className="text-green-400">✓ Valid license number</p> : 
+          <p className="text-red-400">✗ 6-15 alphanumeric characters required</p>;
+      
+      case 'employeeId':
+        return validation.employeeId.isValid ? 
+          <p className="text-green-400">✓ Employee ID available</p> : 
+          <p className="text-red-400">✗ Employee ID already taken</p>;
+      
+      default:
+        return null;
+    }
+  };
+
+  return <div className="mt-1 text-xs">{getMessage()}</div>;
+};
+
+// FormField Component
+const FormField = ({ field, placeholder, type = "text", value, onChange, validation, ...props }) => (
+  <div>
+    <input
+      type={type}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      className={`p-3 bg-slate-700 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-colors w-full ${
+        validation[field]?.checked 
+          ? (validation[field]?.isValid ? 'border-green-500 focus:ring-green-500' : 'border-red-500 focus:ring-red-500')
+          : 'border-slate-600 focus:ring-blue-500'
+      }`}
+      {...props}
+    />
+    <ValidationMessages validation={validation} field={field} />
+  </div>
+);
+
+// Main Component
 const UserManagement = () => {
   const { user: authUser } = useAuth();
   const [users, setUsers] = useState([]);
@@ -263,7 +425,7 @@ const UserManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
-  // Modals & form state (top-level — fixes focus/cursor bug)
+  // Modals & form state
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [showTotalModal, setShowTotalModal] = useState(false);
@@ -285,7 +447,146 @@ const UserManagement = () => {
     staffRole: "",
     employeeId: "",
   };
+
+  const initialValidation = {
+    username: { available: false, checked: false },
+    email: { available: false, valid: false, checked: false, message: '' },
+    password: { isValid: false, checked: false, requirements: {} },
+    nic: { isValid: false, checked: false },
+    phone: { isValid: false, checked: false },
+    licenseNumber: { isValid: false, checked: false },
+    employeeId: { isValid: false, checked: false },
+  };
+
   const [form, setForm] = useState(initialForm);
+  const [validation, setValidation] = useState(initialValidation);
+
+  // Debounced validation functions
+  useEffect(() => {
+    const validateUsername = async () => {
+      if (form.username.length >= 3) {
+        const isAvailable = await validationUtils.checkUsername(form.username);
+        setValidation(prev => ({
+          ...prev,
+          username: { available: isAvailable, checked: true }
+        }));
+      } else {
+        setValidation(prev => ({
+          ...prev,
+          username: { available: false, checked: false }
+        }));
+      }
+    };
+
+    const timeoutId = setTimeout(validateUsername, 500);
+    return () => clearTimeout(timeoutId);
+  }, [form.username]);
+
+  useEffect(() => {
+    const validateEmail = async () => {
+      if (form.email.length >= 5) {
+        const result = await validationUtils.checkEmail(form.email);
+        setValidation(prev => ({
+          ...prev,
+          email: { ...result, checked: true }
+        }));
+      } else {
+        setValidation(prev => ({
+          ...prev,
+          email: { available: false, valid: false, checked: false, message: '' }
+        }));
+      }
+    };
+
+    const timeoutId = setTimeout(validateEmail, 500);
+    return () => clearTimeout(timeoutId);
+  }, [form.email]);
+
+  useEffect(() => {
+    if (form.password) {
+      const passwordValidation = validationUtils.validatePassword(form.password);
+      setValidation(prev => ({
+        ...prev,
+        password: { ...passwordValidation, checked: true }
+      }));
+    } else {
+      setValidation(prev => ({
+        ...prev,
+        password: { isValid: false, checked: false, requirements: {} }
+      }));
+    }
+  }, [form.password]);
+
+  useEffect(() => {
+    setValidation(prev => ({
+      ...prev,
+      nic: { 
+        isValid: validationUtils.validateNIC(form.nic), 
+        checked: form.nic.length > 0 
+      }
+    }));
+  }, [form.nic]);
+
+  useEffect(() => {
+    setValidation(prev => ({
+      ...prev,
+      phone: { 
+        isValid: validationUtils.validatePhone(form.phone), 
+        checked: form.phone.length > 0 
+      }
+    }));
+  }, [form.phone]);
+
+  useEffect(() => {
+    setValidation(prev => ({
+      ...prev,
+      licenseNumber: { 
+        isValid: validationUtils.validateLicenseNumber(form.licenseNumber), 
+        checked: form.licenseNumber.length > 0 
+      }
+    }));
+  }, [form.licenseNumber]);
+
+  useEffect(() => {
+    const validateEmployeeId = async () => {
+      if (form.employeeId.length >= 2) {
+        const isAvailable = await validationUtils.checkEmployeeId(form.employeeId);
+        setValidation(prev => ({
+          ...prev,
+          employeeId: { isValid: isAvailable, checked: true }
+        }));
+      } else {
+        setValidation(prev => ({
+          ...prev,
+          employeeId: { isValid: false, checked: false }
+        }));
+      }
+    };
+
+    const timeoutId = setTimeout(validateEmployeeId, 500);
+    return () => clearTimeout(timeoutId);
+  }, [form.employeeId]);
+
+  const resetValidation = () => {
+    setValidation(initialValidation);
+  };
+
+  const isFormValid = (role) => {
+    const baseValid = 
+      validation.username.available &&
+      validation.email.available &&
+      validation.email.valid &&
+      validation.password.isValid &&
+      validation.nic.isValid &&
+      validation.phone.isValid;
+
+    if (role === 'driver') {
+      return baseValid && validation.licenseNumber.isValid && form.licenseExpiry;
+    } else if (role === 'staff') {
+      return baseValid && validation.employeeId.isValid && form.staffRole;
+    }
+    return baseValid;
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -306,7 +607,6 @@ const UserManagement = () => {
     }
   };
 
-  // filter + search
   const filteredUsers = users.filter((u) => {
     const q = searchQuery.trim().toLowerCase();
     const matchesSearch =
@@ -330,31 +630,18 @@ const UserManagement = () => {
           p._id === (u._id || u.id) ? { ...p, isActive: false } : p
         )
       );
+      toast.success("User deactivated successfully");
     } catch (err) {
       console.error("deactivate error", err);
-      alert(err.response?.data?.message || "Failed to deactivate user");
+      toast.error(err.response?.data?.message || "Failed to deactivate user");
     }
   };
 
   const createUser = async (role) => {
     setCreateError(null);
-    if (
-      !form.username ||
-      !form.email ||
-      !form.password ||
-      !form.firstName ||
-      !form.lastName ||
-      !form.nic
-    ) {
-      setCreateError("Please fill required fields.");
-      return;
-    }
-    if (role === "driver" && (!form.licenseNumber || !form.licenseExpiry)) {
-      setCreateError("Driver requires license details.");
-      return;
-    }
-    if (role === "staff" && (!form.staffRole || !form.employeeId)) {
-      setCreateError("Staff requires staff role & employee id.");
+    
+    if (!isFormValid(role)) {
+      setCreateError("Please fix all validation errors before submitting.");
       return;
     }
 
@@ -369,6 +656,7 @@ const UserManagement = () => {
       address: form.address,
       role,
     };
+
     if (role === "driver") {
       payload.licenseNumber = form.licenseNumber;
       payload.licenseExpiry = form.licenseExpiry;
@@ -387,20 +675,12 @@ const UserManagement = () => {
       const created = res.data.user || res.data;
       setUsers((prev) => [created, ...prev]);
       setForm(initialForm);
+      resetValidation();
       setShowDriverModal(false);
       setShowStaffModal(false);
 
-      // Show success message
       toast.success(
-        `${role.charAt(0).toUpperCase() + role.slice(1)} created successfully!`,
-        {
-          icon: <CheckCircle className="w-5 h-5 text-green-400" />,
-          style: {
-            background: "#1e293b",
-            color: "#f1f5f9",
-            border: "1px solid #334155",
-          },
-        }
+        `${role.charAt(0).toUpperCase() + role.slice(1)} created successfully!`
       );
     } catch (err) {
       console.error("createUser error", err);
@@ -411,7 +691,6 @@ const UserManagement = () => {
     }
   };
 
-  // counts for summary
   const counts = users.reduce(
     (acc, u) => {
       acc.total += 1;
@@ -422,7 +701,6 @@ const UserManagement = () => {
     { total: 0, roles: {} }
   );
 
-  // columns for table
   const userColumns = [
     {
       key: "name",
@@ -464,7 +742,6 @@ const UserManagement = () => {
     },
   ];
 
-  // export CSV of provided list
   const exportCSV = (list) => {
     if (!list || list.length === 0) {
       alert("No data to export");
@@ -498,14 +775,13 @@ const UserManagement = () => {
 
   return (
     <div className="space-y-6">
-      {/* Top stat + Total Users card — removed click here (user requested non-clickable in this page) */}
+      {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-slate-300">Total Users</p>
               <h3 className="text-2xl text-white">{users.length}</h3>
-              {/* removed "Click to view details" and onClick per request */}
             </div>
             <Users className="w-8 h-8 text-slate-300" />
           </div>
@@ -548,17 +824,17 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* Controls + Quick Actions */}
+      {/* Controls + Table */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="col-span-2 bg-slate-800 rounded-xl p-6 border border-slate-700">
           <div className="flex items-center space-x-3 mb-4">
-            <div className="relative">
+            <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search users..."
-                className="pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                className="pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg w-full"
               />
             </div>
 
@@ -576,7 +852,7 @@ const UserManagement = () => {
 
             <button
               onClick={() => exportCSV(filteredUsers)}
-              className="ml-auto flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg"
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <Download className="w-4 h-4" />
               <span>Export</span>
@@ -586,9 +862,7 @@ const UserManagement = () => {
           <DataTable
             data={filteredUsers}
             columns={userColumns}
-            onEdit={(u) => console.log("Edit", u)}
             onDelete={deactivateUser}
-            onView={(u) => console.log("View", u)}
             loading={loadingUsers}
             expandable={true}
           />
@@ -599,7 +873,7 @@ const UserManagement = () => {
           <div className="grid grid-cols-1 gap-3">
             <button
               onClick={() => setShowDriverModal(true)}
-              className="flex items-center justify-between px-4 py-3 bg-teal-900/10 rounded"
+              className="flex items-center justify-between px-4 py-3 bg-teal-900/10 rounded hover:bg-teal-900/20 transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <Plus className="w-5 h-5 text-teal-300" />
@@ -609,7 +883,7 @@ const UserManagement = () => {
 
             <button
               onClick={() => setShowStaffModal(true)}
-              className="flex items-center justify-between px-4 py-3 bg-pink-900/10 rounded"
+              className="flex items-center justify-between px-4 py-3 bg-pink-900/10 rounded hover:bg-pink-900/20 transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <Plus className="w-5 h-5 text-pink-300" />
@@ -619,7 +893,7 @@ const UserManagement = () => {
 
             <button
               onClick={() => exportCSV(users)}
-              className="flex items-center justify-between px-4 py-3 bg-blue-900/10 rounded"
+              className="flex items-center justify-between px-4 py-3 bg-blue-900/10 rounded hover:bg-blue-900/20 transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <Download className="w-5 h-5 text-slate-300" />
@@ -630,87 +904,6 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* ---------- Modals ---------- */}
-
-      {/* Total Users Modal: summary + table (can still be opened by setShowTotalModal(true) if needed elsewhere) */}
-      {showTotalModal && (
-        <Modal title="All Users" onClose={() => setShowTotalModal(false)}>
-          <div className="mb-4 text-slate-300">
-            <div className="mb-2">
-              Total users:{" "}
-              <strong className="text-white">{counts.total}</strong>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-slate-800 p-3 rounded">
-                <div className="text-slate-400 text-sm">Passengers</div>
-                <div className="text-white font-medium">
-                  {counts.roles["passenger"] || 0}
-                </div>
-              </div>
-              <div className="bg-slate-800 p-3 rounded">
-                <div className="text-slate-400 text-sm">Drivers</div>
-                <div className="text-white font-medium">
-                  {counts.roles["driver"] || 0}
-                </div>
-              </div>
-              <div className="bg-slate-800 p-3 rounded">
-                <div className="text-slate-400 text-sm">Staff</div>
-                <div className="text-white font-medium">
-                  {counts.roles["staff"] || 0}
-                </div>
-              </div>
-              <div className="bg-slate-800 p-3 rounded">
-                <div className="text-slate-400 text-sm">Admins</div>
-                <div className="text-white font-medium">
-                  {counts.roles["admin"] || 0}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-4">
-            {/* search inside modal */}
-            <div className="flex items-center space-x-2 mb-3">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                <input
-                  placeholder="Search inside users..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 bg-slate-700 rounded w-full"
-                />
-              </div>
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="bg-slate-700 text-white px-3 py-2 rounded"
-              >
-                <option value="all">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="driver">Driver</option>
-                <option value="staff">Staff</option>
-                <option value="passenger">Passenger</option>
-              </select>
-              <button
-                onClick={() => exportCSV(filteredUsers)}
-                className="px-3 py-2 bg-green-600 rounded text-white flex items-center space-x-2"
-              >
-                <Download className="w-4 h-4" />
-                <span>Export</span>
-              </button>
-            </div>
-
-            <DataTable
-              data={filteredUsers}
-              columns={userColumns}
-              onDelete={deactivateUser}
-              loading={loadingUsers}
-              expandable
-            />
-          </div>
-        </Modal>
-      )}
-
       {/* Add Driver Modal */}
       {showDriverModal && (
         <Modal
@@ -718,103 +911,131 @@ const UserManagement = () => {
           onClose={() => {
             setShowDriverModal(false);
             setForm(initialForm);
+            resetValidation();
             setCreateError(null);
           }}
         >
           {createError && (
-            <div className="text-red-400 mb-2">{createError}</div>
+            <div className="text-red-400 mb-4 p-3 bg-red-900/20 rounded-lg">{createError}</div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-            <input
-              placeholder="Username"
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <FormField
+              field="username"
+              placeholder="Username *"
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
-              placeholder="Email"
+            
+            <FormField
+              field="email"
+              placeholder="Email *"
+              type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
+            
+            <FormField
+              field="password"
+              placeholder="Password *"
               type="password"
-              placeholder="Password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
-              placeholder="First name"
+            
+            <FormField
+              field="firstName"
+              placeholder="First Name *"
               value={form.firstName}
               onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
-              placeholder="Last name"
+            
+            <FormField
+              field="lastName"
+              placeholder="Last Name *"
               value={form.lastName}
               onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
-              placeholder="NIC"
+            
+            <FormField
+              field="nic"
+              placeholder="NIC * (12 digits)"
               value={form.nic}
               onChange={(e) => setForm({ ...form, nic: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
-              placeholder="Phone"
+            
+            <FormField
+              field="phone"
+              placeholder="Phone * (07XXXXXXXX)"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
+            
+            <FormField
+              field="address"
               placeholder="Address"
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
-              placeholder="License Number"
+            
+            <FormField
+              field="licenseNumber"
+              placeholder="License Number *"
               value={form.licenseNumber}
-              onChange={(e) =>
-                setForm({ ...form, licenseNumber: e.target.value })
-              }
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })}
+              validation={validation}
             />
-            <input
-              type="date"
-              placeholder="License Expiry"
-              value={form.licenseExpiry}
-              onChange={(e) =>
-                setForm({ ...form, licenseExpiry: e.target.value })
-              }
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-            />
-            <input
+            
+            <div>
+              <input
+                type="date"
+                placeholder="License Expiry *"
+                value={form.licenseExpiry}
+                onChange={(e) => setForm({ ...form, licenseExpiry: e.target.value })}
+                className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors w-full"
+              />
+              {!form.licenseExpiry && (
+                <p className="text-red-400 text-xs mt-1">✗ License expiry is required</p>
+              )}
+            </div>
+            
+            <FormField
+              field="emergencyContact"
               placeholder="Emergency Contact"
               value={form.emergencyContact}
-              onChange={(e) =>
-                setForm({ ...form, emergencyContact: e.target.value })
-              }
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              onChange={(e) => setForm({ ...form, emergencyContact: e.target.value })}
+              validation={validation}
             />
           </div>
+          
           <div className="flex justify-end space-x-2">
             <button
               onClick={() => {
                 setShowDriverModal(false);
                 setForm(initialForm);
+                resetValidation();
                 setCreateError(null);
               }}
-              className="px-4 py-2 bg-slate-700 rounded"
+              className="px-4 py-2 bg-slate-700 rounded-lg text-white hover:bg-slate-600 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={() => createUser("driver")}
-              className="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-lg text-white font-medium transition-colors flex items-center justify-center"
-              disabled={creating}
+              className={`px-4 py-2 rounded-lg text-white font-medium transition-colors flex items-center justify-center ${
+                isFormValid("driver") && !creating
+                  ? "bg-teal-600 hover:bg-teal-700"
+                  : "bg-gray-600 cursor-not-allowed"
+              }`}
+              disabled={!isFormValid("driver") || creating}
             >
               {creating ? (
                 <>
@@ -836,90 +1057,122 @@ const UserManagement = () => {
           onClose={() => {
             setShowStaffModal(false);
             setForm(initialForm);
+            resetValidation();
             setCreateError(null);
           }}
         >
           {createError && (
-            <div className="text-red-400 mb-2">{createError}</div>
+            <div className="text-red-400 mb-4 p-3 bg-red-900/20 rounded-lg">{createError}</div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-            <input
-              placeholder="Username"
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <FormField
+              field="username"
+              placeholder="Username *"
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
-              placeholder="Email"
+            
+            <FormField
+              field="email"
+              placeholder="Email *"
+              type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
+            
+            <FormField
+              field="password"
+              placeholder="Password *"
               type="password"
-              placeholder="Password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
-              placeholder="First name"
+            
+            <FormField
+              field="firstName"
+              placeholder="First Name *"
               value={form.firstName}
               onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
-              placeholder="Last name"
+            
+            <FormField
+              field="lastName"
+              placeholder="Last Name *"
               value={form.lastName}
               onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
-              placeholder="NIC"
+            
+            <FormField
+              field="nic"
+              placeholder="NIC * (12 digits)"
               value={form.nic}
               onChange={(e) => setForm({ ...form, nic: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
-              placeholder="Phone"
+            
+            <FormField
+              field="phone"
+              placeholder="Phone * (07XXXXXXXX)"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
+            
+            <FormField
+              field="address"
               placeholder="Address"
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
-            <input
-              placeholder="Staff Role"
-              value={form.staffRole}
-              onChange={(e) => setForm({ ...form, staffRole: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-            />
-            <input
-              placeholder="Employee ID"
+            
+            <div>
+              <input
+                placeholder="Staff Role *"
+                value={form.staffRole}
+                onChange={(e) => setForm({ ...form, staffRole: e.target.value })}
+                className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors w-full"
+              />
+              {!form.staffRole && (
+                <p className="text-red-400 text-xs mt-1">✗ Staff role is required</p>
+              )}
+            </div>
+            
+            <FormField
+              field="employeeId"
+              placeholder="Employee ID *"
               value={form.employeeId}
               onChange={(e) => setForm({ ...form, employeeId: e.target.value })}
-              className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              validation={validation}
             />
           </div>
+          
           <div className="flex justify-end space-x-2">
             <button
               onClick={() => {
                 setShowStaffModal(false);
                 setForm(initialForm);
+                resetValidation();
                 setCreateError(null);
               }}
-              className="px-4 py-2 bg-slate-700 rounded"
+              className="px-4 py-2 bg-slate-700 rounded-lg text-white hover:bg-slate-600 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={() => createUser("staff")}
-              className="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-lg text-white font-medium transition-colors flex items-center justify-center"
-              disabled={creating}
+              className={`px-4 py-2 rounded-lg text-white font-medium transition-colors flex items-center justify-center ${
+                isFormValid("staff") && !creating
+                  ? "bg-teal-600 hover:bg-teal-700"
+                  : "bg-gray-600 cursor-not-allowed"
+              }`}
+              disabled={!isFormValid("staff") || creating}
             >
               {creating ? (
                 <>

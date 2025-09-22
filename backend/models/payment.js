@@ -1,3 +1,4 @@
+// models/payment.js
 import mongoose from 'mongoose';
 
 const paymentSchema = new mongoose.Schema({
@@ -10,7 +11,6 @@ const paymentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Booking'
   },
-  // Add maintenance reference
   maintenance: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Maintenance'
@@ -20,12 +20,10 @@ const paymentSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  // Add driver reference for salary payments
-   driver: {
+  driver: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'DriverProfile'  // ← Changed this line
+    ref: 'DriverProfile'
   },
-  // Add schedule reference for salary payments
   schedule: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Schedule'
@@ -36,7 +34,7 @@ const paymentSchema = new mongoose.Schema({
   },
   currency: {
     type: String,
-    default: 'USD'
+    default: 'LKR'
   },
   paymentMethod: {
     type: String,
@@ -46,7 +44,7 @@ const paymentSchema = new mongoose.Schema({
   paymentGateway: {
     type: String,
     enum: ['stripe', 'paypal', 'razorpay', 'none'],
-    default: 'none'
+    default: 'stripe' // Changed default to stripe
   },
   cardDetails: {
     cardNumber: String,
@@ -57,13 +55,14 @@ const paymentSchema = new mongoose.Schema({
   gatewayResponse: {
     gatewayId: String,
     status: String,
+    clientSecret: String, // Added for Stripe
     responseCode: String,
     responseMessage: String,
     rawResponse: Object
   },
   status: {
     type: String,
-    enum: ['pending', 'success', 'failed', 'refunded', 'cancelled'],
+    enum: ['pending', 'processing', 'success', 'failed', 'refunded', 'cancelled'],
     default: 'pending'
   },
   transactionId: {
@@ -75,18 +74,17 @@ const paymentSchema = new mongoose.Schema({
     amount: Number,
     reason: String,
     processedAt: Date,
+    refundId: String,
     status: {
       type: String,
       enum: ['pending', 'processed', 'failed']
     }
   }],
-  // Payment type to distinguish between booking, maintenance, and salary payments
   paymentType: {
     type: String,
     enum: ['booking', 'maintenance', 'salary'],
     default: 'booking'
   },
-  // Soft delete fields
   isDeleted: {
     type: Boolean,
     default: false
@@ -101,6 +99,13 @@ const paymentSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Index for better query performance
+paymentSchema.index({ user: 1, createdAt: -1 });
+paymentSchema.index({ paymentId: 1 });
+paymentSchema.index({ transactionId: 1 });
+paymentSchema.index({ status: 1 });
+paymentSchema.index({ paymentGateway: 1 });
 
 const Payment = mongoose.model('Payment', paymentSchema);
 

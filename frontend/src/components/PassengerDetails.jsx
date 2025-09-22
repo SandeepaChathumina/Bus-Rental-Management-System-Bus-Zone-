@@ -1,4 +1,4 @@
-// PassengerDetails.jsx
+// src/components/PassengerDetails.jsx - UPDATED
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -10,19 +10,54 @@ import {
   MapPin,
   Clock,
   Users,
-  Calendar
+  Calendar,
+  Calculator
 } from 'lucide-react';
 
 const PassengerDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { bus, passengers, selectedSeats, searchParams, routeInfo, totalAmount } = location.state || {};
+  const { bus, passengers, selectedSeats, searchParams } = location.state || {};
   
-  const [passengerDetails, setPassengerDetails] = useState(passengers || []);
+  const [passengerDetails, setPassengerDetails] = useState(
+    passengers || []
+  );
   const [contactInfo, setContactInfo] = useState({
     email: '',
     phone: ''
   });
+
+  // Calculate number of days and total amount
+  const calculatePricing = () => {
+    if (!searchParams || !bus) return { totalAmount: 0, numberOfDays: 1 };
+    
+    const isRoundTrip = searchParams.tripType === 'round-trip';
+    let numberOfDays = 1;
+    
+    if (isRoundTrip && searchParams.travelDate && searchParams.returnDate) {
+      const travelDate = new Date(searchParams.travelDate);
+      const returnDate = new Date(searchParams.returnDate);
+      const timeDiff = returnDate.getTime() - travelDate.getTime();
+      numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // Include both days
+    }
+    
+    // Calculate total amount: basePrice + (basePrice * 1/4) for each additional day
+    const basePrice = bus.pricePerDay || 0;
+    let totalAmount = basePrice;
+    
+    if (numberOfDays > 1) {
+      totalAmount = basePrice + (basePrice * (1/4) * (numberOfDays - 1));
+    }
+    
+    return {
+      totalAmount: Math.round(totalAmount),
+      numberOfDays,
+      basePrice,
+      isRoundTrip
+    };
+  };
+
+  const pricing = calculatePricing();
 
   if (!bus || !passengers) {
     return (
@@ -71,16 +106,26 @@ const PassengerDetails = () => {
       return;
     }
     
-    // Proceed to payment
+    // Proceed to checkout with all booking data
     navigate('/checkout', {
-      state: {
-        bus,
-        passengers: passengerDetails,
-        selectedSeats,
-        searchParams,
-        routeInfo,
-        contactInfo,
-        totalAmount
+    state: {
+      booking: {
+        _id: 'temp_booking_id', // You'll create the actual booking after payment
+        bookingId: `BK${Date.now()}`,
+        travelDate: searchParams.travelDate,
+        departureTime: searchParams.departureTime,
+        route: {
+          from: searchParams.from,
+          to: searchParams.to
+        },
+        seats: passengerDetails,
+        totalAmount: pricing.totalAmount
+      },
+      bus: bus,
+      passengers: passengerDetails,
+      searchParams: searchParams,
+      contactInfo: contactInfo,
+      pricing: pricing
       }
     });
   };
@@ -114,13 +159,13 @@ const PassengerDetails = () => {
                 <div className="flex items-center text-slate-300">
                   <MapPin className="h-5 w-5 mr-2 text-blue-400" />
                   <span className="font-medium">Route:</span>
-                  <span className="ml-2">{routeInfo?.from} → {routeInfo?.to}</span>
+                  <span className="ml-2">{searchParams?.from} → {searchParams?.to}</span>
                 </div>
                 
                 <div className="flex items-center text-slate-300">
                   <Clock className="h-5 w-5 mr-2 text-blue-400" />
                   <span className="font-medium">Departure:</span>
-                  <span className="ml-2">{routeInfo?.departureTime}</span>
+                  <span className="ml-2">{searchParams?.departureTime}</span>
                 </div>
                 
                 <div className="flex items-center text-slate-300">
@@ -128,6 +173,14 @@ const PassengerDetails = () => {
                   <span className="font-medium">Date:</span>
                   <span className="ml-2">{searchParams?.travelDate}</span>
                 </div>
+                
+                {searchParams?.returnDate && (
+                  <div className="flex items-center text-slate-300">
+                    <Calendar className="h-5 w-5 mr-2 text-blue-400" />
+                    <span className="font-medium">Return:</span>
+                    <span className="ml-2">{searchParams?.returnDate}</span>
+                  </div>
+                )}
                 
                 <div className="flex items-center text-slate-300">
                   <Users className="h-5 w-5 mr-2 text-blue-400" />
@@ -140,10 +193,30 @@ const PassengerDetails = () => {
                   <span className="ml-2">{selectedSeats.join(', ')}</span>
                 </div>
                 
+                {/* Pricing Breakdown */}
                 <div className="pt-4 border-t border-slate-700">
-                  <div className="flex justify-between items-center">
+                  <div className="mb-3">
+                    <h4 className="text-slate-300 font-medium mb-2 flex items-center">
+                      <Calculator className="h-4 w-4 mr-2" />
+                      Pricing Breakdown
+                    </h4>
+                    <div className="text-sm text-slate-400 space-y-1">
+                      <div className="flex justify-between">
+                        <span>Base Price ({pricing.numberOfDays} day{pricing.numberOfDays > 1 ? 's' : ''}):</span>
+                        <span>Rs. {pricing.basePrice}/day</span>
+                      </div>
+                      {pricing.numberOfDays > 1 && (
+                        <div className="flex justify-between">
+                          <span>Additional days ({pricing.numberOfDays - 1} × 25%):</span>
+                          <span>Rs. {Math.round(pricing.basePrice * 0.25 * (pricing.numberOfDays - 1))}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-700">
                     <span className="text-slate-300 font-medium">Total Amount:</span>
-                    <span className="text-blue-400 font-bold text-xl">Rs. {totalAmount}</span>
+                    <span className="text-blue-400 font-bold text-xl">Rs. {pricing.totalAmount}</span>
                   </div>
                 </div>
               </div>
@@ -162,86 +235,85 @@ const PassengerDetails = () => {
                   <div>
                     <label className="text-slate-400 text-sm mb-2 block flex items-center">
                       <Mail className="h-4 w-4 mr-2" />
-                      Email Address *
+                      Email Address
                     </label>
                     <input
                       type="email"
                       value={contactInfo.email}
                       onChange={(e) => handleContactChange('email', e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
                   </div>
-                  
                   <div>
                     <label className="text-slate-400 text-sm mb-2 block flex items-center">
                       <Phone className="h-4 w-4 mr-2" />
-                      Phone Number *
+                      Phone Number
                     </label>
                     <input
                       type="tel"
                       value={contactInfo.phone}
                       onChange={(e) => handleContactChange('phone', e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
                   </div>
                 </div>
               </div>
-              
+
               {/* Passenger Details */}
               <div>
                 <h3 className="text-lg font-semibold text-white mb-4">Passenger Details</h3>
                 <div className="space-y-6">
                   {passengerDetails.map((passenger, index) => (
-                    <div key={index} className="bg-slate-700/30 p-4 rounded-xl">
-                      <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
-                        <User className="h-5 w-5 mr-2 text-blue-400" />
-                        Passenger {index + 1} - Seat {selectedSeats[index]}
+                    <div key={index} className="bg-slate-700/30 rounded-xl p-4">
+                      <h4 className="text-white font-medium mb-4 flex items-center">
+                        <User className="h-4 w-4 mr-2" />
+                        Passenger {index + 1} - Seat {passenger.seatNumber}
                       </h4>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="text-slate-400 text-sm mb-2 block">Full Name *</label>
+                          <label className="text-slate-400 text-sm mb-2 block">Full Name</label>
                           <input
                             type="text"
                             value={passenger.name}
                             onChange={(e) => handlePassengerChange(index, 'name', e.target.value)}
-                            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
                           />
                         </div>
                         
                         <div>
-                          <label className="text-slate-400 text-sm mb-2 block">NIC Number *</label>
+                          <label className="text-slate-400 text-sm mb-2 block">NIC/Passport</label>
                           <input
                             type="text"
                             value={passenger.nic}
                             onChange={(e) => handlePassengerChange(index, 'nic', e.target.value)}
-                            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
                           />
                         </div>
                         
                         <div>
-                          <label className="text-slate-400 text-sm mb-2 block">Age *</label>
+                          <label className="text-slate-400 text-sm mb-2 block">Age</label>
                           <input
                             type="number"
-                            value={passenger.age}
-                            onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
-                            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             min="1"
                             max="120"
+                            value={passenger.age}
+                            onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
+                            className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
                           />
                         </div>
                         
                         <div>
-                          <label className="text-slate-400 text-sm mb-2 block">Gender *</label>
+                          <label className="text-slate-400 text-sm mb-2 block">Gender</label>
                           <select
                             value={passenger.gender}
                             onChange={(e) => handlePassengerChange(index, 'gender', e.target.value)}
-                            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
                           >
                             <option value="">Select Gender</option>
@@ -255,14 +327,15 @@ const PassengerDetails = () => {
                   ))}
                 </div>
               </div>
-              
-              <div className="mt-8 flex justify-end">
+
+              {/* Submit Button */}
+              <div className="mt-8">
                 <button
                   type="submit"
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold transition-colors flex items-center"
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
                 >
-                  <CreditCard className="mr-2 h-5 w-5" />
-                  Proceed to Payment
+                  <CreditCard className="h-5 w-5" />
+                  <span>Proceed to Payment - Rs. {pricing.totalAmount}</span>
                 </button>
               </div>
             </form>
