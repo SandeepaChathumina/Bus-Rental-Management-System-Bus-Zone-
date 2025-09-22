@@ -45,6 +45,8 @@ const BusManagement = () => {
     status: 'Available'
   });
 
+  const [formErrors, setFormErrors] = useState({});
+
   useEffect(() => {
     fetchBuses();
   }, []);
@@ -88,8 +90,60 @@ const BusManagement = () => {
     setFilteredBuses(filtered);
   };
 
+  const validateForm = () => {
+    const errors = {};
+
+    // Engine Number validation (only for new buses)
+    if (!editingBus) {
+      if (!formData.engineNumber.trim()) {
+        errors.engineNumber = 'Engine number is required';
+      } else if (!/^[A-Z0-9]{5,20}$/i.test(formData.engineNumber)) {
+        errors.engineNumber = 'Engine number must be 5-20 alphanumeric characters';
+      }
+    }
+
+    // Number Plate validation (only for new buses)
+    if (!editingBus) {
+      if (!formData.numberPlate.trim()) {
+        errors.numberPlate = 'Number plate is required';
+      } else if (!/^[A-Z0-9\s-]{3,15}$/i.test(formData.numberPlate)) {
+        errors.numberPlate = 'Number plate must be 3-15 alphanumeric characters with spaces or hyphens';
+      }
+    }
+
+    // Capacity validation
+    if (!formData.capacity) {
+      errors.capacity = 'Capacity is required';
+    } else if (formData.capacity < 10 || formData.capacity > 100) {
+      errors.capacity = 'Capacity must be between 10 and 100 seats';
+    }
+
+    // Price validation
+    if (!formData.pricePerDay) {
+      errors.pricePerDay = 'Price per day is required';
+    } else if (formData.pricePerDay < 0) {
+      errors.pricePerDay = 'Price cannot be negative';
+    } else if (formData.pricePerDay > 10000) {
+      errors.pricePerDay = 'Price cannot exceed $10,000 per day';
+    }
+
+    // Vehicle Photo URL validation (optional)
+    if (formData.vehiclePhoto && !/^https?:\/\/.+\..+/.test(formData.vehiclePhoto)) {
+      errors.vehiclePhoto = 'Please enter a valid URL';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast.error('Please fix the validation errors');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       
@@ -105,7 +159,10 @@ const BusManagement = () => {
       };
       
       if (editingBus) {
-        // Update existing bus
+        // For editing, don't allow changing engine number and number plate
+        submitData.engineNumber = editingBus.engineNumber;
+        submitData.numberPlate = editingBus.numberPlate;
+        
         await axios.put(`${BACKEND_URL}/api/buses/${editingBus._id}`, submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -129,6 +186,7 @@ const BusManagement = () => {
         vehiclePhoto: '',
         status: 'Available'
       });
+      setFormErrors({});
       fetchBuses();
     } catch (error) {
       console.error('Failed to save bus', error);
@@ -147,29 +205,24 @@ const BusManagement = () => {
       vehiclePhoto: bus.vehiclePhoto || '',
       status: bus.status
     });
+    setFormErrors({});
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this bus?')) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${BACKEND_URL}/api/buses/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.success('Bus deleted successfully');
-      fetchBuses();
-    } catch (error) {
-      console.error('Failed to delete bus', error);
-      toast.error('Failed to delete bus');
-    }
-  };
-
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Clear error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: ''
+      });
+    }
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
   };
 
@@ -586,13 +639,7 @@ const BusManagement = () => {
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(bus._id)}
-                        className="text-red-400 hover:text-red-300 transition-colors"
-                        title="Delete Bus"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {/* Delete button removed as requested */}
                     </div>
                   </td>
                 </tr>
@@ -731,6 +778,7 @@ const BusManagement = () => {
                       vehiclePhoto: '',
                       status: 'Available'
                     });
+                    setFormErrors({});
                   }}
                   className="text-slate-400 hover:text-white"
                 >
@@ -757,16 +805,27 @@ const BusManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Engine Number</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                    Engine Number
+                    {editingBus && <span className="text-slate-500 text-xs ml-1">(Cannot be changed)</span>}
+                  </label>
                   <input
                     type="text"
                     name="engineNumber"
                     value={formData.engineNumber}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      editingBus 
+                        ? 'border-slate-500 text-slate-400 cursor-not-allowed' 
+                        : formErrors.engineNumber ? 'border-red-500' : 'border-slate-600'
+                    }`}
                     placeholder="Enter engine number"
                     required
+                    disabled={editingBus}
                   />
+                  {formErrors.engineNumber && (
+                    <p className="text-red-400 text-xs mt-1">{formErrors.engineNumber}</p>
+                  )}
                 </div>
 
                 <div>
@@ -778,23 +837,39 @@ const BusManagement = () => {
                     onChange={handleInputChange}
                     min="10"
                     max="100"
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.capacity ? 'border-red-500' : 'border-slate-600'
+                    }`}
                     placeholder="Enter seating capacity"
                     required
                   />
+                  {formErrors.capacity && (
+                    <p className="text-red-400 text-xs mt-1">{formErrors.capacity}</p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Number Plate</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                    Number Plate
+                    {editingBus && <span className="text-slate-500 text-xs ml-1">(Cannot be changed)</span>}
+                  </label>
                   <input
                     type="text"
                     name="numberPlate"
                     value={formData.numberPlate}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+                    className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase ${
+                      editingBus 
+                        ? 'border-slate-500 text-slate-400 cursor-not-allowed' 
+                        : formErrors.numberPlate ? 'border-red-500' : 'border-slate-600'
+                    }`}
                     placeholder="Enter number plate"
                     required
+                    disabled={editingBus}
                   />
+                  {formErrors.numberPlate && (
+                    <p className="text-red-400 text-xs mt-1">{formErrors.numberPlate}</p>
+                  )}
                 </div>
 
                 <div>
@@ -805,11 +880,17 @@ const BusManagement = () => {
                     value={formData.pricePerDay}
                     onChange={handleInputChange}
                     min="0"
+                    max="10000"
                     step="0.01"
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.pricePerDay ? 'border-red-500' : 'border-slate-600'
+                    }`}
                     placeholder="Enter price per day"
                     required
                   />
+                  {formErrors.pricePerDay && (
+                    <p className="text-red-400 text-xs mt-1">{formErrors.pricePerDay}</p>
+                  )}
                 </div>
 
                 <div>
@@ -835,9 +916,14 @@ const BusManagement = () => {
                     name="vehiclePhoto"
                     value={formData.vehiclePhoto}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter image URL"
+                    className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.vehiclePhoto ? 'border-red-500' : 'border-slate-600'
+                    }`}
+                    placeholder="https://example.com/photo.jpg"
                   />
+                  {formErrors.vehiclePhoto && (
+                    <p className="text-red-400 text-xs mt-1">{formErrors.vehiclePhoto}</p>
+                  )}
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">
@@ -855,16 +941,17 @@ const BusManagement = () => {
                         vehiclePhoto: '',
                         status: 'Available'
                       });
+                      setFormErrors({});
                     }}
-                    className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+                    className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    {editingBus ? <Save className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                    <Save className="w-4 h-4 mr-2" />
                     {editingBus ? 'Update Bus' : 'Add Bus'}
                   </button>
                 </div>

@@ -28,6 +28,7 @@ import NotificationBell from './components/NotificationBell';
 import PassengerDetails from './components/PassengerDetails';
 import Checkout from './pages/checkout/Checkout';
 import BookingSuccess from './pages/booking-success/BookingSuccess';
+import GalleryPage from './pages/GalleryPage';
 
 // ✅ Import ProtectedRoute
 import ProtectedRoute from './components/ProtectedRoute';
@@ -51,6 +52,7 @@ function App() {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/bus" element={<Bus />} />
               <Route path="/passenger-details" element={<PassengerDetails />} />
+              <Route path="/gallery" element={<GalleryPage />} />
 
               {/* Protected routes */}
               <Route
@@ -79,6 +81,8 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+
+              
               <Route
                 path="/booking"
                 element={

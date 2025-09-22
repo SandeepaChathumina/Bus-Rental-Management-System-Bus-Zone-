@@ -32,9 +32,24 @@ import {
   Users,
   BookOpen,
   UserCheck,
-  MessageSquare
+  MessageSquare,
+  FileText,
+  Sheet
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import * as XLSX from 'xlsx';
+// Fixed PDF imports - using dynamic import to avoid SSR issues
+let jsPDF;
+let autoTable;
+
+if (typeof window !== 'undefined') {
+  import('jspdf').then((module) => {
+    jsPDF = module.default;
+  });
+  import('jspdf-autotable').then((module) => {
+    autoTable = module.default;
+  });
+}
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
@@ -44,6 +59,7 @@ const StaffDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
 
   // Maintenance state
   const [maintenances, setMaintenances] = useState([]);
@@ -67,6 +83,7 @@ const StaffDashboard = () => {
     byPriority: []
   });
   const [maintenanceActiveTab, setMaintenanceActiveTab] = useState('list');
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     user: '',
@@ -75,8 +92,14 @@ const StaffDashboard = () => {
     priority: 'Medium',
     estimatedCost: '',
     estimatedCompletionDate: '',
-    status: 'Pending'
+    status: 'Pending',
+    actualCost: '',
+    actualCompletionDate: ''
   });
+
+  // Refs for cursor position tracking
+  const estimatedCostRef = useRef(null);
+  const actualCostRef = useRef(null);
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -105,6 +128,66 @@ const StaffDashboard = () => {
   useEffect(() => {
     filterMaintenances();
   }, [maintenances, searchTerm, filterStatus, filterPriority]);
+
+  // Get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+
+  // Get tomorrow's date for minimum completion date
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
+  // Form validation function
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Required field validation
+    if (!formData.user.trim()) newErrors.user = 'Staff ID is required';
+    if (!formData.bus) newErrors.bus = 'Bus selection is required';
+    if (!formData.description.trim()) newErrors.description = 'Description is required';
+    
+    // Estimated cost validation
+    if (!formData.estimatedCost || parseFloat(formData.estimatedCost) <= 0) {
+      newErrors.estimatedCost = 'Valid estimated cost is required';
+    }
+
+    // Date validation
+    if (formData.estimatedCompletionDate) {
+      const estDate = new Date(formData.estimatedCompletionDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (estDate < today) {
+        newErrors.estimatedCompletionDate = 'Estimated completion date cannot be in the past';
+      }
+    }
+
+    // Actual completion date validation (only for completed status)
+    if (formData.status === 'Completed') {
+      if (!formData.actualCompletionDate) {
+        newErrors.actualCompletionDate = 'Actual completion date is required for completed requests';
+      } else {
+        const actualDate = new Date(formData.actualCompletionDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (actualDate > today) {
+          newErrors.actualCompletionDate = 'Actual completion date cannot be in the future';
+        }
+      }
+
+      if (!formData.actualCost || parseFloat(formData.actualCost) <= 0) {
+        newErrors.actualCost = 'Valid actual cost is required for completed requests';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const fetchMaintenances = async () => {
     try {
@@ -187,15 +270,216 @@ const StaffDashboard = () => {
     setFilteredMaintenances(filtered);
   };
 
+  // Fixed PDF export function
+  const exportToPDF = async () => {
+    try {
+      // Dynamically import jsPDF and autoTable
+      const { default: jsPDF } = await import('jspdf');
+      const { default: autoTable } = await import('jspdf-autotable');
+      
+      const doc = new jsPDF();
+      
+      // Add header
+      doc.setFontSize(20);
+      doc.setTextColor(40, 40, 40);
+      doc.text('MAINTENANCE REQUESTS REPORT', 105, 15, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, { align: 'center' });
+      doc.text(`Total Records: ${filteredMaintenances.length}`, 105, 28, { align: 'center' });
+      
+      // Prepare table data
+      const tableData = filteredMaintenances.map((maintenance, index) => [
+        index + 1,
+        maintenance.maintenanceId || 'N/A',
+        maintenance.description.substring(0, 50) + (maintenance.description.length > 50 ? '...' : ''),
+        maintenance.user && maintenance.user.staffProfile ? maintenance.user.staffProfile.employeeId : 'N/A',
+        maintenance.bus ? maintenance.bus.numberPlate : 'N/A',
+        maintenance.priority,
+        maintenance.status,
+        formatCurrency(maintenance.estimatedCost),
+        formatDate(maintenance.estimatedCompletionDate)
+      ]);
+
+      // Add table using autoTable
+      autoTable(doc, {
+        head: [['#', 'Request ID', 'Description', 'Staff ID', 'Bus', 'Priority', 'Status', 'Est. Cost', 'Est. Completion']],
+        body: tableData,
+        startY: 35,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: 'bold'
+        },
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+        },
+        columnStyles: {
+          0: { cellWidth: 10 },
+          1: { cellWidth: 25 },
+          2: { cellWidth: 40 },
+          3: { cellWidth: 25 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 20 },
+          6: { cellWidth: 25 },
+          7: { cellWidth: 25 },
+          8: { cellWidth: 30 }
+        }
+      });
+
+      // Add footer
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+      }
+
+      doc.save(`maintenance-report-${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('PDF report generated successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF report');
+    }
+  };
+
+  // Export to Excel function
+  const exportToExcel = () => {
+    try {
+      // Prepare worksheet data
+      const worksheetData = [
+        ['MAINTENANCE REQUESTS REPORT'],
+        [`Generated on: ${new Date().toLocaleDateString()}`],
+        [`Total Records: ${filteredMaintenances.length}`],
+        [''], // Empty row for spacing
+        ['#', 'Request ID', 'Description', 'Staff ID', 'Bus Number', 'Bus Type', 'Priority', 'Status', 'Estimated Cost', 'Estimated Completion', 'Actual Cost', 'Actual Completion']
+      ];
+
+      // Add data rows
+      filteredMaintenances.forEach((maintenance, index) => {
+        worksheetData.push([
+          index + 1,
+          maintenance.maintenanceId || 'N/A',
+          maintenance.description,
+          maintenance.user && maintenance.user.staffProfile ? maintenance.user.staffProfile.employeeId : 'N/A',
+          maintenance.bus ? maintenance.bus.numberPlate : 'N/A',
+          maintenance.bus ? maintenance.bus.busType : 'N/A',
+          maintenance.priority,
+          maintenance.status,
+          maintenance.estimatedCost,
+          formatDate(maintenance.estimatedCompletionDate),
+          maintenance.actualCost || 'N/A',
+          maintenance.actualCompletionDate ? formatDate(maintenance.actualCompletionDate) : 'N/A'
+        ]);
+      });
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+
+      // Set column widths
+      const colWidths = [
+        { wch: 5 },  // #
+        { wch: 15 }, // Request ID
+        { wch: 40 }, // Description
+        { wch: 15 }, // Staff ID
+        { wch: 15 }, // Bus Number
+        { wch: 15 }, // Bus Type
+        { wch: 12 }, // Priority
+        { wch: 15 }, // Status
+        { wch: 15 }, // Estimated Cost
+        { wch: 20 }, // Estimated Completion
+        { wch: 15 }, // Actual Cost
+        { wch: 20 }  // Actual Completion
+      ];
+      ws['!cols'] = colWidths;
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Maintenance Requests');
+
+      // Generate and download file
+      XLSX.writeFile(wb, `maintenance-report-${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast.success('Excel report generated successfully');
+    } catch (error) {
+      console.error('Error generating Excel:', error);
+      toast.error('Failed to generate Excel report');
+    }
+  };
+
+  // Export dropdown component
+  const ExportDropdown = () => {
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setExportDropdownOpen(false);
+        }
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
+          className="flex items-center px-4 py-2 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
+        >
+          <Download className="w-5 h-5 mr-2" />
+          Export
+          <ChevronDown className="w-4 h-4 ml-2" />
+        </button>
+
+        {exportDropdownOpen && (
+          <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1 z-50">
+            <button
+              onClick={() => {
+                exportToPDF();
+                setExportDropdownOpen(false);
+              }}
+              className="flex items-center w-full px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
+            >
+              <FileText className="w-4 h-4 mr-3" />
+              Export as PDF
+            </button>
+            <button
+              onClick={() => {
+                exportToExcel();
+                setExportDropdownOpen(false);
+              }}
+              className="flex items-center w-full px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
+            >
+              <Sheet className="w-4 h-4 mr-3" />
+              Export as Excel
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast.error('Please fix the validation errors');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       const payload = {
         ...formData,
         userId: formData.user,
         busId: formData.bus,
-        estimatedCost: parseFloat(formData.estimatedCost)
+        estimatedCost: parseFloat(formData.estimatedCost),
+        actualCost: formData.actualCost ? parseFloat(formData.actualCost) : undefined
       };
 
       if (editingMaintenance) {
@@ -219,8 +503,11 @@ const StaffDashboard = () => {
         priority: 'Medium',
         estimatedCost: '',
         estimatedCompletionDate: '',
-        status: 'Pending'
+        status: 'Pending',
+        actualCost: '',
+        actualCompletionDate: ''
       });
+      setErrors({});
       fetchMaintenances();
       fetchStats();
       fetchCostStats();
@@ -243,32 +530,72 @@ const StaffDashboard = () => {
       actualCost: maintenance.actualCost || '',
       actualCompletionDate: maintenance.actualCompletionDate ? new Date(maintenance.actualCompletionDate).toISOString().split('T')[0] : ''
     });
+    setErrors({});
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this maintenance request?')) return;
+  // Fixed input change handler - using standard input type="number" for better cursor behavior
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
 
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${BACKEND_URL}/api/maintenance/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.success('Maintenance request deleted successfully');
-      fetchMaintenances();
-      fetchStats();
-      fetchCostStats();
-    } catch (error) {
-      console.error('Failed to delete maintenance request', error);
-      toast.error('Failed to delete maintenance request');
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // Additional validation for status changes
+    if (name === 'status' && value !== 'Completed') {
+      setErrors(prev => ({
+        ...prev,
+        actualCost: '',
+        actualCompletionDate: ''
+      }));
     }
   };
 
-  const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  // Fixed number input handler - using proper controlled component pattern
+  const handleNumberInput = (e) => {
+    const { name, value, selectionStart } = e.target;
+    
+    // Store cursor position before update
+    const cursorPosition = selectionStart;
+    
+    // Allow only numbers and decimal point
+    let sanitizedValue = value.replace(/[^0-9.]/g, '');
+    
+    // Ensure only one decimal point
+    const parts = sanitizedValue.split('.');
+    if (parts.length > 2) {
+      sanitizedValue = parts[0] + '.' + parts.slice(1).join('');
+    }
+    
+    // Limit to 2 decimal places
+    if (parts.length > 1 && parts[1].length > 2) {
+      sanitizedValue = parts[0] + '.' + parts[1].substring(0, 2);
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: sanitizedValue
+    }));
+
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+
+    // Restore cursor position after state update
+    setTimeout(() => {
+      const inputRef = name === 'estimatedCost' ? estimatedCostRef.current : actualCostRef.current;
+      if (inputRef) {
+        inputRef.setSelectionRange(cursorPosition, cursorPosition);
+      }
+    }, 0);
   };
 
   const getStatusIcon = (status) => {
@@ -431,10 +758,7 @@ const StaffDashboard = () => {
                 <option value="Low">Low</option>
               </select>
             </div>
-            <button className="flex items-center px-4 py-2 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors">
-              <Download className="w-5 h-5 mr-2" />
-              Export
-            </button>
+            <ExportDropdown />
           </div>
 
           {/* Maintenance List */}
@@ -492,13 +816,6 @@ const StaffDashboard = () => {
                             title="Edit"
                           >
                             <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(maintenance._id)}
-                            className="text-red-400 hover:text-red-300 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -673,7 +990,11 @@ const StaffDashboard = () => {
       {/* Add/Edit Maintenance Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowModal(false)}></div>
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => {
+            setShowModal(false);
+            setEditingMaintenance(null);
+            setErrors({});
+          }}></div>
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0 z-50 relative">
             <div className="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-slate-800 shadow-xl rounded-2xl border border-slate-700">
               <div className="flex items-center justify-between mb-4">
@@ -691,8 +1012,11 @@ const StaffDashboard = () => {
                       priority: 'Medium',
                       estimatedCost: '',
                       estimatedCompletionDate: '',
-                      status: 'Pending'
+                      status: 'Pending',
+                      actualCost: '',
+                      actualCompletionDate: ''
                     });
+                    setErrors({});
                   }}
                   className="text-slate-400 hover:text-white transition-colors"
                 >
@@ -709,11 +1033,14 @@ const StaffDashboard = () => {
                       name="user"
                       value={formData.user}
                       onChange={handleInputChange}
-                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.user ? 'border-red-500' : 'border-slate-600'
+                      }`}
                       placeholder="Enter staff ID"
                       required
                       disabled={editingMaintenance}
                     />
+                    {errors.user && <p className="text-red-400 text-xs mt-1">{errors.user}</p>}
                   </div>
 
                   <div>
@@ -722,7 +1049,9 @@ const StaffDashboard = () => {
                       name="bus"
                       value={formData.bus}
                       onChange={handleInputChange}
-                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.bus ? 'border-red-500' : 'border-slate-600'
+                      }`}
                       required
                       disabled={editingMaintenance}
                     >
@@ -733,6 +1062,7 @@ const StaffDashboard = () => {
                         </option>
                       ))}
                     </select>
+                    {errors.bus && <p className="text-red-400 text-xs mt-1">{errors.bus}</p>}
                   </div>
                 </div>
 
@@ -742,11 +1072,14 @@ const StaffDashboard = () => {
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.description ? 'border-red-500' : 'border-slate-600'
+                    }`}
                     placeholder="Describe the maintenance issue..."
                     rows={3}
                     required
                   />
+                  {errors.description && <p className="text-red-400 text-xs mt-1">{errors.description}</p>}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -768,16 +1101,18 @@ const StaffDashboard = () => {
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-1">Estimated Cost ($) *</label>
                     <input
-                      type="number"
+                      ref={estimatedCostRef}
+                      type="text" // Changed to text for better cursor control
                       name="estimatedCost"
                       value={formData.estimatedCost}
-                      onChange={handleInputChange}
-                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={handleNumberInput}
+                      className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.estimatedCost ? 'border-red-500' : 'border-slate-600'
+                      }`}
                       placeholder="0.00"
-                      min="0"
-                      step="0.01"
                       required
                     />
+                    {errors.estimatedCost && <p className="text-red-400 text-xs mt-1">{errors.estimatedCost}</p>}
                   </div>
                 </div>
 
@@ -789,8 +1124,14 @@ const StaffDashboard = () => {
                       name="estimatedCompletionDate"
                       value={formData.estimatedCompletionDate}
                       onChange={handleInputChange}
-                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min={getTomorrowDate()}
+                      className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.estimatedCompletionDate ? 'border-red-500' : 'border-slate-600'
+                      }`}
                     />
+                    {errors.estimatedCompletionDate && (
+                      <p className="text-red-400 text-xs mt-1">{errors.estimatedCompletionDate}</p>
+                    )}
                   </div>
 
                   <div>
@@ -814,15 +1155,17 @@ const StaffDashboard = () => {
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-1">Actual Cost ($)</label>
                       <input
-                        type="number"
+                        ref={actualCostRef}
+                        type="text" // Changed to text for better cursor control
                         name="actualCost"
-                        value={formData.actualCost || ''}
-                        onChange={handleInputChange}
-                        className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={formData.actualCost}
+                        onChange={handleNumberInput}
+                        className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.actualCost ? 'border-red-500' : 'border-slate-600'
+                        }`}
                         placeholder="0.00"
-                        min="0"
-                        step="0.01"
                       />
+                      {errors.actualCost && <p className="text-red-400 text-xs mt-1">{errors.actualCost}</p>}
                     </div>
 
                     <div>
@@ -830,10 +1173,16 @@ const StaffDashboard = () => {
                       <input
                         type="date"
                         name="actualCompletionDate"
-                        value={formData.actualCompletionDate || ''}
+                        value={formData.actualCompletionDate}
                         onChange={handleInputChange}
-                        className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        max={getTodayDate()}
+                        className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.actualCompletionDate ? 'border-red-500' : 'border-slate-600'
+                        }`}
                       />
+                      {errors.actualCompletionDate && (
+                        <p className="text-red-400 text-xs mt-1">{errors.actualCompletionDate}</p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -851,8 +1200,11 @@ const StaffDashboard = () => {
                         priority: 'Medium',
                         estimatedCost: '',
                         estimatedCompletionDate: '',
-                        status: 'Pending'
+                        status: 'Pending',
+                        actualCost: '',
+                        actualCompletionDate: ''
                       });
+                      setErrors({});
                     }}
                     className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
                   >
@@ -874,6 +1226,7 @@ const StaffDashboard = () => {
     </div>
   );
 
+  // UserProfileDropdown component remains the same...
   const UserProfileDropdown = () => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -1049,7 +1402,7 @@ const StaffDashboard = () => {
           </div>
         </header>
 
-        {/* Page Content - CORRECTED SECTION */}
+        {/* Page Content */}
         <main className="flex-1 p-6 overflow-auto">
           {activeTab === 'maintenance' && <MaintenanceContent />}
           {activeTab === 'profile' && <StaffProfile />}
