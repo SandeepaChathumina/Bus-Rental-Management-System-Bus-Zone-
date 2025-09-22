@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import StaffProfile from '../components/StaffProfile';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -1048,18 +1049,18 @@ const StaffDashboard = () => {
           </div>
         </header>
 
-        {/* Page Content */}
+        {/* Page Content - CORRECTED SECTION */}
         <main className="flex-1 p-6 overflow-auto">
           {activeTab === 'maintenance' && <MaintenanceContent />}
+          {activeTab === 'profile' && <StaffProfile />}
           
-          {activeTab !== 'maintenance' && (
+          {activeTab !== 'maintenance' && activeTab !== 'profile' && (
             <div className="text-center py-20">
               <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
                 {activeTab === 'dashboard' && <Home className="w-12 h-12 text-slate-600" />}
                 {activeTab === 'buses' && <Bus className="w-12 h-12 text-slate-600" />}
                 {activeTab === 'schedule' && <Calendar className="w-12 h-12 text-slate-600" />}
                 {activeTab === 'reports' && <BarChart3 className="w-12 h-12 text-slate-600" />}
-                {activeTab === 'profile' && <User className="w-12 h-12 text-slate-600" />}
                 {activeTab === 'settings' && <Settings className="w-12 h-12 text-slate-600" />}
               </div>
               <h2 className="text-2xl font-bold text-slate-400 mb-2">
