@@ -50,7 +50,7 @@ const handleSubmit = async (e) => {
           navigate('/driver-dashboard', { replace: true });
           break;
         case 'staff':
-          navigate('/staff-dashboard', { replace: true });
+          navigate('/staffdash', { replace: true });
           break;
         case 'passenger':
         default:
