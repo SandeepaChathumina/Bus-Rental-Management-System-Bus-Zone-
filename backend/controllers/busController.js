@@ -3,7 +3,7 @@ import Bus from "../models/bus.js";
 // Create new bus
 export const createBus = async (req, res) => {
   try {
-    const { busType, engineNumber, capacity, numberPlate, vehiclePhoto, status } = req.body;
+    const { busType, engineNumber, capacity, numberPlate, pricePerDay, vehiclePhoto, status } = req.body;
 
     // Check if bus already exists with same engine number or number plate
     const existingBus = await Bus.findOne({
@@ -24,6 +24,7 @@ export const createBus = async (req, res) => {
       engineNumber,
       capacity,
       numberPlate,
+      pricePerDay: pricePerDay || 0,
       vehiclePhoto: vehiclePhoto || '',
       status: status || 'Available'
     });
@@ -80,7 +81,7 @@ export const getBusById = async (req, res) => {
 // Update bus
 export const updateBus = async (req, res) => {
   try {
-    const { busType, engineNumber, capacity, numberPlate, vehiclePhoto, status, isActive } = req.body;
+    const { busType, engineNumber, capacity, numberPlate, pricePerDay, vehiclePhoto, status, isActive } = req.body;
 
     // Check for duplicate engine number or number plate excluding current bus
     const existingBus = await Bus.findOne({
@@ -103,6 +104,7 @@ export const updateBus = async (req, res) => {
         engineNumber,
         capacity,
         numberPlate,
+        pricePerDay,
         vehiclePhoto,
         status,
         isActive
@@ -158,11 +160,18 @@ export const getBusStats = async (req, res) => {
     const inServiceBuses = await Bus.countDocuments({ status: 'In Service' });
     const maintenanceBuses = await Bus.countDocuments({ status: 'Maintenance' });
     
+    // Calculate total fleet value
+    const fleetValue = await Bus.aggregate([
+      { $match: { isActive: true } },
+      { $group: { _id: null, totalValue: { $sum: '$pricePerDay' } } }
+    ]);
+    
     res.json({
       totalBuses,
       availableBuses,
       inServiceBuses,
-      maintenanceBuses
+      maintenanceBuses,
+      totalFleetValue: fleetValue[0]?.totalValue || 0
     });
   } catch (error) {
     console.error('Get bus stats error:', error);
@@ -205,6 +214,73 @@ export const reactivateBus = async (req, res) => {
     res.json({ message: 'Bus reactivated successfully', bus });
   } catch (error) {
     console.error('Reactivate bus error:', error);
+    res.status(500).json({
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// Get buses by price range
+export const getBusesByPriceRange = async (req, res) => {
+  try {
+    const { minPrice, maxPrice } = req.query;
+    
+    const query = { isActive: true };
+    
+    if (minPrice) query.pricePerDay = { ...query.pricePerDay, $gte: parseFloat(minPrice) };
+    if (maxPrice) query.pricePerDay = { ...query.pricePerDay, $lte: parseFloat(maxPrice) };
+    
+    const buses = await Bus.find(query).sort({ pricePerDay: 1 });
+    
+    res.json({
+      count: buses.length,
+      buses
+    });
+  } catch (error) {
+    console.error('Get buses by price range error:', error);
+    res.status(500).json({
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// Get pricing statistics
+export const getPricingStats = async (req, res) => {
+  try {
+    const stats = await Bus.aggregate([
+      { $match: { isActive: true } },
+      {
+        $group: {
+          _id: null,
+          averagePrice: { $avg: '$pricePerDay' },
+          minPrice: { $min: '$pricePerDay' },
+          maxPrice: { $max: '$pricePerDay' },
+          totalBuses: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    const priceByType = await Bus.aggregate([
+      { $match: { isActive: true } },
+      {
+        $group: {
+          _id: '$busType',
+          averagePrice: { $avg: '$pricePerDay' },
+          minPrice: { $min: '$pricePerDay' },
+          maxPrice: { $max: '$pricePerDay' },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    res.json({
+      overall: stats[0] || { averagePrice: 0, minPrice: 0, maxPrice: 0, totalBuses: 0 },
+      byType: priceByType
+    });
+  } catch (error) {
+    console.error('Get pricing stats error:', error);
     res.status(500).json({
       message: 'Server error',
       error: error.message
