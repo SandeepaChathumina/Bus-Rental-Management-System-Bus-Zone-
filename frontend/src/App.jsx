@@ -26,6 +26,7 @@ import BusZoneDashboard from './pages/staffdash';
 import MaintenanceManagement from './pages/MaintenanceManagement';
 import NotificationBell from './components/NotificationBell';
 import PassengerDetails from './components/PassengerDetails';
+import GalleryPage from './pages/GalleryPage';
 
 // ✅ Import ProtectedRoute
 import ProtectedRoute from './components/ProtectedRoute';
@@ -49,6 +50,7 @@ function App() {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/bus" element={<Bus />} />
               <Route path="/passenger-details" element={<PassengerDetails />} />
+              <Route path="/gallery" element={<GalleryPage />} />
 
               {/* Passenger only (plus admin override) */}
               <Route
@@ -59,6 +61,8 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+
+              
               <Route
                 path="/booking"
                 element={

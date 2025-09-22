@@ -34,9 +34,12 @@ import {
   XCircle,
   Edit,
   Trash2,
-  User
+  User,
+  Filter,
+  Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 
 const AdminDashboard = () => {
   const { user: authUser, logout } = useAuth();
@@ -53,6 +56,24 @@ const AdminDashboard = () => {
   const [replyTexts, setReplyTexts] = useState({});
   const [replyingTo, setReplyingTo] = useState(null);
   const [error, setError] = useState('');
+
+  // Maintenance state
+  const [maintenances, setMaintenances] = useState([]);
+  const [filteredMaintenances, setFilteredMaintenances] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [editingMaintenance, setEditingMaintenance] = useState(null);
+  const [maintenanceFormData, setMaintenanceFormData] = useState({
+    busId: '',
+    issue: '',
+    description: '',
+    priority: 'Medium',
+    status: 'Pending',
+    estimatedCost: '',
+    startDate: '',
+    estimatedCompletionDate: ''
+  });
 
   const [dashboardStats, setDashboardStats] = useState({
     totalBuses: 48,
@@ -124,7 +145,534 @@ const AdminDashboard = () => {
     return () => { mounted = false; };
   }, []);
 
-  // Feedback functions
+  // Maintenance functions
+  useEffect(() => {
+    if (activeTab === 'maintenance') {
+      fetchMaintenances();
+    }
+  }, [activeTab]);
+
+  const fetchMaintenances = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/maintenance`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setMaintenances(response.data.maintenances || []);
+      setFilteredMaintenances(response.data.maintenances || []);
+    } catch (error) {
+      console.error('Failed to fetch maintenance records', error);
+      // Mock data for demonstration
+      const mockMaintenances = [
+        {
+          _id: '1',
+          busId: 'BUS001',
+          busDetails: { numberPlate: 'ABC123', busType: 'Standard' },
+          issue: 'Engine Overheating',
+          description: 'Engine temperature rising above normal levels during operation',
+          priority: 'High',
+          status: 'In Progress',
+          estimatedCost: 1200,
+          startDate: '2024-01-15',
+          estimatedCompletionDate: '2024-01-20',
+          actualCompletionDate: null,
+          createdAt: new Date('2024-01-15').toISOString()
+        },
+        {
+          _id: '2',
+          busId: 'BUS002',
+          busDetails: { numberPlate: 'DEF456', busType: 'Luxury' },
+          issue: 'Brake System Check',
+          description: 'Routine brake system maintenance and inspection',
+          priority: 'Medium',
+          status: 'Pending',
+          estimatedCost: 800,
+          startDate: '2024-01-18',
+          estimatedCompletionDate: '2024-01-22',
+          actualCompletionDate: null,
+          createdAt: new Date('2024-01-18').toISOString()
+        },
+        {
+          _id: '3',
+          busId: 'BUS003',
+          busDetails: { numberPlate: 'GHI789', busType: 'Mini' },
+          issue: 'AC Repair',
+          description: 'Air conditioning system not cooling properly',
+          priority: 'Low',
+          status: 'Completed',
+          estimatedCost: 600,
+          startDate: '2024-01-10',
+          estimatedCompletionDate: '2024-01-12',
+          actualCompletionDate: '2024-01-11',
+          createdAt: new Date('2024-01-10').toISOString()
+        }
+      ];
+      setMaintenances(mockMaintenances);
+      setFilteredMaintenances(mockMaintenances);
+      toast.error('Using mock data - Backend connection failed');
+    }
+  };
+
+  useEffect(() => {
+    filterMaintenances();
+  }, [maintenances, searchTerm, filterStatus]);
+
+  const filterMaintenances = () => {
+    let filtered = maintenances;
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(maintenance =>
+        maintenance.busId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (maintenance.busDetails?.numberPlate?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        maintenance.issue.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by status
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(maintenance => maintenance.status === filterStatus);
+    }
+
+    setFilteredMaintenances(filtered);
+  };
+
+  const handleMaintenanceSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const submitData = {
+        ...maintenanceFormData,
+        estimatedCost: parseFloat(maintenanceFormData.estimatedCost) || 0
+      };
+
+      if (editingMaintenance) {
+        await axios.put(`${BACKEND_URL}/api/maintenance/${editingMaintenance._id}`, submitData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success('Maintenance record updated successfully');
+      } else {
+        await axios.post(`${BACKEND_URL}/api/maintenance`, submitData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success('Maintenance record created successfully');
+      }
+
+      setShowMaintenanceModal(false);
+      setEditingMaintenance(null);
+      setMaintenanceFormData({
+        busId: '',
+        issue: '',
+        description: '',
+        priority: 'Medium',
+        status: 'Pending',
+        estimatedCost: '',
+        startDate: '',
+        estimatedCompletionDate: ''
+      });
+      fetchMaintenances();
+    } catch (error) {
+      console.error('Failed to save maintenance record', error);
+      toast.error(error.response?.data?.message || 'Failed to save maintenance record');
+    }
+  };
+
+  const handleEditMaintenance = (maintenance) => {
+    setEditingMaintenance(maintenance);
+    setMaintenanceFormData({
+      busId: maintenance.busId,
+      issue: maintenance.issue,
+      description: maintenance.description,
+      priority: maintenance.priority,
+      status: maintenance.status,
+      estimatedCost: maintenance.estimatedCost.toString(),
+      startDate: maintenance.startDate,
+      estimatedCompletionDate: maintenance.estimatedCompletionDate
+    });
+    setShowMaintenanceModal(true);
+  };
+
+  const handleDeleteMaintenance = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this maintenance record?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${BACKEND_URL}/api/maintenance/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Maintenance record deleted successfully');
+      fetchMaintenances();
+    } catch (error) {
+      console.error('Failed to delete maintenance record', error);
+      toast.error('Failed to delete maintenance record');
+    }
+  };
+
+  const handleMaintenanceInputChange = (e) => {
+    setMaintenanceFormData({
+      ...maintenanceFormData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'High':
+        return 'bg-red-900/30 text-red-400';
+      case 'Medium':
+        return 'bg-orange-900/30 text-orange-400';
+      case 'Low':
+        return 'bg-green-900/30 text-green-400';
+      default:
+        return 'bg-gray-900/30 text-gray-400';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Completed':
+        return 'bg-green-900/30 text-green-400';
+      case 'In Progress':
+        return 'bg-blue-900/30 text-blue-400';
+      case 'Pending':
+        return 'bg-orange-900/30 text-orange-400';
+      case 'Cancelled':
+        return 'bg-red-900/30 text-red-400';
+      default:
+        return 'bg-gray-900/30 text-gray-400';
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount || 0);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Maintenance Content Component
+  const MaintenanceContent = () => (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Maintenance Management</h2>
+          <p className="text-slate-400">Manage bus maintenance records and schedules</p>
+        </div>
+        <button
+          onClick={() => setShowMaintenanceModal(true)}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Add Maintenance
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Search by bus ID, plate, or issue..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex items-center space-x-2">
+          <Filter className="text-slate-400 w-5 h-5" />
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Maintenance List */}
+      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-700">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Bus ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Issue</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Priority</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Estimated Cost</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Start Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Est. Completion</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700">
+              {filteredMaintenances.map((maintenance) => (
+                <tr key={maintenance._id} className="hover:bg-slate-750 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-white">{maintenance.busId}</div>
+                    <div className="text-xs text-slate-400">{maintenance.busDetails?.numberPlate || 'N/A'}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-medium text-white">{maintenance.issue}</div>
+                    <div className="text-xs text-slate-400 truncate max-w-xs">{maintenance.description}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(maintenance.priority)}`}>
+                      {maintenance.priority}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(maintenance.status)}`}>
+                      {maintenance.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-400">
+                    {formatCurrency(maintenance.estimatedCost)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                    {formatDate(maintenance.startDate)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                    {formatDate(maintenance.estimatedCompletionDate)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleEditMaintenance(maintenance)}
+                        className="text-blue-400 hover:text-blue-300 transition-colors"
+                        title="Edit Maintenance"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMaintenance(maintenance._id)}
+                        className="text-red-400 hover:text-red-300 transition-colors"
+                        title="Delete Maintenance"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {filteredMaintenances.length === 0 && (
+          <div className="text-center py-12">
+            <Wrench className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-400">No maintenance records found</h3>
+            <p className="text-slate-500 mt-1">
+              {searchTerm || filterStatus !== 'all' 
+                ? 'Try adjusting your search or filter criteria' 
+                : 'Get started by adding your first maintenance record'
+              }
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Maintenance Modal */}
+      {showMaintenanceModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900 opacity-75 z-40" onClick={() => setShowMaintenanceModal(false)}></div>
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0 z-50 relative">
+            <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-slate-800 shadow-xl rounded-2xl border border-slate-700">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-white">
+                  {editingMaintenance ? 'Edit Maintenance' : 'Add New Maintenance'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowMaintenanceModal(false);
+                    setEditingMaintenance(null);
+                    setMaintenanceFormData({
+                      busId: '',
+                      issue: '',
+                      description: '',
+                      priority: 'Medium',
+                      status: 'Pending',
+                      estimatedCost: '',
+                      startDate: '',
+                      estimatedCompletionDate: ''
+                    });
+                  }}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleMaintenanceSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Bus ID</label>
+                  <input
+                    type="text"
+                    name="busId"
+                    value={maintenanceFormData.busId}
+                    onChange={handleMaintenanceInputChange}
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter bus ID"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Issue</label>
+                  <input
+                    type="text"
+                    name="issue"
+                    value={maintenanceFormData.issue}
+                    onChange={handleMaintenanceInputChange}
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter issue description"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Detailed Description</label>
+                  <textarea
+                    name="description"
+                    value={maintenanceFormData.description}
+                    onChange={handleMaintenanceInputChange}
+                    rows={3}
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter detailed description of the issue"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Priority</label>
+                    <select
+                      name="priority"
+                      value={maintenanceFormData.priority}
+                      onChange={handleMaintenanceInputChange}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>
+                    <select
+                      name="status"
+                      value={maintenanceFormData.status}
+                      onChange={handleMaintenanceInputChange}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Estimated Cost ($)</label>
+                  <input
+                    type="number"
+                    name="estimatedCost"
+                    value={maintenanceFormData.estimatedCost}
+                    onChange={handleMaintenanceInputChange}
+                    min="0"
+                    step="0.01"
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter estimated cost"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      name="startDate"
+                      value={maintenanceFormData.startDate}
+                      onChange={handleMaintenanceInputChange}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Est. Completion Date</label>
+                    <input
+                      type="date"
+                      name="estimatedCompletionDate"
+                      value={maintenanceFormData.estimatedCompletionDate}
+                      onChange={handleMaintenanceInputChange}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMaintenanceModal(false);
+                      setEditingMaintenance(null);
+                      setMaintenanceFormData({
+                        busId: '',
+                        issue: '',
+                        description: '',
+                        priority: 'Medium',
+                        status: 'Pending',
+                        estimatedCost: '',
+                        startDate: '',
+                        estimatedCompletionDate: ''
+                      });
+                    }}
+                    className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    {editingMaintenance ? 'Update Maintenance' : 'Add Maintenance'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Feedback functions (keep existing feedback functions)
   useEffect(() => {
     if (activeTab === 'feedback') {
       fetchFeedbacks();
@@ -142,7 +690,6 @@ const AdminDashboard = () => {
       
       if (!response.ok) {
         if (response.status === 404) {
-          // Create mock data for testing if API is not available
           const mockFeedbacks = [
             {
               _id: '1',
@@ -188,7 +735,6 @@ const AdminDashboard = () => {
       }
       
       const data = await response.json();
-      // Ensure all feedback items have proper user IDs
       const processedData = data.map(feedback => ({
         ...feedback,
         userId: feedback.userId || { 
@@ -204,7 +750,6 @@ const AdminDashboard = () => {
       setError('');
     } catch (err) {
       console.error('Failed to fetch feedbacks', err);
-      // Use mock data as fallback
       const mockFeedbacks = [
         {
           _id: '1',
@@ -281,7 +826,6 @@ const AdminDashboard = () => {
       });
 
       if (!response.ok) {
-        // Simulate success for demo purposes
         setFeedbacks(prev => prev.map(f => 
           f._id === feedbackId 
             ? { ...f, admin_reply: replyText, reply_date: new Date().toISOString(), status: 'replied' } 
@@ -294,7 +838,6 @@ const AdminDashboard = () => {
         return;
       }
 
-      // Update the feedback with the new reply
       setFeedbacks(prev => prev.map(f => 
         f._id === feedbackId 
           ? { ...f, admin_reply: replyText, reply_date: new Date().toISOString(), status: 'replied' } 
@@ -308,7 +851,6 @@ const AdminDashboard = () => {
       toast.success('Reply sent successfully!');
     } catch (err) {
       console.error('Failed to send reply', err);
-      // Simulate success for demo purposes
       setFeedbacks(prev => prev.map(f => 
         f._id === feedbackId 
           ? { ...f, admin_reply: replyText, reply_date: new Date().toISOString(), status: 'replied' } 
@@ -498,10 +1040,8 @@ const AdminDashboard = () => {
       const newValue = e.target.value;
       const cursorPosition = e.target.selectionStart;
       
-      // Update the text without losing cursor position
       setReplyTexts(prev => ({ ...prev, [feedbackId]: newValue }));
       
-      // Restore cursor position after React re-render
       setTimeout(() => {
         const textarea = textareaRefs.current[feedbackId];
         if (textarea) {
@@ -511,7 +1051,6 @@ const AdminDashboard = () => {
     };
 
     const handleKeyDown = (e) => {
-      // Prevent any unwanted behavior on key presses
       e.stopPropagation();
     };
 
@@ -646,7 +1185,6 @@ const AdminDashboard = () => {
                   onClick={() => {
                     setReplyingTo(feedback._id);
                     setError('');
-                    // Initialize empty text for this feedback if it doesn't exist
                     setReplyTexts(prev => ({ 
                       ...prev, 
                       [feedback._id]: prev[feedback._id] || '' 
@@ -760,7 +1298,7 @@ const AdminDashboard = () => {
       case 'bookings':
         return <div className="text-white p-6">Bookings (placeholder)</div>;
       case 'maintenance':
-        return <div className="text-white p-6">Maintenance (placeholder)</div>;
+        return <MaintenanceContent />;
       case 'drivers':
         return <div className="text-white p-6">Driver Assign (placeholder)</div>;
       case 'attendance':
