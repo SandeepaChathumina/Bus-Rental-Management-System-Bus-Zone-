@@ -1,5 +1,6 @@
+// src/pages/bus/Bus.jsx - UPDATED
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Users, 
@@ -8,7 +9,9 @@ import {
   Coffee, 
   MapPin,
   ArrowRight,
-  Check
+  Check,
+  Calendar,
+  Clock
 } from 'lucide-react';
 import Bus1 from "../../../src/assets/bus1.png";
 
@@ -16,6 +19,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 const Bus = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [buses, setBuses] = useState([]);
   const [filteredBuses, setFilteredBuses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,7 +30,6 @@ const Bus = () => {
 
   // Get search parameters from URL or navigation state
   const searchParams = location.state?.searchParams || {};
-  const { from, to, date, passengers } = searchParams;
 
   useEffect(() => {
     const loadBuses = async () => {
@@ -78,8 +81,6 @@ const Bus = () => {
           return a.pricePerDay - b.pricePerDay;
         case 'capacity':
           return b.capacity - a.capacity;
-        case 'rating':
-          return (b.rating || 0) - (a.rating || 0);
         default:
           return 0;
       }
@@ -116,8 +117,29 @@ const Bus = () => {
   };
 
   const handleSelectBus = (bus) => {
-    setSelectedBus(bus._id);
-    console.log('Selected bus:', bus);
+    setSelectedBus(bus);
+  };
+
+  const handleProceedToBooking = () => {
+    if (!selectedBus) {
+      alert('Please select a bus first');
+      return;
+    }
+
+    navigate('/passenger-details', {
+      state: {
+        bus: selectedBus,
+        searchParams: searchParams,
+        passengers: Array(searchParams.passengers).fill().map((_, i) => ({
+          seatNumber: `A${i + 1}`,
+          name: '',
+          nic: '',
+          age: '',
+          gender: ''
+        })),
+        selectedSeats: Array(searchParams.passengers).fill().map((_, i) => `A${i + 1}`)
+      }
+    });
   };
 
   if (isLoading) {
@@ -143,11 +165,30 @@ const Bus = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">
-            {from && to ? `Buses from ${from} to ${to}` : 'Available Buses'}
+            {searchParams.from && searchParams.to ? `Buses from ${searchParams.from} to ${searchParams.to}` : 'Available Buses'}
           </h1>
-          <p className="text-slate-400">
-            {from && to && date ? `Travel Date: ${date} • Passengers: ${passengers || 1}` : 'Choose from our premium fleet'}
-          </p>
+          {searchParams.from && searchParams.to && (
+            <div className="flex items-center space-x-6 text-slate-400">
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2" />
+                {searchParams.travelDate}
+              </div>
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 mr-2" />
+                {searchParams.departureTime}
+              </div>
+              <div className="flex items-center">
+                <Users className="h-4 w-4 mr-2" />
+                {searchParams.passengers} {searchParams.passengers === 1 ? 'Passenger' : 'Passengers'}
+              </div>
+              {searchParams.returnDate && (
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Return: {searchParams.returnDate}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Search and Filters */}
@@ -183,7 +224,6 @@ const Bus = () => {
             >
               <option value="price">Sort by Price</option>
               <option value="capacity">Sort by Capacity</option>
-              <option value="rating">Sort by Rating</option>
             </select>
           </div>
         </div>
@@ -194,7 +234,7 @@ const Bus = () => {
             <div 
               key={bus._id} 
               className={`bg-slate-800/50 rounded-2xl p-6 border transition-all duration-300 ${
-                selectedBus === bus._id 
+                selectedBus?._id === bus._id 
                   ? 'border-blue-500 ring-2 ring-blue-500/20' 
                   : 'border-slate-700/50 hover:border-blue-500/30'
               }`}
@@ -273,12 +313,12 @@ const Bus = () => {
                 <button
                   onClick={() => handleSelectBus(bus)}
                   className={`px-6 py-2 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
-                    selectedBus === bus._id
+                    selectedBus?._id === bus._id
                       ? 'bg-green-500 hover:bg-green-600 text-white'
                       : 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 text-white'
                   }`}
                 >
-                  {selectedBus === bus._id ? (
+                  {selectedBus?._id === bus._id ? (
                     <>
                       <Check className="h-4 w-4" />
                       <span>Selected</span>
@@ -291,20 +331,6 @@ const Bus = () => {
                   )}
                 </button>
               </div>
-
-              {/* Details Link */}
-              <div className="mt-3 text-center">
-                <Link
-                  to={`/bus/bus-details/${bus._id}`}
-                  state={{ 
-                    busData: bus,
-                    searchParams: searchParams
-                  }}
-                  className="text-blue-400 hover:text-blue-300 text-sm underline"
-                >
-                  View full details
-                </Link>
-              </div>
             </div>
           ))}
         </div>
@@ -315,19 +341,15 @@ const Bus = () => {
             <div className="flex items-center justify-between space-x-4">
               <div className="text-white">
                 <span className="text-slate-400">Selected: </span>
-                {buses.find(b => b._id === selectedBus)?.busType} Coach
+                {selectedBus.busType} Coach - Rs. {selectedBus.pricePerDay}/day
               </div>
-              <Link
-                to={`/bus/bus-details/${selectedBus}`}
-                state={{ 
-                  busData: buses.find(b => b._id === selectedBus),
-                  searchParams: searchParams
-                }}
+              <button
+                onClick={handleProceedToBooking}
                 className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors flex items-center space-x-2"
               >
                 <span>Proceed to Booking</span>
                 <ArrowRight className="h-4 w-4" />
-              </Link>
+              </button>
             </div>
           </div>
         )}

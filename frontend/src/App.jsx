@@ -26,6 +26,8 @@ import BusZoneDashboard from './pages/staffdash';
 import MaintenanceManagement from './pages/MaintenanceManagement';
 import NotificationBell from './components/NotificationBell';
 import PassengerDetails from './components/PassengerDetails';
+import Checkout from './pages/checkout/Checkout';
+import BookingSuccess from './pages/booking-success/BookingSuccess';
 
 // ✅ Import ProtectedRoute
 import ProtectedRoute from './components/ProtectedRoute';
@@ -49,6 +51,24 @@ function App() {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/bus" element={<Bus />} />
               <Route path="/passenger-details" element={<PassengerDetails />} />
+
+              {/* Protected routes */}
+              <Route
+                path="/checkout"
+                element={
+                  <ProtectedRoute allowedRoles={['passenger', 'admin']}>
+                    <Checkout />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/booking-success"
+                element={
+                  <ProtectedRoute allowedRoles={['passenger', 'admin']}>
+                    <BookingSuccess />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Passenger only (plus admin override) */}
               <Route

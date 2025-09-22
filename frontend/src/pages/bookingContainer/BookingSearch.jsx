@@ -1,3 +1,4 @@
+// src/pages/bookingContainer/BookingSearch.jsx - UPDATED
 import React, { useState } from 'react';
 import { 
   MapPin, 
@@ -6,10 +7,7 @@ import {
   Users, 
   ArrowRight,
   Search,
-  RefreshCw,
-  Navigation,
-  DollarSign,
-  Route
+  RefreshCw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,11 +18,10 @@ const BookingSearch = () => {
     to: '',
     travelDate: '',
     returnDate: '',
+    departureTime: '08:00',
     passengers: 1,
     tripType: 'one-way'
   });
-  const [distanceInfo, setDistanceInfo] = useState(null);
-  const [isCalculating, setIsCalculating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const locations = [
@@ -32,68 +29,16 @@ const BookingSearch = () => {
     'Anuradhapura', 'Polonnaruwa', 'Matara', 'Hambantota', 'Ratnapura'
   ];
 
-  // Predefined distances between major cities (in km)
-  const predefinedDistances = {
-    'colombo-kandy': { distance: 116, duration: 180 },
-    'colombo-galle': { distance: 116, duration: 120 },
-    'kandy-nuwara-eliya': { distance: 77, duration: 120 },
-    'colombo-jaffna': { distance: 396, duration: 480 },
-    'colombo-anuradhapura': { distance: 206, duration: 240 },
-    'colombo-trincomalee': { distance: 265, duration: 300 },
-    'colombo-matara': { distance: 160, duration: 180 },
-    'colombo-ratnapura': { distance: 101, duration: 150 },
-    'kandy-galle': { distance: 200, duration: 240 },
-    'kandy-matara': { distance: 200, duration: 240 },
-  };
+  const timeSlots = [
+    '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
+    '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
+  ];
 
   const handleInputChange = (field, value) => {
     setSearchData(prev => ({
       ...prev,
       [field]: value
     }));
-  };
-
-  const calculateDistance = async () => {
-    if (!searchData.from || !searchData.to) return;
-    
-    setIsCalculating(true);
-    try {
-      // Simulate API call - in a real implementation, this would call your backend
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Create a key for the predefined distances lookup
-      const key = `${searchData.from.toLowerCase()}-${searchData.to.toLowerCase()}`;
-      const reverseKey = `${searchData.to.toLowerCase()}-${searchData.from.toLowerCase()}`;
-      
-      // Get distance information from predefined data
-      let distanceData = predefinedDistances[key] || predefinedDistances[reverseKey];
-      
-      // If no predefined data exists, use default values
-      if (!distanceData) {
-        distanceData = { distance: 150, duration: 180 }; // Default values
-      }
-      
-      // Calculate fare based on distance and bus type (standard rate)
-      const fareRates = {
-        'standard': 25, // Rs per km
-        'deluxe': 35,
-        'luxury': 50
-      };
-      
-      const baseFare = fareRates['standard']; // Using standard as default for estimation
-      const totalFare = Math.round(baseFare * distanceData.distance);
-      
-      setDistanceInfo({
-        distance: Math.round(distanceData.distance),
-        duration: Math.round(distanceData.duration),
-        fare: totalFare,
-        total: totalFare * searchData.passengers
-      });
-    } catch (error) {
-      console.error('Error calculating distance:', error);
-    } finally {
-      setIsCalculating(false);
-    }
   };
 
   const handleSearch = async (e) => {
@@ -105,19 +50,10 @@ const BookingSearch = () => {
 
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       // Navigate to bus listing with search parameters
       navigate('/bus', { 
         state: { 
-          searchParams: {
-            ...searchData,
-            distance: distanceInfo?.distance,
-            duration: distanceInfo?.duration,
-            estimatedFare: distanceInfo?.fare
-          },
-          fromBookingSearch: true 
+          searchParams: searchData
         } 
       });
     } catch (error) {
@@ -133,7 +69,6 @@ const BookingSearch = () => {
       from: prev.to,
       to: prev.from
     }));
-    setDistanceInfo(null);
   };
 
   const isReturnTrip = searchData.tripType === 'round-trip';
@@ -223,52 +158,6 @@ const BookingSearch = () => {
                 </div>
               </div>
 
-              {/* Calculate Distance Button */}
-              <div className="lg:col-span-7 flex justify-center mt-2">
-                <button
-                  type="button"
-                  onClick={calculateDistance}
-                  disabled={!searchData.from || !searchData.to || isCalculating}
-                  className="flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-colors"
-                >
-                  <Navigation className="mr-2 h-5 w-5" />
-                  {isCalculating ? 'Calculating...' : 'Calculate Distance & Fare'}
-                </button>
-              </div>
-
-              {/* Display Distance Information */}
-              {distanceInfo && (
-                <div className="lg:col-span-7 bg-slate-700/30 rounded-xl p-4 mt-2">
-                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-                    <Route className="mr-2 h-5 w-5 text-blue-400" />
-                    Route Information
-                  </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-3 bg-slate-800/50 rounded-lg">
-                      <div className="text-slate-400 text-sm mb-1">Distance</div>
-                      <div className="text-white font-bold text-xl">{distanceInfo.distance} km</div>
-                    </div>
-                    <div className="text-center p-3 bg-slate-800/50 rounded-lg">
-                      <div className="text-slate-400 text-sm mb-1">Est. Duration</div>
-                      <div className="text-white font-bold text-xl">
-                        {Math.floor(distanceInfo.duration / 60)}h {distanceInfo.duration % 60}m
-                      </div>
-                    </div>
-                    <div className="text-center p-3 bg-slate-800/50 rounded-lg">
-                      <div className="text-slate-400 text-sm mb-1">Est. Fare (per person)</div>
-                      <div className="text-white font-bold text-xl">Rs. {distanceInfo.fare}</div>
-                    </div>
-                    <div className="text-center p-3 bg-blue-900/20 rounded-lg">
-                      <div className="text-slate-300 text-sm mb-1 flex items-center justify-center">
-                        <DollarSign className="h-4 w-4 mr-1" />
-                        Total for {searchData.passengers} {searchData.passengers === 1 ? 'person' : 'people'}
-                      </div>
-                      <div className="text-blue-400 font-bold text-xl">Rs. {distanceInfo.total}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Departure Date */}
               <div className="lg:col-span-2">
                 <label className="text-slate-300 text-sm font-medium mb-2 block">Departure Date</label>
@@ -303,6 +192,23 @@ const BookingSearch = () => {
                 </div>
               )}
 
+              {/* Departure Time */}
+              <div className="lg:col-span-2">
+                <label className="text-slate-300 text-sm font-medium mb-2 block">Departure Time</label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <select
+                    value={searchData.departureTime}
+                    onChange={(e) => handleInputChange('departureTime', e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {timeSlots.map(time => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               {/* Passengers */}
               <div className="lg:col-span-2">
                 <label className="text-slate-300 text-sm font-medium mb-2 block">Passengers</label>
@@ -324,7 +230,7 @@ const BookingSearch = () => {
               <div className="lg:col-span-1 flex items-end">
                 <button
                   type="submit"
-                  disabled={isLoading || !distanceInfo}
+                  disabled={isLoading}
                   className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
                 >
                   {isLoading ? (
@@ -357,9 +263,9 @@ const BookingSearch = () => {
                       ...prev,
                       from: route.from,
                       to: route.to,
-                      travelDate: new Date(Date.now() + 86400000).toISOString().split('T')[0]
+                      travelDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+                      departureTime: '08:00'
                     }));
-                    setDistanceInfo(null);
                   }}
                   className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-slate-300 text-sm transition-colors"
                 >
