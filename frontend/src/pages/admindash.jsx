@@ -48,12 +48,11 @@ import {
   AlertCircle,
   Shield,
   Download,
-  Printer
-  Filter,
-  Download,
-  CreditCard, // Add this import
-  DollarSign // Add this import
+  Printer,
+  CreditCard,
+  DollarSign
 } from 'lucide-react';
+
 import toast from 'react-hot-toast';
 import axios from 'axios';
 
@@ -2822,90 +2821,6 @@ const AdminDashboard = () => {
   const handleLogout = () => {
     logout();
     navigate('/login', { replace: true });
-=======
-  const FeedbackContent = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">Feedback & Complaints</h2>
-        <div className="flex space-x-2">
-          <button 
-            className={`px-4 py-2 rounded-lg text-sm ${filterType === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'}`}
-            onClick={() => setFilterType('all')}
-          >
-            All
-          </button>
-          <button 
-            className={`px-4 py-2 rounded-lg text-sm ${filterType === 'feedback' ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300'}`}
-            onClick={() => setFilterType('feedback')}
-          >
-            Feedback
-          </button>
-          <button 
-            className={`px-4 py-2 rounded-lg text-sm ${filterType === 'complaint' ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-300'}`}
-            onClick={() => setFilterType('complaint')}
-          >
-            Complaints
-          </button>
-          <button 
-            className={`px-4 py-2 rounded-lg text-sm ${filterType === 'pending' ? 'bg-orange-600 text-white' : 'bg-slate-700 text-slate-300'}`}
-            onClick={() => setFilterType('pending')}
-          >
-            Pending
-          </button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="bg-red-900/30 border border-red-700 text-red-300 p-4 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      <div className="space-y-4">
-        {filteredFeedbacks.length === 0 ? (
-          <div className="bg-slate-800 rounded-xl p-8 text-center">
-            <MessageSquare className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-400">No feedback found</h3>
-            <p className="text-slate-500 mt-1">There are no feedback entries matching your criteria.</p>
-          </div>
-        ) : (
-          filteredFeedbacks.map(feedback => (
-            <FeedbackCard key={feedback._id} feedback={feedback} />
-          ))
-        )}
-      </div>
-    </div>
-  );
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <DashboardContent />;
-      case 'users':
-        return <UserManagement />;
-      case 'notifications':
-        return <AdminNotificationPanel />;
-      case 'buses':
-        return <BusManagement />;
-      case 'bookings':
-        return <div className="text-white p-6">Bookings (placeholder)</div>;
-      case 'maintenance':
-        return <MaintenanceContent />;
-      case 'drivers':
-        return <div className="text-white p-6">Driver Assign (placeholder)</div>;
-      case 'attendance':
-        return <AttendanceManagement />;
-      case 'feedback':
-        return <FeedbackContent />;
-      case 'lost-found':
-        return <AdminLostFoundContent />;
-      case 'analytics':
-        return <div className="text-white p-6">Analytics (placeholder)</div>;
-      case 'settings':
-        return <div className="text-white p-6">Settings (placeholder)</div>;
-      default:
-        return <div className="text-white p-6">Module under development</div>;
-    }
   };
 
   return (
