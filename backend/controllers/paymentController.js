@@ -1,3 +1,4 @@
+// controllers/paymentController.js
 import mongoose from 'mongoose';
 import Payment from '../models/payment.js';
 import Invoice from '../models/invoice.js';
@@ -5,8 +6,10 @@ import Booking from '../models/booking.js';
 import Maintenance from '../models/maintenance.js';
 import Schedule from '../models/schedule.js';
 import User from '../models/user.js';
-import { PaymentGatewayService } from '../utils/paymentGateway.js';
+import DriverProfile from '../models/driverProfile.js';
+import stripe from '../config/stripe.js';
 import { v4 as uuidv4 } from 'uuid';
+import QRCode from 'qrcode';
 
 // Helper function to find booking
 const findBooking = async (identifier) => {
@@ -35,7 +38,7 @@ const findMaintenance = async (identifier) => {
   }
 };
 
-// Generate invoice function for bookings (automatically called on successful payment)
+// Generate invoice function for bookings
 const generateInvoice = async (payment, booking) => {
   try {
     const invoice = new Invoice({
@@ -97,124 +100,520 @@ const generateMaintenanceInvoice = async (payment, maintenance) => {
   }
 };
 
+// Generate salary invoice function
+const generateSalaryInvoice = async (payment, schedule, driver, driverProfile) => {
+  try {
+    const invoice = new Invoice({
+      invoiceNumber: `INV-SAL${Date.now()}${Math.random().toString(36).substr(2, 5)}`,
+      payment: payment._id,
+      schedule: schedule._id,
+      user: payment.user,
+      driver: driverProfile._id,
+      issueDate: new Date(),
+      dueDate: new Date(),
+      items: [{
+        description: `Driver Salary - Trip #${schedule._id.toString().slice(-6)}`,
+        details: `From ${schedule.startLocation} to ${schedule.destination}`,
+        quantity: 1,
+        unitPrice: payment.amount,
+        total: payment.amount
+      }],
+      subtotal: payment.amount,
+      tax: 0,
+      discount: 0,
+      totalAmount: payment.amount,
+      status: 'paid',
+      invoiceType: 'salary',
+      metadata: {
+        busId: schedule.busId?._id,
+        busNumber: schedule.busId?.numberPlate,
+        tripDate: schedule.scheduledStartTime,
+        driverHourlyRate: driverProfile.hourlyRate,
+        duration: schedule.scheduledEndTime - schedule.scheduledStartTime
+      }
+    });
+
+    await invoice.save();
+    return invoice;
+  } catch (error) {
+    console.error('Salary invoice generation error:', error);
+    throw error;
+  }
+};
+
+// STRIPE PAYMENT INTEGRATION
+
+// Create Stripe payment intent
+export const createStripePaymentIntent = async (req, res) => {
+  try {
+    const { bookingId, amount, currency = 'lkr', description } = req.body;
+    const userId = req.user._id;
+
+    // Get user details
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Find booking if provided
+    let booking = null;
+    if (bookingId) {
+      booking = await findBooking(bookingId);
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: 'Booking not found'
+        });
+      }
+
+      // Validate booking ownership
+      if (booking.user.toString() !== userId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized to pay for this booking'
+        });
+      }
+
+      // Check if booking is already paid
+      if (booking.paymentStatus === 'Paid') {
+        return res.status(400).json({
+          success: false,
+          message: 'Booking is already paid'
+        });
+      }
+    }
+
+    const paymentAmount = amount || (booking ? booking.totalAmount : 0);
+    const paymentDescription = description || (booking ? `Bus booking payment for ${booking.bookingId}` : 'Payment');
+
+    // Create Stripe payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(paymentAmount * 100), // Convert to cents
+      currency: currency.toLowerCase(),
+      description: paymentDescription,
+      metadata: {
+        userId: userId.toString(),
+        bookingId: bookingId || 'none',
+        type: bookingId ? 'booking' : 'other'
+      },
+      receipt_email: user.email,
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+
+    // Create payment record in database
+    const payment = new Payment({
+      paymentId: `PAY${uuidv4().slice(0, 8).toUpperCase()}`,
+      booking: bookingId ? booking._id : null,
+      user: userId,
+      amount: paymentAmount,
+      currency: currency.toUpperCase(),
+      paymentMethod: 'card',
+      paymentGateway: 'stripe',
+      transactionId: paymentIntent.id,
+      description: paymentDescription,
+      paymentType: bookingId ? 'booking' : 'other',
+      status: 'pending',
+      gatewayResponse: {
+        gatewayId: paymentIntent.id,
+        status: 'requires_payment_method',
+        clientSecret: paymentIntent.client_secret,
+        responseMessage: 'Payment intent created'
+      }
+    });
+
+    await payment.save();
+
+    res.json({
+      success: true,
+      message: 'Payment intent created successfully',
+      paymentIntent: {
+        id: paymentIntent.id,
+        clientSecret: paymentIntent.client_secret,
+        amount: paymentAmount,
+        currency: currency
+      },
+      payment: {
+        paymentId: payment.paymentId,
+        status: payment.status
+      }
+    });
+
+  } catch (error) {
+    console.error('Create Stripe payment intent error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error: ' + error.message
+    });
+  }
+};
+
+// Confirm Stripe payment
+export const confirmStripePayment = async (req, res) => {
+  try {
+    const { paymentIntentId, paymentId } = req.body;
+    const userId = req.user._id;
+
+    // Find payment record
+    const payment = await Payment.findOne({ 
+      $or: [
+        { paymentId: paymentId },
+        { transactionId: paymentIntentId }
+      ],
+      user: userId 
+    }).populate('booking').populate('maintenance');
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Payment not found'
+      });
+    }
+
+    // Retrieve payment intent from Stripe
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    // Update payment status based on Stripe response
+    payment.status = paymentIntent.status === 'succeeded' ? 'success' : 
+                    paymentIntent.status === 'processing' ? 'processing' : 'failed';
+    
+    payment.gatewayResponse.status = paymentIntent.status;
+    payment.gatewayResponse.responseMessage = `Payment ${paymentIntent.status}`;
+    payment.gatewayResponse.rawResponse = paymentIntent;
+
+    if (paymentIntent.status === 'succeeded') {
+      // Handle successful payment based on payment type
+      switch (payment.paymentType) {
+        case 'booking':
+          if (payment.booking) {
+            payment.booking.paymentStatus = 'Paid';
+            payment.booking.bookingStatus = 'Confirmed';
+            
+            // Generate QR code for booking
+            try {
+              const qrData = {
+                bookingId: payment.booking.bookingId,
+                passenger: payment.booking.seats[0]?.passengerName || 'Passenger',
+                busNumber: payment.booking.bus?.numberPlate,
+                travelDate: payment.booking.travelDate.toDateString(),
+                seats: payment.booking.seats.map(seat => seat.seatNumber).join(', '),
+                totalAmount: payment.booking.totalAmount
+              };
+              const qrCodeImage = await QRCode.toDataURL(JSON.stringify(qrData));
+              payment.booking.qrCode = qrCodeImage;
+            } catch (qrError) {
+              console.error('QR code generation error:', qrError);
+            }
+            
+            await payment.booking.save();
+            await generateInvoice(payment, payment.booking);
+          }
+          break;
+
+        case 'maintenance':
+          if (payment.maintenance) {
+            payment.maintenance.paymentStatus = 'Paid';
+            await payment.maintenance.save();
+            await generateMaintenanceInvoice(payment, payment.maintenance);
+          }
+          break;
+
+        case 'salary':
+          // Salary payments are handled separately
+          break;
+      }
+    }
+
+    await payment.save();
+
+    res.json({
+      success: paymentIntent.status === 'succeeded',
+      message: `Payment ${paymentIntent.status}`,
+      payment: {
+        paymentId: payment.paymentId,
+        status: payment.status,
+        amount: payment.amount,
+        transactionId: payment.transactionId,
+        type: payment.paymentType
+      },
+      booking: payment.booking ? {
+        bookingId: payment.booking.bookingId,
+        status: payment.booking.bookingStatus
+      } : null
+    });
+
+  } catch (error) {
+    console.error('Confirm Stripe payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error: ' + error.message
+    });
+  }
+};
+
+// Process direct card payment
+export const processDirectCardPayment = async (req, res) => {
+  try {
+    const { bookingId, cardDetails, paymentType = 'booking', maintenanceId } = req.body;
+    const userId = req.user._id;
+
+    let paymentData = {};
+    let description = '';
+
+    // Handle different payment types
+    if (paymentType === 'booking' && bookingId) {
+      const booking = await findBooking(bookingId);
+      if (!booking) {
+        return res.status(404).json({ message: 'Booking not found' });
+      }
+      if (booking.user.toString() !== userId.toString()) {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
+      if (booking.paymentStatus === 'Paid') {
+        return res.status(400).json({ message: 'Booking already paid' });
+      }
+
+      paymentData.amount = booking.totalAmount;
+      paymentData.metadata = { bookingId: booking.bookingId, type: 'booking' };
+      description = `Payment for booking ${booking.bookingId}`;
+      paymentData.booking = booking._id;
+
+    } else if (paymentType === 'maintenance' && maintenanceId) {
+      const maintenance = await findMaintenance(maintenanceId);
+      if (!maintenance) {
+        return res.status(404).json({ message: 'Maintenance request not found' });
+      }
+      if (maintenance.status !== 'Completed') {
+        return res.status(400).json({ message: 'Maintenance must be completed before payment' });
+      }
+
+      const amount = maintenance.actualCost > 0 ? maintenance.actualCost : maintenance.estimatedCost;
+      paymentData.amount = amount;
+      paymentData.metadata = { maintenanceId: maintenance.maintenanceId, type: 'maintenance' };
+      description = `Payment for maintenance #${maintenance.maintenanceId}`;
+      paymentData.maintenance = maintenance._id;
+
+    } else {
+      return res.status(400).json({ message: 'Invalid payment type or missing ID' });
+    }
+
+    // Get user details
+    const user = await User.findById(userId);
+
+    // Create payment method
+    const paymentMethod = await stripe.paymentMethods.create({
+      type: 'card',
+      card: {
+        number: cardDetails.cardNumber.replace(/\s/g, ''),
+        exp_month: parseInt(cardDetails.expiryDate.split('/')[0]),
+        exp_year: parseInt(cardDetails.expiryDate.split('/')[1]),
+        cvc: cardDetails.cvv,
+      },
+      billing_details: {
+        name: cardDetails.cardHolder,
+        email: user.email,
+      },
+    });
+
+    // Create and confirm payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(paymentData.amount * 100),
+      currency: 'lkr',
+      payment_method: paymentMethod.id,
+      confirm: true,
+      description: description,
+      metadata: paymentData.metadata,
+      return_url: `${process.env.FRONTEND_URL}/payment-success`,
+    });
+
+    // Create payment record
+    const payment = new Payment({
+      paymentId: `PAY${uuidv4().slice(0, 8).toUpperCase()}`,
+      booking: paymentData.booking,
+      maintenance: paymentData.maintenance,
+      user: userId,
+      amount: paymentData.amount,
+      currency: 'LKR',
+      paymentMethod: 'card',
+      paymentGateway: 'stripe',
+      cardDetails: {
+        cardNumber: `****${cardDetails.cardNumber.slice(-4)}`,
+        cardHolder: cardDetails.cardHolder,
+        expiryDate: cardDetails.expiryDate
+      },
+      transactionId: paymentIntent.id,
+      description: description,
+      paymentType: paymentType,
+      status: paymentIntent.status === 'succeeded' ? 'success' : 'failed',
+      gatewayResponse: {
+        gatewayId: paymentIntent.id,
+        status: paymentIntent.status,
+        responseMessage: paymentIntent.status === 'succeeded' ? 'Success' : 'Failed'
+      }
+    });
+
+    await payment.save();
+
+    // Handle successful payment
+    if (paymentIntent.status === 'succeeded') {
+      if (paymentType === 'booking' && paymentData.booking) {
+        const booking = await Booking.findById(paymentData.booking);
+        booking.paymentStatus = 'Paid';
+        booking.bookingStatus = 'Confirmed';
+        await booking.save();
+        await generateInvoice(payment, booking);
+      } else if (paymentType === 'maintenance' && paymentData.maintenance) {
+        const maintenance = await Maintenance.findById(paymentData.maintenance);
+        maintenance.paymentStatus = 'Paid';
+        await maintenance.save();
+        await generateMaintenanceInvoice(payment, maintenance);
+      }
+    }
+
+    res.json({
+      success: paymentIntent.status === 'succeeded',
+      message: paymentIntent.status === 'succeeded' ? 'Payment successful' : 'Payment failed',
+      payment: {
+        paymentId: payment.paymentId,
+        status: payment.status,
+        amount: payment.amount,
+        transactionId: payment.transactionId
+      }
+    });
+
+  } catch (error) {
+    console.error('Direct card payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error: ' + error.message
+    });
+  }
+};
+
+// ORIGINAL PAYMENT FUNCTIONS
+
 // Process payment for booking
 export const processPayment = async (req, res) => {
   try {
     const { bookingId, paymentMethod, paymentGateway, cardDetails } = req.body;
     const userId = req.user._id;
 
-    // Find the booking using helper function
+    // Find the booking
     const booking = await findBooking(bookingId);
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    // Validate payment method
-    if (!['card', 'bank_transfer', 'cash', 'wallet'].includes(paymentMethod)) {
-      return res.status(400).json({ message: 'Invalid payment method' });
+    // Validate ownership
+    if (booking.user.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'Not authorized to pay for this booking' });
     }
 
-    // Validate card details if payment method is card
-    if (paymentMethod === 'card') {
-      if (!cardDetails || !cardDetails.cardNumber || !cardDetails.cardHolder || 
-          !cardDetails.expiryDate || !cardDetails.cvv) {
-        return res.status(400).json({ message: 'Card details are required' });
-      }
-
-      // Simple card validation
-      if (cardDetails.cardNumber.replace(/\s/g, '').length !== 16) {
-        return res.status(400).json({ message: 'Invalid card number' });
-      }
-      if (cardDetails.cvv.length !== 3 && cardDetails.cvv.length !== 4) {
-        return res.status(400).json({ message: 'Invalid CVV' });
-      }
+    if (booking.paymentStatus === 'Paid') {
+      return res.status(400).json({ message: 'Booking is already paid' });
     }
+
+    // Use Stripe as default gateway if not specified
+    const effectiveGateway = paymentGateway || 'stripe';
 
     // Create payment record
     const payment = new Payment({
       paymentId: `PAY${uuidv4().slice(0, 8).toUpperCase()}`,
-      booking: booking._id, // Use the actual booking object's ID
+      booking: booking._id,
       user: userId,
       amount: booking.totalAmount,
-      currency: 'USD',
+      currency: 'LKR',
       paymentMethod,
-      paymentGateway: paymentGateway || 'none',
-      cardDetails: paymentMethod === 'card' ? cardDetails : undefined,
+      paymentGateway: effectiveGateway,
+      cardDetails: paymentMethod === 'card' ? {
+        cardNumber: `****${cardDetails.cardNumber.slice(-4)}`,
+        cardHolder: cardDetails.cardHolder,
+        expiryDate: cardDetails.expiryDate
+      } : undefined,
       transactionId: `TXN${Date.now()}${Math.random().toString(36).substr(2, 5)}`,
       description: `Payment for booking ${booking.bookingId}`,
       paymentType: 'booking'
     });
 
-    let gatewayResponse = null;
+    // Process payment based on gateway
+    if (effectiveGateway === 'stripe' && paymentMethod === 'card') {
+      try {
+        const user = await User.findById(userId);
+        
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(booking.totalAmount * 100),
+          currency: 'lkr',
+          payment_method_data: {
+            type: 'card',
+            card: {
+              number: cardDetails.cardNumber.replace(/\s/g, ''),
+              exp_month: parseInt(cardDetails.expiryDate.split('/')[0]),
+              exp_year: parseInt(cardDetails.expiryDate.split('/')[1]),
+              cvc: cardDetails.cvv,
+            },
+          },
+          confirm: true,
+          description: `Booking payment for ${booking.bookingId}`,
+          metadata: { bookingId: booking.bookingId },
+          receipt_email: user.email,
+        });
 
-    // Process payment through gateway if specified
-    if (paymentGateway && paymentGateway !== 'none') {
-      const paymentData = {
-        amount: booking.totalAmount,
-        currency: 'USD',
-        cardDetails,
-        description: `Payment for booking ${booking.bookingId}`,
-        paymentId: payment.paymentId
-      };
+        payment.status = paymentIntent.status === 'succeeded' ? 'success' : 'failed';
+        payment.transactionId = paymentIntent.id;
+        payment.gatewayResponse = {
+          gatewayId: paymentIntent.id,
+          status: paymentIntent.status,
+          responseCode: '200',
+          responseMessage: paymentIntent.status === 'succeeded' ? 'Success' : 'Failed',
+          rawResponse: paymentIntent
+        };
 
-      switch (paymentGateway) {
-        case 'stripe':
-          gatewayResponse = await PaymentGatewayService.processStripePayment(paymentData);
-          break;
-        case 'paypal':
-          gatewayResponse = await PaymentGatewayService.processPayPalPayment(paymentData);
-          break;
-        case 'razorpay':
-          gatewayResponse = await PaymentGatewayService.processRazorpayPayment(paymentData);
-          break;
-        default:
-          gatewayResponse = { success: false, error: 'Unsupported payment gateway' };
+      } catch (stripeError) {
+        payment.status = 'failed';
+        payment.gatewayResponse = {
+          status: 'failed',
+          responseMessage: stripeError.message
+        };
       }
-
-      payment.gatewayResponse = {
-        gatewayId: gatewayResponse.gatewayId,
-        status: gatewayResponse.status,
-        responseCode: gatewayResponse.success ? '200' : '400',
-        responseMessage: gatewayResponse.error || 'Success',
-        rawResponse: gatewayResponse.response
-      };
-
-      payment.status = gatewayResponse.success ? 'success' : 'failed';
     } else {
-      // For cash or bank transfer, mark as pending
+      // For non-Stripe or non-card payments
       payment.status = 'pending';
-    }
-
-    // If payment is successful, update booking and generate invoice
-    if (payment.status === 'success') {
-      booking.paymentStatus = 'Paid';
-      booking.bookingStatus = 'Confirmed';
-      await booking.save();
-
-      // Generate invoice automatically
-      await generateInvoice(payment, booking);
     }
 
     await payment.save();
 
+    // Handle successful payment
+    if (payment.status === 'success') {
+      booking.paymentStatus = 'Paid';
+      booking.bookingStatus = 'Confirmed';
+      await booking.save();
+      await generateInvoice(payment, booking);
+    }
+
+    const response = {
+      message: payment.status === 'success' ? 'Payment successful' : 
+               payment.status === 'pending' ? 'Payment initiated' : 'Payment failed',
+      payment: {
+        paymentId: payment.paymentId,
+        status: payment.status,
+        amount: payment.amount
+      }
+    };
+
     if (payment.status === 'success') {
       const invoice = await Invoice.findOne({ payment: payment._id });
-      res.json({
-        message: 'Payment successful',
-        payment,
-        invoice
-      });
-    } else if (payment.status === 'pending') {
-      res.json({
-        message: 'Payment initiated. Please complete the process.',
-        payment
-      });
-    } else {
-      res.status(400).json({
-        message: gatewayResponse?.error || 'Payment failed. Please try again.',
-        payment
-      });
+      response.invoice = invoice;
+      response.booking = {
+        bookingId: booking.bookingId,
+        status: booking.bookingStatus
+      };
     }
+
+    res.json(response);
 
   } catch (error) {
     console.error('Payment processing error:', error);
@@ -228,7 +627,7 @@ export const processMaintenancePayment = async (req, res) => {
     const { maintenanceId, paymentMethod, paymentGateway, cardDetails } = req.body;
     const userId = req.user._id;
 
-    // Find the maintenance request using helper function
+    // Find the maintenance request
     const maintenance = await findMaintenance(maintenanceId);
     if (!maintenance) {
       return res.status(404).json({ message: 'Maintenance request not found' });
@@ -244,26 +643,8 @@ export const processMaintenancePayment = async (req, res) => {
     // Use actual cost if available, otherwise use estimated cost
     const amount = maintenance.actualCost > 0 ? maintenance.actualCost : maintenance.estimatedCost;
 
-    // Validate payment method
-    if (!['card', 'bank_transfer', 'cash', 'wallet'].includes(paymentMethod)) {
-      return res.status(400).json({ message: 'Invalid payment method' });
-    }
-
-    // Validate card details if payment method is card
-    if (paymentMethod === 'card') {
-      if (!cardDetails || !cardDetails.cardNumber || !cardDetails.cardHolder || 
-          !cardDetails.expiryDate || !cardDetails.cvv) {
-        return res.status(400).json({ message: 'Card details are required' });
-      }
-
-      // Simple card validation
-      if (cardDetails.cardNumber.replace(/\s/g, '').length !== 16) {
-        return res.status(400).json({ message: 'Invalid card number' });
-      }
-      if (cardDetails.cvv.length !== 3 && cardDetails.cvv.length !== 4) {
-        return res.status(400).json({ message: 'Invalid CVV' });
-      }
-    }
+    // Use Stripe as default gateway
+    const effectiveGateway = paymentGateway || 'stripe';
 
     // Create payment record
     const payment = new Payment({
@@ -271,82 +652,83 @@ export const processMaintenancePayment = async (req, res) => {
       maintenance: maintenance._id,
       user: userId,
       amount: amount,
-      currency: 'USD',
+      currency: 'LKR',
       paymentMethod,
-      paymentGateway: paymentGateway || 'none',
-      cardDetails: paymentMethod === 'card' ? cardDetails : undefined,
+      paymentGateway: effectiveGateway,
+      cardDetails: paymentMethod === 'card' ? {
+        cardNumber: `****${cardDetails.cardNumber.slice(-4)}`,
+        cardHolder: cardDetails.cardHolder,
+        expiryDate: cardDetails.expiryDate
+      } : undefined,
       transactionId: `TXN${Date.now()}${Math.random().toString(36).substr(2, 5)}`,
       description: `Payment for maintenance #${maintenance.maintenanceId}`,
       paymentType: 'maintenance'
     });
 
-    let gatewayResponse = null;
+    // Process payment based on gateway
+    if (effectiveGateway === 'stripe' && paymentMethod === 'card') {
+      try {
+        const user = await User.findById(userId);
+        
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(amount * 100),
+          currency: 'lkr',
+          payment_method_data: {
+            type: 'card',
+            card: {
+              number: cardDetails.cardNumber.replace(/\s/g, ''),
+              exp_month: parseInt(cardDetails.expiryDate.split('/')[0]),
+              exp_year: parseInt(cardDetails.expiryDate.split('/')[1]),
+              cvc: cardDetails.cvv,
+            },
+          },
+          confirm: true,
+          description: `Maintenance payment for #${maintenance.maintenanceId}`,
+          metadata: { maintenanceId: maintenance.maintenanceId },
+          receipt_email: user.email,
+        });
 
-    // Process payment through gateway if specified
-    if (paymentGateway && paymentGateway !== 'none') {
-      const paymentData = {
-        amount: amount,
-        currency: 'USD',
-        cardDetails,
-        description: `Payment for maintenance #${maintenance.maintenanceId}`,
-        paymentId: payment.paymentId
-      };
+        payment.status = paymentIntent.status === 'succeeded' ? 'success' : 'failed';
+        payment.transactionId = paymentIntent.id;
+        payment.gatewayResponse = {
+          gatewayId: paymentIntent.id,
+          status: paymentIntent.status,
+          responseCode: '200',
+          responseMessage: paymentIntent.status === 'succeeded' ? 'Success' : 'Failed',
+          rawResponse: paymentIntent
+        };
 
-      switch (paymentGateway) {
-        case 'stripe':
-          gatewayResponse = await PaymentGatewayService.processStripePayment(paymentData);
-          break;
-        case 'paypal':
-          gatewayResponse = await PaymentGatewayService.processPayPalPayment(paymentData);
-          break;
-        case 'razorpay':
-          gatewayResponse = await PaymentGatewayService.processRazorpayPayment(paymentData);
-          break;
-        default:
-          gatewayResponse = { success: false, error: 'Unsupported payment gateway' };
+      } catch (stripeError) {
+        payment.status = 'failed';
+        payment.gatewayResponse = {
+          status: 'failed',
+          responseMessage: stripeError.message
+        };
       }
-
-      payment.gatewayResponse = {
-        gatewayId: gatewayResponse.gatewayId,
-        status: gatewayResponse.status,
-        responseCode: gatewayResponse.success ? '200' : '400',
-        responseMessage: gatewayResponse.error || 'Success',
-        rawResponse: gatewayResponse.response
-      };
-
-      payment.status = gatewayResponse.success ? 'success' : 'failed';
     } else {
-      // For cash or bank transfer, mark as pending
       payment.status = 'pending';
-    }
-
-    // If payment is successful, update maintenance status and generate invoice
-    if (payment.status === 'success') {
-      maintenance.paymentStatus = 'Paid';
-      await maintenance.save();
-      
-      // Generate invoice automatically
-      await generateMaintenanceInvoice(payment, maintenance);
     }
 
     await payment.save();
 
+    // Handle successful payment
     if (payment.status === 'success') {
-      res.json({
-        message: 'Maintenance payment successful',
-        payment
-      });
-    } else if (payment.status === 'pending') {
-      res.json({
-        message: 'Maintenance payment initiated. Please complete the process.',
-        payment
-      });
-    } else {
-      res.status(400).json({
-        message: gatewayResponse?.error || 'Payment failed. Please try again.',
-        payment
-      });
+      maintenance.paymentStatus = 'Paid';
+      await maintenance.save();
+      await generateMaintenanceInvoice(payment, maintenance);
     }
+
+    const response = {
+      message: payment.status === 'success' ? 'Payment successful' : 
+               payment.status === 'pending' ? 'Payment initiated' : 'Payment failed',
+      payment: {
+        paymentId: payment.paymentId,
+        status: payment.status,
+        amount: payment.amount
+      }
+    };
+
+    res.json(response);
 
   } catch (error) {
     console.error('Maintenance payment processing error:', error);
@@ -354,97 +736,151 @@ export const processMaintenancePayment = async (req, res) => {
   }
 };
 
-// Get user's payments
-export const getUserPayments = async (req, res) => {
+// Get payment status
+export const getPaymentStatus = async (req, res) => {
   try {
+    const { paymentId } = req.params;
     const userId = req.user._id;
-    const payments = await Payment.find({ user: userId })
-      .populate('booking', 'bookingId travelDate')
-      .populate('maintenance', 'maintenanceId description')
-      .sort({ createdAt: -1 });
 
-    res.json(payments);
+    const payment = await Payment.findOne({ 
+      paymentId: paymentId,
+      user: userId 
+    }).populate('booking').populate('maintenance');
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Payment not found'
+      });
+    }
+
+    // If payment is pending and using Stripe, check with Stripe
+    if (payment.status === 'pending' && payment.paymentGateway === 'stripe') {
+      try {
+        const paymentIntent = await stripe.paymentIntents.retrieve(payment.transactionId);
+        payment.status = paymentIntent.status === 'succeeded' ? 'success' : 
+                        paymentIntent.status === 'processing' ? 'processing' : 'failed';
+        payment.gatewayResponse.status = paymentIntent.status;
+        await payment.save();
+      } catch (error) {
+        console.error('Error checking payment status with Stripe:', error);
+      }
+    }
+
+    res.json({
+      success: true,
+      payment: {
+        paymentId: payment.paymentId,
+        status: payment.status,
+        amount: payment.amount,
+        currency: payment.currency,
+        transactionId: payment.transactionId,
+        paymentMethod: payment.paymentMethod,
+        paymentGateway: payment.paymentGateway,
+        description: payment.description,
+        createdAt: payment.createdAt,
+        updatedAt: payment.updatedAt
+      },
+      relatedEntity: payment.booking ? {
+        type: 'booking',
+        id: payment.booking.bookingId,
+        status: payment.booking.bookingStatus
+      } : payment.maintenance ? {
+        type: 'maintenance',
+        id: payment.maintenance.maintenanceId,
+        status: payment.maintenance.status
+      } : null
+    });
+
   } catch (error) {
-    console.error('Get user payments error:', error);
-    res.status(500).json({ message: 'Server error: ' + error.message });
+    console.error('Get payment status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error: ' + error.message
+    });
   }
 };
 
-// Get payment by ID
-export const getPaymentById = async (req, res) => {
+// Refund payment
+export const processRefund = async (req, res) => {
   try {
-    // Use findOne with your custom paymentId field instead of findById
-    const payment = await Payment.findOne({ paymentId: req.params.id })
-      .populate('booking')
-      .populate('maintenance')
-      .populate('user', 'firstName lastName email');
+    const { paymentId, reason, amount } = req.body;
+    const userId = req.user._id;
+
+    const payment = await Payment.findOne({ 
+      paymentId: paymentId 
+    }).populate('booking').populate('maintenance');
 
     if (!payment) {
       return res.status(404).json({ message: 'Payment not found' });
     }
 
-    res.json(payment);
-  } catch (error) {
-    console.error('Get payment error:', error);
-    res.status(500).json({ message: 'Server error: ' + error.message });
-  }
-};
-
-// Get all payments (admin)
-export const getAllPayments = async (req, res) => {
-  try {
-    const { type } = req.query; // 'booking', 'maintenance', or undefined for all
-    
-    let filter = {};
-    if (type) {
-      filter.paymentType = type;
+    if (payment.status !== 'success') {
+      return res.status(400).json({ message: 'Only successful payments can be refunded' });
     }
 
-    const payments = await Payment.find(filter)
-      .populate('booking', 'bookingId')
-      .populate('maintenance', 'maintenanceId description')
-      .populate('user', 'firstName lastName')
-      .sort({ createdAt: -1 });
+    const refundAmount = amount || payment.amount;
 
-    res.json(payments);
+    // Process refund based on payment gateway
+    let refundResult;
+    if (payment.paymentGateway === 'stripe') {
+      refundResult = await stripe.refunds.create({
+        payment_intent: payment.transactionId,
+        amount: Math.round(refundAmount * 100),
+        reason: 'requested_by_customer'
+      });
+    } else {
+      // Manual refund for non-Stripe payments
+      refundResult = { id: `manual_ref_${Date.now()}`, status: 'succeeded' };
+    }
+
+    // Update payment record
+    payment.refunds.push({
+      amount: refundAmount,
+      reason: reason || 'Customer request',
+      processedAt: new Date(),
+      status: refundResult.status === 'succeeded' ? 'processed' : 'failed',
+      refundId: refundResult.id
+    });
+
+    if (refundResult.status === 'succeeded') {
+      payment.status = 'refunded';
+      
+      // Update related entity status
+      if (payment.booking) {
+        payment.booking.paymentStatus = 'Refunded';
+        await payment.booking.save();
+      }
+      if (payment.maintenance) {
+        payment.maintenance.paymentStatus = 'Refunded';
+        await payment.maintenance.save();
+      }
+    }
+
+    await payment.save();
+
+    res.json({
+      success: refundResult.status === 'succeeded',
+      message: refundResult.status === 'succeeded' ? 'Refund processed successfully' : 'Refund failed',
+      refund: {
+        refundId: refundResult.id,
+        amount: refundAmount,
+        status: refundResult.status === 'succeeded' ? 'processed' : 'failed'
+      }
+    });
+
   } catch (error) {
-    console.error('Get all payments error:', error);
+    console.error('Refund processing error:', error);
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
 
-// Get all booking payments (admin) - DEBUG VERSION
+// Get all booking payments (admin)
 export const getAllBookingPayments = async (req, res) => {
   try {
-    console.log('🔍 Checking for booking payments...');
-    
-    // First, let's see what's actually in the database
-    const allPayments = await Payment.find({}).select('paymentType booking status amount createdAt').limit(10);
-    console.log('📊 All payments in database:', allPayments);
-    
-    // Check different filter approaches
-    const paymentsWithBookingType = await Payment.find({ paymentType: 'booking' });
-    const paymentsWithBookingRef = await Payment.find({ booking: { $exists: true, $ne: null } });
-    
-    console.log('🎫 Payments with paymentType "booking":', paymentsWithBookingType.length);
-    console.log('📋 Payments with booking reference:', paymentsWithBookingRef.length);
-    
-    // Try different filter approaches
-    let filter;
-    
-    if (paymentsWithBookingType.length > 0) {
-      filter = { paymentType: 'booking' };
-      console.log('✅ Using paymentType filter');
-    } else if (paymentsWithBookingRef.length > 0) {
-      filter = { booking: { $exists: true, $ne: null } };
-      console.log('✅ Using booking reference filter');
-    } else {
-      // Show all payments for debugging
-      filter = {};
-      console.log('⚠️  No booking payments found, showing all payments for debugging');
-    }
-    
     const { status, paymentMethod, startDate, endDate } = req.query;
+    
+    let filter = { paymentType: 'booking' };
     
     // Add status filter if provided
     if (status) {
@@ -467,29 +903,19 @@ export const getAllBookingPayments = async (req, res) => {
       }
     }
 
-    console.log('🔍 Final filter:', filter);
-
     const payments = await Payment.find(filter)
       .populate('booking', 'bookingId travelDate routeId busId seats totalAmount')
       .populate('user', 'firstName lastName email phone')
       .sort({ createdAt: -1 });
 
-    console.log('📦 Found payments:', payments.length);
-
     res.json({
       success: true,
       count: payments.length,
-      payments,
-      debug: { // Added debug information
-        totalPaymentsInDB: await Payment.countDocuments({}),
-        paymentsWithBookingType: paymentsWithBookingType.length,
-        paymentsWithBookingRef: paymentsWithBookingRef.length,
-        filterUsed: filter
-      }
+      payments
     });
 
   } catch (error) {
-    console.error('❌ Get all booking payments error:', error);
+    console.error('Get all booking payments error:', error);
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
@@ -615,26 +1041,8 @@ export const getPaymentStatistics = async (req, res) => {
       }
     ]);
 
-    // Daily/weekly/monthly trend
-    let groupFormat;
-    switch (period) {
-      case 'day':
-        groupFormat = { hour: { $hour: '$createdAt' } };
-        break;
-      case 'week':
-        groupFormat = { day: { $dayOfMonth: '$createdAt' } };
-        break;
-      case 'month':
-        groupFormat = { day: { $dayOfMonth: '$createdAt' } };
-        break;
-      case 'year':
-        groupFormat = { month: { $month: '$createdAt' } };
-        break;
-      default:
-        groupFormat = { day: { $dayOfMonth: '$createdAt' } };
-    }
-
-    const trendStats = await Payment.aggregate([
+    // Payment gateway breakdown
+    const gatewayStats = await Payment.aggregate([
       {
         $match: {
           status: 'success',
@@ -643,13 +1051,10 @@ export const getPaymentStatistics = async (req, res) => {
       },
       {
         $group: {
-          _id: groupFormat,
+          _id: '$paymentGateway',
           amount: { $sum: '$amount' },
           count: { $sum: 1 }
         }
-      },
-      {
-        $sort: { '_id': 1 }
       }
     ]);
 
@@ -659,7 +1064,7 @@ export const getPaymentStatistics = async (req, res) => {
       total: totalStats[0] || { totalAmount: 0, totalCount: 0 },
       byType: typeStats,
       byMethod: methodStats,
-      trend: trendStats
+      byGateway: gatewayStats
     });
 
   } catch (error) {
@@ -704,48 +1109,6 @@ export const getInvoice = async (req, res) => {
     res.json(invoice);
   } catch (error) {
     console.error('Get invoice error:', error);
-    res.status(500).json({ message: 'Server error: ' + error.message });
-  }
-};
-
-// Process refund
-export const processRefund = async (req, res) => {
-  try {
-    const { paymentId, reason, amount } = req.body;
-
-    // Find the payment
-    const payment = await Payment.findOne({ paymentId: paymentId });
-    if (!payment) {
-      return res.status(404).json({ message: 'Payment not found' });
-    }
-
-    // Check if payment can be refunded
-    if (payment.status !== 'success') {
-      return res.status(400).json({ 
-        message: 'Only successful payments can be refunded' 
-      });
-    }
-
-    // Add refund to refunds array
-    const refund = {
-      amount: amount || payment.amount,
-      reason: reason || 'Customer request',
-      processedAt: new Date(),
-      status: 'processed'
-    };
-
-    payment.refunds.push(refund);
-    payment.status = 'refunded';
-    await payment.save();
-
-    res.json({
-      message: 'Refund processed successfully',
-      refund,
-      payment
-    });
-
-  } catch (error) {
-    console.error('Refund processing error:', error);
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
@@ -927,7 +1290,7 @@ export const processDriverSalary = async (req, res) => {
       schedule: scheduleId,
       user: adminId,
       amount: amount,
-      currency: 'USD',
+      currency: 'LKR',
       paymentMethod: paymentMethod || 'bank_transfer',
       paymentGateway: 'none',
       transactionId: `SAL${Date.now()}${Math.random().toString(36).substr(2, 5)}`,
@@ -982,20 +1345,30 @@ export const processDriverSalary = async (req, res) => {
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
+
 // Get driver's salary payments
 export const getDriverSalaries = async (req, res) => {
   try {
     const driverId = req.user._id;
+    const driverProfile = await DriverProfile.findOne({ user: driverId });
+    
+    if (!driverProfile) {
+      return res.status(404).json({ message: 'Driver profile not found' });
+    }
     
     const salaries = await Payment.find({ 
-      driver: driverId, 
+      driver: driverProfile._id, 
       paymentType: 'salary' 
     })
       .populate('schedule', 'scheduledStartTime scheduledEndTime startLocation destination')
       .populate('user', 'firstName lastName') // Admin who processed payment
       .sort({ createdAt: -1 });
 
-    res.json(salaries);
+    res.json({
+      success: true,
+      salaries: salaries,
+      count: salaries.length
+    });
   } catch (error) {
     console.error('Get driver salaries error:', error);
     res.status(500).json({ message: 'Server error: ' + error.message });
@@ -1011,7 +1384,10 @@ export const getAllSalaryPayments = async (req, res) => {
     
     // Add driver filter if provided
     if (driverId) {
-      filter.driver = driverId;
+      const driverProfile = await DriverProfile.findOne({ user: driverId });
+      if (driverProfile) {
+        filter.driver = driverProfile._id;
+      }
     }
     
     // Add date range filter if provided
@@ -1042,48 +1418,7 @@ export const getAllSalaryPayments = async (req, res) => {
   }
 };
 
-// Generate salary invoice function
-// Generate salary invoice function
-const generateSalaryInvoice = async (payment, schedule, driver, driverProfile) => {
-  try {
-    const invoice = new Invoice({
-      invoiceNumber: `INV-SAL${Date.now()}${Math.random().toString(36).substr(2, 5)}`,
-      payment: payment._id,
-      schedule: schedule._id,
-      user: payment.user, // Admin who processed payment
-      driver: driverProfile._id,
-      issueDate: new Date(),
-      dueDate: new Date(),
-      items: [{
-        description: `Driver Salary - Trip #${schedule._id.toString().slice(-6)}`,
-        details: `From ${schedule.startLocation} to ${schedule.destination}`,
-        quantity: 1,
-        unitPrice: payment.amount,
-        total: payment.amount
-      }],
-      subtotal: payment.amount,
-      tax: 0,
-      discount: 0,
-      totalAmount: payment.amount,
-      status: 'paid',
-      invoiceType: 'salary',
-      metadata: {
-        busId: schedule.busId?._id,
-        busNumber: schedule.busId?.numberPlate,
-        tripDate: schedule.scheduledStartTime,
-        driverHourlyRate: driverProfile.hourlyRate,
-        duration: schedule.scheduledEndTime - schedule.scheduledStartTime
-      }
-    });
-
-    await invoice.save();
-    return invoice;
-  } catch (error) {
-    console.error('Salary invoice generation error:', error);
-    throw error;
-  }
-};
-// Get salary invoice by payment ID - Driver can view own, admin can view any
+// Get salary invoice by payment ID
 export const getSalaryInvoice = async (req, res) => {
   try {
     const { paymentId } = req.params;
@@ -1113,7 +1448,7 @@ export const getSalaryInvoice = async (req, res) => {
     const invoice = await Invoice.findOne({ payment: payment._id })
       .populate('driver')
       .populate('schedule', 'scheduledStartTime scheduledEndTime startLocation destination busId')
-      .populate('user', 'firstName lastName'); // Admin who processed payment
+      .populate('user', 'firstName lastName');
 
     if (!invoice) {
       return res.status(404).json({ message: 'Invoice not found for this payment' });
@@ -1174,5 +1509,179 @@ export const getDriverSalaryInvoices = async (req, res) => {
   } catch (error) {
     console.error('Get driver salary invoices error:', error);
     res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// Get user's payments
+export const getUserPayments = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const payments = await Payment.find({ user: userId })
+      .populate('booking', 'bookingId travelDate')
+      .populate('maintenance', 'maintenanceId description')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      payments: payments,
+      count: payments.length
+    });
+  } catch (error) {
+    console.error('Get user payments error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// Get payment by ID
+export const getPaymentById = async (req, res) => {
+  try {
+    const payment = await Payment.findOne({ paymentId: req.params.id })
+      .populate('booking')
+      .populate('maintenance')
+      .populate('user', 'firstName lastName email');
+
+    if (!payment) {
+      return res.status(404).json({ message: 'Payment not found' });
+    }
+
+    res.json({
+      success: true,
+      payment: payment
+    });
+  } catch (error) {
+    console.error('Get payment error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// Get all payments (admin)
+export const getAllPayments = async (req, res) => {
+  try {
+    const { type, status, paymentMethod, startDate, endDate } = req.query;
+    
+    let filter = {};
+    if (type) filter.paymentType = type;
+    if (status) filter.status = status;
+    if (paymentMethod) filter.paymentMethod = paymentMethod;
+    
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate) filter.createdAt.$lte = new Date(endDate);
+    }
+
+    const payments = await Payment.find(filter)
+      .populate('booking', 'bookingId')
+      .populate('maintenance', 'maintenanceId description')
+      .populate('user', 'firstName lastName')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      payments: payments,
+      count: payments.length
+    });
+  } catch (error) {
+    console.error('Get all payments error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// Webhook handler for Stripe events
+export const handleStripeWebhook = async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        await handlePaymentSucceeded(event.data.object);
+        break;
+      case 'payment_intent.payment_failed':
+        await handlePaymentFailed(event.data.object);
+        break;
+      case 'charge.refunded':
+        await handleChargeRefunded(event.data.object);
+        break;
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Webhook handling error:', error);
+    res.status(500).json({ error: 'Webhook handler failed' });
+  }
+};
+
+// Webhook handlers
+const handlePaymentSucceeded = async (paymentIntent) => {
+  try {
+    const payment = await Payment.findOne({ transactionId: paymentIntent.id })
+      .populate('booking')
+      .populate('maintenance');
+
+    if (payment && payment.status === 'pending') {
+      payment.status = 'success';
+      payment.gatewayResponse.status = 'succeeded';
+      await payment.save();
+
+      if (payment.booking) {
+        payment.booking.paymentStatus = 'Paid';
+        payment.booking.bookingStatus = 'Confirmed';
+        await payment.booking.save();
+        await generateInvoice(payment, payment.booking);
+      }
+
+      if (payment.maintenance) {
+        payment.maintenance.paymentStatus = 'Paid';
+        await payment.maintenance.save();
+        await generateMaintenanceInvoice(payment, payment.maintenance);
+      }
+    }
+  } catch (error) {
+    console.error('Error handling payment succeeded:', error);
+  }
+};
+
+const handlePaymentFailed = async (paymentIntent) => {
+  try {
+    const payment = await Payment.findOne({ transactionId: paymentIntent.id });
+    if (payment) {
+      payment.status = 'failed';
+      payment.gatewayResponse.status = 'failed';
+      payment.gatewayResponse.responseMessage = paymentIntent.last_payment_error?.message || 'Payment failed';
+      await payment.save();
+    }
+  } catch (error) {
+    console.error('Error handling payment failed:', error);
+  }
+};
+
+const handleChargeRefunded = async (charge) => {
+  try {
+    const payment = await Payment.findOne({ transactionId: charge.payment_intent });
+    if (payment) {
+      payment.status = 'refunded';
+      await payment.save();
+
+      if (payment.booking) {
+        payment.booking.paymentStatus = 'Refunded';
+        await payment.booking.save();
+      }
+      if (payment.maintenance) {
+        payment.maintenance.paymentStatus = 'Refunded';
+        await payment.maintenance.save();
+      }
+    }
+  } catch (error) {
+    console.error('Error handling charge refunded:', error);
   }
 };

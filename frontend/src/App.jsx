@@ -11,8 +11,6 @@ import PassengerProfilePage from './pages/PassengerProfilePage';
 import AdminPage from './pages/AdminPage';
 import AttendanceManagement from './components/AttendanceManagement';
 import Booking from './pages/bookingContainer/Booking';
-import Checkout from './pages/checkout/Checkout';
-import Details from './pages/bus/Detailss';
 import BusManagement from './pages/buscrud';
 import AdminDashboard from './pages/admindash';
 import Feedback from './pages/Feedback';
@@ -28,6 +26,10 @@ import BusZoneDashboard from './pages/staffdash';
 import MaintenanceManagement from './pages/MaintenanceManagement';
 import NotificationBell from './components/NotificationBell';
 import Lost from './pages/Lost'; // ✅ Import Lost & Found component
+import PassengerDetails from './components/PassengerDetails';
+import Checkout from './pages/checkout/Checkout';
+import BookingSuccess from './pages/booking-success/BookingSuccess';
+import GalleryPage from './pages/GalleryPage';
 
 // ✅ Import ProtectedRoute
 import ProtectedRoute from './components/ProtectedRoute';
@@ -50,8 +52,26 @@ function App() {
               <Route path="/offers" element={<SeasonalOffers />} />
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/bus" element={<Bus />} />
-              <Route path="/bus/bus-details" element={<Details />} />
-              <Route path="/bus/bus-details/checkout" element={<Checkout />} />
+              <Route path="/passenger-details" element={<PassengerDetails />} />
+              <Route path="/gallery" element={<GalleryPage />} />
+
+              {/* Protected routes */}
+              <Route
+                path="/checkout"
+                element={
+                  <ProtectedRoute allowedRoles={['passenger', 'admin']}>
+                    <Checkout />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/booking-success"
+                element={
+                  <ProtectedRoute allowedRoles={['passenger', 'admin']}>
+                    <BookingSuccess />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Passenger only (plus admin override) */}
               <Route
@@ -62,6 +82,8 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+
+              
               <Route
                 path="/booking"
                 element={

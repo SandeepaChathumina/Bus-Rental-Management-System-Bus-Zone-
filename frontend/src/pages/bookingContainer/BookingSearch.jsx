@@ -1,3 +1,4 @@
+// src/pages/bookingContainer/BookingSearch.jsx - UPDATED
 import React, { useState } from 'react';
 import { 
   MapPin, 
@@ -17,6 +18,7 @@ const BookingSearch = () => {
     to: '',
     travelDate: '',
     returnDate: '',
+    departureTime: '08:00',
     passengers: 1,
     tripType: 'one-way'
   });
@@ -25,6 +27,11 @@ const BookingSearch = () => {
   const locations = [
     'Colombo', 'Kandy', 'Galle', 'Jaffna', 'Negombo', 'Trincomalee',
     'Anuradhapura', 'Polonnaruwa', 'Matara', 'Hambantota', 'Ratnapura'
+  ];
+
+  const timeSlots = [
+    '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
+    '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
   ];
 
   const handleInputChange = (field, value) => {
@@ -43,14 +50,10 @@ const BookingSearch = () => {
 
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       // Navigate to bus listing with search parameters
       navigate('/bus', { 
         state: { 
-          searchParams: searchData,
-          fromBookingSearch: true 
+          searchParams: searchData
         } 
       });
     } catch (error) {
@@ -189,6 +192,23 @@ const BookingSearch = () => {
                 </div>
               )}
 
+              {/* Departure Time */}
+              <div className="lg:col-span-2">
+                <label className="text-slate-300 text-sm font-medium mb-2 block">Departure Time</label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <select
+                    value={searchData.departureTime}
+                    onChange={(e) => handleInputChange('departureTime', e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {timeSlots.map(time => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               {/* Passengers */}
               <div className="lg:col-span-2">
                 <label className="text-slate-300 text-sm font-medium mb-2 block">Passengers</label>
@@ -243,7 +263,8 @@ const BookingSearch = () => {
                       ...prev,
                       from: route.from,
                       to: route.to,
-                      travelDate: new Date(Date.now() + 86400000).toISOString().split('T')[0]
+                      travelDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+                      departureTime: '08:00'
                     }));
                   }}
                   className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-slate-300 text-sm transition-colors"

@@ -1,79 +1,52 @@
+// src/pages/bus/Bus.jsx - UPDATED
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { 
-  Clock, 
   Users, 
   Wifi, 
   Snowflake, 
   Coffee, 
-  Shield,
-  Star,
   MapPin,
+  ArrowRight,
+  Check,
   Calendar,
-  ArrowRight
+  Clock
 } from 'lucide-react';
 import Bus1 from "../../../src/assets/bus1.png";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+
 const Bus = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [buses, setBuses] = useState([]);
   const [filteredBuses, setFilteredBuses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [busTypeFilter, setBusTypeFilter] = useState('');
   const [sortBy, setSortBy] = useState('price');
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedBus, setSelectedBus] = useState(null);
 
-  // Sample bus data - replace with API call
-  const sampleBuses = [
-    {
-      id: 1,
-      name: "Deluxe Coach",
-      type: "Deluxe",
-      capacity: 45,
-      amenities: ["wifi", "ac", "refreshments", "entertainment"],
-      rating: 4.5,
-      reviews: 124,
-      price: 1200,
-      departureTime: "08:00",
-      arrivalTime: "12:00",
-      numberPlate: "CAB-1234"
-    },
-    {
-      id: 2,
-      name: "Luxury Sleeper",
-      type: "Luxury",
-      capacity: 30,
-      amenities: ["wifi", "ac", "refreshments", "leather", "charging"],
-      rating: 4.8,
-      reviews: 89,
-      price: 1800,
-      departureTime: "22:00",
-      arrivalTime: "06:00",
-      numberPlate: "CAB-5678"
-    },
-    {
-      id: 3,
-      name: "Standard Coach",
-      type: "Standard",
-      capacity: 52,
-      amenities: ["ac", "charging"],
-      rating: 4.2,
-      reviews: 203,
-      price: 800,
-      departureTime: "14:00",
-      arrivalTime: "18:00",
-      numberPlate: "CAB-9012"
-    }
-  ];
+  // Get search parameters from URL or navigation state
+  const searchParams = location.state?.searchParams || {};
 
   useEffect(() => {
-    // Simulate API call
     const loadBuses = async () => {
       setIsLoading(true);
       try {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setBuses(sampleBuses);
-        setFilteredBuses(sampleBuses);
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${BACKEND_URL}/api/buses`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Filter only available buses
+        const availableBuses = response.data.buses.filter(bus => 
+          bus.status === 'Available' && bus.isActive === true
+        );
+        
+        setBuses(availableBuses);
+        setFilteredBuses(availableBuses);
       } catch (error) {
         console.error('Error loading buses:', error);
       } finally {
@@ -90,26 +63,24 @@ const Bus = () => {
     // Apply search filter
     if (searchTerm) {
       results = results.filter(bus =>
-        bus.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        bus.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        bus.numberPlate.toLowerCase().includes(searchTerm.toLowerCase())
+        bus.numberPlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        bus.busType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (bus.busId && bus.busId.toString().includes(searchTerm))
       );
     }
 
     // Apply type filter
     if (busTypeFilter) {
-      results = results.filter(bus => bus.type.toLowerCase() === busTypeFilter.toLowerCase());
+      results = results.filter(bus => bus.busType.toLowerCase() === busTypeFilter.toLowerCase());
     }
 
     // Apply sorting
     results.sort((a, b) => {
       switch (sortBy) {
         case 'price':
-          return a.price - b.price;
-        case 'rating':
-          return b.rating - a.rating;
-        case 'departure':
-          return a.departureTime.localeCompare(b.departureTime);
+          return a.pricePerDay - b.pricePerDay;
+        case 'capacity':
+          return b.capacity - a.capacity;
         default:
           return 0;
       }
@@ -117,6 +88,17 @@ const Bus = () => {
 
     setFilteredBuses(results);
   }, [buses, searchTerm, busTypeFilter, sortBy]);
+
+  const getAmenities = (busType) => {
+    const amenitiesMap = {
+      'Standard': ['ac', 'charging'],
+      'Deluxe': ['wifi', 'ac', 'refreshments', 'charging'],
+      'Luxury': ['wifi', 'ac', 'refreshments', 'leather', 'entertainment', 'charging'],
+      'Mini': ['ac', 'charging'],
+      'Double Decker': ['wifi', 'ac', 'refreshments', 'entertainment', 'charging']
+    };
+    return amenitiesMap[busType] || ['ac', 'charging'];
+  };
 
   const getAmenityIcon = (amenity) => {
     switch (amenity) {
@@ -128,6 +110,36 @@ const Bus = () => {
       case 'leather': return <div className="text-sm">💺</div>;
       default: return null;
     }
+  };
+
+  const getBusImage = (busType) => {
+    return Bus1;
+  };
+
+  const handleSelectBus = (bus) => {
+    setSelectedBus(bus);
+  };
+
+  const handleProceedToBooking = () => {
+    if (!selectedBus) {
+      alert('Please select a bus first');
+      return;
+    }
+
+    navigate('/passenger-details', {
+      state: {
+        bus: selectedBus,
+        searchParams: searchParams,
+        passengers: Array(searchParams.passengers).fill().map((_, i) => ({
+          seatNumber: `A${i + 1}`,
+          name: '',
+          nic: '',
+          age: '',
+          gender: ''
+        })),
+        selectedSeats: Array(searchParams.passengers).fill().map((_, i) => `A${i + 1}`)
+      }
+    });
   };
 
   if (isLoading) {
@@ -152,8 +164,31 @@ const Bus = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Available Buses</h1>
-          <p className="text-slate-400">Choose from our premium fleet</p>
+          <h1 className="text-4xl font-bold text-white mb-2">
+            {searchParams.from && searchParams.to ? `Buses from ${searchParams.from} to ${searchParams.to}` : 'Available Buses'}
+          </h1>
+          {searchParams.from && searchParams.to && (
+            <div className="flex items-center space-x-6 text-slate-400">
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2" />
+                {searchParams.travelDate}
+              </div>
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 mr-2" />
+                {searchParams.departureTime}
+              </div>
+              <div className="flex items-center">
+                <Users className="h-4 w-4 mr-2" />
+                {searchParams.passengers} {searchParams.passengers === 1 ? 'Passenger' : 'Passengers'}
+              </div>
+              {searchParams.returnDate && (
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Return: {searchParams.returnDate}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Search and Filters */}
@@ -162,7 +197,7 @@ const Bus = () => {
             <div className="md:col-span-2">
               <input
                 type="text"
-                placeholder="Search buses by name, type, or number plate..."
+                placeholder="Search buses by plate, type, or bus ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -178,6 +213,8 @@ const Bus = () => {
               <option value="standard">Standard</option>
               <option value="deluxe">Deluxe</option>
               <option value="luxury">Luxury</option>
+              <option value="mini">Mini</option>
+              <option value="double decker">Double Decker</option>
             </select>
 
             <select
@@ -186,8 +223,7 @@ const Bus = () => {
               className="px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="price">Sort by Price</option>
-              <option value="rating">Sort by Rating</option>
-              <option value="departure">Sort by Departure</option>
+              <option value="capacity">Sort by Capacity</option>
             </select>
           </div>
         </div>
@@ -195,39 +231,39 @@ const Bus = () => {
         {/* Bus Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBuses.map((bus) => (
-            <div key={bus.id} className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50 hover:border-blue-500/30 transition-all duration-300">
+            <div 
+              key={bus._id} 
+              className={`bg-slate-800/50 rounded-2xl p-6 border transition-all duration-300 ${
+                selectedBus?._id === bus._id 
+                  ? 'border-blue-500 ring-2 ring-blue-500/20' 
+                  : 'border-slate-700/50 hover:border-blue-500/30'
+              }`}
+            >
               {/* Bus Image */}
               <div className="mb-4">
                 <img
-                  src={Bus1}
-                  alt={bus.name}
+                  src={bus.vehiclePhoto || getBusImage(bus.busType)}
+                  alt={bus.busType}
                   className="w-full h-48 object-cover rounded-xl"
+                  onError={(e) => {
+                    e.target.src = Bus1;
+                  }}
                 />
               </div>
 
               {/* Bus Info */}
               <div className="mb-4">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-bold text-white">{bus.name}</h3>
+                  <h3 className="text-xl font-bold text-white">{bus.busType} Coach</h3>
                   <span className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-sm">
-                    {bus.type}
+                    {bus.busType}
                   </span>
                 </div>
                 
                 <div className="flex items-center mb-3">
                   <div className="flex items-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`h-4 w-4 ${
-                          star <= Math.floor(bus.rating)
-                            ? 'text-yellow-400 fill-current'
-                            : 'text-slate-400'
-                        }`}
-                      />
-                    ))}
-                    <span className="text-slate-400 ml-2 text-sm">
-                      ({bus.reviews} reviews)
+                    <span className="text-slate-400 text-sm">
+                      Bus ID: {bus.busId || 'N/A'}
                     </span>
                   </div>
                 </div>
@@ -238,14 +274,14 @@ const Bus = () => {
                     {bus.capacity} seats
                   </div>
                   <div className="flex items-center text-slate-400 text-sm">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {bus.departureTime} - {bus.arrivalTime}
+                    <MapPin className="h-4 w-4 mr-1" />
+                    Plate: {bus.numberPlate}
                   </div>
                 </div>
 
                 <div className="flex items-center text-slate-400 text-sm mb-3">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  Plate: {bus.numberPlate}
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                  Available
                 </div>
               </div>
 
@@ -253,7 +289,7 @@ const Bus = () => {
               <div className="mb-4">
                 <h4 className="text-slate-300 text-sm font-medium mb-2">Amenities</h4>
                 <div className="flex flex-wrap gap-2">
-                  {bus.amenities.map((amenity, index) => (
+                  {getAmenities(bus.busType).map((amenity, index) => (
                     <div
                       key={index}
                       className="flex items-center px-3 py-1 bg-slate-700 rounded-lg text-slate-300 text-sm"
@@ -269,20 +305,54 @@ const Bus = () => {
               {/* Price and Action */}
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-2xl font-bold text-white">Rs. {bus.price}</div>
-                  <div className="text-slate-400 text-sm">per person</div>
+                  <div className="text-2xl font-bold text-white">Rs. {bus.pricePerDay || 0}</div>
+                  <div className="text-slate-400 text-sm">per day</div>
                 </div>
-                <Link
-                  to={`/bus/bus-details?id=${bus.id}`}
-                  className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 text-white px-6 py-2 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2"
+                
+                {/* Select Button */}
+                <button
+                  onClick={() => handleSelectBus(bus)}
+                  className={`px-6 py-2 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
+                    selectedBus?._id === bus._id
+                      ? 'bg-green-500 hover:bg-green-600 text-white'
+                      : 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 text-white'
+                  }`}
                 >
-                  <span>View Details</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
+                  {selectedBus?._id === bus._id ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      <span>Selected</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Select</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           ))}
         </div>
+
+        {/* Selected Bus Action */}
+        {selectedBus && (
+          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800 rounded-xl p-4 shadow-2xl border border-slate-700 z-50">
+            <div className="flex items-center justify-between space-x-4">
+              <div className="text-white">
+                <span className="text-slate-400">Selected: </span>
+                {selectedBus.busType} Coach - Rs. {selectedBus.pricePerDay}/day
+              </div>
+              <button
+                onClick={handleProceedToBooking}
+                className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors flex items-center space-x-2"
+              >
+                <span>Proceed to Booking</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {filteredBuses.length === 0 && (
           <div className="text-center py-12">
