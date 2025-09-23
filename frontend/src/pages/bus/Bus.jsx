@@ -11,7 +11,8 @@ import {
   ArrowRight,
   Check,
   Calendar,
-  Clock
+  Clock,
+  Image as ImageIcon
 } from 'lucide-react';
 import Bus1 from "../../../src/assets/bus1.png";
 
@@ -27,6 +28,7 @@ const Bus = () => {
   const [sortBy, setSortBy] = useState('price');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBus, setSelectedBus] = useState(null);
+  const [imageErrors, setImageErrors] = useState({});
 
   // Get search parameters from URL or navigation state
   const searchParams = location.state?.searchParams || {};
@@ -114,6 +116,19 @@ const Bus = () => {
 
   const getBusImage = (busType) => {
     return Bus1;
+  };
+
+  // Handle image loading errors
+  const handleImageError = (busId) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [busId]: true
+    }));
+  };
+
+  // Check if image is a data URL
+  const isDataURL = (str) => {
+    return str.startsWith('data:image');
   };
 
   const handleSelectBus = (bus) => {
@@ -241,15 +256,27 @@ const Bus = () => {
               }`}
             >
               {/* Bus Image */}
-              <div className="mb-4">
-                <img
-                  src={bus.vehiclePhoto || getBusImage(bus.busType)}
-                  alt={bus.busType}
-                  className="w-full h-48 object-cover rounded-xl"
-                  onError={(e) => {
-                    e.target.src = Bus1;
-                  }}
-                />
+              <div className="mb-4 relative">
+                {bus.vehiclePhoto && !imageErrors[bus._id] ? (
+                  <img
+                    src={bus.vehiclePhoto}
+                    alt={`${bus.busType} Coach - ${bus.numberPlate}`}
+                    className="w-full h-48 object-cover rounded-xl"
+                    onError={() => handleImageError(bus._id)}
+                  />
+                ) : (
+                  <div className="w-full h-48 bg-slate-700 rounded-xl flex flex-col items-center justify-center">
+                    <ImageIcon className="h-12 w-12 text-slate-500 mb-2" />
+                    <span className="text-slate-400 text-sm">No Image Available</span>
+                  </div>
+                )}
+                
+                {/* Image type indicator */}
+                {bus.vehiclePhoto && isDataURL(bus.vehiclePhoto) && (
+                  <div className="absolute top-2 right-2 bg-blue-500/80 text-white px-2 py-1 rounded text-xs">
+                    Uploaded Image
+                  </div>
+                )}
               </div>
 
               {/* Bus Info */}
@@ -312,7 +339,7 @@ const Bus = () => {
                 
                 {/* Select Button */}
                 <button
-                  onClick={() => handleSelectBus(bus) & console.log(bus._id)}
+                  onClick={() => handleSelectBus(bus)}
                   className={`px-6 py-2 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
                     selectedBus?._id === bus._id
                       ? 'bg-green-500 hover:bg-green-600 text-white'

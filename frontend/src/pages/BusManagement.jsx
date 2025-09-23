@@ -16,7 +16,9 @@ import {
   Wrench,
   Clock,
   FileText,
-  Calendar
+  Calendar,
+  Upload,
+  Image
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
@@ -34,6 +36,7 @@ const BusManagement = () => {
   const [exportLoading, setExportLoading] = useState(false);
   const [exportFormat, setExportFormat] = useState('excel'); // 'excel', 'pdf'
   const [showExportModal, setShowExportModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
   
   const [formData, setFormData] = useState({
     busType: 'Standard',
@@ -46,6 +49,8 @@ const BusManagement = () => {
   });
 
   const [formErrors, setFormErrors] = useState({});
+  const [dragActive, setDragActive] = useState(false);
+  const [previewImage, setPreviewImage] = useState('');
 
   useEffect(() => {
     fetchBuses();
@@ -127,11 +132,6 @@ const BusManagement = () => {
       errors.pricePerDay = 'Price cannot exceed $10,000 per day';
     }
 
-    // Vehicle Photo URL validation (optional)
-    if (formData.vehiclePhoto && !/^https?:\/\/.+\..+/.test(formData.vehiclePhoto)) {
-      errors.vehiclePhoto = 'Please enter a valid URL';
-    }
-
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -186,6 +186,7 @@ const BusManagement = () => {
         vehiclePhoto: '',
         status: 'Available'
       });
+      setPreviewImage('');
       setFormErrors({});
       fetchBuses();
     } catch (error) {
@@ -205,6 +206,7 @@ const BusManagement = () => {
       vehiclePhoto: bus.vehiclePhoto || '',
       status: bus.status
     });
+    setPreviewImage(bus.vehiclePhoto || '');
     setFormErrors({});
     setShowModal(true);
   };
@@ -224,6 +226,84 @@ const BusManagement = () => {
       ...formData,
       [name]: value
     });
+  };
+
+  // Handle drag events
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  // Handle drop event
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith('image/')) {
+        handleImageUpload(file);
+      } else {
+        toast.error('Please upload an image file');
+      }
+    }
+  };
+
+  // Handle file input change
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      handleImageUpload(e.target.files[0]);
+    }
+  };
+
+  // Simulate image upload and get URL
+  const handleImageUpload = async (file) => {
+    setUploading(true);
+    try {
+      // In a real application, you would upload the file to a server
+      // and get back a URL. For now, we'll create a local URL for preview
+      // and simulate an upload process.
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageUrl = e.target.result;
+        setPreviewImage(imageUrl);
+        
+        // In a real app, you would upload to your server and get a permanent URL
+        // For demo purposes, we'll use the data URL (not recommended for production)
+        setFormData(prev => ({
+          ...prev,
+          vehiclePhoto: imageUrl
+        }));
+        
+        toast.success('Image uploaded successfully!');
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+      
+      // Simulate upload delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast.error('Failed to upload image');
+      setUploading(false);
+    }
+  };
+
+  // Remove uploaded image
+  const handleRemoveImage = () => {
+    setPreviewImage('');
+    setFormData(prev => ({
+      ...prev,
+      vehiclePhoto: ''
+    }));
   };
 
   const getStatusIcon = (status) => {
@@ -778,6 +858,7 @@ const BusManagement = () => {
                       vehiclePhoto: '',
                       status: 'Available'
                     });
+                    setPreviewImage('');
                     setFormErrors({});
                   }}
                   className="text-slate-400 hover:text-white"
@@ -858,7 +939,7 @@ const BusManagement = () => {
                     name="numberPlate"
                     value={formData.numberPlate}
                     onChange={handleInputChange}
-                    className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase ${
+                    className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       editingBus 
                         ? 'border-slate-500 text-slate-400 cursor-not-allowed' 
                         : formErrors.numberPlate ? 'border-red-500' : 'border-slate-600'
@@ -879,9 +960,9 @@ const BusManagement = () => {
                     name="pricePerDay"
                     value={formData.pricePerDay}
                     onChange={handleInputChange}
+                    step="0.01"
                     min="0"
                     max="10000"
-                    step="0.01"
                     className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       formErrors.pricePerDay ? 'border-red-500' : 'border-slate-600'
                     }`}
@@ -890,6 +971,75 @@ const BusManagement = () => {
                   />
                   {formErrors.pricePerDay && (
                     <p className="text-red-400 text-xs mt-1">{formErrors.pricePerDay}</p>
+                  )}
+                </div>
+
+                {/* Image Upload Field */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Vehicle Photo</label>
+                  
+                  {/* Drag and Drop Area */}
+                  <div
+                    className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                      dragActive 
+                        ? 'border-blue-500 bg-blue-900/20' 
+                        : previewImage 
+                          ? 'border-slate-600' 
+                          : 'border-slate-600 hover:border-slate-500'
+                    }`}
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                  >
+                    {previewImage ? (
+                      <div className="space-y-3">
+                        <img 
+                          src={previewImage} 
+                          alt="Vehicle preview" 
+                          className="mx-auto max-h-32 rounded-lg object-contain"
+                        />
+                        <div className="flex justify-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => document.getElementById('file-input').click()}
+                            className="text-blue-400 hover:text-blue-300 text-sm"
+                          >
+                            Change Image
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="text-red-400 hover:text-red-300 text-sm"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Image className="w-8 h-8 text-slate-400 mx-auto" />
+                        <div className="text-slate-300">
+                          <span className="text-blue-400 font-medium">Click to upload</span> or drag and drop
+                        </div>
+                        <p className="text-slate-400 text-xs">PNG, JPG, GIF up to 10MB</p>
+                      </div>
+                    )}
+                    
+                    <input
+                      id="file-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                  </div>
+
+                  {uploading && (
+                    <div className="mt-2 text-center">
+                      <div className="inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                      <span className="text-blue-400 text-sm">Uploading image...</span>
+                    </div>
                   )}
                 </div>
 
@@ -909,23 +1059,6 @@ const BusManagement = () => {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Vehicle Photo URL (Optional)</label>
-                  <input
-                    type="url"
-                    name="vehiclePhoto"
-                    value={formData.vehiclePhoto}
-                    onChange={handleInputChange}
-                    className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      formErrors.vehiclePhoto ? 'border-red-500' : 'border-slate-600'
-                    }`}
-                    placeholder="https://example.com/photo.jpg"
-                  />
-                  {formErrors.vehiclePhoto && (
-                    <p className="text-red-400 text-xs mt-1">{formErrors.vehiclePhoto}</p>
-                  )}
-                </div>
-
                 <div className="flex justify-end space-x-3 pt-4">
                   <button
                     type="button"
@@ -941,6 +1074,7 @@ const BusManagement = () => {
                         vehiclePhoto: '',
                         status: 'Available'
                       });
+                      setPreviewImage('');
                       setFormErrors({});
                     }}
                     className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
