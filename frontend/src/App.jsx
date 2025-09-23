@@ -1,4 +1,4 @@
-// src/App.js
+// src/App.js - UPDATED with Lost & Found route
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
@@ -27,6 +27,7 @@ import Services from './pages/services';
 import BusZoneDashboard from './pages/staffdash';
 import MaintenanceManagement from './pages/MaintenanceManagement';
 import NotificationBell from './components/NotificationBell';
+import Lost from './pages/Lost'; // ✅ Import Lost & Found component
 
 // ✅ Import ProtectedRoute
 import ProtectedRoute from './components/ProtectedRoute';
@@ -66,6 +67,16 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['passenger', 'admin']}>
                     <Booking />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* ✅ Lost & Found route - Available to all authenticated users */}
+              <Route
+                path="/lost-found"
+                element={
+                  <ProtectedRoute allowedRoles={['passenger', 'admin', 'driver', 'staff']}>
+                    <Lost />
                   </ProtectedRoute>
                 }
               />
