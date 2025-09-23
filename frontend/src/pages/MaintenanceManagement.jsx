@@ -48,7 +48,7 @@ const MaintenanceManagement = () => {
     monthly: [],
     byPriority: []
   });
-  const [activeTab, setActiveTab] = useState('list');
+  const [activeTab, setActiveTab] = useState('overview');
   const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
@@ -209,7 +209,8 @@ const MaintenanceManagement = () => {
         )) ||
         (maintenance.bus && (
           maintenance.bus.numberPlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          maintenance.bus.busType.toLowerCase().includes(searchTerm.toLowerCase())
+          maintenance.bus.busType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          maintenance.bus._id.toLowerCase().includes(searchTerm.toLowerCase())
         ))
       );
     }
@@ -417,6 +418,83 @@ const MaintenanceManagement = () => {
     }).format(amount);
   };
 
+  // Export to PDF function
+  const exportToPDF = () => {
+    try {
+      // Create a simple PDF using browser's print functionality
+      const printWindow = window.open('', '_blank');
+      const tableContent = document.querySelector('table').outerHTML;
+      
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Maintenance Report</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              table { width: 100%; border-collapse: collapse; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f2f2f2; }
+              h1 { color: #333; }
+            </style>
+          </head>
+          <body>
+            <h1>Maintenance Report</h1>
+            <p>Generated on: ${new Date().toLocaleDateString()}</p>
+            ${tableContent}
+          </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      printWindow.print();
+      toast.success('PDF generated successfully');
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      toast.error('PDF export failed');
+    }
+  };
+
+  // Export to Excel function
+  const exportToExcel = () => {
+    try {
+      // Create CSV content
+      const headers = ['Bus Number', 'Bus Type', 'Description', 'Staff', 'Priority', 'Status', 'Estimated Cost', 'Actual Cost', 'Estimated Date', 'Actual Date'];
+      const csvContent = [
+        headers.join(','),
+        ...filteredMaintenances.map(maintenance => [
+          maintenance.bus?.numberPlate || 'N/A',
+          maintenance.bus?.busType || 'N/A',
+          `"${maintenance.description.replace(/"/g, '""')}"`,
+          `"${maintenance.user?.firstName} ${maintenance.user?.lastName}"`,
+          maintenance.priority,
+          maintenance.status,
+          maintenance.estimatedCost,
+          maintenance.actualCost || 'N/A',
+          maintenance.estimatedCompletionDate ? formatDate(maintenance.estimatedCompletionDate) : 'N/A',
+          maintenance.actualCompletionDate ? formatDate(maintenance.actualCompletionDate) : 'N/A'
+        ].join(','))
+      ].join('\n');
+
+      // Create and download CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `maintenance-report-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Excel/CSV file downloaded successfully');
+    } catch (error) {
+      console.error('Excel export failed:', error);
+      toast.error('Excel export failed');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -427,17 +505,258 @@ const MaintenanceManagement = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header and Tabs remain the same */}
-      {/* ... existing header and tabs code ... */}
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Maintenance Management</h1>
+          <p className="text-slate-400">Manage and track bus maintenance requests</p>
+        </div>
+        <div className="flex space-x-3">
+          <div className="flex space-x-2">
+            <button
+              onClick={exportToPDF}
+              className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              PDF
+            </button>
+            <button
+              onClick={exportToExcel}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Excel
+            </button>
+          </div>
+          {/* Remove the "New Request" button */}
+        </div>
+      </div>
 
+      {/* Tabs */}
+      <div className="border-b border-slate-700">
+        <nav className="flex space-x-8">
+          {['overview', 'list', 'statistics', 'cost-analysis'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm capitalize ${
+                activeTab === tab
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              {tab.replace('-', ' ')}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Overview Tab */}
+      {activeTab === 'overview' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Summary Cards */}
+          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-white">Total Requests</h3>
+              <Wrench className="w-5 h-5 text-blue-400" />
+            </div>
+            <p className="text-3xl font-bold text-white mt-2">{stats.total}</p>
+            <p className="text-slate-400 text-sm mt-1">All maintenance requests</p>
+          </div>
+
+          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-white">Pending</h3>
+              <AlertCircle className="w-5 h-5 text-yellow-400" />
+            </div>
+            <p className="text-3xl font-bold text-yellow-400 mt-2">{stats.summary.pending}</p>
+            <p className="text-slate-400 text-sm mt-1">Awaiting action</p>
+          </div>
+
+          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-white">Total Cost</h3>
+              <DollarSign className="w-5 h-5 text-green-400" />
+            </div>
+            <p className="text-3xl font-bold text-green-400 mt-2">
+              {formatCurrency(costStats.overall.totalSpent)}
+            </p>
+            <p className="text-slate-400 text-sm mt-1">Overall maintenance costs</p>
+          </div>
+
+          {/* Recent Activities */}
+          <div className="md:col-span-2 bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <h3 className="text-lg font-medium text-white mb-4">Recent Maintenance Requests</h3>
+            <div className="space-y-3">
+              {maintenances.slice(0, 5).map((maintenance) => (
+                <div key={maintenance._id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    {getStatusIcon(maintenance.status)}
+                    <div>
+                      <p className="text-white font-medium">{maintenance.description}</p>
+                      <p className="text-slate-400 text-sm">
+                        Bus: {maintenance.bus?.numberPlate} (ID: {maintenance.bus?._id.substring(0, 8)}...)
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-white">{formatCurrency(maintenance.estimatedCost)}</p>
+                    <p className="text-slate-400 text-sm">{formatDate(maintenance.createdAt)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Status Distribution */}
+          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <h3 className="text-lg font-medium text-white mb-4">Status Distribution</h3>
+            <div className="space-y-3">
+              {stats.byStatus.map((status) => (
+                <div key={status._id} className="flex items-center justify-between">
+                  <span className="text-slate-300">{status._id}</span>
+                  <span className="text-white font-medium">{status.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* List View Tab */}
       {activeTab === 'list' && (
         <>
-          {/* Filters and Table remain the same */}
-          {/* ... existing filters and table code ... */}
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search by description, staff, bus, or bus ID..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex space-x-2">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+              <select
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value)}
+                className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Priority</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-700/50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Bus Details</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Staff</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Priority</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Cost</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Dates</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700">
+                  {filteredMaintenances.map((maintenance) => (
+                    <tr key={maintenance._id} className="hover:bg-slate-700/30">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Bus className="w-4 h-4 text-slate-400 mr-2" />
+                          <div>
+                            <div className="text-white font-medium">{maintenance.bus?.numberPlate}</div>
+                            <div className="text-slate-400 text-sm">ID: {maintenance.bus?._id.substring(0, 8)}...</div>
+                            <div className="text-slate-400 text-sm">{maintenance.bus?.busType}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-white max-w-xs truncate">{maintenance.description}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <User className="w-4 h-4 text-slate-400 mr-2" />
+                          <div>
+                            <div className="text-white">
+                              {maintenance.user?.firstName} {maintenance.user?.lastName}
+                            </div>
+                            <div className="text-slate-400 text-sm">
+                              {maintenance.user?.staffProfile?.employeeId || 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(maintenance.priority)}`}>
+                          {maintenance.priority}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {getStatusIcon(maintenance.status)}
+                          <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(maintenance.status)}`}>
+                            {maintenance.status}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-white">{formatCurrency(maintenance.estimatedCost)}</div>
+                        {maintenance.actualCost && (
+                          <div className="text-slate-400 text-sm">Actual: {formatCurrency(maintenance.actualCost)}</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-slate-300 text-sm">
+                          <div>Est: {formatDate(maintenance.estimatedCompletionDate)}</div>
+                          {maintenance.actualCompletionDate && (
+                            <div>Actual: {formatDate(maintenance.actualCompletionDate)}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEdit(maintenance)}
+                            className="text-blue-400 hover:text-blue-300"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          {/* Remove the delete button */}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </>
       )}
 
-      {/* Statistics and Cost Analysis tabs remain the same */}
+      {/* Statistics and Cost Analysis tabs would go here */}
       {/* ... existing stats and cost analysis code ... */}
 
       {/* Add/Edit Maintenance Modal */}
@@ -516,7 +835,7 @@ const MaintenanceManagement = () => {
                       <option value="">Select Bus</option>
                       {activeBuses.map((bus) => (
                         <option key={bus._id} value={bus._id}>
-                          {bus.numberPlate} ({bus.busType} - {bus.capacity} seats)
+                          {bus.numberPlate} (ID: {bus._id.substring(0, 8)}...) - {bus.busType}
                         </option>
                       ))}
                     </select>
@@ -607,10 +926,10 @@ const MaintenanceManagement = () => {
                   </div>
                 </div>
 
-                {editingMaintenance && (
+                {formData.status === 'Completed' && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1">Actual Cost ($)</label>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">Actual Cost ($) *</label>
                       <input
                         type="text"
                         name="actualCost"
@@ -625,7 +944,7 @@ const MaintenanceManagement = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1">Actual Completion Date</label>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">Actual Completion Date *</label>
                       <input
                         type="date"
                         name="actualCompletionDate"
@@ -662,13 +981,13 @@ const MaintenanceManagement = () => {
                       });
                       setErrors({});
                     }}
-                    className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600"
+                    className="px-4 py-2 text-slate-300 hover:text-white border border-slate-600 rounded-lg hover:bg-slate-700"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
                   >
                     <Save className="w-4 h-4 mr-2" />
                     {editingMaintenance ? 'Update' : 'Create'} Request

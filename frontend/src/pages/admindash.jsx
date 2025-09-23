@@ -55,6 +55,7 @@ import {
 
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import MaintenanceManagement from './MaintenanceManagement';
 
 // Lost & Found Component with Report Generation
 const AdminLostFoundContent = () => {
@@ -2281,7 +2282,7 @@ const AdminDashboard = () => {
       case 'bookings':
         return <div className="text-white p-6">Bookings (placeholder)</div>;
       case 'maintenance':
-        return <MaintenanceContent />;
+        return <MaintenanceManagement />;
       case 'drivers':
         return <div className="text-white p-6">Driver Assign (placeholder)</div>;
       case 'attendance':
