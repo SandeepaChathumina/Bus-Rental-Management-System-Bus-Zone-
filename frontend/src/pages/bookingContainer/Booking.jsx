@@ -550,6 +550,10 @@ const BookingNavbar = () => {
     navigate('/feedback');
   };
 
+  const handleLostFoundClick = () => {
+    navigate('/lost-found');
+  };
+
   const toggleProfileDropdown = () => {
     setShowProfileDropdown(!showProfileDropdown);
   };
@@ -602,6 +606,14 @@ const BookingNavbar = () => {
           className="hidden md:flex items-center px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition-all duration-300"
         >
           <span className="text-sm font-medium">Feedback</span>
+        </button>
+
+        {/* Lost & Found Button */}
+        <button 
+          onClick={handleLostFoundClick}
+          className="hidden md:flex items-center px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition-all duration-300"
+        >
+          <span className="text-sm font-medium">Lost & Found</span>
         </button>
 
         {/* Notification Bell */}
@@ -749,10 +761,6 @@ const BookingHero = () => {
     </div>
   );
 };
-
-// Search Component
-// Remove the entire BookingSearch component from this file and use:
-<BookingSearch />
 
 // Main Booking Component
 const Booking = () => {
