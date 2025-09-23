@@ -30,6 +30,7 @@ import PassengerDetails from './components/PassengerDetails';
 import Checkout from './pages/checkout/Checkout';
 import BookingSuccess from './pages/booking-success/BookingSuccess';
 import GalleryPage from './pages/GalleryPage';
+import PaymentManagement from './pages/PaymentManagement';
 
 // ✅ Import ProtectedRoute
 import ProtectedRoute from './components/ProtectedRoute';
@@ -54,7 +55,7 @@ function App() {
               <Route path="/bus" element={<Bus />} />
               <Route path="/passenger-details" element={<PassengerDetails />} />
               <Route path="/gallery" element={<GalleryPage />} />
-
+              <Route path="/paymnets" element={<PaymentManagement />} />
               {/* Protected routes */}
               <Route
                 path="/checkout"
@@ -180,6 +181,12 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route path="/payments" element={
+  <ProtectedRoute requireAdmin>
+    <PaymentManagement />
+  </ProtectedRoute>
+} />
+              
             </Routes>
           </main>
           <Toaster position="top-right" />
