@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import {
   Users,
-  CheckCircle, // Make sure this is imported
+  CheckCircle,
   UserCheck,
   Settings,
   Search,
@@ -17,7 +17,10 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  FileText,
+  Calendar,
 } from "lucide-react";
+import { jsPDF } from "jspdf"; 
 
 // Validation utility functions
 const validationUtils = {
@@ -109,6 +112,20 @@ const validationUtils = {
     const licenseRegex = /^[A-Z][0-9]{7}$/;
     return licenseRegex.test(licenseNumber.toUpperCase());
   },
+
+  // --- Add to validationUtils ---
+checkLicenseNumber: async (licenseNumber, users) => {
+  try {
+    const exists = users.some(
+      (u) => u.driverProfile?.licenseNumber === licenseNumber
+    );
+    return !exists; // true if unique
+  } catch (err) {
+    console.error("License number check failed", err);
+    return false;
+  }
+},
+
 
   // Check if employee ID is unique (placeholder - implement backend endpoint)
   checkEmployeeId: async (employeeId, users) => {
@@ -507,6 +524,61 @@ const FormField = ({
   </div>
 );
 
+// ---------------------- Export Modal ----------------------
+const ExportModal = ({ show, onClose, format, setFormat, itemCount, onExport, loading }) => {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
+      <div className="relative bg-slate-800 border border-slate-600 rounded-xl p-6 z-60 w-full max-w-md shadow-xl">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-white">Export Report</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <button
+            onClick={() => setFormat("csv")}
+            className={`p-3 border-2 rounded-lg ${
+              format === "csv"
+                ? "border-green-500 bg-green-900/20 text-green-400"
+                : "border-slate-600 text-slate-400"
+            }`}
+          >
+            <FileText className="w-6 h-6 mx-auto mb-1" /> CSV
+          </button>
+          <button
+            onClick={() => setFormat("pdf")}
+            className={`p-3 border-2 rounded-lg ${
+              format === "pdf"
+                ? "border-red-500 bg-red-900/20 text-red-400"
+                : "border-slate-600 text-slate-400"
+            }`}
+          >
+            <FileText className="w-6 h-6 mx-auto mb-1" /> PDF
+          </button>
+        </div>
+        <div className="bg-slate-700/50 rounded p-2 text-sm text-slate-300 mb-4">
+          <Calendar className="inline w-4 h-4 mr-1" /> Report will include {itemCount} users
+        </div>
+        <div className="flex justify-end space-x-2">
+          <button onClick={onClose} className="px-3 py-1 text-slate-300 hover:text-white">
+            Cancel
+          </button>
+          <button
+            onClick={onExport}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            {loading ? "Generating..." : "Export Now"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main Component
 const UserManagement = () => {
   const { user: authUser } = useAuth();
@@ -515,6 +587,10 @@ const UserManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFormat, setExportFormat] = useState("csv");
+  const [exportLoading, setExportLoading] = useState(false);
+ 
   // Modals & form state
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
@@ -571,6 +647,30 @@ const UserManagement = () => {
     const timeoutId = setTimeout(validateUsername, 500);
     return () => clearTimeout(timeoutId);
   }, [form.username]);
+
+  useEffect(() => {
+  const validateLicense = async () => {
+    if (form.licenseNumber.length >= 3) {
+      const isAvailable = await validationUtils.checkLicenseNumber(
+        form.licenseNumber,
+        users
+      );
+      setValidation((prev) => ({
+        ...prev,
+        licenseNumber: { isValid: isAvailable, checked: true },
+      }));
+    } else {
+      setValidation((prev) => ({
+        ...prev,
+        licenseNumber: { isValid: false, checked: false },
+      }));
+    }
+  };
+
+  const timeoutId = setTimeout(validateLicense, 500);
+  return () => clearTimeout(timeoutId);
+}, [form.licenseNumber, users]);
+
 
   useEffect(() => {
     const validateEmail = async () => {
@@ -672,25 +772,33 @@ const UserManagement = () => {
   };
 
   const isFormValid = (role) => {
-    const baseValid =
-      validation.username.available &&
-      validation.email.available &&
-      validation.email.valid &&
-      validation.password.isValid &&
-      validation.nic.isValid &&
-      validation.phone.isValid;
+  const baseValid =
+    validation.username.available &&
+    validation.email.available &&
+    validation.email.valid &&
+    validation.password.isValid &&
+    validation.nic.isValid &&
+    validation.phone.isValid;
 
-    if (role === "driver") {
-      const licenseExpiryValid =
-        form.licenseExpiry && new Date(form.licenseExpiry) >= new Date();
-      return (
-        baseValid && validation.licenseNumber.isValid && licenseExpiryValid
-      );
-    } else if (role === "staff") {
-      return baseValid && validation.employeeId.isValid && form.staffRole;
-    }
-    return baseValid;
-  };
+  if (role === "driver") {
+    const licenseExpiryValid =
+      form.licenseExpiry && new Date(form.licenseExpiry) >= new Date();
+    return (
+      baseValid &&
+      validation.licenseNumber.isValid &&
+      form.licenseNumber &&
+      licenseExpiryValid
+    );
+  } else if (role === "staff") {
+    return (
+      baseValid &&
+      validation.employeeId.isValid &&
+      form.staffRole?.trim().length > 0
+    );
+  }
+  return baseValid;
+};
+
 
   useEffect(() => {
     fetchUsers();
@@ -874,7 +982,7 @@ const UserManagement = () => {
 
   const exportCSV = (list) => {
     if (!list || list.length === 0) {
-      alert("No data to export");
+      toast.error("No data to export");
       return;
     }
     const rows = list.map((u) => ({
@@ -884,7 +992,7 @@ const UserManagement = () => {
       lastName: u.lastName,
       email: u.email,
       role: u.role,
-      isActive: u.isActive,
+      status: u.isActive ? "Active" : "Inactive",
     }));
     const csv = [
       Object.keys(rows[0]).join(","),
@@ -901,6 +1009,51 @@ const UserManagement = () => {
     a.download = `users_export_${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    toast.success("CSV report generated!");
+  };
+
+  const exportPDF = (list) => {
+    if (!list || list.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("User Management Report", 105, 15, { align: "center" });
+    const headers = ["ID", "Username", "Name", "Email", "Role", "Status"];
+    const rows = list.map((u) => [
+      u._id || u.id,
+      u.username,
+      `${u.firstName || ""} ${u.lastName || ""}`,
+      u.email,
+      u.role,
+      u.isActive ? "Active" : "Inactive",
+    ]);
+    let y = 30;
+    doc.setFontSize(10);
+    headers.forEach((h, i) => doc.text(h, 10 + i * 30, y));
+    y += 8;
+    rows.forEach((r) => {
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      r.forEach((c, i) => doc.text(String(c), 10 + i * 30, y));
+      y += 7;
+    });
+    doc.save(`users_report_${Date.now()}.pdf`);
+    toast.success("PDF report generated!");
+  };
+
+  const handleExport = () => {
+    setExportLoading(true);
+    try {
+      if (exportFormat === "csv") exportCSV(filteredUsers);
+      else exportPDF(filteredUsers);
+    } finally {
+      setExportLoading(false);
+      setShowExportModal(false);
+    }
   };
 
   return (
@@ -981,7 +1134,7 @@ const UserManagement = () => {
             </select>
 
             <button
-              onClick={() => exportCSV(filteredUsers)}
+              onClick={() => setShowExportModal(true)}
               className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <Download className="w-4 h-4" />
@@ -998,6 +1151,16 @@ const UserManagement = () => {
             expandable={true}
           />
         </div>
+
+         <ExportModal
+        show={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        format={exportFormat}
+        setFormat={setExportFormat}
+        itemCount={filteredUsers.length}
+        onExport={handleExport}
+        loading={exportLoading}
+      />
 
         <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
           <h3 className="text-lg text-white mb-3">Quick Actions</h3>
