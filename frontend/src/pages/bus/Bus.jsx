@@ -12,7 +12,8 @@ import {
   Check,
   Calendar,
   Clock,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ArrowLeft // Added back button icon
 } from 'lucide-react';
 import Bus1 from "../../../src/assets/bus1.png";
 
@@ -158,6 +159,11 @@ const Bus = () => {
     });
   };
 
+  // Handle back navigation
+  const handleGoBack = () => {
+    navigate(-1); // Go back to previous page
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 pt-32 pb-16 px-6">
@@ -178,8 +184,17 @@ const Bus = () => {
   return (
     <div className="min-h-screen bg-slate-950 pt-32 pb-16 px-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header with Back Button */}
         <div className="mb-8">
+          {/* Back Button */}
+          <button
+            onClick={handleGoBack}
+            className="flex items-center text-slate-400 hover:text-white mb-4 transition-colors duration-200"
+          >
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            <span>Back to Search</span>
+          </button>
+
           <h1 className="text-4xl font-bold text-white mb-2">
             {searchParams.from && searchParams.to ? `Buses from ${searchParams.from} to ${searchParams.to}` : 'Available Buses'}
           </h1>
@@ -385,16 +400,25 @@ const Bus = () => {
         {filteredBuses.length === 0 && (
           <div className="text-center py-12">
             <div className="text-slate-400 text-lg mb-4">No buses found matching your criteria</div>
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setBusTypeFilter('');
-                setSortBy('price');
-              }}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors"
-            >
-              Clear Filters
-            </button>
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setBusTypeFilter('');
+                  setSortBy('price');
+                }}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors"
+              >
+                Clear Filters
+              </button>
+              <button
+                onClick={handleGoBack}
+                className="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2 rounded-xl font-semibold transition-colors flex items-center"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Search
+              </button>
+            </div>
           </div>
         )}
       </div>

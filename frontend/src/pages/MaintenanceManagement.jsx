@@ -22,7 +22,6 @@ import {
   ChevronDown,
   MoreVertical
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
@@ -87,6 +86,21 @@ const MaintenanceManagement = () => {
     return tomorrow.toISOString().split('T')[0];
   };
 
+  // Get minimum date for estimated completion (tomorrow for new requests, today for editing)
+  const getMinEstimatedDate = () => {
+    if (editingMaintenance) {
+      // For editing, allow today's date but not past dates
+      return getTodayDate();
+    }
+    // For new requests, require tomorrow or later
+    return getTomorrowDate();
+  };
+
+  // Get maximum date for actual completion (today)
+  const getMaxActualDate = () => {
+    return getTodayDate();
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -142,7 +156,6 @@ const MaintenanceManagement = () => {
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch maintenance requests', error);
-      toast.error('Failed to fetch maintenance requests');
       setLoading(false);
     }
   };
@@ -156,7 +169,6 @@ const MaintenanceManagement = () => {
       setStaffUsers(response.data || []);
     } catch (error) {
       console.error('Failed to fetch staff users', error);
-      toast.error('Failed to fetch staff users');
     }
   };
 
@@ -169,7 +181,6 @@ const MaintenanceManagement = () => {
       setActiveBuses(response.data || []);
     } catch (error) {
       console.error('Failed to fetch active buses', error);
-      toast.error('Failed to fetch active buses');
     }
   };
 
@@ -230,7 +241,6 @@ const MaintenanceManagement = () => {
     e.preventDefault();
     
     if (!validateForm()) {
-      toast.error('Please fix the validation errors');
       return;
     }
 
@@ -248,12 +258,10 @@ const MaintenanceManagement = () => {
         await axios.put(`${BACKEND_URL}/api/maintenance/${editingMaintenance._id}`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        toast.success('Maintenance request updated successfully');
       } else {
         await axios.post(`${BACKEND_URL}/api/maintenance`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        toast.success('Maintenance request created successfully');
       }
 
       setShowModal(false);
@@ -275,7 +283,6 @@ const MaintenanceManagement = () => {
       fetchCostStats();
     } catch (error) {
       console.error('Failed to save maintenance request', error);
-      toast.error(error.response?.data?.message || 'Failed to save maintenance request');
     }
   };
 
@@ -304,13 +311,11 @@ const MaintenanceManagement = () => {
       await axios.delete(`${BACKEND_URL}/api/maintenance/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Maintenance request deleted successfully');
       fetchMaintenances();
       fetchStats();
       fetchCostStats();
     } catch (error) {
       console.error('Failed to delete maintenance request', error);
-      toast.error('Failed to delete maintenance request');
     }
   };
 
@@ -334,6 +339,42 @@ const MaintenanceManagement = () => {
         actualCost: '',
         actualCompletionDate: ''
       }));
+    }
+
+    // Additional validation for date changes
+    if (name === 'estimatedCompletionDate' || name === 'actualCompletionDate') {
+      validateDateField(name, value);
+    }
+  };
+
+  // Validate individual date fields
+  const validateDateField = (fieldName, value) => {
+    if (!value) return;
+
+    const date = new Date(value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (fieldName === 'estimatedCompletionDate') {
+      if (date < today) {
+        setErrors(prev => ({
+          ...prev,
+          [fieldName]: 'Estimated completion date cannot be in the past'
+        }));
+      } else {
+        setErrors(prev => ({ ...prev, [fieldName]: '' }));
+      }
+    }
+
+    if (fieldName === 'actualCompletionDate') {
+      if (date > today) {
+        setErrors(prev => ({
+          ...prev,
+          [fieldName]: 'Actual completion date cannot be in the future'
+        }));
+      } else {
+        setErrors(prev => ({ ...prev, [fieldName]: '' }));
+      }
     }
   };
 
@@ -447,10 +488,8 @@ const MaintenanceManagement = () => {
       
       printWindow.document.close();
       printWindow.print();
-      toast.success('PDF generated successfully');
     } catch (error) {
       console.error('PDF export failed:', error);
-      toast.error('PDF export failed');
     }
   };
 
@@ -487,11 +526,8 @@ const MaintenanceManagement = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      toast.success('Excel/CSV file downloaded successfully');
     } catch (error) {
       console.error('Excel export failed:', error);
-      toast.error('Excel export failed');
     }
   };
 
@@ -900,7 +936,7 @@ const MaintenanceManagement = () => {
                       name="estimatedCompletionDate"
                       value={formData.estimatedCompletionDate}
                       onChange={handleInputChange}
-                      min={getTomorrowDate()}
+                      min={getMinEstimatedDate()}
                       className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         errors.estimatedCompletionDate ? 'border-red-500' : 'border-slate-600'
                       }`}
@@ -950,7 +986,7 @@ const MaintenanceManagement = () => {
                         name="actualCompletionDate"
                         value={formData.actualCompletionDate}
                         onChange={handleInputChange}
-                        max={getTodayDate()}
+                        max={getMaxActualDate()}
                         className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.actualCompletionDate ? 'border-red-500' : 'border-slate-600'
                         }`}
