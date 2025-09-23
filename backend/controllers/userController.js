@@ -371,6 +371,28 @@ const checkNICAvailability = async (req, res) => {
   }
 };
 
+// ==================== ACTIVATE USER ====================
+const activateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Only admin can activate
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to activate users' });
+    }
+
+    user.isActive = true;
+    await user.save();
+
+    res.json({ message: 'User activated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export {
   registerUser,
   loginUser,
@@ -378,6 +400,7 @@ export {
   getUserById,
   updateUser,
   deleteUser,
+  activateUser, // Add this line
   getUserReport,
   checkUsernameAvailability,
   checkEmailAvailability,

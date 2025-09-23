@@ -6,11 +6,13 @@ import {
   getUserById,
   updateUser,
   deleteUser,
+  activateUser,
   getUserReport,
   checkUsernameAvailability,
   checkEmailAvailability,
   checkPhoneAvailability,
   checkNICAvailability
+  
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 import User from '../models/user.js';
@@ -103,5 +105,6 @@ router
   .get(protect, getUserById)
   .put(protect, updateUser)
   .delete(protect, admin, deleteUser);
+router.patch('/:id/activate', protect, admin, activateUser);  
 
 export default router;

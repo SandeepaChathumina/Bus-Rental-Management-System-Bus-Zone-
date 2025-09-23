@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import {
   Users,
-  CheckCircle,
+  CheckCircle, // Make sure this is imported
   UserCheck,
   Settings,
   Search,
@@ -25,11 +25,13 @@ const validationUtils = {
   checkUsername: async (username) => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/users/check-username?username=${username}`
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/users/check-username?username=${username}`
       );
       return response.data.available;
     } catch (error) {
-      console.error('Username check failed:', error);
+      console.error("Username check failed:", error);
       return false;
     }
   },
@@ -39,21 +41,29 @@ const validationUtils = {
     // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return { available: false, valid: false, message: 'Invalid email format' };
+      return {
+        available: false,
+        valid: false,
+        message: "Invalid email format",
+      };
     }
 
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/users/check-email?email=${email}`
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/users/check-email?email=${email}`
       );
-      return { 
-        available: response.data.available, 
-        valid: true, 
-        message: response.data.available ? 'Email is available' : 'Email already exists'
+      return {
+        available: response.data.available,
+        valid: true,
+        message: response.data.available
+          ? "Email is available"
+          : "Email already exists",
       };
     } catch (error) {
-      console.error('Email check failed:', error);
-      return { available: false, valid: false, message: 'Email check failed' };
+      console.error("Email check failed:", error);
+      return { available: false, valid: false, message: "Email check failed" };
     }
   },
 
@@ -66,7 +76,7 @@ const validationUtils = {
   // Check if phone number is valid (Sri Lankan format)
   validatePhone: (phone) => {
     const phoneRegex = /^(?:\+94|0)?7[0-9]{8}$/;
-    return phoneRegex.test(phone.replace(/\s+/g, ''));
+    return phoneRegex.test(phone.replace(/\s+/g, ""));
   },
 
   // Check password strength
@@ -78,14 +88,19 @@ const validationUtils = {
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
     return {
-      isValid: password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar,
+      isValid:
+        password.length >= minLength &&
+        hasUpperCase &&
+        hasLowerCase &&
+        hasNumbers &&
+        hasSpecialChar,
       requirements: {
         minLength: password.length >= minLength,
         hasUpperCase,
         hasLowerCase,
         hasNumbers,
-        hasSpecialChar
-      }
+        hasSpecialChar,
+      },
     };
   },
 
@@ -102,15 +117,16 @@ const validationUtils = {
       // For now, we'll check locally against existing staff profiles
       return true;
     } catch (error) {
-      console.error('Employee ID check failed:', error);
+      console.error("Employee ID check failed:", error);
       return false;
     }
-  }
+  },
 };
 
 // StatusBadge Component
 const StatusBadge = ({ status }) => {
-  const s = typeof status === "boolean" ? (status ? "Active" : "Inactive") : status;
+  const s =
+    typeof status === "boolean" ? (status ? "Active" : "Inactive") : status;
   const colors = {
     active: "bg-green-900/30 text-green-400",
     inactive: "bg-red-900/30 text-red-400",
@@ -168,6 +184,7 @@ const DataTable = ({
   columns = [],
   onEdit,
   onDelete,
+  onActivate, // Add this prop
   onView,
   loading = false,
   expandable = true,
@@ -249,6 +266,7 @@ const DataTable = ({
                           <button
                             onClick={() => onView(row)}
                             className="text-blue-400 hover:text-blue-300"
+                            title="View Details"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
@@ -257,16 +275,27 @@ const DataTable = ({
                           <button
                             onClick={() => onEdit(row)}
                             className="text-indigo-400 hover:text-indigo-300"
+                            title="Edit User"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                         )}
-                        {onDelete && (
+                        {onDelete && row.isActive !== false && (
                           <button
                             onClick={() => onDelete(row)}
                             className="text-red-400 hover:text-red-300"
+                            title="Deactivate User"
                           >
                             <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        {onActivate && row.isActive === false && (
+                          <button
+                            onClick={() => onActivate(row)}
+                            className="text-green-400 hover:text-green-300"
+                            title="Activate User"
+                          >
+                            <CheckCircle className="w-4 h-4" />
                           </button>
                         )}
                       </div>
@@ -329,67 +358,117 @@ const ValidationMessages = ({ validation, field }) => {
 
   const getMessage = () => {
     switch (field) {
-      case 'username':
-        return validation.username.available ? 
-          <p className="text-green-400">✓ Username available</p> : 
-          <p className="text-red-400">✗ Username already taken</p>;
-      
-      case 'email':
+      case "username":
+        return validation.username.available ? (
+          <p className="text-green-400">✓ Username available</p>
+        ) : (
+          <p className="text-red-400">✗ Username already taken</p>
+        );
+
+      case "email":
         if (!validation.email.valid) {
           return <p className="text-red-400">✗ {validation.email.message}</p>;
         }
-        return validation.email.available ? 
-          <p className="text-green-400">✓ Email available</p> : 
-          <p className="text-red-400">✗ Email already registered</p>;
-      
-      case 'password':
+        return validation.email.available ? (
+          <p className="text-green-400">✓ Email available</p>
+        ) : (
+          <p className="text-red-400">✗ Email already registered</p>
+        );
+
+      case "password":
         return (
           <div className="text-xs">
-            <p className={validation.password.isValid ? "text-green-400" : "text-red-400"}>
-              {validation.password.isValid ? "✓ Strong password" : "✗ Weak password"}
+            <p
+              className={
+                validation.password.isValid ? "text-green-400" : "text-red-400"
+              }
+            >
+              {validation.password.isValid
+                ? "✓ Strong password"
+                : "✗ Weak password"}
             </p>
             {!validation.password.isValid && (
               <div className="grid grid-cols-2 gap-1 mt-1">
-                <span className={validation.password.requirements.minLength ? "text-green-400" : "text-red-400"}>
+                <span
+                  className={
+                    validation.password.requirements.minLength
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }
+                >
                   • 8+ chars
                 </span>
-                <span className={validation.password.requirements.hasUpperCase ? "text-green-400" : "text-red-400"}>
+                <span
+                  className={
+                    validation.password.requirements.hasUpperCase
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }
+                >
                   • A-Z
                 </span>
-                <span className={validation.password.requirements.hasLowerCase ? "text-green-400" : "text-red-400"}>
+                <span
+                  className={
+                    validation.password.requirements.hasLowerCase
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }
+                >
                   • a-z
                 </span>
-                <span className={validation.password.requirements.hasNumbers ? "text-green-400" : "text-red-400"}>
+                <span
+                  className={
+                    validation.password.requirements.hasNumbers
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }
+                >
                   • 0-9
                 </span>
-                <span className={validation.password.requirements.hasSpecialChar ? "text-green-400" : "text-red-400"}>
+                <span
+                  className={
+                    validation.password.requirements.hasSpecialChar
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }
+                >
                   • !@#$
                 </span>
               </div>
             )}
           </div>
         );
-      
-      case 'nic':
-        return validation.nic.isValid ? 
-          <p className="text-green-400">✓ Valid NIC</p> : 
-          <p className="text-red-400">✗ NIC must be 12 digits</p>;
-      
-      case 'phone':
-        return validation.phone.isValid ? 
-          <p className="text-green-400">✓ Valid phone number</p> : 
-          <p className="text-red-400">✗ Invalid Sri Lankan number</p>;
-      
-      case 'licenseNumber':
-        return validation.licenseNumber.isValid ? 
-          <p className="text-green-400">✓ Valid license number</p> : 
-          <p className="text-red-400">✗ 6-15 alphanumeric characters required</p>;
-      
-      case 'employeeId':
-        return validation.employeeId.isValid ? 
-          <p className="text-green-400">✓ Employee ID available</p> : 
-          <p className="text-red-400">✗ Employee ID already taken</p>;
-      
+
+      case "nic":
+        return validation.nic.isValid ? (
+          <p className="text-green-400">✓ Valid NIC</p>
+        ) : (
+          <p className="text-red-400">✗ NIC must be 12 digits</p>
+        );
+
+      case "phone":
+        return validation.phone.isValid ? (
+          <p className="text-green-400">✓ Valid phone number</p>
+        ) : (
+          <p className="text-red-400">✗ Invalid Sri Lankan number</p>
+        );
+
+      case "licenseNumber":
+        return validation.licenseNumber.isValid ? (
+          <p className="text-green-400">✓ Valid license number</p>
+        ) : (
+          <p className="text-red-400">
+            ✗ 6-15 alphanumeric characters required
+          </p>
+        );
+
+      case "employeeId":
+        return validation.employeeId.isValid ? (
+          <p className="text-green-400">✓ Employee ID available</p>
+        ) : (
+          <p className="text-red-400">✗ Employee ID already taken</p>
+        );
+
       default:
         return null;
     }
@@ -399,7 +478,15 @@ const ValidationMessages = ({ validation, field }) => {
 };
 
 // FormField Component
-const FormField = ({ field, placeholder, type = "text", value, onChange, validation, ...props }) => (
+const FormField = ({
+  field,
+  placeholder,
+  type = "text",
+  value,
+  onChange,
+  validation,
+  ...props
+}) => (
   <div>
     <input
       type={type}
@@ -407,9 +494,11 @@ const FormField = ({ field, placeholder, type = "text", value, onChange, validat
       value={value}
       onChange={onChange}
       className={`p-3 bg-slate-700 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-colors w-full ${
-        validation[field]?.checked 
-          ? (validation[field]?.isValid ? 'border-green-500 focus:ring-green-500' : 'border-red-500 focus:ring-red-500')
-          : 'border-slate-600 focus:ring-blue-500'
+        validation[field]?.checked
+          ? validation[field]?.isValid
+            ? "border-green-500 focus:ring-green-500"
+            : "border-red-500 focus:ring-red-500"
+          : "border-slate-600 focus:ring-blue-500"
       }`}
       {...props}
     />
@@ -450,7 +539,7 @@ const UserManagement = () => {
 
   const initialValidation = {
     username: { available: false, checked: false },
-    email: { available: false, valid: false, checked: false, message: '' },
+    email: { available: false, valid: false, checked: false, message: "" },
     password: { isValid: false, checked: false, requirements: {} },
     nic: { isValid: false, checked: false },
     phone: { isValid: false, checked: false },
@@ -466,14 +555,14 @@ const UserManagement = () => {
     const validateUsername = async () => {
       if (form.username.length >= 3) {
         const isAvailable = await validationUtils.checkUsername(form.username);
-        setValidation(prev => ({
+        setValidation((prev) => ({
           ...prev,
-          username: { available: isAvailable, checked: true }
+          username: { available: isAvailable, checked: true },
         }));
       } else {
-        setValidation(prev => ({
+        setValidation((prev) => ({
           ...prev,
-          username: { available: false, checked: false }
+          username: { available: false, checked: false },
         }));
       }
     };
@@ -486,14 +575,19 @@ const UserManagement = () => {
     const validateEmail = async () => {
       if (form.email.length >= 5) {
         const result = await validationUtils.checkEmail(form.email);
-        setValidation(prev => ({
+        setValidation((prev) => ({
           ...prev,
-          email: { ...result, checked: true }
+          email: { ...result, checked: true },
         }));
       } else {
-        setValidation(prev => ({
+        setValidation((prev) => ({
           ...prev,
-          email: { available: false, valid: false, checked: false, message: '' }
+          email: {
+            available: false,
+            valid: false,
+            checked: false,
+            message: "",
+          },
         }));
       }
     };
@@ -504,61 +598,65 @@ const UserManagement = () => {
 
   useEffect(() => {
     if (form.password) {
-      const passwordValidation = validationUtils.validatePassword(form.password);
-      setValidation(prev => ({
+      const passwordValidation = validationUtils.validatePassword(
+        form.password
+      );
+      setValidation((prev) => ({
         ...prev,
-        password: { ...passwordValidation, checked: true }
+        password: { ...passwordValidation, checked: true },
       }));
     } else {
-      setValidation(prev => ({
+      setValidation((prev) => ({
         ...prev,
-        password: { isValid: false, checked: false, requirements: {} }
+        password: { isValid: false, checked: false, requirements: {} },
       }));
     }
   }, [form.password]);
 
   useEffect(() => {
-    setValidation(prev => ({
+    setValidation((prev) => ({
       ...prev,
-      nic: { 
-        isValid: validationUtils.validateNIC(form.nic), 
-        checked: form.nic.length > 0 
-      }
+      nic: {
+        isValid: validationUtils.validateNIC(form.nic),
+        checked: form.nic.length > 0,
+      },
     }));
   }, [form.nic]);
 
   useEffect(() => {
-    setValidation(prev => ({
+    setValidation((prev) => ({
       ...prev,
-      phone: { 
-        isValid: validationUtils.validatePhone(form.phone), 
-        checked: form.phone.length > 0 
-      }
+      phone: {
+        isValid: validationUtils.validatePhone(form.phone),
+        checked: form.phone.length > 0,
+      },
     }));
   }, [form.phone]);
 
   useEffect(() => {
-    setValidation(prev => ({
+    setValidation((prev) => ({
       ...prev,
-      licenseNumber: { 
-        isValid: validationUtils.validateLicenseNumber(form.licenseNumber), 
-        checked: form.licenseNumber.length > 0 
-      }
+      licenseNumber: {
+        isValid: validationUtils.validateLicenseNumber(form.licenseNumber),
+        checked: form.licenseNumber.length > 0,
+      },
     }));
   }, [form.licenseNumber]);
 
   useEffect(() => {
     const validateEmployeeId = async () => {
       if (form.employeeId.length >= 2) {
-        const isAvailable = await validationUtils.checkEmployeeId(form.employeeId);
-        setValidation(prev => ({
+        const isAvailable = await validationUtils.checkEmployeeId(
+          form.employeeId
+        );
+        setValidation((prev) => ({
           ...prev,
-          employeeId: { isValid: isAvailable, checked: true }
+          employeeId: { isValid: isAvailable, checked: true },
         }));
       } else {
-        setValidation(prev => ({
+        setValidation((prev) => ({
           ...prev,
-          employeeId: { isValid: false, checked: false }
+          employeeId: { isValid: false, checked: false },
         }));
       }
     };
@@ -572,7 +670,7 @@ const UserManagement = () => {
   };
 
   const isFormValid = (role) => {
-    const baseValid = 
+    const baseValid =
       validation.username.available &&
       validation.email.available &&
       validation.email.valid &&
@@ -580,9 +678,11 @@ const UserManagement = () => {
       validation.nic.isValid &&
       validation.phone.isValid;
 
-    if (role === 'driver') {
-      return baseValid && validation.licenseNumber.isValid && form.licenseExpiry;
-    } else if (role === 'staff') {
+    if (role === "driver") {
+      return (
+        baseValid && validation.licenseNumber.isValid && form.licenseExpiry
+      );
+    } else if (role === "staff") {
       return baseValid && validation.employeeId.isValid && form.staffRole;
     }
     return baseValid;
@@ -637,9 +737,35 @@ const UserManagement = () => {
     }
   };
 
+  const [activatingId, setActivatingId] = useState(null);
+  const [deactivatingId, setDeactivatingId] = useState(null);
+
+  const activateUser = async (u) => {
+    if (!window.confirm(`Activate ${u.firstName || u.username}?`)) return;
+    setActivatingId(u._id);
+    try {
+      await axios.patch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/users/${
+          u._id || u.id
+        }/activate`
+      );
+      setUsers((prev) =>
+        prev.map((p) =>
+          p._id === (u._id || u.id) ? { ...p, isActive: true } : p
+        )
+      );
+      toast.success("User activated successfully");
+    } catch (err) {
+      console.error("activate error", err);
+      toast.error(err.response?.data?.message || "Failed to activate user");
+    } finally {
+      setActivatingId(null);
+    }
+  };
+
   const createUser = async (role) => {
     setCreateError(null);
-    
+
     if (!isFormValid(role)) {
       setCreateError("Please fix all validation errors before submitting.");
       return;
@@ -863,6 +989,7 @@ const UserManagement = () => {
             data={filteredUsers}
             columns={userColumns}
             onDelete={deactivateUser}
+            onActivate={activateUser}
             loading={loadingUsers}
             expandable={true}
           />
@@ -916,9 +1043,11 @@ const UserManagement = () => {
           }}
         >
           {createError && (
-            <div className="text-red-400 mb-4 p-3 bg-red-900/20 rounded-lg">{createError}</div>
+            <div className="text-red-400 mb-4 p-3 bg-red-900/20 rounded-lg">
+              {createError}
+            </div>
           )}
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <FormField
               field="username"
@@ -927,7 +1056,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, username: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="email"
               placeholder="Email *"
@@ -936,7 +1065,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="password"
               placeholder="Password *"
@@ -945,7 +1074,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="firstName"
               placeholder="First Name *"
@@ -953,7 +1082,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, firstName: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="lastName"
               placeholder="Last Name *"
@@ -961,7 +1090,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, lastName: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="nic"
               placeholder="NIC * (12 digits)"
@@ -969,7 +1098,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, nic: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="phone"
               placeholder="Phone * (07XXXXXXXX)"
@@ -977,7 +1106,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="address"
               placeholder="Address"
@@ -985,37 +1114,45 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="licenseNumber"
               placeholder="License Number *"
               value={form.licenseNumber}
-              onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, licenseNumber: e.target.value })
+              }
               validation={validation}
             />
-            
+
             <div>
               <input
                 type="date"
                 placeholder="License Expiry *"
                 value={form.licenseExpiry}
-                onChange={(e) => setForm({ ...form, licenseExpiry: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, licenseExpiry: e.target.value })
+                }
                 className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors w-full"
               />
               {!form.licenseExpiry && (
-                <p className="text-red-400 text-xs mt-1">✗ License expiry is required</p>
+                <p className="text-red-400 text-xs mt-1">
+                  ✗ License expiry is required
+                </p>
               )}
             </div>
-            
+
             <FormField
               field="emergencyContact"
               placeholder="Emergency Contact"
               value={form.emergencyContact}
-              onChange={(e) => setForm({ ...form, emergencyContact: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, emergencyContact: e.target.value })
+              }
               validation={validation}
             />
           </div>
-          
+
           <div className="flex justify-end space-x-2">
             <button
               onClick={() => {
@@ -1062,9 +1199,11 @@ const UserManagement = () => {
           }}
         >
           {createError && (
-            <div className="text-red-400 mb-4 p-3 bg-red-900/20 rounded-lg">{createError}</div>
+            <div className="text-red-400 mb-4 p-3 bg-red-900/20 rounded-lg">
+              {createError}
+            </div>
           )}
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <FormField
               field="username"
@@ -1073,7 +1212,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, username: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="email"
               placeholder="Email *"
@@ -1082,7 +1221,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="password"
               placeholder="Password *"
@@ -1091,7 +1230,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="firstName"
               placeholder="First Name *"
@@ -1099,7 +1238,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, firstName: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="lastName"
               placeholder="Last Name *"
@@ -1107,7 +1246,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, lastName: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="nic"
               placeholder="NIC * (12 digits)"
@@ -1115,7 +1254,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, nic: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="phone"
               placeholder="Phone * (07XXXXXXXX)"
@@ -1123,7 +1262,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="address"
               placeholder="Address"
@@ -1131,19 +1270,23 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               validation={validation}
             />
-            
+
             <div>
               <input
                 placeholder="Staff Role *"
                 value={form.staffRole}
-                onChange={(e) => setForm({ ...form, staffRole: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, staffRole: e.target.value })
+                }
                 className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors w-full"
               />
               {!form.staffRole && (
-                <p className="text-red-400 text-xs mt-1">✗ Staff role is required</p>
+                <p className="text-red-400 text-xs mt-1">
+                  ✗ Staff role is required
+                </p>
               )}
             </div>
-            
+
             <FormField
               field="employeeId"
               placeholder="Employee ID *"
@@ -1152,7 +1295,7 @@ const UserManagement = () => {
               validation={validation}
             />
           </div>
-          
+
           <div className="flex justify-end space-x-2">
             <button
               onClick={() => {
