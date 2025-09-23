@@ -39,9 +39,9 @@ const router = express.Router();
 router.post('/webhook/stripe', express.raw({type: 'application/json'}), handleStripeWebhook);
 
 // Stripe payment routes
-router.post('/stripe/create-intent', protect, createStripePaymentIntent);
-router.post('/stripe/confirm', protect, confirmStripePayment);
-router.post('/stripe/direct-payment', protect, processDirectCardPayment);
+router.post('/stripe/create-intent',  createStripePaymentIntent);
+router.post('/stripe/confirm',  confirmStripePayment);
+router.post('/stripe/direct-payment',  processDirectCardPayment);
 
 // PAYMENT STATUS & MANAGEMENT
 router.get('/status/:paymentId', protect, getPaymentStatus);
