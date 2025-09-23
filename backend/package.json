@@ -29,6 +29,7 @@
     "qrcode": "^1.5.4",
     "react-qr-scanner": "^1.0.0-alpha.11",
     "stripe": "^18.5.0",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "xlsx": "^0.18.5"
   }
 }
