@@ -87,13 +87,6 @@ const MaintenanceManagement = () => {
     return tomorrow.toISOString().split('T')[0];
   };
 
-  // Get date one year from now for maximum date validation
-  const getOneYearFromNow = () => {
-    const oneYearFromNow = new Date();
-    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-    return oneYearFromNow.toISOString().split('T')[0];
-  };
-
   const validateForm = () => {
     const newErrors = {};
 
@@ -101,41 +94,19 @@ const MaintenanceManagement = () => {
     if (!formData.user) newErrors.user = 'Staff member is required';
     if (!formData.bus) newErrors.bus = 'Bus selection is required';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
-    
-    // Estimated cost validation
-    if (!formData.estimatedCost || formData.estimatedCost.trim() === '') {
-      newErrors.estimatedCost = 'Estimated cost is required';
-    } else {
-      const estimatedCostValue = parseFloat(formData.estimatedCost);
-      if (isNaN(estimatedCostValue) || estimatedCostValue <= 0) {
-        newErrors.estimatedCost = 'Valid estimated cost is required (greater than 0)';
-      } else if (estimatedCostValue > 1000000) {
-        newErrors.estimatedCost = 'Estimated cost cannot exceed $1,000,000';
-      }
+    if (!formData.estimatedCost || parseFloat(formData.estimatedCost) <= 0) {
+      newErrors.estimatedCost = 'Valid estimated cost is required';
     }
 
     // Date validation
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     if (formData.estimatedCompletionDate) {
       const estDate = new Date(formData.estimatedCompletionDate);
-      estDate.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       
       if (estDate < today) {
         newErrors.estimatedCompletionDate = 'Estimated completion date cannot be in the past';
       }
-      
-      // Validate that estimated date is not more than 1 year in the future
-      const oneYearFromNow = new Date();
-      oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-      oneYearFromNow.setHours(0, 0, 0, 0);
-      
-      if (estDate > oneYearFromNow) {
-        newErrors.estimatedCompletionDate = 'Estimated completion date cannot be more than 1 year in the future';
-      }
-    } else {
-      newErrors.estimatedCompletionDate = 'Estimated completion date is required';
     }
 
     // Actual completion date validation (only for completed status)
@@ -144,41 +115,17 @@ const MaintenanceManagement = () => {
         newErrors.actualCompletionDate = 'Actual completion date is required for completed requests';
       } else {
         const actualDate = new Date(formData.actualCompletionDate);
-        actualDate.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         
         if (actualDate > today) {
           newErrors.actualCompletionDate = 'Actual completion date cannot be in the future';
         }
-        
-        // Validate that actual date is not before the request creation date (if editing)
-        if (editingMaintenance && editingMaintenance.createdAt) {
-          const createdDate = new Date(editingMaintenance.createdAt);
-          createdDate.setHours(0, 0, 0, 0);
-          
-          if (actualDate < createdDate) {
-            newErrors.actualCompletionDate = 'Actual completion date cannot be before the request creation date';
-          }
-        }
       }
 
-      // Actual cost validation for completed requests
-      if (!formData.actualCost || formData.actualCost.trim() === '') {
-        newErrors.actualCost = 'Actual cost is required for completed requests';
-      } else {
-        const actualCostValue = parseFloat(formData.actualCost);
-        if (isNaN(actualCostValue) || actualCostValue <= 0) {
-          newErrors.actualCost = 'Valid actual cost is required (greater than 0)';
-        } else if (actualCostValue > 1000000) {
-          newErrors.actualCost = 'Actual cost cannot exceed $1,000,000';
-        }
+      if (!formData.actualCost || parseFloat(formData.actualCost) <= 0) {
+        newErrors.actualCost = 'Valid actual cost is required for completed requests';
       }
-    }
-
-    // Description length validation
-    if (formData.description.trim().length < 10) {
-      newErrors.description = 'Description must be at least 10 characters long';
-    } else if (formData.description.trim().length > 1000) {
-      newErrors.description = 'Description cannot exceed 1000 characters';
     }
 
     setErrors(newErrors);
@@ -203,64 +150,26 @@ const MaintenanceManagement = () => {
   const fetchStaffUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${BACKEND_URL}/api/users/staff`, {
+      const response = await axios.get(`${BACKEND_URL}/api/maintenance/staff-users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Handle different response structures
-      if (Array.isArray(response.data)) {
-        setStaffUsers(response.data);
-      } else if (response.data.users) {
-        setStaffUsers(response.data.users);
-      } else if (response.data.staffUsers) {
-        setStaffUsers(response.data.staffUsers);
-      } else {
-        setStaffUsers([]);
-        console.warn('Unexpected staff users response structure:', response.data);
-      }
+      setStaffUsers(response.data || []);
     } catch (error) {
       console.error('Failed to fetch staff users', error);
-      
-      // Fallback to mock data for demonstration
-      const mockStaffUsers = [
-        { _id: '1', firstName: 'John', lastName: 'Doe', staffProfile: { employeeId: 'EMP001' } },
-        { _id: '2', firstName: 'Jane', lastName: 'Smith', staffProfile: { employeeId: 'EMP002' } },
-        { _id: '3', firstName: 'Mike', lastName: 'Johnson', staffProfile: { employeeId: 'EMP003' } }
-      ];
-      setStaffUsers(mockStaffUsers);
-      
-      toast.error('Using demo staff data. Check backend endpoint: /api/users/staff');
+      toast.error('Failed to fetch staff users');
     }
   };
 
   const fetchActiveBuses = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${BACKEND_URL}/api/buses/active`, {
+      const response = await axios.get(`${BACKEND_URL}/api/maintenance/active-buses`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Handle different response structures
-      if (Array.isArray(response.data)) {
-        setActiveBuses(response.data);
-      } else if (response.data.buses) {
-        setActiveBuses(response.data.buses);
-      } else if (response.data.activeBuses) {
-        setActiveBuses(response.data.activeBuses);
-      } else {
-        setActiveBuses([]);
-        console.warn('Unexpected active buses response structure:', response.data);
-      }
+      setActiveBuses(response.data || []);
     } catch (error) {
       console.error('Failed to fetch active buses', error);
-      
-      // Fallback to mock data for demonstration
-      const mockBuses = [
-        { _id: 'bus1', numberPlate: 'ABC123', busType: 'School Bus' },
-        { _id: 'bus2', numberPlate: 'XYZ789', busType: 'Coach' },
-        { _id: 'bus3', numberPlate: 'DEF456', busType: 'Minibus' }
-      ];
-      setActiveBuses(mockBuses);
-      
-      toast.error('Using demo bus data. Check backend endpoint: /api/buses/active');
+      toast.error('Failed to fetch active buses');
     }
   };
 
@@ -273,13 +182,6 @@ const MaintenanceManagement = () => {
       setStats(response.data);
     } catch (error) {
       console.error('Failed to fetch maintenance stats', error);
-      // Set default stats
-      setStats({
-        total: maintenances.length,
-        byStatus: [],
-        byPriority: [],
-        summary: { pending: 0, inProgress: 0, completed: 0 }
-      });
     }
   };
 
@@ -292,12 +194,6 @@ const MaintenanceManagement = () => {
       setCostStats(response.data);
     } catch (error) {
       console.error('Failed to fetch cost stats', error);
-      // Set default cost stats
-      setCostStats({
-        overall: { totalSpent: 0, averageCost: 0, totalRequests: 0, minCost: 0, maxCost: 0 },
-        monthly: [],
-        byPriority: []
-      });
     }
   };
 
@@ -379,21 +275,20 @@ const MaintenanceManagement = () => {
       fetchCostStats();
     } catch (error) {
       console.error('Failed to save maintenance request', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to save maintenance request';
-      toast.error(errorMessage);
+      toast.error(error.response?.data?.message || 'Failed to save maintenance request');
     }
   };
 
   const handleEdit = (maintenance) => {
     setEditingMaintenance(maintenance);
     setFormData({
-      user: maintenance.user?._id || '',
-      bus: maintenance.bus?._id || '',
-      description: maintenance.description || '',
-      priority: maintenance.priority || 'Medium',
-      estimatedCost: maintenance.estimatedCost || '',
+      user: maintenance.user._id,
+      bus: maintenance.bus._id,
+      description: maintenance.description,
+      priority: maintenance.priority,
+      estimatedCost: maintenance.estimatedCost,
       estimatedCompletionDate: maintenance.estimatedCompletionDate ? new Date(maintenance.estimatedCompletionDate).toISOString().split('T')[0] : '',
-      status: maintenance.status || 'Pending',
+      status: maintenance.status,
       actualCost: maintenance.actualCost || '',
       actualCompletionDate: maintenance.actualCompletionDate ? new Date(maintenance.actualCompletionDate).toISOString().split('T')[0] : ''
     });
@@ -434,11 +329,6 @@ const MaintenanceManagement = () => {
 
     // Additional validation for status changes
     if (name === 'status' && value !== 'Completed') {
-      setFormData(prev => ({
-        ...prev,
-        actualCost: '',
-        actualCompletionDate: ''
-      }));
       setErrors(prev => ({
         ...prev,
         actualCost: '',
@@ -447,7 +337,7 @@ const MaintenanceManagement = () => {
     }
   };
 
-  // Improved number input handler with better validation
+  // Improved number input handler with better cursor behavior
   const handleNumberInput = (e) => {
     const { name, value } = e.target;
     
@@ -460,16 +350,9 @@ const MaintenanceManagement = () => {
       sanitizedValue.substring(0, sanitizedValue.lastIndexOf('.')) : 
       sanitizedValue;
 
-    // Limit to 2 decimal places
-    const decimalParts = finalValue.split('.');
-    if (decimalParts.length > 1 && decimalParts[1].length > 2) {
-      decimalParts[1] = decimalParts[1].substring(0, 2);
-    }
-    const limitedValue = decimalParts.join('.');
-
     setFormData(prev => ({
       ...prev,
-      [name]: limitedValue
+      [name]: finalValue
     }));
 
     // Clear error when user starts typing
@@ -525,15 +408,10 @@ const MaintenanceManagement = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    return new Date(dateString).toLocaleDateString();
   };
 
   const formatCurrency = (amount) => {
-    if (!amount) return '$0.00';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
@@ -545,7 +423,7 @@ const MaintenanceManagement = () => {
     try {
       // Create a simple PDF using browser's print functionality
       const printWindow = window.open('', '_blank');
-      const tableContent = document.querySelector('table')?.outerHTML || '<p>No data available</p>';
+      const tableContent = document.querySelector('table').outerHTML;
       
       printWindow.document.write(`
         <html>
@@ -557,7 +435,6 @@ const MaintenanceManagement = () => {
               th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
               th { background-color: #f2f2f2; }
               h1 { color: #333; }
-              @media print { body { margin: 0; } }
             </style>
           </head>
           <body>
@@ -569,10 +446,7 @@ const MaintenanceManagement = () => {
       `);
       
       printWindow.document.close();
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 500);
+      printWindow.print();
       toast.success('PDF generated successfully');
     } catch (error) {
       console.error('PDF export failed:', error);
@@ -590,11 +464,11 @@ const MaintenanceManagement = () => {
         ...filteredMaintenances.map(maintenance => [
           maintenance.bus?.numberPlate || 'N/A',
           maintenance.bus?.busType || 'N/A',
-          `"${(maintenance.description || '').replace(/"/g, '""')}"`,
-          `"${maintenance.user?.firstName || ''} ${maintenance.user?.lastName || ''}"`.trim(),
-          maintenance.priority || 'N/A',
-          maintenance.status || 'N/A',
-          maintenance.estimatedCost || '0',
+          `"${maintenance.description.replace(/"/g, '""')}"`,
+          `"${maintenance.user?.firstName} ${maintenance.user?.lastName}"`,
+          maintenance.priority,
+          maintenance.status,
+          maintenance.estimatedCost,
           maintenance.actualCost || 'N/A',
           maintenance.estimatedCompletionDate ? formatDate(maintenance.estimatedCompletionDate) : 'N/A',
           maintenance.actualCompletionDate ? formatDate(maintenance.actualCompletionDate) : 'N/A'
@@ -654,6 +528,7 @@ const MaintenanceManagement = () => {
               Excel
             </button>
           </div>
+          {/* Remove the "New Request" button */}
         </div>
       </div>
 
@@ -720,7 +595,7 @@ const MaintenanceManagement = () => {
                     <div>
                       <p className="text-white font-medium">{maintenance.description}</p>
                       <p className="text-slate-400 text-sm">
-                        Bus: {maintenance.bus?.numberPlate} (ID: {maintenance.bus?._id?.substring(0, 8)}...)
+                        Bus: {maintenance.bus?.numberPlate} (ID: {maintenance.bus?._id.substring(0, 8)}...)
                       </p>
                     </div>
                   </div>
@@ -813,7 +688,7 @@ const MaintenanceManagement = () => {
                           <Bus className="w-4 h-4 text-slate-400 mr-2" />
                           <div>
                             <div className="text-white font-medium">{maintenance.bus?.numberPlate}</div>
-                            <div className="text-slate-400 text-sm">ID: {maintenance.bus?._id?.substring(0, 8)}...</div>
+                            <div className="text-slate-400 text-sm">ID: {maintenance.bus?._id.substring(0, 8)}...</div>
                             <div className="text-slate-400 text-sm">{maintenance.bus?.busType}</div>
                           </div>
                         </div>
@@ -869,6 +744,7 @@ const MaintenanceManagement = () => {
                           >
                             <Edit className="w-4 h-4" />
                           </button>
+                          {/* Remove the delete button */}
                         </div>
                       </td>
                     </tr>
@@ -892,15 +768,26 @@ const MaintenanceManagement = () => {
             setErrors({});
           }}></div>
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0 z-50 relative">
-            <div className="inline-block w-full max-w-2xl p-6 my-8 text-left align-middle bg-slate-800 rounded-lg shadow-xl border border-slate-700">
+            <div className="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-slate-800 shadow-xl rounded-2xl border border-slate-700">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-white">
-                  {editingMaintenance ? 'Edit Maintenance Request' : 'Create New Maintenance Request'}
+                  {editingMaintenance ? 'Edit Maintenance Request' : 'Create Maintenance Request'}
                 </h3>
                 <button
                   onClick={() => {
                     setShowModal(false);
                     setEditingMaintenance(null);
+                    setFormData({
+                      user: '',
+                      bus: '',
+                      description: '',
+                      priority: 'Medium',
+                      estimatedCost: '',
+                      estimatedCompletionDate: '',
+                      status: 'Pending',
+                      actualCost: '',
+                      actualCompletionDate: ''
+                    });
                     setErrors({});
                   }}
                   className="text-slate-400 hover:text-white"
@@ -911,90 +798,75 @@ const MaintenanceManagement = () => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Staff Member Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Staff Member *
-                    </label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Staff Member *</label>
                     <select
                       name="user"
                       value={formData.user}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 bg-slate-700 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         errors.user ? 'border-red-500' : 'border-slate-600'
                       }`}
+                      required
+                      disabled={editingMaintenance}
                     >
                       <option value="">Select Staff Member</option>
                       {staffUsers.map((user) => (
                         <option key={user._id} value={user._id}>
-                          {user.firstName} {user.lastName} 
-                          {user.staffProfile?.employeeId ? ` (${user.staffProfile.employeeId})` : ''}
+                          {user.firstName} {user.lastName} ({user.staffProfile?.employeeId || 'N/A'})
                         </option>
                       ))}
                     </select>
-                    {errors.user && (
-                      <p className="text-red-400 text-sm mt-1">{errors.user}</p>
-                    )}
+                    {errors.user && <p className="text-red-400 text-xs mt-1">{errors.user}</p>}
                   </div>
 
-                  {/* Bus Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Bus *
-                    </label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Bus *</label>
                     <select
                       name="bus"
                       value={formData.bus}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 bg-slate-700 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         errors.bus ? 'border-red-500' : 'border-slate-600'
                       }`}
+                      required
+                      disabled={editingMaintenance}
                     >
                       <option value="">Select Bus</option>
                       {activeBuses.map((bus) => (
                         <option key={bus._id} value={bus._id}>
-                          {bus.numberPlate} - {bus.busType} (ID: {bus._id.substring(0, 8)}...)
+                          {bus.numberPlate} (ID: {bus._id.substring(0, 8)}...) - {bus.busType}
                         </option>
                       ))}
                     </select>
-                    {errors.bus && (
-                      <p className="text-red-400 text-sm mt-1">{errors.bus}</p>
-                    )}
+                    {errors.bus && <p className="text-red-400 text-xs mt-1">{errors.bus}</p>}
                   </div>
+                </div>
 
-                  {/* Description */}
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Description *
-                    </label>
-                    <textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      rows={3}
-                      placeholder="Describe the maintenance issue..."
-                      className={`w-full px-3 py-2 bg-slate-700 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.description ? 'border-red-500' : 'border-slate-600'
-                      }`}
-                    />
-                    <div className="flex justify-between text-xs text-slate-400 mt-1">
-                      <span>{formData.description.length}/1000 characters</span>
-                      {errors.description && (
-                        <span className="text-red-400">{errors.description}</span>
-                      )}
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Description *</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.description ? 'border-red-500' : 'border-slate-600'
+                    }`}
+                    placeholder="Describe the maintenance issue..."
+                    rows={3}
+                    required
+                  />
+                  {errors.description && <p className="text-red-400 text-xs mt-1">{errors.description}</p>}
+                </div>
 
-                  {/* Priority */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Priority *
-                    </label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Priority</label>
                     <select
                       name="priority"
                       value={formData.priority}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="Low">Low</option>
                       <option value="Medium">Medium</option>
@@ -1003,16 +875,48 @@ const MaintenanceManagement = () => {
                     </select>
                   </div>
 
-                  {/* Status */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Status *
-                    </label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Estimated Cost ($) *</label>
+                    <input
+                      type="text"
+                      name="estimatedCost"
+                      value={formData.estimatedCost}
+                      onChange={handleNumberInput}
+                      className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.estimatedCost ? 'border-red-500' : 'border-slate-600'
+                      }`}
+                      placeholder="0.00"
+                      required
+                    />
+                    {errors.estimatedCost && <p className="text-red-400 text-xs mt-1">{errors.estimatedCost}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Estimated Completion Date</label>
+                    <input
+                      type="date"
+                      name="estimatedCompletionDate"
+                      value={formData.estimatedCompletionDate}
+                      onChange={handleInputChange}
+                      min={getTomorrowDate()}
+                      className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.estimatedCompletionDate ? 'border-red-500' : 'border-slate-600'
+                      }`}
+                    />
+                    {errors.estimatedCompletionDate && (
+                      <p className="text-red-400 text-xs mt-1">{errors.estimatedCompletionDate}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>
                     <select
                       name="status"
                       value={formData.status}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="Pending">Pending</option>
                       <option value="In Progress">In Progress</option>
@@ -1020,96 +924,43 @@ const MaintenanceManagement = () => {
                       <option value="Cancelled">Cancelled</option>
                     </select>
                   </div>
+                </div>
 
-                  {/* Estimated Cost */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Estimated Cost ($) *
-                    </label>
-                    <input
-                      type="text"
-                      name="estimatedCost"
-                      value={formData.estimatedCost}
-                      onChange={handleNumberInput}
-                      placeholder="0.00"
-                      className={`w-full px-3 py-2 bg-slate-700 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.estimatedCost ? 'border-red-500' : 'border-slate-600'
-                      }`}
-                    />
-                    {errors.estimatedCost && (
-                      <p className="text-red-400 text-sm mt-1">{errors.estimatedCost}</p>
-                    )}
-                  </div>
-
-                  {/* Estimated Completion Date */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Estimated Completion Date *
-                    </label>
-                    <input
-                      type="date"
-                      name="estimatedCompletionDate"
-                      value={formData.estimatedCompletionDate}
-                      onChange={handleInputChange}
-                      min={getTodayDate()}
-                      max={getOneYearFromNow()}
-                      className={`w-full px-3 py-2 bg-slate-700 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.estimatedCompletionDate ? 'border-red-500' : 'border-slate-600'
-                      }`}
-                    />
-                    {errors.estimatedCompletionDate && (
-                      <p className="text-red-400 text-sm mt-1">{errors.estimatedCompletionDate}</p>
-                    )}
-                  </div>
-
-                  {/* Actual Cost (only for completed status) */}
-                  {formData.status === 'Completed' && (
+                {formData.status === 'Completed' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1">
-                        Actual Cost ($) *
-                      </label>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">Actual Cost ($) *</label>
                       <input
                         type="text"
                         name="actualCost"
                         value={formData.actualCost}
                         onChange={handleNumberInput}
-                        placeholder="0.00"
-                        className={`w-full px-3 py-2 bg-slate-700 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.actualCost ? 'border-red-500' : 'border-slate-600'
                         }`}
+                        placeholder="0.00"
                       />
-                      {errors.actualCost && (
-                        <p className="text-red-400 text-sm mt-1">{errors.actualCost}</p>
-                      )}
+                      {errors.actualCost && <p className="text-red-400 text-xs mt-1">{errors.actualCost}</p>}
                     </div>
-                  )}
 
-                  {/* Actual Completion Date (only for completed status) */}
-                  {formData.status === 'Completed' && (
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1">
-                        Actual Completion Date *
-                      </label>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">Actual Completion Date *</label>
                       <input
                         type="date"
                         name="actualCompletionDate"
                         value={formData.actualCompletionDate}
                         onChange={handleInputChange}
                         max={getTodayDate()}
-                        min={editingMaintenance?.createdAt ? 
-                          new Date(editingMaintenance.createdAt).toISOString().split('T')[0] : 
-                          '2020-01-01'
-                        }
-                        className={`w-full px-3 py-2 bg-slate-700 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.actualCompletionDate ? 'border-red-500' : 'border-slate-600'
                         }`}
                       />
                       {errors.actualCompletionDate && (
-                        <p className="text-red-400 text-sm mt-1">{errors.actualCompletionDate}</p>
+                        <p className="text-red-400 text-xs mt-1">{errors.actualCompletionDate}</p>
                       )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 <div className="flex justify-end space-x-3 pt-4">
                   <button
@@ -1117,6 +968,17 @@ const MaintenanceManagement = () => {
                     onClick={() => {
                       setShowModal(false);
                       setEditingMaintenance(null);
+                      setFormData({
+                        user: '',
+                        bus: '',
+                        description: '',
+                        priority: 'Medium',
+                        estimatedCost: '',
+                        estimatedCompletionDate: '',
+                        status: 'Pending',
+                        actualCost: '',
+                        actualCompletionDate: ''
+                      });
                       setErrors({});
                     }}
                     className="px-4 py-2 text-slate-300 hover:text-white border border-slate-600 rounded-lg hover:bg-slate-700"
