@@ -207,7 +207,7 @@ export const createBooking = async (req, res) => {
     });
 
     const savedBooking = await booking.save();
-    
+    console.log('booking'+ savedBooking)
     // Populate bus and user details for response
     const bookingWithDetails = await Booking.findById(savedBooking._id)
       .populate('bus', 'busId busType numberPlate capacity')

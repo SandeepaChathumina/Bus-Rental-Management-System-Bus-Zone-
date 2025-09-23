@@ -17,7 +17,10 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  FileText,
+  Calendar,
 } from "lucide-react";
+import { jsPDF } from "jspdf"; 
 
 // Validation utility functions
 const validationUtils = {
@@ -25,11 +28,13 @@ const validationUtils = {
   checkUsername: async (username) => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/users/check-username?username=${username}`
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/users/check-username?username=${username}`
       );
       return response.data.available;
     } catch (error) {
-      console.error('Username check failed:', error);
+      console.error("Username check failed:", error);
       return false;
     }
   },
@@ -39,21 +44,29 @@ const validationUtils = {
     // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return { available: false, valid: false, message: 'Invalid email format' };
+      return {
+        available: false,
+        valid: false,
+        message: "Invalid email format",
+      };
     }
 
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/users/check-email?email=${email}`
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/users/check-email?email=${email}`
       );
-      return { 
-        available: response.data.available, 
-        valid: true, 
-        message: response.data.available ? 'Email is available' : 'Email already exists'
+      return {
+        available: response.data.available,
+        valid: true,
+        message: response.data.available
+          ? "Email is available"
+          : "Email already exists",
       };
     } catch (error) {
-      console.error('Email check failed:', error);
-      return { available: false, valid: false, message: 'Email check failed' };
+      console.error("Email check failed:", error);
+      return { available: false, valid: false, message: "Email check failed" };
     }
   },
 
@@ -66,7 +79,7 @@ const validationUtils = {
   // Check if phone number is valid (Sri Lankan format)
   validatePhone: (phone) => {
     const phoneRegex = /^(?:\+94|0)?7[0-9]{8}$/;
-    return phoneRegex.test(phone.replace(/\s+/g, ''));
+    return phoneRegex.test(phone.replace(/\s+/g, ""));
   },
 
   // Check password strength
@@ -78,39 +91,60 @@ const validationUtils = {
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
     return {
-      isValid: password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar,
+      isValid:
+        password.length >= minLength &&
+        hasUpperCase &&
+        hasLowerCase &&
+        hasNumbers &&
+        hasSpecialChar,
       requirements: {
         minLength: password.length >= minLength,
         hasUpperCase,
         hasLowerCase,
         hasNumbers,
-        hasSpecialChar
-      }
+        hasSpecialChar,
+      },
     };
   },
 
   // Check if license number is valid (alphanumeric, 6-15 characters)
   validateLicenseNumber: (licenseNumber) => {
-    const licenseRegex = /^[A-Z0-9]{6,15}$/;
-    return licenseRegex.test(licenseNumber);
+    const licenseRegex = /^[A-Z][0-9]{7}$/;
+    return licenseRegex.test(licenseNumber.toUpperCase());
   },
 
+  // --- Add to validationUtils ---
+checkLicenseNumber: async (licenseNumber, users) => {
+  try {
+    const exists = users.some(
+      (u) => u.driverProfile?.licenseNumber === licenseNumber
+    );
+    return !exists; // true if unique
+  } catch (err) {
+    console.error("License number check failed", err);
+    return false;
+  }
+},
+
+
   // Check if employee ID is unique (placeholder - implement backend endpoint)
-  checkEmployeeId: async (employeeId) => {
+  checkEmployeeId: async (employeeId, users) => {
     try {
-      // This would require a backend endpoint to check employee ID uniqueness
-      // For now, we'll check locally against existing staff profiles
-      return true;
+      const exists = users.some(
+        (u) => u.staffProfile?.employeeId === employeeId
+      );
+      return !exists; // true if unique, false if already exists
     } catch (error) {
-      console.error('Employee ID check failed:', error);
+      console.error("Employee ID check failed:", error);
       return false;
     }
-  }
+  },
 };
 
 // StatusBadge Component
 const StatusBadge = ({ status }) => {
-  const s = typeof status === "boolean" ? (status ? "Active" : "Inactive") : status;
+  const s =
+    typeof status === "boolean" ? (status ? "Active" : "Inactive") : status;
   const colors = {
     active: "bg-green-900/30 text-green-400",
     inactive: "bg-red-900/30 text-red-400",
@@ -168,6 +202,7 @@ const DataTable = ({
   columns = [],
   onEdit,
   onDelete,
+  onActivate, // Add this prop
   onView,
   loading = false,
   expandable = true,
@@ -249,6 +284,7 @@ const DataTable = ({
                           <button
                             onClick={() => onView(row)}
                             className="text-blue-400 hover:text-blue-300"
+                            title="View Details"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
@@ -257,16 +293,27 @@ const DataTable = ({
                           <button
                             onClick={() => onEdit(row)}
                             className="text-indigo-400 hover:text-indigo-300"
+                            title="Edit User"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                         )}
-                        {onDelete && (
+                        {onDelete && row.isActive !== false && (
                           <button
                             onClick={() => onDelete(row)}
                             className="text-red-400 hover:text-red-300"
+                            title="Deactivate User"
                           >
                             <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        {onActivate && row.isActive === false && (
+                          <button
+                            onClick={() => onActivate(row)}
+                            className="text-green-400 hover:text-green-300"
+                            title="Activate User"
+                          >
+                            <CheckCircle className="w-4 h-4" />
                           </button>
                         )}
                       </div>
@@ -329,67 +376,117 @@ const ValidationMessages = ({ validation, field }) => {
 
   const getMessage = () => {
     switch (field) {
-      case 'username':
-        return validation.username.available ? 
-          <p className="text-green-400">✓ Username available</p> : 
-          <p className="text-red-400">✗ Username already taken</p>;
-      
-      case 'email':
+      case "username":
+        return validation.username.available ? (
+          <p className="text-green-400">✓ Username available</p>
+        ) : (
+          <p className="text-red-400">✗ Username already taken</p>
+        );
+
+      case "email":
         if (!validation.email.valid) {
           return <p className="text-red-400">✗ {validation.email.message}</p>;
         }
-        return validation.email.available ? 
-          <p className="text-green-400">✓ Email available</p> : 
-          <p className="text-red-400">✗ Email already registered</p>;
-      
-      case 'password':
+        return validation.email.available ? (
+          <p className="text-green-400">✓ Email available</p>
+        ) : (
+          <p className="text-red-400">✗ Email already registered</p>
+        );
+
+      case "password":
         return (
           <div className="text-xs">
-            <p className={validation.password.isValid ? "text-green-400" : "text-red-400"}>
-              {validation.password.isValid ? "✓ Strong password" : "✗ Weak password"}
+            <p
+              className={
+                validation.password.isValid ? "text-green-400" : "text-red-400"
+              }
+            >
+              {validation.password.isValid
+                ? "✓ Strong password"
+                : "✗ Weak password"}
             </p>
             {!validation.password.isValid && (
               <div className="grid grid-cols-2 gap-1 mt-1">
-                <span className={validation.password.requirements.minLength ? "text-green-400" : "text-red-400"}>
+                <span
+                  className={
+                    validation.password.requirements.minLength
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }
+                >
                   • 8+ chars
                 </span>
-                <span className={validation.password.requirements.hasUpperCase ? "text-green-400" : "text-red-400"}>
+                <span
+                  className={
+                    validation.password.requirements.hasUpperCase
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }
+                >
                   • A-Z
                 </span>
-                <span className={validation.password.requirements.hasLowerCase ? "text-green-400" : "text-red-400"}>
+                <span
+                  className={
+                    validation.password.requirements.hasLowerCase
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }
+                >
                   • a-z
                 </span>
-                <span className={validation.password.requirements.hasNumbers ? "text-green-400" : "text-red-400"}>
+                <span
+                  className={
+                    validation.password.requirements.hasNumbers
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }
+                >
                   • 0-9
                 </span>
-                <span className={validation.password.requirements.hasSpecialChar ? "text-green-400" : "text-red-400"}>
+                <span
+                  className={
+                    validation.password.requirements.hasSpecialChar
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }
+                >
                   • !@#$
                 </span>
               </div>
             )}
           </div>
         );
-      
-      case 'nic':
-        return validation.nic.isValid ? 
-          <p className="text-green-400">✓ Valid NIC</p> : 
-          <p className="text-red-400">✗ NIC must be 12 digits</p>;
-      
-      case 'phone':
-        return validation.phone.isValid ? 
-          <p className="text-green-400">✓ Valid phone number</p> : 
-          <p className="text-red-400">✗ Invalid Sri Lankan number</p>;
-      
-      case 'licenseNumber':
-        return validation.licenseNumber.isValid ? 
-          <p className="text-green-400">✓ Valid license number</p> : 
-          <p className="text-red-400">✗ 6-15 alphanumeric characters required</p>;
-      
-      case 'employeeId':
-        return validation.employeeId.isValid ? 
-          <p className="text-green-400">✓ Employee ID available</p> : 
-          <p className="text-red-400">✗ Employee ID already taken</p>;
-      
+
+      case "nic":
+        return validation.nic.isValid ? (
+          <p className="text-green-400">✓ Valid NIC</p>
+        ) : (
+          <p className="text-red-400">✗ NIC must be 12 digits</p>
+        );
+
+      case "phone":
+        return validation.phone.isValid ? (
+          <p className="text-green-400">✓ Valid phone number</p>
+        ) : (
+          <p className="text-red-400">✗ Invalid Sri Lankan number</p>
+        );
+
+      case "licenseNumber":
+        return validation.licenseNumber.isValid ? (
+          <p className="text-green-400">✓ Valid Sri Lankan license format</p>
+        ) : (
+          <p className="text-red-400">
+            ✗ Must be one letter followed by 7 digits (e.g., B5592445)
+          </p>
+        );
+
+      case "employeeId":
+        return validation.employeeId.isValid ? (
+          <p className="text-green-400">✓ Employee ID available</p>
+        ) : (
+          <p className="text-red-400">✗ Employee ID already exists</p>
+        );
+
       default:
         return null;
     }
@@ -399,7 +496,15 @@ const ValidationMessages = ({ validation, field }) => {
 };
 
 // FormField Component
-const FormField = ({ field, placeholder, type = "text", value, onChange, validation, ...props }) => (
+const FormField = ({
+  field,
+  placeholder,
+  type = "text",
+  value,
+  onChange,
+  validation,
+  ...props
+}) => (
   <div>
     <input
       type={type}
@@ -407,15 +512,72 @@ const FormField = ({ field, placeholder, type = "text", value, onChange, validat
       value={value}
       onChange={onChange}
       className={`p-3 bg-slate-700 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-colors w-full ${
-        validation[field]?.checked 
-          ? (validation[field]?.isValid ? 'border-green-500 focus:ring-green-500' : 'border-red-500 focus:ring-red-500')
-          : 'border-slate-600 focus:ring-blue-500'
+        validation[field]?.checked
+          ? validation[field]?.isValid
+            ? "border-green-500 focus:ring-green-500"
+            : "border-red-500 focus:ring-red-500"
+          : "border-slate-600 focus:ring-blue-500"
       }`}
       {...props}
     />
     <ValidationMessages validation={validation} field={field} />
   </div>
 );
+
+// ---------------------- Export Modal ----------------------
+const ExportModal = ({ show, onClose, format, setFormat, itemCount, onExport, loading }) => {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
+      <div className="relative bg-slate-800 border border-slate-600 rounded-xl p-6 z-60 w-full max-w-md shadow-xl">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-white">Export Report</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <button
+            onClick={() => setFormat("csv")}
+            className={`p-3 border-2 rounded-lg ${
+              format === "csv"
+                ? "border-green-500 bg-green-900/20 text-green-400"
+                : "border-slate-600 text-slate-400"
+            }`}
+          >
+            <FileText className="w-6 h-6 mx-auto mb-1" /> CSV
+          </button>
+          <button
+            onClick={() => setFormat("pdf")}
+            className={`p-3 border-2 rounded-lg ${
+              format === "pdf"
+                ? "border-red-500 bg-red-900/20 text-red-400"
+                : "border-slate-600 text-slate-400"
+            }`}
+          >
+            <FileText className="w-6 h-6 mx-auto mb-1" /> PDF
+          </button>
+        </div>
+        <div className="bg-slate-700/50 rounded p-2 text-sm text-slate-300 mb-4">
+          <Calendar className="inline w-4 h-4 mr-1" /> Report will include {itemCount} users
+        </div>
+        <div className="flex justify-end space-x-2">
+          <button onClick={onClose} className="px-3 py-1 text-slate-300 hover:text-white">
+            Cancel
+          </button>
+          <button
+            onClick={onExport}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            {loading ? "Generating..." : "Export Now"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Main Component
 const UserManagement = () => {
@@ -425,6 +587,10 @@ const UserManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFormat, setExportFormat] = useState("csv");
+  const [exportLoading, setExportLoading] = useState(false);
+ 
   // Modals & form state
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
@@ -450,7 +616,7 @@ const UserManagement = () => {
 
   const initialValidation = {
     username: { available: false, checked: false },
-    email: { available: false, valid: false, checked: false, message: '' },
+    email: { available: false, valid: false, checked: false, message: "" },
     password: { isValid: false, checked: false, requirements: {} },
     nic: { isValid: false, checked: false },
     phone: { isValid: false, checked: false },
@@ -466,14 +632,14 @@ const UserManagement = () => {
     const validateUsername = async () => {
       if (form.username.length >= 3) {
         const isAvailable = await validationUtils.checkUsername(form.username);
-        setValidation(prev => ({
+        setValidation((prev) => ({
           ...prev,
-          username: { available: isAvailable, checked: true }
+          username: { available: isAvailable, checked: true },
         }));
       } else {
-        setValidation(prev => ({
+        setValidation((prev) => ({
           ...prev,
-          username: { available: false, checked: false }
+          username: { available: false, checked: false },
         }));
       }
     };
@@ -483,17 +649,46 @@ const UserManagement = () => {
   }, [form.username]);
 
   useEffect(() => {
+  const validateLicense = async () => {
+    if (form.licenseNumber.length >= 3) {
+      const isAvailable = await validationUtils.checkLicenseNumber(
+        form.licenseNumber,
+        users
+      );
+      setValidation((prev) => ({
+        ...prev,
+        licenseNumber: { isValid: isAvailable, checked: true },
+      }));
+    } else {
+      setValidation((prev) => ({
+        ...prev,
+        licenseNumber: { isValid: false, checked: false },
+      }));
+    }
+  };
+
+  const timeoutId = setTimeout(validateLicense, 500);
+  return () => clearTimeout(timeoutId);
+}, [form.licenseNumber, users]);
+
+
+  useEffect(() => {
     const validateEmail = async () => {
       if (form.email.length >= 5) {
         const result = await validationUtils.checkEmail(form.email);
-        setValidation(prev => ({
+        setValidation((prev) => ({
           ...prev,
-          email: { ...result, checked: true }
+          email: { ...result, checked: true },
         }));
       } else {
-        setValidation(prev => ({
+        setValidation((prev) => ({
           ...prev,
-          email: { available: false, valid: false, checked: false, message: '' }
+          email: {
+            available: false,
+            valid: false,
+            checked: false,
+            message: "",
+          },
         }));
       }
     };
@@ -504,89 +699,106 @@ const UserManagement = () => {
 
   useEffect(() => {
     if (form.password) {
-      const passwordValidation = validationUtils.validatePassword(form.password);
-      setValidation(prev => ({
+      const passwordValidation = validationUtils.validatePassword(
+        form.password
+      );
+      setValidation((prev) => ({
         ...prev,
-        password: { ...passwordValidation, checked: true }
+        password: { ...passwordValidation, checked: true },
       }));
     } else {
-      setValidation(prev => ({
+      setValidation((prev) => ({
         ...prev,
-        password: { isValid: false, checked: false, requirements: {} }
+        password: { isValid: false, checked: false, requirements: {} },
       }));
     }
   }, [form.password]);
 
   useEffect(() => {
-    setValidation(prev => ({
+    setValidation((prev) => ({
       ...prev,
-      nic: { 
-        isValid: validationUtils.validateNIC(form.nic), 
-        checked: form.nic.length > 0 
-      }
+      nic: {
+        isValid: validationUtils.validateNIC(form.nic),
+        checked: form.nic.length > 0,
+      },
     }));
   }, [form.nic]);
 
   useEffect(() => {
-    setValidation(prev => ({
+    setValidation((prev) => ({
       ...prev,
-      phone: { 
-        isValid: validationUtils.validatePhone(form.phone), 
-        checked: form.phone.length > 0 
-      }
+      phone: {
+        isValid: validationUtils.validatePhone(form.phone),
+        checked: form.phone.length > 0,
+      },
     }));
   }, [form.phone]);
 
   useEffect(() => {
-    setValidation(prev => ({
+    setValidation((prev) => ({
       ...prev,
-      licenseNumber: { 
-        isValid: validationUtils.validateLicenseNumber(form.licenseNumber), 
-        checked: form.licenseNumber.length > 0 
-      }
+      licenseNumber: {
+        isValid: validationUtils.validateLicenseNumber(form.licenseNumber),
+        checked: form.licenseNumber.length > 0,
+      },
     }));
   }, [form.licenseNumber]);
 
   useEffect(() => {
     const validateEmployeeId = async () => {
       if (form.employeeId.length >= 2) {
-        const isAvailable = await validationUtils.checkEmployeeId(form.employeeId);
-        setValidation(prev => ({
+        const isAvailable = await validationUtils.checkEmployeeId(
+          form.employeeId,
+          users // Pass the current users array to check against
+        );
+        setValidation((prev) => ({
           ...prev,
-          employeeId: { isValid: isAvailable, checked: true }
+          employeeId: { isValid: isAvailable, checked: true },
         }));
       } else {
-        setValidation(prev => ({
+        setValidation((prev) => ({
           ...prev,
-          employeeId: { isValid: false, checked: false }
+          employeeId: { isValid: false, checked: false },
         }));
       }
     };
 
     const timeoutId = setTimeout(validateEmployeeId, 500);
     return () => clearTimeout(timeoutId);
-  }, [form.employeeId]);
+  }, [form.employeeId, users]);
 
   const resetValidation = () => {
     setValidation(initialValidation);
   };
 
   const isFormValid = (role) => {
-    const baseValid = 
-      validation.username.available &&
-      validation.email.available &&
-      validation.email.valid &&
-      validation.password.isValid &&
-      validation.nic.isValid &&
-      validation.phone.isValid;
+  const baseValid =
+    validation.username.available &&
+    validation.email.available &&
+    validation.email.valid &&
+    validation.password.isValid &&
+    validation.nic.isValid &&
+    validation.phone.isValid;
 
-    if (role === 'driver') {
-      return baseValid && validation.licenseNumber.isValid && form.licenseExpiry;
-    } else if (role === 'staff') {
-      return baseValid && validation.employeeId.isValid && form.staffRole;
-    }
-    return baseValid;
-  };
+  if (role === "driver") {
+    const licenseExpiryValid =
+      form.licenseExpiry && new Date(form.licenseExpiry) >= new Date();
+    return (
+      baseValid &&
+      validation.licenseNumber.isValid &&
+      form.licenseNumber &&
+      licenseExpiryValid
+    );
+  } else if (role === "staff") {
+    return (
+      baseValid &&
+      validation.employeeId.isValid &&
+      form.staffRole?.trim().length > 0
+    );
+  }
+  return baseValid;
+};
+
 
   useEffect(() => {
     fetchUsers();
@@ -637,9 +849,35 @@ const UserManagement = () => {
     }
   };
 
+  const [activatingId, setActivatingId] = useState(null);
+  const [deactivatingId, setDeactivatingId] = useState(null);
+
+  const activateUser = async (u) => {
+    if (!window.confirm(`Activate ${u.firstName || u.username}?`)) return;
+    setActivatingId(u._id);
+    try {
+      await axios.patch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/users/${
+          u._id || u.id
+        }/activate`
+      );
+      setUsers((prev) =>
+        prev.map((p) =>
+          p._id === (u._id || u.id) ? { ...p, isActive: true } : p
+        )
+      );
+      toast.success("User activated successfully");
+    } catch (err) {
+      console.error("activate error", err);
+      toast.error(err.response?.data?.message || "Failed to activate user");
+    } finally {
+      setActivatingId(null);
+    }
+  };
+
   const createUser = async (role) => {
     setCreateError(null);
-    
+
     if (!isFormValid(role)) {
       setCreateError("Please fix all validation errors before submitting.");
       return;
@@ -744,7 +982,7 @@ const UserManagement = () => {
 
   const exportCSV = (list) => {
     if (!list || list.length === 0) {
-      alert("No data to export");
+      toast.error("No data to export");
       return;
     }
     const rows = list.map((u) => ({
@@ -754,7 +992,7 @@ const UserManagement = () => {
       lastName: u.lastName,
       email: u.email,
       role: u.role,
-      isActive: u.isActive,
+      status: u.isActive ? "Active" : "Inactive",
     }));
     const csv = [
       Object.keys(rows[0]).join(","),
@@ -771,6 +1009,51 @@ const UserManagement = () => {
     a.download = `users_export_${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    toast.success("CSV report generated!");
+  };
+
+  const exportPDF = (list) => {
+    if (!list || list.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("User Management Report", 105, 15, { align: "center" });
+    const headers = ["ID", "Username", "Name", "Email", "Role", "Status"];
+    const rows = list.map((u) => [
+      u._id || u.id,
+      u.username,
+      `${u.firstName || ""} ${u.lastName || ""}`,
+      u.email,
+      u.role,
+      u.isActive ? "Active" : "Inactive",
+    ]);
+    let y = 30;
+    doc.setFontSize(10);
+    headers.forEach((h, i) => doc.text(h, 10 + i * 30, y));
+    y += 8;
+    rows.forEach((r) => {
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      r.forEach((c, i) => doc.text(String(c), 10 + i * 30, y));
+      y += 7;
+    });
+    doc.save(`users_report_${Date.now()}.pdf`);
+    toast.success("PDF report generated!");
+  };
+
+  const handleExport = () => {
+    setExportLoading(true);
+    try {
+      if (exportFormat === "csv") exportCSV(filteredUsers);
+      else exportPDF(filteredUsers);
+    } finally {
+      setExportLoading(false);
+      setShowExportModal(false);
+    }
   };
 
   return (
@@ -851,7 +1134,7 @@ const UserManagement = () => {
             </select>
 
             <button
-              onClick={() => exportCSV(filteredUsers)}
+              onClick={() => setShowExportModal(true)}
               className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <Download className="w-4 h-4" />
@@ -863,10 +1146,21 @@ const UserManagement = () => {
             data={filteredUsers}
             columns={userColumns}
             onDelete={deactivateUser}
+            onActivate={activateUser}
             loading={loadingUsers}
             expandable={true}
           />
         </div>
+
+         <ExportModal
+        show={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        format={exportFormat}
+        setFormat={setExportFormat}
+        itemCount={filteredUsers.length}
+        onExport={handleExport}
+        loading={exportLoading}
+      />
 
         <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
           <h3 className="text-lg text-white mb-3">Quick Actions</h3>
@@ -916,9 +1210,11 @@ const UserManagement = () => {
           }}
         >
           {createError && (
-            <div className="text-red-400 mb-4 p-3 bg-red-900/20 rounded-lg">{createError}</div>
+            <div className="text-red-400 mb-4 p-3 bg-red-900/20 rounded-lg">
+              {createError}
+            </div>
           )}
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <FormField
               field="username"
@@ -927,7 +1223,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, username: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="email"
               placeholder="Email *"
@@ -936,7 +1232,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="password"
               placeholder="Password *"
@@ -945,7 +1241,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="firstName"
               placeholder="First Name *"
@@ -953,7 +1249,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, firstName: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="lastName"
               placeholder="Last Name *"
@@ -961,7 +1257,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, lastName: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="nic"
               placeholder="NIC * (12 digits)"
@@ -969,7 +1265,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, nic: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="phone"
               placeholder="Phone * (07XXXXXXXX)"
@@ -977,7 +1273,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="address"
               placeholder="Address"
@@ -985,37 +1281,48 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="licenseNumber"
-              placeholder="License Number *"
+              placeholder="License Number * (e.g., B5592445)"
               value={form.licenseNumber}
-              onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })}
+              onChange={(e) => {
+                // Auto-uppercase and limit to 8 characters
+                const value = e.target.value.toUpperCase().slice(0, 8);
+                setForm({ ...form, licenseNumber: value });
+              }}
               validation={validation}
             />
-            
+
             <div>
               <input
                 type="date"
                 placeholder="License Expiry *"
                 value={form.licenseExpiry}
-                onChange={(e) => setForm({ ...form, licenseExpiry: e.target.value })}
+                min={new Date().toISOString().split("T")[0]} // disable past dates
+                onChange={(e) =>
+                  setForm({ ...form, licenseExpiry: e.target.value })
+                }
                 className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors w-full"
               />
               {!form.licenseExpiry && (
-                <p className="text-red-400 text-xs mt-1">✗ License expiry is required</p>
+                <p className="text-red-400 text-xs mt-1">
+                  ✗ License expiry is required
+                </p>
               )}
             </div>
-            
+
             <FormField
               field="emergencyContact"
               placeholder="Emergency Contact"
               value={form.emergencyContact}
-              onChange={(e) => setForm({ ...form, emergencyContact: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, emergencyContact: e.target.value })
+              }
               validation={validation}
             />
           </div>
-          
+
           <div className="flex justify-end space-x-2">
             <button
               onClick={() => {
@@ -1062,9 +1369,11 @@ const UserManagement = () => {
           }}
         >
           {createError && (
-            <div className="text-red-400 mb-4 p-3 bg-red-900/20 rounded-lg">{createError}</div>
+            <div className="text-red-400 mb-4 p-3 bg-red-900/20 rounded-lg">
+              {createError}
+            </div>
           )}
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <FormField
               field="username"
@@ -1073,7 +1382,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, username: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="email"
               placeholder="Email *"
@@ -1082,7 +1391,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="password"
               placeholder="Password *"
@@ -1091,7 +1400,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="firstName"
               placeholder="First Name *"
@@ -1099,7 +1408,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, firstName: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="lastName"
               placeholder="Last Name *"
@@ -1107,7 +1416,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, lastName: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="nic"
               placeholder="NIC * (12 digits)"
@@ -1115,7 +1424,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, nic: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="phone"
               placeholder="Phone * (07XXXXXXXX)"
@@ -1123,7 +1432,7 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               validation={validation}
             />
-            
+
             <FormField
               field="address"
               placeholder="Address"
@@ -1131,19 +1440,23 @@ const UserManagement = () => {
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               validation={validation}
             />
-            
+
             <div>
               <input
                 placeholder="Staff Role *"
                 value={form.staffRole}
-                onChange={(e) => setForm({ ...form, staffRole: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, staffRole: e.target.value })
+                }
                 className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors w-full"
               />
               {!form.staffRole && (
-                <p className="text-red-400 text-xs mt-1">✗ Staff role is required</p>
+                <p className="text-red-400 text-xs mt-1">
+                  ✗ Staff role is required
+                </p>
               )}
             </div>
-            
+
             <FormField
               field="employeeId"
               placeholder="Employee ID *"
@@ -1152,7 +1465,7 @@ const UserManagement = () => {
               validation={validation}
             />
           </div>
-          
+
           <div className="flex justify-end space-x-2">
             <button
               onClick={() => {
