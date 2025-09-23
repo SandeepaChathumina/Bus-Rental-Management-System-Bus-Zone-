@@ -20,7 +20,10 @@ import {
   FileText,
   Calendar,
 } from "lucide-react";
-import { jsPDF } from "jspdf"; 
+
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
 
 // Validation utility functions
 const validationUtils = {
@@ -1013,37 +1016,53 @@ const UserManagement = () => {
   };
 
   const exportPDF = (list) => {
-    if (!list || list.length === 0) {
-      toast.error("No data to export");
-      return;
-    }
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("User Management Report", 105, 15, { align: "center" });
-    const headers = ["ID", "Username", "Name", "Email", "Role", "Status"];
-    const rows = list.map((u) => [
-      u._id || u.id,
-      u.username,
-      `${u.firstName || ""} ${u.lastName || ""}`,
-      u.email,
-      u.role,
-      u.isActive ? "Active" : "Inactive",
-    ]);
-    let y = 30;
-    doc.setFontSize(10);
-    headers.forEach((h, i) => doc.text(h, 10 + i * 30, y));
-    y += 8;
-    rows.forEach((r) => {
-      if (y > 280) {
-        doc.addPage();
-        y = 20;
-      }
-      r.forEach((c, i) => doc.text(String(c), 10 + i * 30, y));
-      y += 7;
-    });
-    doc.save(`users_report_${Date.now()}.pdf`);
-    toast.success("PDF report generated!");
-  };
+  if (!list || list.length === 0) {
+    alert("No data to export");
+    return;
+  }
+
+  const doc = new jsPDF();
+
+  doc.setFontSize(18);
+  doc.text("User Management Report", 105, 15, { align: "center" });
+
+  doc.setFontSize(11);
+  doc.setTextColor(100);
+  doc.text(
+    `Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`,
+    105,
+    23,
+    { align: "center" }
+  );
+  doc.text(`Total Records: ${list.length}`, 105, 30, { align: "center" });
+
+  const tableColumn = ["ID", "Username", "Name", "Email", "Role", "Status"];
+  const tableRows = list.map((u) => [
+    u._id || u.id,
+    u.username,
+    `${u.firstName || ""} ${u.lastName || ""}`,
+    u.email,
+    u.role,
+    u.isActive ? "Active" : "Inactive",
+  ]);
+
+  // ✅ Use autoTable function directly
+  autoTable(doc, {
+    startY: 40,
+    head: [tableColumn],
+    body: tableRows,
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: {
+      fillColor: [41, 128, 185],
+      textColor: [255, 255, 255],
+      halign: "center",
+    },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+  });
+
+  doc.save(`user_report_${Date.now()}.pdf`);
+};
+
 
   const handleExport = () => {
     setExportLoading(true);
