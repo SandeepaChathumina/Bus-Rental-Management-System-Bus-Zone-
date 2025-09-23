@@ -336,18 +336,18 @@ const checkEmailAvailability = async (req, res) => {
 const checkPhoneAvailability = async (req, res) => {
   try {
     const { phone } = req.query;
-    
+
     if (!phone) {
       return res.status(400).json({ message: 'Phone parameter is required' });
     }
-    
-    // If phone is empty string, consider it available (since it's optional)
-    if (phone === '') {
-      return res.json({ available: true });
+
+    // 🚨 Validate Sri Lankan phone number format (10 digits, starting with 0)
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ message: 'Invalid phone number format. Must start with 0 and be 10 digits.' });
     }
-    
+
     const existingUser = await User.findOne({ phone });
-    
     return res.json({ available: !existingUser });
   } catch (error) {
     res.status(500).json({ message: error.message });

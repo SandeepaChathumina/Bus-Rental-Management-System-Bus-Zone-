@@ -106,16 +106,17 @@ const validationUtils = {
 
   // Check if license number is valid (alphanumeric, 6-15 characters)
   validateLicenseNumber: (licenseNumber) => {
-    const licenseRegex = /^[A-Z0-9]{6,15}$/;
-    return licenseRegex.test(licenseNumber);
+    const licenseRegex = /^[A-Z][0-9]{7}$/;
+    return licenseRegex.test(licenseNumber.toUpperCase());
   },
 
   // Check if employee ID is unique (placeholder - implement backend endpoint)
-  checkEmployeeId: async (employeeId) => {
+  checkEmployeeId: async (employeeId, users) => {
     try {
-      // This would require a backend endpoint to check employee ID uniqueness
-      // For now, we'll check locally against existing staff profiles
-      return true;
+      const exists = users.some(
+        (u) => u.staffProfile?.employeeId === employeeId
+      );
+      return !exists; // true if unique, false if already exists
     } catch (error) {
       console.error("Employee ID check failed:", error);
       return false;
@@ -455,10 +456,10 @@ const ValidationMessages = ({ validation, field }) => {
 
       case "licenseNumber":
         return validation.licenseNumber.isValid ? (
-          <p className="text-green-400">✓ Valid license number</p>
+          <p className="text-green-400">✓ Valid Sri Lankan license format</p>
         ) : (
           <p className="text-red-400">
-            ✗ 6-15 alphanumeric characters required
+            ✗ Must be one letter followed by 7 digits (e.g., B5592445)
           </p>
         );
 
@@ -466,7 +467,7 @@ const ValidationMessages = ({ validation, field }) => {
         return validation.employeeId.isValid ? (
           <p className="text-green-400">✓ Employee ID available</p>
         ) : (
-          <p className="text-red-400">✗ Employee ID already taken</p>
+          <p className="text-red-400">✗ Employee ID already exists</p>
         );
 
       default:
@@ -647,7 +648,8 @@ const UserManagement = () => {
     const validateEmployeeId = async () => {
       if (form.employeeId.length >= 2) {
         const isAvailable = await validationUtils.checkEmployeeId(
-          form.employeeId
+          form.employeeId,
+          users // Pass the current users array to check against
         );
         setValidation((prev) => ({
           ...prev,
@@ -663,7 +665,7 @@ const UserManagement = () => {
 
     const timeoutId = setTimeout(validateEmployeeId, 500);
     return () => clearTimeout(timeoutId);
-  }, [form.employeeId]);
+  }, [form.employeeId, users]);
 
   const resetValidation = () => {
     setValidation(initialValidation);
@@ -679,8 +681,10 @@ const UserManagement = () => {
       validation.phone.isValid;
 
     if (role === "driver") {
+      const licenseExpiryValid =
+        form.licenseExpiry && new Date(form.licenseExpiry) >= new Date();
       return (
-        baseValid && validation.licenseNumber.isValid && form.licenseExpiry
+        baseValid && validation.licenseNumber.isValid && licenseExpiryValid
       );
     } else if (role === "staff") {
       return baseValid && validation.employeeId.isValid && form.staffRole;
@@ -1117,11 +1121,13 @@ const UserManagement = () => {
 
             <FormField
               field="licenseNumber"
-              placeholder="License Number *"
+              placeholder="License Number * (e.g., B5592445)"
               value={form.licenseNumber}
-              onChange={(e) =>
-                setForm({ ...form, licenseNumber: e.target.value })
-              }
+              onChange={(e) => {
+                // Auto-uppercase and limit to 8 characters
+                const value = e.target.value.toUpperCase().slice(0, 8);
+                setForm({ ...form, licenseNumber: value });
+              }}
               validation={validation}
             />
 
@@ -1130,6 +1136,7 @@ const UserManagement = () => {
                 type="date"
                 placeholder="License Expiry *"
                 value={form.licenseExpiry}
+                min={new Date().toISOString().split("T")[0]} // disable past dates
                 onChange={(e) =>
                   setForm({ ...form, licenseExpiry: e.target.value })
                 }
