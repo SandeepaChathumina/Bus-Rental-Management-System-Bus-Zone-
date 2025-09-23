@@ -106,26 +106,33 @@ const PassengerDetails = () => {
       return;
     }
     
+    // Generate unique booking ID
+    const bookingId = `BK${Date.now()}`;
+    
     // Proceed to checkout with all booking data
     navigate('/checkout', {
-    state: {
-      booking: {
-        _id: 'temp_booking_id', // You'll create the actual booking after payment
-        bookingId: `BK${Date.now()}`,
-        travelDate: searchParams.travelDate,
-        departureTime: searchParams.departureTime,
-        route: {
-          from: searchParams.from,
-          to: searchParams.to
+      state: {
+        booking: {
+          _id: bus._id , // Use the actual bus ID
+          bookingId: bookingId,
+          travelDate: searchParams.travelDate,
+          departureTime: searchParams.departureTime,
+          route: {
+            from: searchParams.from,
+            to: searchParams.to
+          },
+          seats: passengerDetails,
+          totalAmount: pricing.totalAmount,
+          busId: bus._id, // Explicitly pass bus ID
+          busType: bus.busType,
+          numberPlate: bus.numberPlate
         },
-        seats: passengerDetails,
-        totalAmount: pricing.totalAmount
-      },
-      bus: bus,
-      passengers: passengerDetails,
-      searchParams: searchParams,
-      contactInfo: contactInfo,
-      pricing: pricing
+        bus: bus,
+        passengers: passengerDetails,
+        selectedSeats: selectedSeats,
+        searchParams: searchParams,
+        contactInfo: contactInfo,
+        pricing: pricing
       }
     });
   };

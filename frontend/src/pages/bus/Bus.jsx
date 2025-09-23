@@ -131,6 +131,7 @@ const Bus = () => {
         bus: selectedBus,
         searchParams: searchParams,
         passengers: Array(searchParams.passengers).fill().map((_, i) => ({
+          id : selectedBus._id || Bus._id,
           seatNumber: `A${i + 1}`,
           name: '',
           nic: '',
@@ -311,7 +312,7 @@ const Bus = () => {
                 
                 {/* Select Button */}
                 <button
-                  onClick={() => handleSelectBus(bus)}
+                  onClick={() => handleSelectBus(bus) & console.log(bus._id)}
                   className={`px-6 py-2 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
                     selectedBus?._id === bus._id
                       ? 'bg-green-500 hover:bg-green-600 text-white'

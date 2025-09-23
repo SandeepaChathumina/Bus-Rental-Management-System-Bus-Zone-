@@ -144,8 +144,22 @@ const generateSalaryInvoice = async (payment, schedule, driver, driverProfile) =
 // STRIPE PAYMENT INTEGRATION
 
 // Create Stripe payment intent
+// Fix for createStripePaymentIntent function in paymentController.js
+
 export const createStripePaymentIntent = async (req, res) => {
   try {
+    // Add debugging and validation
+    console.log('Request user:', req.user);
+    console.log('Request body:', req.body);
+    
+    // Check if user is authenticated
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
     const { bookingId, amount, currency = 'lkr', description } = req.body;
     const userId = req.user._id;
 
@@ -187,6 +201,14 @@ export const createStripePaymentIntent = async (req, res) => {
     }
 
     const paymentAmount = amount || (booking ? booking.totalAmount : 0);
+    
+    if (!paymentAmount || paymentAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid payment amount'
+      });
+    }
+
     const paymentDescription = description || (booking ? `Bus booking payment for ${booking.bookingId}` : 'Payment');
 
     // Create Stripe payment intent
