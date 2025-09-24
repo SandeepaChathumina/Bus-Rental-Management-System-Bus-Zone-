@@ -219,6 +219,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+                            <Route
+                              path="/driver-dashboard"
+                              element={
+                                <ProtectedRoute allowedRoles={['driver', 'admin']}>
+                                  <DriverDashboard />
+                                </ProtectedRoute>
+                              }
+                            />
             </Routes>
           </main>
           <Toaster position="top-right" />
