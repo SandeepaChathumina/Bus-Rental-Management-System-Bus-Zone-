@@ -17,7 +17,15 @@ import {
   ChevronDown,
   Lock,
   Eye,
-  EyeOff
+  EyeOff,
+  Search,
+  Filter,
+  Bus,
+  Map,
+  CheckCircle,
+  XCircle,
+  MoreVertical,
+  ChevronUp
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -434,10 +442,314 @@ const SettingsContent = React.memo(({ onPasswordChangeClick }) => (
   </div>
 ));
 
+// Schedule Management Component
+const ScheduleManagement = React.memo(() => {
+  const [schedules, setSchedules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedSchedules, setExpandedSchedules] = useState({});
+
+  // Sample data for driver schedules
+  const sampleSchedules = [
+    {
+      _id: 'schedule1',
+      bookingId: { bookingId: 'BZ-2024-1001', route: 'Colombo - Kandy', passengers: 32 },
+      busId: { busId: 'BZ-001', numberPlate: 'CAB-1234', busType: 'Luxury Coach' },
+      driverId: { firstName: 'Sandeepa', lastName: 'Karunanayake', licenseNumber: 'DL12345' },
+      startLocation: 'Colombo Fort',
+      destination: 'Kandy City Center',
+      scheduledStartTime: '2024-01-15T06:00:00',
+      scheduledEndTime: '2024-01-15T09:30:00',
+      status: 'Scheduled',
+      actualStartTime: null,
+      actualEndTime: null
+    },
+    {
+      _id: 'schedule2',
+      bookingId: { bookingId: 'BZ-2024-1002', route: 'Galle - Colombo', passengers: 28 },
+      busId: { busId: 'BZ-002', numberPlate: 'CAB-5678', busType: 'Standard' },
+      driverId: { firstName: 'Malith', lastName: 'Johnson', licenseNumber: 'DL67890' },
+      startLocation: 'Galle Bus Stand',
+      destination: 'Colombo Fort',
+      scheduledStartTime: '2024-01-15T08:00:00',
+      scheduledEndTime: '2024-01-15T11:30:00',
+      status: 'In Progress',
+      actualStartTime: '2024-01-15T08:15:00',
+      actualEndTime: null
+    },
+    {
+      _id: 'schedule3',
+      bookingId: { bookingId: 'BZ-2024-1003', route: 'Negombo - Colombo', passengers: 40 },
+      busId: { busId: 'BZ-003', numberPlate: 'CAB-9012', busType: 'Mini Bus' },
+      driverId: { firstName: 'Shamal', lastName: 'Ashinsana', licenseNumber: 'DL11223' },
+      startLocation: 'Negombo Bus Station',
+      destination: 'Colombo Pettah',
+      scheduledStartTime: '2024-01-16T07:30:00',
+      scheduledEndTime: '2024-01-16T09:00:00',
+      status: 'Completed',
+      actualStartTime: '2024-01-16T07:25:00',
+      actualEndTime: '2024-01-16T09:10:00'
+    }
+  ];
+
+  useEffect(() => {
+    // Simulate API call to fetch driver schedules
+    setTimeout(() => {
+      setSchedules(sampleSchedules);
+      setLoading(false);
+    }, 1000);
+  }, []);
+
+  const toggleExpand = (scheduleId) => {
+    setExpandedSchedules(prev => ({
+      ...prev,
+      [scheduleId]: !prev[scheduleId]
+    }));
+  };
+
+  const getStatusColor = (status) => {
+    switch (status.toLowerCase()) {
+      case 'scheduled': return 'bg-blue-900/30 text-blue-400 border-blue-500/30';
+      case 'in progress': return 'bg-orange-900/30 text-orange-400 border-orange-500/30';
+      case 'completed': return 'bg-green-900/30 text-green-400 border-green-500/30';
+      case 'cancelled': return 'bg-red-900/30 text-red-400 border-red-500/30';
+      default: return 'bg-gray-900/30 text-gray-400 border-gray-500/30';
+    }
+  };
+
+  const formatDateTime = (dateTimeString) => {
+    return new Date(dateTimeString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatTime = (dateTimeString) => {
+    return new Date(dateTimeString).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h2 className="text-2xl font-bold text-white">My Schedule</h2>
+          <p className="text-slate-400">View and manage your driving schedules</p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search schedules..."
+              className="pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-xl p-4 border border-blue-700/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-blue-300">Total Schedules</p>
+              <p className="text-2xl font-bold text-white">{schedules.length}</p>
+            </div>
+            <Calendar className="w-8 h-8 text-blue-400" />
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-xl p-4 border border-blue-700/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-blue-300">Scheduled</p>
+              <p className="text-2xl font-bold text-blue-400">
+                {schedules.filter(s => s.status === 'Scheduled').length}
+              </p>
+            </div>
+            <Clock className="w-8 h-8 text-blue-400" />
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-orange-900/30 to-orange-800/20 rounded-xl p-4 border border-orange-700/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-orange-300">In Progress</p>
+              <p className="text-2xl font-bold text-orange-400">
+                {schedules.filter(s => s.status === 'In Progress').length}
+              </p>
+            </div>
+            <User className="w-8 h-8 text-orange-400" />
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 rounded-xl p-4 border border-green-700/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-green-300">Completed</p>
+              <p className="text-2xl font-bold text-green-400">
+                {schedules.filter(s => s.status === 'Completed').length}
+              </p>
+            </div>
+            <CheckCircle className="w-8 h-8 text-green-400" />
+          </div>
+        </div>
+      </div>
+
+      {/* Schedules List */}
+      <div className="space-y-4">
+        {schedules.length === 0 ? (
+          <div className="bg-slate-800 rounded-xl p-12 text-center border border-slate-700">
+            <Calendar className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">No Schedules Found</h3>
+            <p className="text-slate-400">You don't have any schedules assigned yet.</p>
+          </div>
+        ) : (
+          schedules.map((schedule) => (
+            <div key={schedule._id} className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 border border-slate-700 hover:border-slate-600 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center border ${getStatusColor(schedule.status)}`}>
+                      {schedule.status === 'In Progress' && <div className="w-2 h-2 rounded-full bg-orange-400 mr-2 animate-pulse"></div>}
+                      {schedule.status}
+                    </div>
+                    <div className="text-sm text-slate-400">
+                      {formatDateTime(schedule.scheduledStartTime)}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="flex items-center text-slate-300">
+                      <User className="w-4 h-4 mr-3 text-blue-400" />
+                      <div>
+                        <p className="font-medium">{schedule.driverId.firstName} {schedule.driverId.lastName}</p>
+                        <p className="text-slate-500 text-sm">License: {schedule.driverId.licenseNumber}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center text-slate-300">
+                      <Bus className="w-4 h-4 mr-3 text-green-400" />
+                      <div>
+                        <p className="font-medium">{schedule.busId.numberPlate}</p>
+                        <p className="text-slate-500 text-sm">{schedule.busId.busType}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center text-slate-300">
+                      <MapPin className="w-4 h-4 mr-3 text-red-400" />
+                      <div>
+                        <p className="font-medium">{schedule.startLocation} → {schedule.destination}</p>
+                        <p className="text-slate-500 text-sm">{schedule.bookingId.route}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm text-slate-400">
+                    <span>Booking: {schedule.bookingId.bookingId}</span>
+                    <span>Passengers: {schedule.bookingId.passengers}</span>
+                    <span>Duration: {formatTime(schedule.scheduledStartTime)} - {formatTime(schedule.scheduledEndTime)}</span>
+                  </div>
+
+                  {expandedSchedules[schedule._id] && (
+                    <div className="mt-4 p-4 bg-slate-700/50 rounded-lg space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-slate-400">Scheduled Time:</span>
+                          <p className="text-white font-medium">
+                            {formatDateTime(schedule.scheduledStartTime)} - {formatTime(schedule.scheduledEndTime)}
+                          </p>
+                        </div>
+                        {schedule.actualStartTime && (
+                          <div>
+                            <span className="text-slate-400">Actual Start Time:</span>
+                            <p className="text-white font-medium">{formatDateTime(schedule.actualStartTime)}</p>
+                          </div>
+                        )}
+                        {schedule.actualEndTime && (
+                          <div>
+                            <span className="text-slate-400">Actual End Time:</span>
+                            <p className="text-white font-medium">{formatDateTime(schedule.actualEndTime)}</p>
+                          </div>
+                        )}
+                        <div>
+                          <span className="text-slate-400">Bus Details:</span>
+                          <p className="text-white font-medium">
+                            {schedule.busId.busId} - {schedule.busId.busType}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {schedule.status === 'In Progress' && (
+                        <div className="flex space-x-3 pt-2">
+                          <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">
+                            Mark as Completed
+                          </button>
+                          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">
+                            Update Progress
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-2 ml-4">
+                  <button
+                    onClick={() => toggleExpand(schedule._id)}
+                    className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+                  >
+                    {expandedSchedules[schedule._id] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Upcoming Schedule Highlight */}
+      {schedules.filter(s => s.status === 'Scheduled').length > 0 && (
+        <div className="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 rounded-xl p-6 border border-cyan-700/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">Next Schedule</h3>
+              <p className="text-cyan-300">
+                {formatDateTime(schedules.filter(s => s.status === 'Scheduled')[0].scheduledStartTime)}
+              </p>
+              <p className="text-slate-300 mt-1">
+                {schedules.filter(s => s.status === 'Scheduled')[0].startLocation} → {schedules.filter(s => s.status === 'Scheduled')[0].destination}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-slate-400 text-sm">Bus</p>
+              <p className="text-white font-medium">{schedules.filter(s => s.status === 'Scheduled')[0].busId.numberPlate}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+
 const DriverDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  const [activeTab, setActiveTab] = useState('schedule'); // Changed from 'profile' to 'schedule'
+  const [activeTab, setActiveTab] = useState('schedule');
   const [notificationCount] = useState(3);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
@@ -478,274 +790,209 @@ const DriverDashboard = () => {
     return response.data;
   }, []);
 
-  const handlePasswordModalOpen = useCallback(() => {
-    setShowPasswordModal(true);
-  }, []);
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
-  const handlePasswordModalClose = useCallback(() => {
-    setShowPasswordModal(false);
-  }, []);
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'profile':
+        return <DriverProfile />;
+      case 'schedule':
+        return <ScheduleManagement />;
+      case 'settings':
+        return <SettingsContent onPasswordChangeClick={() => setShowPasswordModal(true)} />;
+      default:
+        return <ScheduleManagement />;
+    }
+  };
 
   if (loading) {
-    return <div className="h-screen flex items-center justify-center text-white">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
+      </div>
+    );
   }
 
   if (!user) {
-    return <div className="h-screen flex items-center justify-center text-white">No user data</div>;
+    navigate('/login');
+    return null;
   }
 
-  // Extract real driver info
-  const fullName = user.firstName
-    ? `${user.firstName} ${user.lastName || ''}`.trim()
-    : user.username || 'Driver';
-  const driverId = user._id || 'N/A';
-  const profileImage =
-    user.profileImage ||
-    user.avatar ||
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face';
-
-  // Overlay for mobile when sidebar is open
-  const overlayClick = useCallback(() => {
-    if (isMobile) {
-      setIsSidebarOpen(false);
-    }
-  }, [isMobile]);
-
-  // Handle notification click
-  const handleNotificationClick = useCallback(() => {
-    navigate('/notifications');
-  }, [navigate]);
-
-  // Handle tab change
-  const handleTabChange = useCallback((tabId) => {
-    setActiveTab(tabId);
-    if (isMobile) {
-      setIsSidebarOpen(false);
-    }
-  }, [isMobile]);
-
-  // Handle logout
-  const handleLogout = useCallback(() => {
-    logout();
-  }, [logout]);
-
-  // Handle sidebar toggle
-  const handleSidebarToggle = useCallback(() => {
-    setIsSidebarOpen(prev => !prev);
-  }, []);
-
-  // Render content based on active tab
-  const renderContent = useCallback(() => {
-    switch (activeTab) {
-      case 'schedule':
-        return (
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 border border-slate-700/50">
-            <h2 className="text-xl font-bold text-white mb-4">Today's Schedule</h2>
-            <p className="text-slate-400">Schedule information coming soon...</p>
-          </div>
-        );
-
-      case 'salary':
-        return (
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 border border-slate-700/50">
-            <h2 className="text-xl font-bold text-white mb-6">Earnings Overview</h2>
-            <p className="text-slate-400">Salary information coming soon...</p>
-          </div>
-        );
-
-      case 'profile':
-        return <DriverProfile />;
-
-      case 'performance':
-        return (
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 border border-slate-700/50">
-            <h2 className="text-xl font-bold text-white mb-6">Performance Analytics</h2>
-            <div className="text-center py-10">
-              <BarChart3 className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-              <p className="text-slate-400">Performance analytics coming soon...</p>
-            </div>
-          </div>
-        );
-
-      case 'safety':
-        return (
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 border border-slate-700/50">
-            <h2 className="text-xl font-bold text-white mb-6">Safety Guidelines</h2>
-            <div className="space-y-4">
-              <div className="bg-slate-800/50 p-4 rounded-xl">
-                <h3 className="text-lg font-semibold text-white mb-2">Vehicle Safety</h3>
-                <p className="text-slate-300">Always perform pre-trip inspections and maintain vehicle in optimal condition.</p>
-              </div>
-              <div className="bg-slate-800/50 p-4 rounded-xl">
-                <h3 className="text-lg font-semibold text-white mb-2">Passenger Safety</h3>
-                <p className="text-slate-300">Ensure all passengers are seated and follow safety protocols during transit.</p>
-              </div>
-              <div className="bg-slate-800/50 p-4 rounded-xl">
-                <h3 className="text-lg font-semibold text-white mb-2">Road Safety</h3>
-                <p className="text-slate-300">Adhere to traffic rules and maintain safe driving practices at all times.</p>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'help':
-        return (
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 border border-slate-700/50">
-            <h2 className="text-xl font-bold text-white mb-6">Help & Support</h2>
-            <div className="text-center py-10">
-              <HelpCircle className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-              <p className="text-slate-400">Contact support for assistance:</p>
-              <p className="text-white font-semibold mt-2">support@buszone.com</p>
-              <p className="text-white font-semibold">+1 (555) 123-4567</p>
-            </div>
-          </div>
-        );
-
-      case 'settings':
-        return <SettingsContent onPasswordChangeClick={handlePasswordModalOpen} />;
-
-      default:
-        return (
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 border border-slate-700/50">
-            <h2 className="text-xl font-bold text-white mb-6">Dashboard</h2>
-            <p className="text-slate-400">Select a section from the sidebar to get started.</p>
-          </div>
-        );
-    }
-  }, [activeTab, handlePasswordModalOpen]);
-
-  const menuItems = [
-    { id: 'schedule', icon: Calendar, label: 'My Schedule' },
-    { id: 'salary', icon: DollarSign, label: 'Salary Details' },
-    { id: 'profile', icon: User, label: 'Driver Profile' },
-    { id: 'performance', icon: BarChart3, label: 'Performance' },
-    { id: 'safety', icon: Shield, label: 'Safety Guidelines' },
-    { id: 'help', icon: HelpCircle, label: 'Help & Support' },
-    { id: 'settings', icon: Settings, label: 'Settings' }
-  ];
-
   return (
-    <div className="flex h-screen bg-slate-950 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
       {/* Password Change Modal */}
       <PasswordChangeModal
         isOpen={showPasswordModal}
-        onClose={handlePasswordModalClose}
+        onClose={() => setShowPasswordModal(false)}
         onChangePassword={handlePasswordChange}
       />
 
-      {/* Overlay for mobile */}
-      {isMobile && isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20"
-          onClick={overlayClick}
-        />
-      )}
-
       {/* Sidebar */}
-      <div
-        className={`bg-slate-900 text-white transition-all duration-300 z-30 fixed md:relative h-full ${
-          isSidebarOpen ? 'w-64' : 'w-20'
-        }`}
-      >
-        <div className="p-4 flex items-center justify-between border-b border-slate-700">
-          {isSidebarOpen && (
+      <div className={`fixed inset-y-0 left-0 z-40 bg-slate-800/95 backdrop-blur-lg border-r border-slate-700 transition-transform duration-300 ease-in-out ${
+        isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full'
+      }`}>
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center justify-between p-6 border-b border-slate-700">
             <div className="flex items-center space-x-3">
-              <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-2 rounded-lg">
-                <MapPin className="h-6 w-6 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                <Bus className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold">Driver Portal</span>
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                BusZone
+              </span>
             </div>
-          )}
-          <button
-            onClick={handleSidebarToggle}
-            className="p-2 rounded-lg hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500"
-          >
-            {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
+            <button
+              onClick={toggleSidebar}
+              className="p-1 hover:bg-slate-700 rounded-lg md:hidden"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-        <nav className="p-4 space-y-2 mt-4">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleTabChange(item.id)}
-                className={`w-full flex items-center p-3 rounded-xl transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  activeTab === item.id
-                    ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-400 border border-blue-500/30'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                {isSidebarOpen && <span className="ml-3">{item.label}</span>}
-              </button>
-            );
-          })}
-        </nav>
+          {/* Navigation */}
+          <nav className="flex-1 p-4 space-y-2">
+            <button
+              onClick={() => setActiveTab('schedule')}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                activeTab === 'schedule'
+                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                  : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+              }`}
+            >
+              <Calendar className="w-5 h-5" />
+              <span className="font-medium">Schedule</span>
+            </button>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center p-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
-          >
-            <LogOut className="h-5 w-5" />
-            {isSidebarOpen && <span className="ml-3">Logout</span>}
-          </button>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                activeTab === 'profile'
+                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                  : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+              }`}
+            >
+              <User className="w-5 h-5" />
+              <span className="font-medium">Profile</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                activeTab === 'settings'
+                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                  : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+              }`}
+            >
+              <Settings className="w-5 h-5" />
+              <span className="font-medium">Settings</span>
+            </button>
+          </nav>
+
+          {/* User Info & Logout */}
+          <div className="p-4 border-t border-slate-700">
+            <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-700/50">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                <span className="font-semibold text-white">
+                  {user.firstName?.[0]}{user.lastName?.[0]}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  {user.firstName} {user.lastName}
+                </p>
+                <p className="text-xs text-slate-400 truncate">{user.email}</p>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center space-x-3 px-4 py-3 mt-3 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-xl transition-all duration-200"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-medium">Logout</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300">
-        {/* Header */}
-        <header className="bg-slate-900 border-b border-slate-700 p-4 flex items-center justify-between">
-          <h1 className="text-xl md:text-2xl font-bold text-white">
-            {activeTab === 'schedule' && 'Driver Schedule'}
-            {activeTab === 'salary' && 'Salary Details'}
-            {activeTab === 'profile' && 'Driver Profile'}
-            {activeTab === 'performance' && 'Performance Analytics'}
-            {activeTab === 'safety' && 'Safety Guidelines'}
-            {activeTab === 'help' && 'Help & Support'}
-            {activeTab === 'settings' && 'Account Settings'}
-          </h1>
+      <div className={`transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : 'ml-0'}`}>
+        {/* Top Bar */}
+        <header className="bg-slate-800/50 backdrop-blur-lg border-b border-slate-700 sticky top-0 z-30">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={toggleSidebar}
+                className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              
+              <div className="hidden md:block">
+                <h1 className="text-xl font-semibold text-white capitalize">
+                  {activeTab === 'schedule' ? 'Schedule Management' : 
+                   activeTab === 'profile' ? 'Driver Profile' : 
+                   activeTab === 'settings' ? 'Account Settings' : 'Dashboard'}
+                </h1>
+              </div>
+            </div>
 
-          <div className="flex items-center space-x-3 md:space-x-4">
-            <button
-              onClick={handleNotificationClick}
-              className="relative p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500"
-            >
-              <Bell className="h-5 w-5 md:h-6 md:w-6" />
-              {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 w-4 h-4 rounded-full text-xs flex items-center justify-center">
-                  {notificationCount}
-                </span>
-              )}
-            </button>
+            <div className="flex items-center space-x-4">
+              {/* Notifications */}
+              <button className="relative p-2 hover:bg-slate-700 rounded-lg transition-colors">
+                <Bell className="w-5 h-5 text-slate-300" />
+                {notificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {notificationCount}
+                  </span>
+                )}
+              </button>
 
-            <div className="flex items-center space-x-3 bg-slate-800 p-2 rounded-xl">
-              <img
-                src={profileImage}
-                alt={fullName}
-                className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-blue-500"
-              />
-              {!isMobile && (
-                <div className="text-right">
-                  <div className="text-white font-medium text-sm md:text-base">{fullName}</div>
-                  <div className="text-xs text-slate-400">Driver ID: {driverId.slice(-6)}</div>
+              {/* User Menu */}
+              <div className="flex items-center space-x-3">
+                <div className="hidden md:block text-right">
+                  <p className="text-sm font-medium text-white">
+                    {user.firstName} {user.lastName}
+                  </p>
+                  <p className="text-xs text-slate-400">Driver</p>
                 </div>
-              )}
-              <ChevronDown className="h-4 w-4 text-slate-400" />
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                  <span className="font-semibold text-white text-sm">
+                    {user.firstName?.[0]}{user.lastName?.[0]}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </header>
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-950">
+        {/* Page Content */}
+        <main className="p-4 md:p-6">
           {renderContent()}
         </main>
       </div>
+
+      {/* Mobile Overlay */}
+      {isSidebarOpen && isMobile && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
     </div>
   );
 };
 
-export default React.memo(DriverDashboard);
+export default DriverDashboard;

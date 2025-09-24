@@ -22,7 +22,6 @@ import {
   ChevronDown,
   MoreVertical
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
@@ -142,7 +141,6 @@ const MaintenanceManagement = () => {
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch maintenance requests', error);
-      toast.error('Failed to fetch maintenance requests');
       setLoading(false);
     }
   };
@@ -156,7 +154,6 @@ const MaintenanceManagement = () => {
       setStaffUsers(response.data || []);
     } catch (error) {
       console.error('Failed to fetch staff users', error);
-      toast.error('Failed to fetch staff users');
     }
   };
 
@@ -169,7 +166,6 @@ const MaintenanceManagement = () => {
       setActiveBuses(response.data || []);
     } catch (error) {
       console.error('Failed to fetch active buses', error);
-      toast.error('Failed to fetch active buses');
     }
   };
 
@@ -230,7 +226,6 @@ const MaintenanceManagement = () => {
     e.preventDefault();
     
     if (!validateForm()) {
-      toast.error('Please fix the validation errors');
       return;
     }
 
@@ -248,12 +243,10 @@ const MaintenanceManagement = () => {
         await axios.put(`${BACKEND_URL}/api/maintenance/${editingMaintenance._id}`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        toast.success('Maintenance request updated successfully');
       } else {
         await axios.post(`${BACKEND_URL}/api/maintenance`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        toast.success('Maintenance request created successfully');
       }
 
       setShowModal(false);
@@ -275,7 +268,6 @@ const MaintenanceManagement = () => {
       fetchCostStats();
     } catch (error) {
       console.error('Failed to save maintenance request', error);
-      toast.error(error.response?.data?.message || 'Failed to save maintenance request');
     }
   };
 
@@ -304,13 +296,11 @@ const MaintenanceManagement = () => {
       await axios.delete(`${BACKEND_URL}/api/maintenance/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Maintenance request deleted successfully');
       fetchMaintenances();
       fetchStats();
       fetchCostStats();
     } catch (error) {
       console.error('Failed to delete maintenance request', error);
-      toast.error('Failed to delete maintenance request');
     }
   };
 
@@ -447,10 +437,8 @@ const MaintenanceManagement = () => {
       
       printWindow.document.close();
       printWindow.print();
-      toast.success('PDF generated successfully');
     } catch (error) {
       console.error('PDF export failed:', error);
-      toast.error('PDF export failed');
     }
   };
 
@@ -487,11 +475,8 @@ const MaintenanceManagement = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      toast.success('Excel/CSV file downloaded successfully');
     } catch (error) {
       console.error('Excel export failed:', error);
-      toast.error('Excel export failed');
     }
   };
 
