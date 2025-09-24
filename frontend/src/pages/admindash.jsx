@@ -56,6 +56,8 @@ import {
 
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import MaintenanceManagement from './MaintenanceManagement';
+import AllBookings from './allbookings';
 
 const AdminDashboard = () => {
   const { user: authUser, logout } = useAuth();
@@ -945,9 +947,9 @@ const AdminDashboard = () => {
       case 'payments':
         return <PaymentManagement />;
       case 'bookings':
-        return <div className="text-white p-6">Bookings (placeholder)</div>;
+        return <AllBookings/>;
       case 'maintenance':
-        return <MaintenanceContent />;
+        return <MaintenanceManagement />;
       case 'drivers':
         return <div className="text-white p-6">Driver Assign (placeholder)</div>;
       case 'attendance':

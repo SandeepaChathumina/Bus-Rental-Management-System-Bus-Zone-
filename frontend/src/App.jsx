@@ -35,6 +35,8 @@ import PaymentManagement from './pages/PaymentManagement';
 
 // ✅ Import ProtectedRoute
 import ProtectedRoute from './components/ProtectedRoute';
+import ViewMyBookings from './pages/ViewMyBookings';
+import AllBookings from './pages/allbookings';
 
 function App() {
   return (
@@ -82,6 +84,23 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['passenger', 'admin']}>
                     <PassengerProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/mybookings"
+                element={
+                  <ProtectedRoute allowedRoles={['passenger', 'admin']}>
+                    <ViewMyBookings />
+                  </ProtectedRoute>
+                }
+              />
+                            <Route
+                path="/allbookings"
+                element={
+                  <ProtectedRoute allowedRoles={[ 'admin']}>
+                    <AllBookings />
                   </ProtectedRoute>
                 }
               />

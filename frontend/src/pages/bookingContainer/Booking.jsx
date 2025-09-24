@@ -543,7 +543,7 @@ const BookingNavbar = () => {
   };
 
   const handleMyBookingsClick = () => {
-    navigate('/my-bookings');
+    navigate('/mybookings');
   };
 
   const handleFeedbackClick = () => {

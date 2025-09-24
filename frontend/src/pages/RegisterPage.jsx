@@ -48,7 +48,7 @@ const RegisterPage = () => {
   // Email validation regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   // Phone validation regex - exactly 10 digits
-  const phoneRegex = /^\d{10}$/;
+  const phoneRegex = /^0\d{9}$/;
   // NIC validation regex - 9 or 12 digits only
   const nicRegex = /^\d{9}$|^\d{12}$/;
   // Password validation - at least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char

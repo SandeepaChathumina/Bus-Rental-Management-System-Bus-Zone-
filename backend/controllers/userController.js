@@ -336,18 +336,18 @@ const checkEmailAvailability = async (req, res) => {
 const checkPhoneAvailability = async (req, res) => {
   try {
     const { phone } = req.query;
-    
+
     if (!phone) {
       return res.status(400).json({ message: 'Phone parameter is required' });
     }
-    
-    // If phone is empty string, consider it available (since it's optional)
-    if (phone === '') {
-      return res.json({ available: true });
+
+    // 🚨 Validate Sri Lankan phone number format (10 digits, starting with 0)
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ message: 'Invalid phone number format. Must start with 0 and be 10 digits.' });
     }
-    
+
     const existingUser = await User.findOne({ phone });
-    
     return res.json({ available: !existingUser });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -371,6 +371,28 @@ const checkNICAvailability = async (req, res) => {
   }
 };
 
+// ==================== ACTIVATE USER ====================
+const activateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Only admin can activate
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to activate users' });
+    }
+
+    user.isActive = true;
+    await user.save();
+
+    res.json({ message: 'User activated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export {
   registerUser,
   loginUser,
@@ -378,6 +400,7 @@ export {
   getUserById,
   updateUser,
   deleteUser,
+  activateUser, // Add this line
   getUserReport,
   checkUsernameAvailability,
   checkEmailAvailability,
