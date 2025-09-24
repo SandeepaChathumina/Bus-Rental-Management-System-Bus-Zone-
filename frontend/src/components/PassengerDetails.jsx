@@ -1,6 +1,7 @@
-// src/components/PassengerDetails.jsx - UPDATED
+// src/components/PassengerDetails.jsx - FIXED
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { 
   ArrowLeft,
   User,
@@ -11,8 +12,11 @@ import {
   Clock,
   Users,
   Calendar,
-  Calculator
+  Calculator,
+  Loader
 } from 'lucide-react';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 const PassengerDetails = () => {
   const location = useLocation();
@@ -26,6 +30,7 @@ const PassengerDetails = () => {
     email: '',
     phone: ''
   });
+  const [isCreatingBooking, setIsCreatingBooking] = useState(false);
 
   // Calculate number of days and total amount
   const calculatePricing = () => {
@@ -88,7 +93,70 @@ const PassengerDetails = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const createBookingInDatabase = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please login to continue with booking');
+      }
+
+      // Prepare booking data matching the backend schema
+      const bookingData = {
+        busId: bus._id,
+        travelDate: searchParams.travelDate,
+        returnDate: searchParams.returnDate || null,
+        tripType: searchParams.tripType || 'one-way',
+        departureTime: searchParams.departureTime,
+        seats: passengerDetails.map((passenger, index) => ({
+          seatNumber: passenger.seatNumber,
+          passengerName: passenger.name,
+          passengerNIC: passenger.nic,
+          passengerAge: parseInt(passenger.age),
+          passengerGender: passenger.gender
+        })),
+        numberOfPassengers: passengerDetails.length,
+        route: {
+          from: searchParams.from,
+          to: searchParams.to
+        },
+        contactInfo: contactInfo
+      };
+
+      console.log('Creating booking with data:', bookingData);
+
+      const response = await axios.post(
+        `${BACKEND_URL}/api/bookings`,
+        bookingData,
+        {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('Booking creation response:', response.data);
+
+      if (response.data.success) {
+        return response.data.booking;
+      } else {
+        throw new Error(response.data.message || 'Failed to create booking');
+      }
+    } catch (error) {
+      console.error('Booking creation error:', error);
+      
+      // Handle specific error messages
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.message === 'Network Error') {
+        throw new Error('Unable to connect to server. Please check your internet connection.');
+      } else {
+        throw new Error(error.message || 'Failed to create booking');
+      }
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate all fields
@@ -105,36 +173,36 @@ const PassengerDetails = () => {
       alert('Please fill in your contact information');
       return;
     }
+
+    setIsCreatingBooking(true);
     
-    // Generate unique booking ID
-    const bookingId = `BK${Date.now()}`;
-    
-    // Proceed to checkout with all booking data
-    navigate('/checkout', {
-      state: {
-        booking: {
-          _id: bus._id , // Use the actual bus ID
-          bookingId: bookingId,
-          travelDate: searchParams.travelDate,
-          departureTime: searchParams.departureTime,
-          route: {
-            from: searchParams.from,
-            to: searchParams.to
-          },
-          seats: passengerDetails,
-          totalAmount: pricing.totalAmount,
-          busId: bus._id, // Explicitly pass bus ID
-          busType: bus.busType,
-          numberPlate: bus.numberPlate
-        },
-        bus: bus,
-        passengers: passengerDetails,
-        selectedSeats: selectedSeats,
-        searchParams: searchParams,
-        contactInfo: contactInfo,
-        pricing: pricing
-      }
-    });
+    try {
+      // Create booking in database first
+      const createdBooking = await createBookingInDatabase();
+      
+      console.log('Booking created successfully:', createdBooking);
+      
+      // Proceed to checkout with the actual booking data from database
+      navigate('/checkout', {
+        state: {
+          booking: createdBooking, // Use the actual booking from database
+          bus: bus,
+          passengers: passengerDetails,
+          selectedSeats: selectedSeats,
+          searchParams: searchParams,
+          contactInfo: contactInfo,
+          pricing: {
+            ...pricing,
+            totalAmount: createdBooking.totalAmount // Use the amount calculated by backend
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      alert(`Failed to create booking: ${error.message}`);
+    } finally {
+      setIsCreatingBooking(false);
+    }
   };
 
   return (
@@ -145,6 +213,7 @@ const PassengerDetails = () => {
           <button
             onClick={() => navigate(-1)}
             className="flex items-center text-slate-400 hover:text-white transition-colors"
+            disabled={isCreatingBooking}
           >
             <ArrowLeft className="mr-2" />
             Back
@@ -200,6 +269,11 @@ const PassengerDetails = () => {
                   <span className="ml-2">{selectedSeats.join(', ')}</span>
                 </div>
                 
+                <div className="flex items-center text-slate-300">
+                  <span className="font-medium">Bus Type:</span>
+                  <span className="ml-2">{bus.busType} - {bus.numberPlate}</span>
+                </div>
+                
                 {/* Pricing Breakdown */}
                 <div className="pt-4 border-t border-slate-700">
                   <div className="mb-3">
@@ -250,6 +324,7 @@ const PassengerDetails = () => {
                       onChange={(e) => handleContactChange('email', e.target.value)}
                       className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
+                      disabled={isCreatingBooking}
                     />
                   </div>
                   <div>
@@ -263,6 +338,7 @@ const PassengerDetails = () => {
                       onChange={(e) => handleContactChange('phone', e.target.value)}
                       className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
+                      disabled={isCreatingBooking}
                     />
                   </div>
                 </div>
@@ -288,6 +364,7 @@ const PassengerDetails = () => {
                             onChange={(e) => handlePassengerChange(index, 'name', e.target.value)}
                             className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
+                            disabled={isCreatingBooking}
                           />
                         </div>
                         
@@ -299,6 +376,7 @@ const PassengerDetails = () => {
                             onChange={(e) => handlePassengerChange(index, 'nic', e.target.value)}
                             className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
+                            disabled={isCreatingBooking}
                           />
                         </div>
                         
@@ -312,6 +390,7 @@ const PassengerDetails = () => {
                             onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
                             className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
+                            disabled={isCreatingBooking}
                           />
                         </div>
                         
@@ -322,6 +401,7 @@ const PassengerDetails = () => {
                             onChange={(e) => handlePassengerChange(index, 'gender', e.target.value)}
                             className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
+                            disabled={isCreatingBooking}
                           >
                             <option value="">Select Gender</option>
                             <option value="male">Male</option>
@@ -339,10 +419,20 @@ const PassengerDetails = () => {
               <div className="mt-8">
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
+                  disabled={isCreatingBooking}
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
                 >
-                  <CreditCard className="h-5 w-5" />
-                  <span>Proceed to Payment - Rs. {pricing.totalAmount}</span>
+                  {isCreatingBooking ? (
+                    <>
+                      <Loader className="h-5 w-5 animate-spin" />
+                      <span>Creating Booking...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-5 w-5" />
+                      <span>Proceed to Payment - Rs. {pricing.totalAmount}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
