@@ -25,7 +25,8 @@ import {
   Shield,
   MessageSquare,
   Save,
-  X
+  X,
+  Reply
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { jsPDF } from 'jspdf';
@@ -49,6 +50,9 @@ const AdminLostFound = () => {
     endDate: ''
   });
   const [exporting, setExporting] = useState(false);
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyingItem, setReplyingItem] = useState(null);
+  const [replyMessage, setReplyMessage] = useState('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -99,6 +103,7 @@ const AdminLostFound = () => {
               route: 'Colombo - Kandy'
             },
             adminNotes: '',
+            adminReply: '',
             createdAt: new Date('2024-09-20').toISOString(),
             updatedAt: new Date('2024-09-20').toISOString()
           },
@@ -111,6 +116,7 @@ const AdminLostFound = () => {
             status: 'Found',
             reportedBy: 'Admin',
             adminNotes: 'Found under seat 15A, kept in office storage room',
+            adminReply: 'Item has been verified and stored in the main storage room. Waiting for claimant.',
             createdAt: new Date('2024-09-19').toISOString(),
             updatedAt: new Date('2024-09-19').toISOString()
           },
@@ -135,6 +141,7 @@ const AdminLostFound = () => {
               route: 'Negombo - Colombo'
             },
             adminNotes: 'Successfully returned to owner after verification',
+            adminReply: 'Owner verified identity and item returned on 09/18/2024.',
             createdAt: new Date('2024-09-17').toISOString(),
             updatedAt: new Date('2024-09-17').toISOString()
           }
@@ -258,6 +265,61 @@ const AdminLostFound = () => {
     }
   };
 
+  // Admin Reply Functionality
+  const handleAdminReply = async (e) => {
+    e.preventDefault();
+    
+    if (!replyMessage.trim()) {
+      toast.error('Please enter a reply message');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BACKEND_URL}/api/lost-items/${replyingItem._id}/reply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          adminReply: replyMessage,
+          repliedBy: authUser?.firstName || 'Admin'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send reply');
+      }
+
+      const data = await response.json();
+      
+      // Update the item in the state
+      setLostItems(prev =>
+        prev.map(item =>
+          item._id === replyingItem._id ? { 
+            ...item, 
+            adminReply: replyMessage,
+            updatedAt: new Date().toISOString()
+          } : item
+        )
+      );
+
+      toast.success('Reply sent successfully');
+      setShowReplyForm(false);
+      setReplyingItem(null);
+      setReplyMessage('');
+      
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      toast.error('Failed to send reply');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (editingItem) {
@@ -328,9 +390,9 @@ const AdminLostFound = () => {
   const cleanTextForPDF = (text) => {
     if (!text) return '';
     return text
-      .replace(/[^\x00-\x7F]/g, '') // Remove non-ASCII characters
-      .replace(/[^\w\s.,!?\-():;/@#$%&*+=]/g, '') // Keep only safe characters
-      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+      .replace(/[^\x00-\x7F]/g, '')
+      .replace(/[^\w\s.,!?\-():;/@#$%&*+=]/g, '')
+      .replace(/\s+/g, ' ')
       .trim();
   };
 
@@ -363,7 +425,6 @@ const AdminLostFound = () => {
     setExporting(true);
 
     try {
-      // Create new PDF document
       const doc = new jsPDF();
       
       // Set document properties
@@ -375,7 +436,7 @@ const AdminLostFound = () => {
       });
 
       // Add header
-      doc.setFillColor(44, 62, 80); // Dark blue background
+      doc.setFillColor(44, 62, 80);
       doc.rect(0, 0, 210, 25, 'F');
       
       doc.setFontSize(20);
@@ -405,11 +466,9 @@ const AdminLostFound = () => {
       doc.setTextColor(44, 62, 80);
       doc.text('REPORT SUMMARY', 14, 55);
       
-      // Draw line
       doc.setDrawColor(200, 200, 200);
       doc.line(14, 57, 196, 57);
 
-      // Summary statistics
       const summaryData = [
         { label: 'Reported', value: itemsInRange.filter(item => item.status === 'Reported').length, color: [243, 156, 18] },
         { label: 'Found', value: itemsInRange.filter(item => item.status === 'Found').length, color: [39, 174, 96] },
@@ -508,103 +567,6 @@ const AdminLostFound = () => {
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('Failed to generate PDF report. Please try again.');
-    } finally {
-      setExporting(false);
-      setShowExportModal(false);
-      setExportDateRange({ startDate: '', endDate: '' });
-    }
-  };
-
-  // Alternative simple PDF generation for better compatibility
-  const generateSimplePDF = async () => {
-    if (!exportDateRange.startDate || !exportDateRange.endDate) {
-      toast.error('Please select both start and end dates');
-      return;
-    }
-
-    const startDate = new Date(exportDateRange.startDate);
-    const endDate = new Date(exportDateRange.endDate);
-    
-    if (startDate > endDate) {
-      toast.error('Start date cannot be after end date');
-      return;
-    }
-
-    const itemsInRange = lostItems.filter(item => {
-      const itemDate = new Date(item.dateLost);
-      return itemDate >= startDate && itemDate <= endDate;
-    });
-
-    if (itemsInRange.length === 0) {
-      toast.error('No items found in the selected date range');
-      return;
-    }
-
-    setExporting(true);
-
-    try {
-      const doc = new jsPDF();
-      
-      // Simple header
-      doc.setFontSize(16);
-      doc.setTextColor(44, 62, 80);
-      doc.text('BusZone - Lost & Found Report', 105, 15, { align: 'center' });
-      
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Report Period: ${formatDateForExport(exportDateRange.startDate)} to ${formatDateForExport(exportDateRange.endDate)}`, 14, 25);
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
-      doc.text(`Total Items: ${itemsInRange.length}`, 14, 35);
-
-      // Simple table
-      let yPos = 45;
-      itemsInRange.forEach((item, index) => {
-        if (yPos > 270) {
-          doc.addPage();
-          yPos = 20;
-        }
-
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        
-        // Item name
-        doc.setFont(undefined, 'bold');
-        doc.text(`Item: ${cleanTextForPDF(item.itemName)}`, 14, yPos);
-        yPos += 5;
-        
-        // Description
-        doc.setFont(undefined, 'normal');
-        const description = cleanTextForPDF(item.description || 'No description');
-        const descriptionLines = doc.splitTextToSize(description, 180);
-        doc.text(descriptionLines, 14, yPos);
-        yPos += descriptionLines.length * 5;
-        
-        // Details
-        doc.text(`Bus: ${item.busNumber} | Date Lost: ${formatDateForExport(item.dateLost)} | Status: ${item.status} | Reported By: ${item.reportedBy}`, 14, yPos);
-        yPos += 10;
-        
-        // Separator
-        if (index < itemsInRange.length - 1) {
-          doc.line(14, yPos, 196, yPos);
-          yPos += 5;
-        }
-      });
-
-      // Footer
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-      doc.text('BusZone Lost & Found Management System - Confidential Report', 105, 285, { align: 'center' });
-
-      // Save PDF
-      const filename = `Lost-Found-Report-${exportDateRange.startDate}-to-${exportDateRange.endDate}.pdf`;
-      doc.save(filename);
-      
-      toast.success('PDF report downloaded successfully!');
-
-    } catch (error) {
-      console.error('Error generating simple PDF:', error);
-      // Fallback to the main method
-      await generatePDFReport();
     } finally {
       setExporting(false);
       setShowExportModal(false);
@@ -771,7 +733,7 @@ const AdminLostFound = () => {
                             ) : (
                               <User className="w-4 h-4 mr-2 text-blue-400" />
                             )}
-                            <span>{item.reportedBy === 'User' ? 'Reported by User' : 'Reported by User'}</span>
+                            <span>{item.reportedBy === 'User' ? 'Reported by User' : 'Reported by Admin'}</span>
                           </div>
                         </div>
 
@@ -809,11 +771,24 @@ const AdminLostFound = () => {
                             </div>
                           </div>
                         )}
+
+                        {item.adminReply && (
+                          <div className="mt-3 p-3 bg-green-900/20 border border-green-700/30 rounded-lg">
+                            <div className="flex items-start">
+                              <Reply className="w-4 h-4 mr-2 text-green-400 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-green-300 mb-1">Admin Reply:</p>
+                                <p className="text-sm text-slate-300">{item.adminReply}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
+                    {/* Action Buttons - View, Admin Reply, Edit, Delete */}
                     <div className="flex items-center justify-end space-x-2 pt-4 border-t border-slate-700">
+                      {/* View Button */}
                       <button
                         onClick={() => setSelectedItem(item)}
                         className="px-3 py-1 text-slate-400 hover:text-white transition-colors flex items-center text-sm"
@@ -822,14 +797,29 @@ const AdminLostFound = () => {
                         View
                       </button>
                       
+                      {/* Admin Reply Button */}
+                      <button
+                        onClick={() => {
+                          setReplyingItem(item);
+                          setReplyMessage(item.adminReply || '');
+                          setShowReplyForm(true);
+                        }}
+                        className="px-3 py-1 text-green-400 hover:text-green-300 transition-colors flex items-center text-sm"
+                      >
+                        <Reply className="w-4 h-4 mr-1" />
+                        Admin Reply
+                      </button>
+                      
+                      {/* Edit Button */}
                       <button
                         onClick={() => setEditingItem({...item})}
                         className="px-3 py-1 text-blue-400 hover:text-blue-300 transition-colors flex items-center text-sm"
                       >
                         <Edit className="w-4 h-4 mr-1" />
-                        Admin Reply
+                        Edit
                       </button>
                       
+                      {/* Delete Button */}
                       <button
                         onClick={() => deleteItem(item._id)}
                         className="px-3 py-1 text-red-400 hover:text-red-300 transition-colors flex items-center text-sm"
@@ -932,8 +922,409 @@ const AdminLostFound = () => {
         </div>
       )}
 
-      {/* Rest of the modals remain the same */}
-      {/* ... (other modals remain unchanged) ... */}
+      {/* Admin Reply Modal */}
+      {showReplyForm && replyingItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Admin Reply</h2>
+              <button
+                onClick={() => {
+                  setShowReplyForm(false);
+                  setReplyingItem(null);
+                  setReplyMessage('');
+                }}
+                className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-4 p-3 bg-slate-700 rounded-lg">
+              <h3 className="font-semibold text-white mb-2">Replying to:</h3>
+              <p className="text-slate-300">{replyingItem.itemName}</p>
+              <p className="text-slate-400 text-sm">Bus: {replyingItem.busNumber} | Status: {replyingItem.status}</p>
+            </div>
+
+            <form onSubmit={handleAdminReply} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Reply Message
+                </label>
+                <textarea
+                  value={replyMessage}
+                  onChange={(e) => setReplyMessage(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="Type your reply message here..."
+                  required
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReplyForm(false);
+                    setReplyingItem(null);
+                    setReplyMessage('');
+                  }}
+                  className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 text-slate-300 rounded-lg font-medium hover:bg-slate-600 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  <Reply className="w-4 h-4 mr-2" />
+                  {submitting ? 'Sending...' : 'Send Reply'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Report Lost Item Modal */}
+      {showReportForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Report Lost Item</h2>
+              <button
+                onClick={() => setShowReportForm(false)}
+                className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReport} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Item Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.itemName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., Black backpack, Red umbrella"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="Describe the item in detail..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Date Lost
+                </label>
+                <input
+                  type="date"
+                  value={formData.dateLost}
+                  onChange={(e) => setFormData(prev => ({ ...prev, dateLost: e.target.value }))}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Bus Number *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.busNumber}
+                  onChange={(e) => setFormData(prev => ({ ...prev, busNumber: e.target.value }))}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., BZ-001"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Status
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="Reported">Reported</option>
+                  <option value="Found">Found</option>
+                  <option value="Claimed">Claimed</option>
+                  <option value="Returned">Returned</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Admin Notes
+                </label>
+                <textarea
+                  value={formData.adminNotes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, adminNotes: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="Add any admin notes..."
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowReportForm(false)}
+                  className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 text-slate-300 rounded-lg font-medium hover:bg-slate-600 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {submitting ? 'Reporting...' : 'Report Item'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Item Modal */}
+      {editingItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Update Lost Item</h2>
+              <button
+                onClick={() => setEditingItem(null)}
+                className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Item Name
+                </label>
+                <input
+                  type="text"
+                  value={editingItem.itemName}
+                  disabled
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Status
+                </label>
+                <select
+                  value={editingItem.status}
+                  onChange={(e) => handleEditChange('status', e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="Reported">Reported</option>
+                  <option value="Found">Found</option>
+                  <option value="Claimed">Claimed</option>
+                  <option value="Returned">Returned</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Admin Notes
+                </label>
+                <textarea
+                  value={editingItem.adminNotes || ''}
+                  onChange={(e) => handleEditChange('adminNotes', e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="Add notes about the item status, location, condition, etc."
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setEditingItem(null)}
+                  className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 text-slate-300 rounded-lg font-medium hover:bg-slate-600 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Update Item
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Item Details Modal */}
+      {selectedItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Item Details</h2>
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex items-center space-x-3">
+                <h3 className="text-2xl font-semibold text-white">{selectedItem.itemName}</h3>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(selectedItem.status)}`}>
+                  {selectedItem.status}
+                </span>
+              </div>
+
+              {selectedItem.description && (
+                <div>
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">Description</h4>
+                  <p className="text-slate-300 bg-slate-700 p-3 rounded-lg">{selectedItem.description}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">Bus Information</h4>
+                  <div className="bg-slate-700 p-3 rounded-lg space-y-2">
+                    <div className="flex items-center">
+                      <Bus className="w-4 h-4 mr-2 text-blue-400" />
+                      <span className="text-white">Bus: {selectedItem.busNumber}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Calendar className="w-4 h-4 mr-2 text-blue-400" />
+                      <span className="text-white">Date Lost: {formatDate(selectedItem.dateLost)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">Report Information</h4>
+                  <div className="bg-slate-700 p-3 rounded-lg space-y-2">
+                    <div className="flex items-center">
+                      {selectedItem.reportedBy === 'Admin' ? (
+                        <Shield className="w-4 h-4 mr-2 text-purple-400" />
+                      ) : (
+                        <User className="w-4 h-4 mr-2 text-blue-400" />
+                      )}
+                      <span className="text-white">Reported By: {selectedItem.reportedBy === 'User' ? 'Reported by User' : 'Reported by User'}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Clock className="w-4 h-4 mr-2 text-blue-400" />
+                      <span className="text-white">Reported: {formatDate(selectedItem.createdAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {selectedItem.user && (
+                <div>
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">User Contact Information</h4>
+                  <div className="bg-slate-700 p-4 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-slate-300">
+                      <div className="flex items-center">
+                        <User className="w-4 h-4 mr-2 text-blue-400" />
+                        <span>{selectedItem.user.firstName} {selectedItem.user.lastName}</span>
+                      </div>
+                      {selectedItem.user.email && (
+                        <div className="flex items-center">
+                          <Mail className="w-4 h-4 mr-2 text-blue-400" />
+                          <span>{selectedItem.user.email}</span>
+                        </div>
+                      )}
+                      {selectedItem.user.phone && (
+                        <div className="flex items-center">
+                          <Phone className="w-4 h-4 mr-2 text-blue-400" />
+                          <span>{selectedItem.user.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedItem.adminNotes && (
+                <div>
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">Admin Notes</h4>
+                  <div className="bg-blue-900/20 border border-blue-700/30 p-4 rounded-lg">
+                    <p className="text-blue-300">{selectedItem.adminNotes}</p>
+                  </div>
+                </div>
+              )}
+
+              {selectedItem.adminReply && (
+                <div>
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">Admin Reply</h4>
+                  <div className="bg-green-900/20 border border-green-700/30 p-4 rounded-lg">
+                    <p className="text-green-300">{selectedItem.adminReply}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-6">
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="px-4 py-2 bg-slate-700 border border-slate-600 text-slate-300 rounded-lg hover:bg-slate-600 hover:text-white transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedItem(null);
+                  setReplyingItem(selectedItem);
+                  setReplyMessage(selectedItem.adminReply || '');
+                  setShowReplyForm(true);
+                }}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
+              >
+                <Reply className="w-4 h-4 mr-2" />
+                Admin Reply
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedItem(null);
+                  setEditingItem({...selectedItem});
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Item
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
