@@ -26,6 +26,7 @@ import BusZoneDashboard from './pages/staffdash';
 import MaintenanceManagement from './pages/MaintenanceManagement';
 import NotificationBell from './components/NotificationBell';
 import Lost from './pages/Lost'; // ✅ Import Lost & Found component
+import AdminLostFound from './pages/AdminLostFound'; // ✅ Import Admin Lost & Found component
 import PassengerDetails from './components/PassengerDetails';
 import Checkout from './pages/checkout/Checkout';
 import BookingSuccess from './pages/booking-success/BookingSuccess';
@@ -58,6 +59,7 @@ function App() {
               <Route path="/passenger-details" element={<PassengerDetails />} />
               <Route path="/gallery" element={<GalleryPage />} />
               <Route path="/paymnets" element={<PaymentManagement />} />
+              
               {/* Protected routes */}
               <Route
                 path="/checkout"
@@ -85,6 +87,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+
               <Route
                 path="/mybookings"
                 element={
@@ -101,6 +104,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+
               <Route
                 path="/booking"
                 element={
@@ -116,6 +120,16 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['passenger', 'admin', 'driver', 'staff']}>
                     <Lost />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* ✅ Admin Lost & Found Management */}
+              <Route
+                path="/admin/lost-found"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminLostFound />
                   </ProtectedRoute>
                 }
               />
@@ -197,12 +211,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/payments" element={
-  <ProtectedRoute requireAdmin>
-    <PaymentManagement />
-  </ProtectedRoute>
-} />
-              
+              <Route 
+                path="/payments" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <PaymentManagement />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </main>
           <Toaster position="top-right" />

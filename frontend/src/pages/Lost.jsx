@@ -54,6 +54,31 @@ const Lost = () => {
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
+  // Local storage key for persisting data
+  const LOST_ITEMS_STORAGE_KEY = 'buszone_lost_items';
+
+  // Load data from localStorage on component mount
+  const loadFromLocalStorage = () => {
+    try {
+      const savedData = localStorage.getItem(LOST_ITEMS_STORAGE_KEY);
+      if (savedData) {
+        return JSON.parse(savedData);
+      }
+    } catch (error) {
+      console.error('Error loading data from localStorage:', error);
+    }
+    return null;
+  };
+
+  // Save data to localStorage
+  const saveToLocalStorage = (items) => {
+    try {
+      localStorage.setItem(LOST_ITEMS_STORAGE_KEY, JSON.stringify(items));
+    } catch (error) {
+      console.error('Error saving data to localStorage:', error);
+    }
+  };
+
   // Real-time event listeners for admin updates
   useEffect(() => {
     const handleLostItemUpdated = (event) => {
@@ -61,8 +86,8 @@ const Lost = () => {
         const { itemId, updates } = event.detail;
         console.log('Lost.jsx: Received update for item:', itemId, updates);
         
-        setLostItems(prev => 
-          prev.map(item => {
+        setLostItems(prev => {
+          const updatedItems = prev.map(item => {
             if (item._id === itemId) {
               const updatedItem = { 
                 ...item, 
@@ -83,8 +108,12 @@ const Lost = () => {
               return updatedItem;
             }
             return item;
-          })
-        );
+          });
+          
+          // Save to localStorage
+          saveToLocalStorage(updatedItems);
+          return updatedItems;
+        });
       } catch (error) {
         console.error('Error handling lost item update:', error);
       }
@@ -94,7 +123,11 @@ const Lost = () => {
       try {
         const { itemId } = event.detail;
         console.log('Lost.jsx: Received delete for item:', itemId);
-        setLostItems(prev => prev.filter(item => item._id !== itemId));
+        setLostItems(prev => {
+          const updatedItems = prev.filter(item => item._id !== itemId);
+          saveToLocalStorage(updatedItems);
+          return updatedItems;
+        });
         toast.info('A lost item report has been removed by admin');
       } catch (error) {
         console.error('Error handling lost item deletion:', error);
@@ -111,7 +144,9 @@ const Lost = () => {
         setLostItems(prev => {
           const exists = prev.find(i => i._id === item._id);
           if (!exists) {
-            return [item, ...prev];
+            const updatedItems = [item, ...prev];
+            saveToLocalStorage(updatedItems);
+            return updatedItems;
           }
           return prev;
         });
@@ -152,9 +187,25 @@ const Lost = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       
+      // First, try to load from localStorage
+      const savedItems = loadFromLocalStorage();
+      if (savedItems && savedItems.length > 0) {
+        console.log('Loading lost items from localStorage');
+        const filteredData = user?.role === 'passenger' 
+          ? savedItems.filter(item => 
+              item.reportedBy === 'Admin' || 
+              (item.user && item.user._id === user._id)
+            )
+          : savedItems;
+        setLostItems(filteredData);
+        setLoading(false);
+        return;
+      }
+
       if (!token) {
         console.warn('No auth token found');
         setLostItems([]);
+        setLoading(false);
         return;
       }
 
@@ -177,7 +228,7 @@ const Lost = () => {
             dateLost: new Date('2025-09-03').toISOString(),
             busNumber: 'AD-8765',
             status: 'Reported',
-            reportedBy: 'User', // Changed from 'Admin' to 'User'
+            reportedBy: 'User',
             user: { 
               _id: user?._id || 'user1', 
               firstName: user?.firstName || 'John', 
@@ -213,7 +264,7 @@ const Lost = () => {
             dateLost: new Date('2025-09-01').toISOString(),
             busNumber: 'AD-9876',
             status: 'Reported',
-            reportedBy: 'User', // User reported item
+            reportedBy: 'User',
             user: { 
               _id: user?._id || 'user1', 
               firstName: user?.firstName || 'Jane', 
@@ -240,6 +291,7 @@ const Lost = () => {
           : mockData;
 
         setLostItems(filteredMockData);
+        saveToLocalStorage(filteredMockData);
         return;
       }
 
@@ -254,13 +306,16 @@ const Lost = () => {
           : data.lostItems;
 
         setLostItems(filteredData);
+        saveToLocalStorage(filteredData);
       } else {
         console.warn('No lost items data received');
         setLostItems([]);
+        saveToLocalStorage([]);
       }
     } catch (error) {
       console.error('Error fetching lost items:', error);
       setLostItems([]);
+      saveToLocalStorage([]);
       toast.error('Failed to load lost items');
     } finally {
       setLoading(false);
@@ -297,7 +352,7 @@ const Lost = () => {
   };
 
   const handleSubmitReport = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent default form submission behavior
     
     // Validation
     if (!formData.itemName.trim()) {
@@ -336,10 +391,10 @@ const Lost = () => {
       if (!response.ok) {
         // Create mock item with correct reportedBy value
         newItem = {
-          _id: Date.now().toString(),
+          _id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // More unique ID
           ...submitData,
           status: 'Reported',
-          reportedBy: user?.role === 'admin' ? 'Admin' : 'User', // Fixed this logic
+          reportedBy: user?.role === 'admin' ? 'Admin' : 'User',
           user: user?.role === 'passenger' ? user : null,
           booking: submitData.bookingId ? userBookings.find(b => b._id === submitData.bookingId) : null,
           adminNotes: '',
@@ -353,8 +408,12 @@ const Lost = () => {
         toast.success('Lost item reported successfully');
       }
 
-      // Update state
-      setLostItems(prev => [newItem, ...prev]);
+      // Update state and save to localStorage
+      setLostItems(prev => {
+        const updatedItems = [newItem, ...prev];
+        saveToLocalStorage(updatedItems);
+        return updatedItems;
+      });
       
       // Notify admin dashboard about new item
       window.dispatchEvent(new CustomEvent('lostItemCreated', {
@@ -400,7 +459,7 @@ const Lost = () => {
   };
 
   const handleSubmitEdit = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent default form submission behavior
     
     if (!editingItem) {
       toast.error('No item selected for editing');
@@ -454,12 +513,14 @@ const Lost = () => {
         updatedAt: new Date().toISOString()
       };
 
-      // Update local state immediately for better UX
-      setLostItems(prev =>
-        prev.map(item =>
+      // Update local state immediately for better UX and save to localStorage
+      setLostItems(prev => {
+        const updatedItems = prev.map(item =>
           item._id === editingItem._id ? { ...item, ...updates } : item
-        )
-      );
+        );
+        saveToLocalStorage(updatedItems);
+        return updatedItems;
+      });
 
       // Notify admin dashboard about the update
       window.dispatchEvent(new CustomEvent('lostItemUpdated', {
@@ -525,8 +586,12 @@ const Lost = () => {
     try {
       const token = localStorage.getItem('token');
       
-      // Optimistically remove from UI
-      setLostItems(prev => prev.filter(item => item._id !== itemId));
+      // Optimistically remove from UI and save to localStorage
+      setLostItems(prev => {
+        const updatedItems = prev.filter(item => item._id !== itemId);
+        saveToLocalStorage(updatedItems);
+        return updatedItems;
+      });
       
       const response = await fetch(`${BACKEND_URL}/api/lost-items/${itemId}`, {
         method: 'DELETE',
@@ -559,7 +624,16 @@ const Lost = () => {
     }
   };
 
-  // Permission checks - FIXED LOGIC
+  // Clear localStorage data (for debugging)
+  const clearLocalStorage = () => {
+    if (window.confirm('Are you sure you want to clear all local data? This cannot be undone.')) {
+      localStorage.removeItem(LOST_ITEMS_STORAGE_KEY);
+      toast.success('Local data cleared');
+      fetchLostItems(); // Reload with fresh data
+    }
+  };
+
+  // Permission checks
   const canEditItem = (item) => {
     if (!item) return false;
     
@@ -627,9 +701,12 @@ const Lost = () => {
       <User className="w-4 h-4 text-blue-400" />;
   };
 
-  // Fixed function to get proper display text for "By" field
-  const getReportedByText = (reportedBy) => {
-    return reportedBy === 'Admin' ? 'Admin' : 'User';
+  const getReportedByText = (item) => {
+    if (item.reportedBy === 'Admin') {
+      return 'By: Admin';
+    } else {
+      return `By: ${item.user?.firstName || 'User'}`;
+    }
   };
 
   const filteredItems = lostItems.filter(item => {
@@ -748,6 +825,21 @@ const Lost = () => {
             <Home className="w-5 h-5 mr-3" />
             <span>Dashboard</span>
           </Link>
+          
+          {/* Debug option for admins */}
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => {
+                clearLocalStorage();
+                setSidebarOpen(false);
+              }}
+              className="flex items-center w-full px-4 py-3 text-orange-400 hover:bg-orange-900/30 hover:text-orange-300 rounded-lg mb-2"
+            >
+              <RefreshCw className="w-5 h-5 mr-3" />
+              <span>Clear Local Data</span>
+            </button>
+          )}
+          
           <button
             onClick={() => {
               navigate('/login');
@@ -775,6 +867,10 @@ const Lost = () => {
             <div>
               <h1 className="text-3xl font-bold text-white mb-2">Lost & Found</h1>
               <p className="text-slate-400">Report and track lost items from your bus journeys</p>
+              <div className="flex items-center mt-1 text-xs text-slate-500">
+                <span>Data persistence: Active</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full ml-2"></div>
+              </div>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -819,9 +915,21 @@ const Lost = () => {
                 onClick={fetchLostItems}
                 disabled={loading}
                 className="p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-300 hover:text-white transition-colors disabled:opacity-50"
+                title="Refresh data"
               >
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               </button>
+
+              {/* Debug button for admins */}
+              {user?.role === 'admin' && (
+                <button
+                  onClick={clearLocalStorage}
+                  className="p-3 bg-orange-800 hover:bg-orange-700 border border-orange-700 rounded-xl text-orange-300 hover:text-white transition-colors"
+                  title="Clear local data"
+                >
+                  <span className="text-xs">Clear Data</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -892,9 +1000,7 @@ const Lost = () => {
 
                     <div className="flex items-center text-sm text-slate-300">
                       {getReportedByIcon(item.reportedBy)}
-                      <span className="ml-2">
-                      {item.reportedBy === 'User' ? 'By: Admin' : `Reported by ${item.user?.firstName || 'User'}`}
-                    </span>
+                      <span className="ml-2">By: User</span>
                     </div>
 
                     {item.user && (
