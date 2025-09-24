@@ -1,4 +1,4 @@
-// controllers/bookingController.js
+// controllers/bookingController.js - FIXED VERSION
 import Booking from '../models/booking.js';
 import Bus from '../models/bus.js';
 import Schedule from '../models/schedule.js';
@@ -8,98 +8,12 @@ import Invoice from '../models/invoice.js';
 import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
 
-// Get available buses for a route and date
-export const getAvailableBuses = async (req, res) => {
-  try {
-    const { from, to, travelDate, passengers } = req.query;
-
-    if (!from || !to || !travelDate) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required parameters: from, to, travelDate'
-      });
-    }
-
-    // Convert travelDate to Date object
-    const searchDate = new Date(travelDate);
-    const dayOfWeek = searchDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-
-    // Find buses that are available and not booked for the specified date
-    const availableBuses = await Bus.find({ 
-      status: 'Available',
-      isActive: true
-    });
-
-    // For now, return sample data with actual bus data
-    const busesWithAvailability = await Promise.all(
-      availableBuses.map(async (bus) => {
-        // Check for existing bookings on this date
-        const existingBookings = await Booking.find({
-          bus: bus._id,
-          travelDate: {
-            $gte: new Date(searchDate.setHours(0, 0, 0, 0)),
-            $lt: new Date(searchDate.setHours(23, 59, 59, 999))
-          },
-          bookingStatus: { $ne: 'Cancelled' }
-        });
-
-        const bookedSeats = existingBookings.reduce((total, booking) => 
-          total + booking.seats.length, 0
-        );
-
-        const availableSeats = bus.capacity - bookedSeats;
-
-        return {
-          _id: bus._id,
-          busId: bus.busId,
-          busType: bus.busType,
-          numberPlate: bus.numberPlate,
-          capacity: bus.capacity,
-          availableSeats: availableSeats,
-          pricePerDay: bus.pricePerDay,
-          amenities: getBusAmenities(bus.busType),
-          vehiclePhoto: bus.vehiclePhoto,
-          status: bus.status
-        };
-      })
-    );
-
-    // Filter buses with available seats
-    const filteredBuses = busesWithAvailability.filter(bus => 
-      bus.availableSeats >= parseInt(passengers || 1)
-    );
-
-    res.json({
-      success: true,
-      availableBuses: filteredBuses,
-      count: filteredBuses.length,
-      message: 'Buses found successfully'
-    });
-
-  } catch (error) {
-    console.error('Get available buses error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Server error: ' + error.message 
-    });
-  }
-};
-
-// Helper function to get bus amenities
-const getBusAmenities = (busType) => {
-  const amenitiesMap = {
-    'Standard': ['ac', 'charging'],
-    'Deluxe': ['wifi', 'ac', 'refreshments', 'charging'],
-    'Luxury': ['wifi', 'ac', 'refreshments', 'leather', 'entertainment', 'charging'],
-    'Mini': ['ac', 'charging'],
-    'Double Decker': ['wifi', 'ac', 'refreshments', 'entertainment', 'charging']
-  };
-  return amenitiesMap[busType] || ['ac', 'charging'];
-};
-
 // Create new booking
 export const createBooking = async (req, res) => {
   try {
+    console.log('Creating booking with data:', req.body);
+    console.log('User:', req.user);
+
     const { 
       busId, 
       travelDate, 
@@ -109,7 +23,7 @@ export const createBooking = async (req, res) => {
       contactInfo,
       tripType = 'one-way',
       returnDate,
-      departureTime 
+      departureTime = '08:00'
     } = req.body;
     
     const userId = req.user._id;
@@ -119,6 +33,14 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ 
         success: false,
         message: 'Missing required fields: busId, travelDate, seats, numberOfPassengers, route' 
+      });
+    }
+
+    // Validate route object
+    if (!route.from || !route.to) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Route must contain both from and to locations' 
       });
     }
 
@@ -143,6 +65,18 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ 
         success: false,
         message: `Cannot book more than ${bus.capacity} seats` 
+      });
+    }
+
+    // Validate seats data structure
+    const validSeats = seats.every(seat => 
+      seat.seatNumber && seat.passengerName && seat.passengerNIC && seat.passengerAge && seat.passengerGender
+    );
+
+    if (!validSeats) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'All seat information must include seatNumber, passengerName, passengerNIC, passengerAge, and passengerGender' 
       });
     }
 
@@ -184,33 +118,52 @@ export const createBooking = async (req, res) => {
 
     // Calculate pricing based on trip type and duration
     const pricing = calculatePricing(bus.pricePerDay, travelDate, returnDate, tripType);
+    console.log('Calculated pricing:', pricing);
 
     // Generate unique booking ID
-    const bookingId = `BK${uuidv4().slice(0, 8).toUpperCase()}`;
+    const bookingId = `BK${Date.now()}${Math.random().toString(36).substr(2, 3)}`;
 
-    // Create booking
-    const booking = new Booking({
+    // Prepare booking data
+    const bookingData = {
       bookingId,
       user: userId,
       bus: busId,
       travelDate: new Date(travelDate),
       returnDate: returnDate ? new Date(returnDate) : null,
       tripType,
-      departureTime: departureTime || '08:00',
-      seats,
-      numberOfPassengers,
-      route,
-      contactInfo,
+      numberOfDays: pricing.numberOfDays,
+      departureTime: departureTime,
+      seats: seats.map(seat => ({
+        seatNumber: seat.seatNumber,
+        passengerName: seat.passengerName,
+        passengerNIC: seat.passengerNIC,
+        passengerAge: parseInt(seat.passengerAge),
+        passengerGender: seat.passengerGender
+      })),
+      numberOfPassengers: parseInt(numberOfPassengers),
+      route: {
+        from: route.from,
+        to: route.to,
+        distance: route.distance || null,
+        estimatedDuration: route.estimatedDuration || null
+      },
+      contactInfo: contactInfo,
       totalAmount: pricing.totalAmount,
       paymentStatus: 'Pending',
       bookingStatus: 'Pending'
-    });
+    };
 
+    console.log('Final booking data:', bookingData);
+
+    // Create booking
+    const booking = new Booking(bookingData);
     const savedBooking = await booking.save();
-    console.log('booking'+ savedBooking)
+    
+    console.log('Booking saved successfully:', savedBooking);
+
     // Populate bus and user details for response
     const bookingWithDetails = await Booking.findById(savedBooking._id)
-      .populate('bus', 'busId busType numberPlate capacity')
+      .populate('bus', 'busId busType numberPlate capacity pricePerDay')
       .populate('user', 'firstName lastName email');
     
     res.status(201).json({
@@ -221,13 +174,12 @@ export const createBooking = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Booking creation error:', error);
+    console.error('Get booking by ID error:', error);
     
-    // Handle MongoDB CastError (invalid ID format)
     if (error.name === 'CastError') {
       return res.status(400).json({ 
         success: false,
-        message: 'Invalid bus ID format' 
+        message: 'Invalid booking ID format' 
       });
     }
     
@@ -235,210 +187,6 @@ export const createBooking = async (req, res) => {
       success: false,
       message: 'Server error: ' + error.message 
     });
-  }
-};
-
-// Calculate pricing based on trip type and duration
-const calculatePricing = (basePrice, travelDate, returnDate, tripType) => {
-  const basePriceNum = parseFloat(basePrice) || 0;
-  let numberOfDays = 1;
-  
-  if (tripType === 'round-trip' && returnDate) {
-    const startDate = new Date(travelDate);
-    const endDate = new Date(returnDate);
-    const timeDiff = endDate.getTime() - startDate.getTime();
-    numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // Include both days
-  }
-  
-  // Calculate total amount: basePrice + (basePrice * 1/4) for each additional day
-  let totalAmount = basePriceNum;
-  
-  if (numberOfDays > 1) {
-    totalAmount = basePriceNum + (basePriceNum * 0.25 * (numberOfDays - 1));
-  }
-  
-  return {
-    basePrice: basePriceNum,
-    numberOfDays,
-    totalAmount: Math.round(totalAmount),
-    tripType
-  };
-};
-
-// Process booking payment
-export const processBookingPayment = async (req, res) => {
-  try {
-    const { bookingId } = req.params;
-    const { paymentMethod, paymentGateway, cardDetails } = req.body;
-    const userId = req.user._id;
-
-    // Find the booking
-    const booking = await Booking.findById(bookingId)
-      .populate('bus')
-      .populate('user');
-    
-    if (!booking) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Booking not found' 
-      });
-    }
-
-    // Check if booking belongs to user
-    if (booking.user._id.toString() !== userId.toString()) {
-      return res.status(403).json({ 
-        success: false,
-        message: 'Not authorized to process payment for this booking' 
-      });
-    }
-
-    // Check if booking is already paid
-    if (booking.paymentStatus === 'Paid') {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Booking is already paid' 
-      });
-    }
-
-    // Validate payment method
-    if (!['card', 'bank_transfer', 'cash', 'wallet'].includes(paymentMethod)) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Invalid payment method' 
-      });
-    }
-
-    // Create payment record
-    const payment = new Payment({
-      paymentId: `PAY${uuidv4().slice(0, 8).toUpperCase()}`,
-      booking: booking._id,
-      user: userId,
-      amount: booking.totalAmount,
-      currency: 'LKR',
-      paymentMethod,
-      paymentGateway: paymentGateway || 'none',
-      cardDetails: paymentMethod === 'card' ? cardDetails : undefined,
-      transactionId: `TXN${Date.now()}${Math.random().toString(36).substr(2, 5)}`,
-      description: `Payment for booking ${booking.bookingId}`,
-      paymentType: 'booking'
-    });
-
-    let gatewayResponse = null;
-
-    // Process payment through gateway if specified
-    if (paymentGateway && paymentGateway !== 'none') {
-      // This would integrate with actual payment gateways
-      // For now, simulate successful payment
-      gatewayResponse = { 
-        success: true, 
-        gatewayId: `GATEWAY${Date.now()}`,
-        status: 'completed'
-      };
-
-      payment.gatewayResponse = {
-        gatewayId: gatewayResponse.gatewayId,
-        status: gatewayResponse.status,
-        responseCode: '200',
-        responseMessage: 'Success',
-        rawResponse: gatewayResponse
-      };
-
-      payment.status = 'success';
-    } else {
-      // For cash or bank transfer, mark as pending
-      payment.status = 'pending';
-    }
-
-    await payment.save();
-
-    // If payment is successful, update booking and generate invoice
-    if (payment.status === 'success') {
-      booking.paymentStatus = 'Paid';
-      booking.bookingStatus = 'Confirmed';
-      
-      // Generate QR code
-      const qrData = {
-        bookingId: booking.bookingId,
-        passenger: booking.seats[0]?.passengerName || 'Passenger',
-        busNumber: booking.bus.numberPlate,
-        busType: booking.bus.busType,
-        travelDate: booking.travelDate.toDateString(),
-        seats: booking.seats.map(seat => seat.seatNumber).join(', '),
-        totalAmount: booking.totalAmount
-      };
-
-      try {
-        const qrCodeImage = await QRCode.toDataURL(JSON.stringify(qrData));
-        booking.qrCode = qrCodeImage;
-      } catch (qrError) {
-        console.error('QR code generation error:', qrError);
-      }
-
-      await booking.save();
-
-      // Generate invoice
-      const invoice = await generateInvoice(payment, booking);
-    }
-
-    const responseData = {
-      success: true,
-      message: payment.status === 'success' ? 'Payment successful' : 'Payment initiated',
-      payment: {
-        paymentId: payment.paymentId,
-        status: payment.status,
-        amount: payment.amount,
-        transactionId: payment.transactionId
-      },
-      booking: {
-        bookingId: booking.bookingId,
-        status: booking.bookingStatus,
-        paymentStatus: booking.paymentStatus
-      }
-    };
-
-    if (payment.status === 'success') {
-      responseData.invoice = await Invoice.findOne({ payment: payment._id });
-    }
-
-    res.json(responseData);
-
-  } catch (error) {
-    console.error('Booking payment processing error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Server error: ' + error.message 
-    });
-  }
-};
-
-// Generate invoice function
-const generateInvoice = async (payment, booking) => {
-  try {
-    const invoice = new Invoice({
-      invoiceNumber: `INV${Date.now()}${Math.random().toString(36).substr(2, 5)}`,
-      payment: payment._id,
-      booking: booking._id,
-      user: payment.user,
-      issueDate: new Date(),
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      items: [{
-        description: `Bus Booking - ${booking.bookingId}`,
-        quantity: booking.seats.length,
-        unitPrice: booking.totalAmount / booking.seats.length,
-        total: booking.totalAmount
-      }],
-      subtotal: booking.totalAmount,
-      tax: 0,
-      discount: 0,
-      totalAmount: booking.totalAmount,
-      status: 'paid'
-    });
-
-    await invoice.save();
-    return invoice;
-  } catch (error) {
-    console.error('Invoice generation error:', error);
-    throw error;
   }
 };
 
@@ -566,118 +314,6 @@ export const confirmBooking = async (req, res) => {
   }
 };
 
-// Get user's bookings
-export const getUserBookings = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const bookings = await Booking.find({ user: userId })
-      .populate('bus', 'busType numberPlate capacity')
-      .sort({ createdAt: -1 });
-
-    res.json({
-      success: true,
-      bookings: bookings,
-      count: bookings.length
-    });
-  } catch (error) {
-    console.error('Get user bookings error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Server error: ' + error.message 
-    });
-  }
-};
-
-// Get all bookings (admin)
-export const getAllBookings = async (req, res) => {
-  try {
-    const { status, paymentStatus, startDate, endDate } = req.query;
-    
-    let filter = {};
-    
-    // Add status filter if provided
-    if (status) {
-      filter.bookingStatus = status;
-    }
-    
-    // Add payment status filter if provided
-    if (paymentStatus) {
-      filter.paymentStatus = paymentStatus;
-    }
-    
-    // Add date range filter if provided
-    if (startDate || endDate) {
-      filter.createdAt = {};
-      if (startDate) {
-        filter.createdAt.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        filter.createdAt.$lte = new Date(endDate);
-      }
-    }
-
-    const bookings = await Booking.find(filter)
-      .populate('user', 'firstName lastName email phone')
-      .populate('bus', 'busType numberPlate')
-      .sort({ createdAt: -1 });
-
-    res.json({
-      success: true,
-      bookings: bookings,
-      count: bookings.length
-    });
-  } catch (error) {
-    console.error('Get all bookings error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Server error: ' + error.message 
-    });
-  }
-};
-
-// Get single booking by ID
-export const getBookingById = async (req, res) => {
-  try {
-    const booking = await Booking.findById(req.params.id)
-      .populate('user', 'firstName lastName email phone')
-      .populate('bus', 'busType numberPlate capacity amenities');
-
-    if (!booking) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Booking not found' 
-      });
-    }
-
-    // Check if user owns the booking or is admin
-    if (booking.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ 
-        success: false,
-        message: 'Not authorized to view this booking' 
-      });
-    }
-
-    res.json({
-      success: true,
-      booking: booking
-    });
-  } catch (error) {
-    console.error('Get booking by ID error:', error);
-    
-    if (error.name === 'CastError') {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Invalid booking ID format' 
-      });
-    }
-    
-    res.status(500).json({ 
-      success: false,
-      message: 'Server error: ' + error.message 
-    });
-  }
-};
-
 // Cancel booking
 export const cancelBooking = async (req, res) => {
   try {
@@ -722,19 +358,9 @@ export const cancelBooking = async (req, res) => {
     }
 
     booking.bookingStatus = 'Cancelled';
-    booking.paymentStatus = 'Refunded'; // or 'Cancelled' depending on your logic
+    booking.paymentStatus = 'Refunded';
     
     await booking.save();
-
-    // Process refund if payment was made
-    if (booking.paymentStatus === 'Paid') {
-      // Add refund logic here
-      const payment = await Payment.findOne({ booking: bookingId });
-      if (payment) {
-        payment.status = 'refunded';
-        await payment.save();
-      }
-    }
 
     res.json({ 
       success: true,
@@ -828,6 +454,53 @@ export const updateBooking = async (req, res) => {
     });
   } catch (error) {
     console.error('Update booking error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error: ' + error.message 
+    });
+  }
+};
+
+// Get all bookings (admin)
+export const getAllBookings = async (req, res) => {
+  try {
+    const { status, paymentStatus, startDate, endDate } = req.query;
+    
+    let filter = {};
+    
+    // Add status filter if provided
+    if (status) {
+      filter.bookingStatus = status;
+    }
+    
+    // Add payment status filter if provided
+    if (paymentStatus) {
+      filter.paymentStatus = paymentStatus;
+    }
+    
+    // Add date range filter if provided
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) {
+        filter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        filter.createdAt.$lte = new Date(endDate);
+      }
+    }
+
+    const bookings = await Booking.find(filter)
+      .populate('user', 'firstName lastName email phone')
+      .populate('bus', 'busType numberPlate')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      bookings: bookings,
+      count: bookings.length
+    });
+  } catch (error) {
+    console.error('Get all bookings error:', error);
     res.status(500).json({ 
       success: false,
       message: 'Server error: ' + error.message 
@@ -1009,7 +682,6 @@ export const verifyBooking = async (req, res) => {
   }
 };
 
-// Calculate fare (optional - kept for compatibility)
 export const calculateFare = async (req, res) => {
   try {
     const { from, to, busType, passengers } = req.body;
@@ -1046,6 +718,345 @@ export const calculateFare = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error calculating fare: ' + error.message
+    });
+  }
+};
+// Calculate pricing based on trip type and duration
+const calculatePricing = (basePrice, travelDate, returnDate, tripType) => {
+  const basePriceNum = parseFloat(basePrice) || 0;
+  let numberOfDays = 1;
+  
+  if (tripType === 'round-trip' && returnDate) {
+    const startDate = new Date(travelDate);
+    const endDate = new Date(returnDate);
+    const timeDiff = endDate.getTime() - startDate.getTime();
+    numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // Include both days
+  }
+  
+  // Calculate total amount: basePrice + (basePrice * 1/4) for each additional day
+  let totalAmount = basePriceNum;
+  
+  if (numberOfDays > 1) {
+    totalAmount = basePriceNum + (basePriceNum * 0.25 * (numberOfDays - 1));
+  }
+  
+  return {
+    basePrice: basePriceNum,
+    numberOfDays,
+    totalAmount: Math.round(totalAmount),
+    tripType
+  };
+};
+
+// Process booking payment - FIXED VERSION
+export const processBookingPayment = async (req, res) => {
+  try {
+    const { id: bookingId } = req.params; // Use id from params, not bookingId
+    const { paymentMethod = 'card', paymentGateway = 'stripe', cardDetails } = req.body;
+    const userId = req.user._id;
+
+    console.log('Processing payment for booking:', bookingId);
+
+    // Find the booking
+    const booking = await Booking.findById(bookingId)
+      .populate('bus')
+      .populate('user');
+    
+    if (!booking) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Booking not found' 
+      });
+    }
+
+    // Check if booking belongs to user
+    if (booking.user._id.toString() !== userId.toString()) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Not authorized to process payment for this booking' 
+      });
+    }
+
+    // Check if booking is already paid
+    if (booking.paymentStatus === 'Paid') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Booking is already paid' 
+      });
+    }
+
+    // Create payment record
+    const payment = new Payment({
+      paymentId: `PAY${uuidv4().slice(0, 8).toUpperCase()}`,
+      booking: booking._id,
+      user: userId,
+      amount: booking.totalAmount,
+      currency: 'LKR',
+      paymentMethod,
+      paymentGateway: paymentGateway,
+      cardDetails: paymentMethod === 'card' && cardDetails ? {
+        cardNumber: `****${cardDetails.cardNumber.slice(-4)}`,
+        cardHolder: cardDetails.cardHolder,
+        expiryDate: cardDetails.expiryDate
+      } : undefined,
+      transactionId: `TXN${Date.now()}${Math.random().toString(36).substr(2, 5)}`,
+      description: `Payment for booking ${booking.bookingId}`,
+      paymentType: 'booking',
+      status: 'success' // For demo purposes, mark as successful
+    });
+
+    // Simulate payment gateway response
+    payment.gatewayResponse = {
+      gatewayId: `GATEWAY${Date.now()}`,
+      status: 'completed',
+      responseCode: '200',
+      responseMessage: 'Success',
+      rawResponse: { demo: true }
+    };
+
+    await payment.save();
+    console.log('Payment saved:', payment);
+
+    // Update booking status
+    booking.paymentStatus = 'Paid';
+    booking.bookingStatus = 'Confirmed';
+    
+    // Generate QR code
+    const qrData = {
+      bookingId: booking.bookingId,
+      passenger: booking.seats[0]?.passengerName || 'Passenger',
+      busNumber: booking.bus.numberPlate,
+      busType: booking.bus.busType,
+      travelDate: booking.travelDate.toDateString(),
+      seats: booking.seats.map(seat => seat.seatNumber).join(', '),
+      totalAmount: booking.totalAmount
+    };
+
+    try {
+      const qrCodeImage = await QRCode.toDataURL(JSON.stringify(qrData));
+      booking.qrCode = qrCodeImage;
+      console.log('QR code generated successfully');
+    } catch (qrError) {
+      console.error('QR code generation error:', qrError);
+    }
+
+    await booking.save();
+    console.log('Booking updated with payment status:', booking);
+
+    // Generate invoice
+    const invoice = await generateInvoice(payment, booking);
+    console.log('Invoice generated:', invoice);
+
+    const responseData = {
+      success: true,
+      message: 'Payment successful',
+      payment: {
+        paymentId: payment.paymentId,
+        status: payment.status,
+        amount: payment.amount,
+        transactionId: payment.transactionId
+      },
+      booking: {
+        _id: booking._id,
+        bookingId: booking.bookingId,
+        status: booking.bookingStatus,
+        paymentStatus: booking.paymentStatus,
+        qrCode: booking.qrCode
+      },
+      invoice: invoice
+    };
+
+    res.json(responseData);
+
+  } catch (error) {
+    console.error('Booking payment processing error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error: ' + error.message 
+    });
+  }
+};
+
+// Generate invoice function
+const generateInvoice = async (payment, booking) => {
+  try {
+    const invoice = new Invoice({
+      invoiceNumber: `INV${Date.now()}${Math.random().toString(36).substr(2, 5)}`,
+      payment: payment._id,
+      booking: booking._id,
+      user: payment.user,
+      issueDate: new Date(),
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      items: [{
+        description: `Bus Booking - ${booking.bookingId}`,
+        quantity: booking.seats.length,
+        unitPrice: booking.totalAmount / booking.seats.length,
+        total: booking.totalAmount
+      }],
+      subtotal: booking.totalAmount,
+      tax: 0,
+      discount: 0,
+      totalAmount: booking.totalAmount,
+      status: 'paid'
+    });
+
+    await invoice.save();
+    return invoice;
+  } catch (error) {
+    console.error('Invoice generation error:', error);
+    throw error;
+  }
+};
+
+// Get available buses for a route and date
+export const getAvailableBuses = async (req, res) => {
+  try {
+    const { from, to, travelDate, passengers } = req.query;
+
+    if (!from || !to || !travelDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required parameters: from, to, travelDate'
+      });
+    }
+
+    // Convert travelDate to Date object
+    const searchDate = new Date(travelDate);
+    const dayOfWeek = searchDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+    // Find buses that are available and not booked for the specified date
+    const availableBuses = await Bus.find({ 
+      status: 'Available',
+      isActive: true
+    });
+
+    // For now, return sample data with actual bus data
+    const busesWithAvailability = await Promise.all(
+      availableBuses.map(async (bus) => {
+        // Check for existing bookings on this date
+        const existingBookings = await Booking.find({
+          bus: bus._id,
+          travelDate: {
+            $gte: new Date(searchDate.setHours(0, 0, 0, 0)),
+            $lt: new Date(searchDate.setHours(23, 59, 59, 999))
+          },
+          bookingStatus: { $ne: 'Cancelled' }
+        });
+
+        const bookedSeats = existingBookings.reduce((total, booking) => 
+          total + booking.seats.length, 0
+        );
+
+        const availableSeats = bus.capacity - bookedSeats;
+
+        return {
+          _id: bus._id,
+          busId: bus.busId,
+          busType: bus.busType,
+          numberPlate: bus.numberPlate,
+          capacity: bus.capacity,
+          availableSeats: availableSeats,
+          pricePerDay: bus.pricePerDay,
+          amenities: getBusAmenities(bus.busType),
+          vehiclePhoto: bus.vehiclePhoto,
+          status: bus.status
+        };
+      })
+    );
+
+    // Filter buses with available seats
+    const filteredBuses = busesWithAvailability.filter(bus => 
+      bus.availableSeats >= parseInt(passengers || 1)
+    );
+
+    res.json({
+      success: true,
+      availableBuses: filteredBuses,
+      count: filteredBuses.length,
+      message: 'Buses found successfully'
+    });
+
+  } catch (error) {
+    console.error('Get available buses error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error: ' + error.message 
+    });
+  }
+};
+
+// Helper function to get bus amenities
+const getBusAmenities = (busType) => {
+  const amenitiesMap = {
+    'Standard': ['ac', 'charging'],
+    'Deluxe': ['wifi', 'ac', 'refreshments', 'charging'],
+    'Luxury': ['wifi', 'ac', 'refreshments', 'leather', 'entertainment', 'charging'],
+    'Mini': ['ac', 'charging'],
+    'Double Decker': ['wifi', 'ac', 'refreshments', 'entertainment', 'charging']
+  };
+  return amenitiesMap[busType] || ['ac', 'charging'];
+};
+
+// Get user's bookings
+export const getUserBookings = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const bookings = await Booking.find({ user: userId })
+      .populate('bus', 'busType numberPlate capacity')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      bookings: bookings,
+      count: bookings.length
+    });
+  } catch (error) {
+    console.error('Get user bookings error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error: ' + error.message 
+    });
+  }
+};
+
+export const getBookingById = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id)
+      .populate('user', 'firstName lastName email phone')
+      .populate('bus', 'busType numberPlate capacity amenities');
+
+    if (!booking) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Booking not found' 
+      });
+    }
+
+    // Check if user owns the booking or is admin
+    if (booking.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Not authorized to view this booking' 
+      });
+    }
+
+    res.json({
+      success: true,
+      booking: booking
+    });
+  } catch (error) {
+    console.error('Get booking by ID error:', error);
+    
+    if (error.name === 'CastError') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid booking ID format' 
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error: ' + error.message 
     });
   }
 };
