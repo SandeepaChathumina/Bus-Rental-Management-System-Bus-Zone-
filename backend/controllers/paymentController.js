@@ -144,8 +144,6 @@ const generateSalaryInvoice = async (payment, schedule, driver, driverProfile) =
 // STRIPE PAYMENT INTEGRATION
 
 // Create Stripe payment intent
-// Fix for createStripePaymentIntent function in paymentController.js
-
 export const createStripePaymentIntent = async (req, res) => {
   try {
     // Add debugging and validation
@@ -987,6 +985,49 @@ export const getAllMaintenancePayments = async (req, res) => {
   }
 };
 
+// Get all salary payments (admin)
+export const getAllSalaryPayments = async (req, res) => {
+  try {
+    const { driverId, startDate, endDate } = req.query;
+    
+    let filter = { paymentType: 'salary' };
+    
+    // Add driver filter if provided
+    if (driverId) {
+      const driverProfile = await DriverProfile.findOne({ user: driverId });
+      if (driverProfile) {
+        filter.driver = driverProfile._id;
+      }
+    }
+    
+    // Add date range filter if provided
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) {
+        filter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        filter.createdAt.$lte = new Date(endDate);
+      }
+    }
+
+    const salaries = await Payment.find(filter)
+      .populate('driver', 'firstName lastName')
+      .populate('schedule', 'scheduledStartTime scheduledEndTime startLocation destination')
+      .populate('user', 'firstName lastName') // Admin who processed payment
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: salaries.length,
+      salaries
+    });
+  } catch (error) {
+    console.error('Get all salary payments error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
 // Get payment statistics (admin dashboard)
 export const getPaymentStatistics = async (req, res) => {
   try {
@@ -1397,45 +1438,374 @@ export const getDriverSalaries = async (req, res) => {
   }
 };
 
-// Get all salary payments (admin)
-export const getAllSalaryPayments = async (req, res) => {
+// Get all payments with comprehensive details (admin)
+export const getAllPayments = async (req, res) => {
   try {
-    const { driverId, startDate, endDate } = req.query;
+    const { 
+      type, 
+      status, 
+      paymentMethod, 
+      paymentGateway,
+      startDate, 
+      endDate,
+      page = 1,
+      limit = 10,
+      search
+    } = req.query;
     
-    let filter = { paymentType: 'salary' };
+    let filter = { isDeleted: { $ne: true } };
     
-    // Add driver filter if provided
-    if (driverId) {
-      const driverProfile = await DriverProfile.findOne({ user: driverId });
-      if (driverProfile) {
-        filter.driver = driverProfile._id;
-      }
-    }
+    // Add filters if provided
+    if (type) filter.paymentType = type;
+    if (status) filter.status = status;
+    if (paymentMethod) filter.paymentMethod = paymentMethod;
+    if (paymentGateway) filter.paymentGateway = paymentGateway;
     
-    // Add date range filter if provided
+    // Date range filter
     if (startDate || endDate) {
       filter.createdAt = {};
-      if (startDate) {
-        filter.createdAt.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        filter.createdAt.$lte = new Date(endDate);
-      }
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate) filter.createdAt.$lte = new Date(endDate);
+    }
+    
+    // Search filter
+    if (search) {
+      filter.$or = [
+        { paymentId: { $regex: search, $options: 'i' } },
+        { transactionId: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
     }
 
-    const salaries = await Payment.find(filter)
-      .populate('driver', 'firstName lastName')
-      .populate('schedule', 'scheduledStartTime scheduledEndTime startLocation destination')
-      .populate('user', 'firstName lastName') // Admin who processed payment
+    const skip = (page - 1) * limit;
+    
+    // Get payments with comprehensive population
+    const payments = await Payment.find(filter)
+      .populate({
+        path: 'booking',
+        select: 'bookingId travelDate routeId busId seats totalAmount bookingStatus paymentStatus',
+        populate: [
+          { path: 'routeId', select: 'startLocation destination distance duration' },
+          { path: 'busId', select: 'busId numberPlate busType capacity' }
+        ]
+      })
+      .populate({
+        path: 'maintenance',
+        select: 'maintenanceId description vehicleId estimatedCost actualCost status paymentStatus',
+        populate: { path: 'vehicleId', select: 'busId numberPlate' }
+      })
+      .populate({
+        path: 'driver',
+        select: 'firstName lastName licenseNumber hourlyRate',
+        populate: { path: 'user', select: 'firstName lastName email phone' }
+      })
+      .populate({
+        path: 'schedule',
+        select: 'scheduleId scheduledStartTime scheduledEndTime startLocation destination status',
+        populate: [
+          { path: 'busId', select: 'busId numberPlate' },
+          { path: 'driverId', select: 'firstName lastName' }
+        ]
+      })
+      .populate('user', 'firstName lastName email phone role')
+      .populate('deletedBy', 'firstName lastName')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    // Get total count for pagination
+    const total = await Payment.countDocuments(filter);
+    
+    // Format the response with additional calculated fields
+    const formattedPayments = payments.map(payment => {
+      const paymentObj = { ...payment };
+      
+      // Add related entity details based on payment type
+      if (payment.paymentType === 'booking' && payment.booking) {
+        paymentObj.relatedEntity = {
+          type: 'booking',
+          id: payment.booking.bookingId,
+          reference: payment.booking.bookingId,
+          date: payment.booking.travelDate,
+          status: payment.booking.bookingStatus,
+          paymentStatus: payment.booking.paymentStatus,
+          route: payment.booking.routeId ? 
+            `${payment.booking.routeId.startLocation} - ${payment.booking.routeId.destination}` : 'N/A',
+          bus: payment.booking.busId ? 
+            `${payment.booking.busId.busId} (${payment.booking.busId.numberPlate})` : 'N/A',
+          seats: payment.booking.seats ? payment.booking.seats.length : 0,
+          amount: payment.booking.totalAmount
+        };
+      } else if (payment.paymentType === 'maintenance' && payment.maintenance) {
+        paymentObj.relatedEntity = {
+          type: 'maintenance',
+          id: payment.maintenance.maintenanceId,
+          reference: `M#${payment.maintenance.maintenanceId}`,
+          date: payment.maintenance.createdAt,
+          status: payment.maintenance.status,
+          paymentStatus: payment.maintenance.paymentStatus,
+          description: payment.maintenance.description,
+          vehicle: payment.maintenance.vehicleId ? 
+            `${payment.maintenance.vehicleId.busId} (${payment.maintenance.vehicleId.numberPlate})` : 'N/A',
+          estimatedCost: payment.maintenance.estimatedCost,
+          actualCost: payment.maintenance.actualCost
+        };
+      } else if (payment.paymentType === 'salary' && payment.driver && payment.schedule) {
+        paymentObj.relatedEntity = {
+          type: 'salary',
+          id: payment.schedule._id,
+          reference: `SAL${payment.schedule._id.toString().slice(-6)}`,
+          date: payment.schedule.scheduledStartTime,
+          status: payment.schedule.status,
+          driver: payment.driver.user ? 
+            `${payment.driver.user.firstName} ${payment.driver.user.lastName}` : 'N/A',
+          license: payment.driver.licenseNumber,
+          route: payment.schedule ? 
+            `${payment.schedule.startLocation} - ${payment.schedule.destination}` : 'N/A',
+          bus: payment.schedule.busId ? 
+            `${payment.schedule.busId.busId} (${payment.schedule.busId.numberPlate})` : 'N/A',
+          hourlyRate: payment.driver.hourlyRate
+        };
+      }
+      
+      // Add status badge information
+      paymentObj.statusInfo = getStatusInfo(payment.status);
+      
+      // Add payment method icon/type
+      paymentObj.methodInfo = getMethodInfo(payment.paymentMethod);
+      
+      // Add gateway information
+      paymentObj.gatewayInfo = getGatewayInfo(payment.paymentGateway);
+      
+      return paymentObj;
+    });
+
+    res.json({
+      success: true,
+      payments: formattedPayments,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        totalItems: total,
+        itemsPerPage: parseInt(limit)
+      },
+      summary: {
+        totalAmount: await getTotalAmount(filter),
+        successfulPayments: await Payment.countDocuments({ ...filter, status: 'success' }),
+        failedPayments: await Payment.countDocuments({ ...filter, status: 'failed' }),
+        pendingPayments: await Payment.countDocuments({ ...filter, status: 'pending' })
+      }
+    });
+    
+  } catch (error) {
+    console.error('Get all payments error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error: ' + error.message 
+    });
+  }
+};
+
+// Helper function to get total amount for filter
+const getTotalAmount = async (filter) => {
+  const result = await Payment.aggregate([
+    { $match: { ...filter, status: 'success' } },
+    { $group: { _id: null, total: { $sum: '$amount' } } }
+  ]);
+  return result.length > 0 ? result[0].total : 0;
+};
+
+// Helper function for status information
+const getStatusInfo = (status) => {
+  const statusMap = {
+    'success': { label: 'Success', color: 'success', icon: 'check-circle' },
+    'pending': { label: 'Pending', color: 'warning', icon: 'clock' },
+    'failed': { label: 'Failed', color: 'error', icon: 'x-circle' },
+    'refunded': { label: 'Refunded', color: 'info', icon: 'refresh-cw' },
+    'processing': { label: 'Processing', color: 'primary', icon: 'loader' }
+  };
+  return statusMap[status] || { label: status, color: 'default', icon: 'help-circle' };
+};
+
+// Helper function for payment method information
+const getMethodInfo = (method) => {
+  const methodMap = {
+    'card': { label: 'Credit Card', icon: 'credit-card', color: 'blue' },
+    'bank_transfer': { label: 'Bank Transfer', icon: 'bank', color: 'green' },
+    'cash': { label: 'Cash', icon: 'dollar-sign', color: 'green' },
+    'digital_wallet': { label: 'Digital Wallet', icon: 'smartphone', color: 'purple' }
+  };
+  return methodMap[method] || { label: method, icon: 'credit-card', color: 'gray' };
+};
+
+// Helper function for gateway information
+const getGatewayInfo = (gateway) => {
+  const gatewayMap = {
+    'stripe': { label: 'Stripe', icon: 'stripe', color: 'purple' },
+    'paypal': { label: 'PayPal', icon: 'paypal', color: 'blue' },
+    'none': { label: 'Manual', icon: 'user', color: 'gray' }
+  };
+  return gatewayMap[gateway] || { label: gateway, icon: 'credit-card', color: 'gray' };
+};
+
+// Get payment details by ID with comprehensive information
+export const getPaymentById = async (req, res) => {
+  try {
+    const payment = await Payment.findOne({ paymentId: req.params.id })
+      .populate({
+        path: 'booking',
+        populate: [
+          { path: 'routeId', select: 'startLocation destination distance duration' },
+          { path: 'busId', select: 'busId numberPlate busType capacity amenities' },
+          { path: 'user', select: 'firstName lastName email phone' }
+        ]
+      })
+      .populate({
+        path: 'maintenance',
+        populate: [
+          { path: 'vehicleId', select: 'busId numberPlate busType' },
+          { path: 'assignedMechanic', select: 'firstName lastName' },
+          { path: 'reportedBy', select: 'firstName lastName' }
+        ]
+      })
+      .populate({
+        path: 'driver',
+        populate: { path: 'user', select: 'firstName lastName email phone' }
+      })
+      .populate({
+        path: 'schedule',
+        populate: [
+          { path: 'busId', select: 'busId numberPlate' },
+          { path: 'driverId', select: 'firstName lastName' },
+          { path: 'routeId', select: 'startLocation destination' }
+        ]
+      })
+      .populate('user', 'firstName lastName email phone role')
+      .populate('deletedBy', 'firstName lastName')
+      .lean();
+
+    if (!payment) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Payment not found' 
+      });
+    }
+
+    // Get associated invoice if exists
+    const invoice = await Invoice.findOne({ payment: payment._id })
+      .populate('user', 'firstName lastName')
+      .lean();
+
+    // Format the response with additional details
+    const paymentDetails = {
+      ...payment,
+      invoice: invoice || null,
+      statusInfo: getStatusInfo(payment.status),
+      methodInfo: getMethodInfo(payment.paymentMethod),
+      gatewayInfo: getGatewayInfo(payment.paymentGateway),
+      timeline: await getPaymentTimeline(payment._id)
+    };
+
+    res.json({
+      success: true,
+      payment: paymentDetails
+    });
+  } catch (error) {
+    console.error('Get payment error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error: ' + error.message 
+    });
+  }
+};
+
+// Helper function to get payment timeline
+const getPaymentTimeline = async (paymentId) => {
+  const payment = await Payment.findById(paymentId).select('createdAt updatedAt status gatewayResponse refunds');
+  
+  const timeline = [];
+  
+  // Payment created
+  timeline.push({
+    event: 'Payment Created',
+    timestamp: payment.createdAt,
+    status: 'completed',
+    description: 'Payment record initialized'
+  });
+  
+  // Gateway responses
+  if (payment.gatewayResponse && payment.gatewayResponse.status) {
+    timeline.push({
+      event: `Gateway ${payment.gatewayResponse.status.charAt(0).toUpperCase() + payment.gatewayResponse.status.slice(1)}`,
+      timestamp: payment.updatedAt,
+      status: payment.status === 'success' ? 'completed' : 'error',
+      description: payment.gatewayResponse.responseMessage || `Payment ${payment.gatewayResponse.status}`
+    });
+  }
+  
+  // Refunds
+  if (payment.refunds && payment.refunds.length > 0) {
+    payment.refunds.forEach(refund => {
+      timeline.push({
+        event: 'Refund Processed',
+        timestamp: refund.processedAt,
+        status: refund.status === 'processed' ? 'completed' : 'error',
+        description: `Refund of LKR ${refund.amount} - ${refund.reason}`
+      });
+    });
+  }
+  
+  return timeline.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+};
+
+// Get all salary invoices for driver
+export const getDriverSalaryInvoices = async (req, res) => {
+  try {
+    const driverId = req.user._id;
+    const driverProfile = await DriverProfile.findOne({ user: driverId });
+
+    if (!driverProfile) {
+      return res.status(404).json({ message: 'Driver profile not found' });
+    }
+
+    const invoices = await Invoice.find({ 
+      driver: driverProfile._id,
+      invoiceType: 'salary'
+    })
+      .populate('payment', 'paymentId amount paymentMethod createdAt')
+      .populate('schedule', 'scheduledStartTime scheduledEndTime startLocation destination busId')
+      .populate('user', 'firstName lastName')
+      .sort({ issueDate: -1 });
+
+    res.json({
+      success: true,
+      count: invoices.length,
+      invoices
+    });
+
+  } catch (error) {
+    console.error('Get driver salary invoices error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// Get user's payments
+export const getUserPayments = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const payments = await Payment.find({ user: userId })
+      .populate('booking', 'bookingId travelDate')
+      .populate('maintenance', 'maintenanceId description')
       .sort({ createdAt: -1 });
 
     res.json({
       success: true,
-      count: salaries.length,
-      salaries
+      payments: payments,
+      count: payments.length
     });
   } catch (error) {
-    console.error('Get all salary payments error:', error);
+    console.error('Get user payments error:', error);
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
@@ -1499,112 +1869,6 @@ export const getSalaryInvoice = async (req, res) => {
 
   } catch (error) {
     console.error('Get salary invoice error:', error);
-    res.status(500).json({ message: 'Server error: ' + error.message });
-  }
-};
-
-// Get all salary invoices for driver
-export const getDriverSalaryInvoices = async (req, res) => {
-  try {
-    const driverId = req.user._id;
-    const driverProfile = await DriverProfile.findOne({ user: driverId });
-
-    if (!driverProfile) {
-      return res.status(404).json({ message: 'Driver profile not found' });
-    }
-
-    const invoices = await Invoice.find({ 
-      driver: driverProfile._id,
-      invoiceType: 'salary'
-    })
-      .populate('payment', 'paymentId amount paymentMethod createdAt')
-      .populate('schedule', 'scheduledStartTime scheduledEndTime startLocation destination busId')
-      .populate('user', 'firstName lastName')
-      .sort({ issueDate: -1 });
-
-    res.json({
-      success: true,
-      count: invoices.length,
-      invoices
-    });
-
-  } catch (error) {
-    console.error('Get driver salary invoices error:', error);
-    res.status(500).json({ message: 'Server error: ' + error.message });
-  }
-};
-
-// Get user's payments
-export const getUserPayments = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const payments = await Payment.find({ user: userId })
-      .populate('booking', 'bookingId travelDate')
-      .populate('maintenance', 'maintenanceId description')
-      .sort({ createdAt: -1 });
-
-    res.json({
-      success: true,
-      payments: payments,
-      count: payments.length
-    });
-  } catch (error) {
-    console.error('Get user payments error:', error);
-    res.status(500).json({ message: 'Server error: ' + error.message });
-  }
-};
-
-// Get payment by ID
-export const getPaymentById = async (req, res) => {
-  try {
-    const payment = await Payment.findOne({ paymentId: req.params.id })
-      .populate('booking')
-      .populate('maintenance')
-      .populate('user', 'firstName lastName email');
-
-    if (!payment) {
-      return res.status(404).json({ message: 'Payment not found' });
-    }
-
-    res.json({
-      success: true,
-      payment: payment
-    });
-  } catch (error) {
-    console.error('Get payment error:', error);
-    res.status(500).json({ message: 'Server error: ' + error.message });
-  }
-};
-
-// Get all payments (admin)
-export const getAllPayments = async (req, res) => {
-  try {
-    const { type, status, paymentMethod, startDate, endDate } = req.query;
-    
-    let filter = {};
-    if (type) filter.paymentType = type;
-    if (status) filter.status = status;
-    if (paymentMethod) filter.paymentMethod = paymentMethod;
-    
-    if (startDate || endDate) {
-      filter.createdAt = {};
-      if (startDate) filter.createdAt.$gte = new Date(startDate);
-      if (endDate) filter.createdAt.$lte = new Date(endDate);
-    }
-
-    const payments = await Payment.find(filter)
-      .populate('booking', 'bookingId')
-      .populate('maintenance', 'maintenanceId description')
-      .populate('user', 'firstName lastName')
-      .sort({ createdAt: -1 });
-
-    res.json({
-      success: true,
-      payments: payments,
-      count: payments.length
-    });
-  } catch (error) {
-    console.error('Get all payments error:', error);
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
