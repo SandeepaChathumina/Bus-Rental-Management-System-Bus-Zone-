@@ -3,14 +3,13 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { FaUserTie, FaUserShield, FaBus, FaHome } from 'react-icons/fa';
+import { FaBus, FaHome } from 'react-icons/fa';
 import b5Image from '../assets/b5.jpeg';
 
 const LoginPage = () => {
   const [credentials, setCredentials] = useState({
     username: '',
-    password: '',
-    role: ''
+    password: ''
   });
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -23,46 +22,54 @@ const LoginPage = () => {
     });
   };
 
-  const handleRoleSelect = (role) => {
-    setCredentials({ ...credentials, role });
-  };
-
- // In LoginPage.jsx - Update the handleSubmit function
-// In LoginPage.jsx - Simple fix
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-
-  const result = await login(credentials);
-
-  if (result.success) {
-    toast.success('Login successful!');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    // Short delay to ensure state updates propagate
-    setTimeout(() => {
-      const userRole = result.user?.role || credentials.role;
-      
-      switch (userRole) {
-        case 'admin':
-          navigate('/admin-dashboard', { replace: true });
-          break;
-        case 'driver':
-          navigate('/driver-dashboard', { replace: true });
-          break;
-        case 'staff':
-          navigate('/staffdash', { replace: true });
-          break;
-        case 'passenger':
-        default:
-          navigate('/booking', { replace: true });
-      }
-    }, 100);
-  } else {
-    toast.error(result.message);
-  }
+    if (!credentials.username || !credentials.password) {
+      toast.error('Please enter both username and password');
+      return;
+    }
 
-  setLoading(false);
-};
+    setLoading(true);
+
+    try {
+      const result = await login(credentials);
+      console.log('Login result:', result);
+
+      if (result.success) {
+        toast.success('Login successful!');
+        
+        // Get user role from the result
+        const userRole = result.user?.role;
+        console.log('User role:', userRole);
+        
+        // Navigate based on role
+        switch (userRole) {
+          case 'admin':
+            navigate('/admin-dashboard', { replace: true });
+            break;
+          case 'driver':
+            navigate('/driver-dashboard', { replace: true });
+            break;
+          case 'staff':
+            navigate('/staffdash', { replace: true });
+            break;
+          case 'passenger':
+            navigate('/booking', { replace: true });
+            break;
+          default:
+            navigate('/booking', { replace: true });
+        }
+      } else {
+        toast.error(result.message || 'Login failed');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('An error occurred during login');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleHomeClick = () => {
     navigate('/');
@@ -89,7 +96,6 @@ const handleSubmit = async (e) => {
       <div className="flex min-h-screen">
         {/* Left Side - Modern Branding */}
         <div className="hidden lg:flex lg:w-3/5 relative items-center justify-center p-12">
-          {/* Background with better positioning */}
           <div 
             className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
             style={{ backgroundImage: `url(${b5Image})` }}
@@ -109,19 +115,19 @@ const handleSubmit = async (e) => {
 
               {/* Content */}
               <h2 className="text-3xl font-bold text-white mb-6 leading-tight">
-                Premium Bus Management System
+                Smart Bus Management
               </h2>
               <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-                Experience seamless transportation management with cutting-edge technology and unmatched reliability
+                Intelligent transportation solutions for modern cities
               </p>
 
               {/* Features */}
               <div className="space-y-4 text-left">
                 {[
-                  "Advanced Fleet Management",
-                  "Real-time Tracking & Analytics", 
-                  "Automated Scheduling System",
-                  "24/7 Customer Support"
+                  "Role-based Access Control",
+                  "Real-time Bus Tracking", 
+                  "Automated Scheduling",
+                  "Multi-platform Support"
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     <div className="w-2 h-2 bg-cyan-400 rounded-full flex-shrink-0"></div>
@@ -142,42 +148,14 @@ const handleSubmit = async (e) => {
                 <FaBus className="text-3xl text-white" />
               </div>
               <h1 className="text-3xl font-bold text-white">BusZone+</h1>
+              <p className="text-blue-200 mt-2">Smart Bus Management System</p>
             </div>
 
             {/* Login Card */}
             <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-10 border border-white/20">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-gray-800 mb-3">Welcome Back</h2>
-                <p className="text-gray-600 text-lg">Sign in to access your dashboard</p>
-              </div>
-
-              {/* Role Selection */}
-              <div className="mb-8">
-                <p className="text-sm font-semibold text-gray-700 mb-6 text-center">Select Your Role</p>
-                <div className="grid grid-cols-3 gap-4">
-                  {[
-                    { role: 'driver', icon: FaBus, label: 'Driver' },
-                    { role: 'staff', icon: FaUserTie, label: 'Staff' },
-                    { role: 'admin', icon: FaUserShield, label: 'Admin' }
-                  ].map(({ role, icon: Icon, label }) => (
-                    <div
-                      key={role}
-                      onClick={() => handleRoleSelect(role)}
-                      className={`p-5 rounded-2xl cursor-pointer border-2 transition-all duration-300 hover:scale-105 group ${
-                        credentials.role === role
-                          ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 shadow-lg'
-                          : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <Icon className={`text-3xl mx-auto mb-3 transition-colors duration-300 ${
-                        credentials.role === role ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500'
-                      }`} />
-                      <p className={`text-center text-sm font-semibold transition-colors duration-300 ${
-                        credentials.role === role ? 'text-blue-600' : 'text-gray-600 group-hover:text-blue-500'
-                      }`}>{label}</p>
-                    </div>
-                  ))}
-                </div>
+                <p className="text-gray-600 text-lg">Sign in to your account</p>
               </div>
 
               {/* Login Form */}
@@ -196,6 +174,7 @@ const handleSubmit = async (e) => {
                       placeholder="Enter your username"
                       value={credentials.username}
                       onChange={handleChange}
+                      disabled={loading}
                     />
                   </div>
 
@@ -212,6 +191,7 @@ const handleSubmit = async (e) => {
                       placeholder="Enter your password"
                       value={credentials.password}
                       onChange={handleChange}
+                      disabled={loading}
                     />
                   </div>
                 </div>
@@ -242,6 +222,13 @@ const handleSubmit = async (e) => {
                   >
                     Create Account
                   </Link>
+                </p>
+              </div>
+
+              {/* Demo Credentials Hint */}
+              <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <p className="text-sm text-blue-700 text-center">
+                  <strong>Demo:</strong> Use your registered username and password
                 </p>
               </div>
             </div>

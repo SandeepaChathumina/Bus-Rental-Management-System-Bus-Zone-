@@ -49,26 +49,36 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
+      console.log('Login attempt with:', credentials);
+      
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
         credentials
       );
-      const { token } = response.data;
+      
+      console.log('Login response:', response.data);
+      
+      const { token, ...userData } = response.data;
 
-      // save token
+      // Save token
       localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-      // 🔑 Fetch full user details (with driverProfile/staffProfile)
-      await checkAuthStatus();
+      // Set user data
+      setUser(userData);
 
-      window.dispatchEvent(new CustomEvent('authChange'));
-
-      return { success: true, user };
+      // Return success with user data for navigation
+      return { 
+        success: true, 
+        user: userData,
+        token: token
+      };
     } catch (error) {
+      console.error('Login error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Login failed',
+        message: error.response?.data?.message || 'Login failed. Please check your credentials.',
       };
     }
   };
@@ -79,40 +89,37 @@ export const AuthProvider = ({ children }) => {
         `${import.meta.env.VITE_BACKEND_URL}/api/auth/register`,
         userData
       );
-      const { token } = response.data;
+      
+      const { token, ...userData } = response.data;
 
       localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-      // fetch full user after register
-      await checkAuthStatus();
+      setUser(userData);
 
-      return { success: true };
+      return { success: true, user: userData };
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || 'Registration failed';
+      const errorMessage = error.response?.data?.message || 'Registration failed';
 
       if (errorMessage.includes('email') && errorMessage.includes('already')) {
         return {
           success: false,
-          message:
-            'Email is already registered. Please use a different email.',
+          message: 'Email is already registered. Please use a different email.',
         };
       }
 
       if (errorMessage.includes('phone') && errorMessage.includes('duplicate')) {
         return {
           success: false,
-          message:
-            'Phone number is already registered. Please use a different phone number.',
+          message: 'Phone number is already registered. Please use a different phone number.',
         };
       }
 
       if (errorMessage.includes('nic') && errorMessage.includes('duplicate')) {
         return {
           success: false,
-          message:
-            'NIC is already registered. Please use a different NIC number.',
+          message: 'NIC is already registered. Please use a different NIC number.',
         };
       }
 
@@ -125,6 +132,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   };
