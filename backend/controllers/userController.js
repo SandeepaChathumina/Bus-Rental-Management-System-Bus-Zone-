@@ -92,33 +92,50 @@ const registerUser = async (req, res) => {
 };
 
 // ==================== LOGIN ====================
+// controllers/userController.js - Update the loginUser function
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
 
+    console.log('Login attempt for username:', username);
+
     const user = await User.findOne({ username });
     if (!user) {
+      console.log('User not found:', username);
       return res.status(401).json({ message: 'Invalid username or password' });
     }
+
+    console.log('User found:', user.username, 'Role:', user.role);
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      console.log('Password mismatch for user:', username);
       return res.status(401).json({ message: 'Invalid username or password' });
     }
 
-    let userData = user.toJSON();
+    console.log('Password matched for user:', username);
 
+    // Convert user to object and remove password
+    let userData = user.toObject();
+    delete userData.password;
+
+    // Add role-specific profiles
     if (user.role === 'driver') {
       userData.driverProfile = await DriverProfile.findOne({ user: user._id });
     } else if (user.role === 'staff') {
       userData.staffProfile = await StaffProfile.findOne({ user: user._id });
     }
 
+    const token = generateToken(user);
+
+    console.log('Login successful for user:', username, 'Role:', user.role);
+
     res.json({
-      ...userData,
-      token: generateToken(user)
+      user: userData,
+      token: token
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ message: error.message });
   }
 };
