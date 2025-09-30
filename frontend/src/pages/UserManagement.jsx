@@ -1016,52 +1016,275 @@ const UserManagement = () => {
   };
 
   const exportPDF = (list) => {
-  if (!list || list.length === 0) {
-    alert("No data to export");
-    return;
-  }
+    if (!list || list.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
 
-  const doc = new jsPDF();
+    const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation for better table layout
+    
+    // Page dimensions
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
 
-  doc.setFontSize(18);
-  doc.text("User Management Report", 105, 15, { align: "center" });
+    // Add BusZone+ Logo and Header
+    try {
+      // Try to add the logo from assets
+      const logoPath = '/src/assets/reportlogo.png';
+      doc.addImage(logoPath, 'PNG', margin, margin, 30, 20);
+    } catch (error) {
+      // Fallback to blue background with bus emoji if logo fails to load
+      doc.setFillColor(59, 130, 246); // Blue color for logo background
+      doc.roundedRect(margin, margin, 30, 20, 3, 3, 'F');
+      doc.setFillColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('🚌', margin + 15, margin + 12, { align: 'center' });
+    }
+    
+    // Company name - positioned to avoid overlap
+    doc.setFontSize(14);
+    doc.setTextColor(59, 130, 246);
+    doc.setFont(undefined, 'bold');
+    doc.text('BusZone+', margin + 35, margin + 10);
+    
+    // Subtitle - positioned below company name
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont(undefined, 'normal');
+    doc.text('Premium Bus Rental Management System', margin + 35, margin + 16);
+    
+    // Report title
+    doc.setFontSize(20);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('User Management Report', pageWidth / 2, margin + 25, { align: 'center' });
+    
+    // Report metadata
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont(undefined, 'normal');
+    const currentDate = new Date();
+    doc.text(`Generated on: ${currentDate.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })} at ${currentDate.toLocaleTimeString()}`, pageWidth / 2, margin + 32, { align: 'center' });
+    
+    // Statistics section
+    const statsY = margin + 40;
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Report Summary', margin, statsY);
+    
+    // Calculate statistics
+    const totalUsers = list.length;
+    const activeUsers = list.filter(u => u.isActive !== false).length;
+    const inactiveUsers = totalUsers - activeUsers;
+    const drivers = list.filter(u => u.role === 'driver').length;
+    const staff = list.filter(u => u.role === 'staff').length;
+    const passengers = list.filter(u => u.role === 'passenger').length;
+    const admins = list.filter(u => u.role === 'admin').length;
+    
+    // Statistics boxes - responsive layout
+    const availableWidth = pageWidth - (margin * 2);
+    const boxCount = 4;
+    const boxSpacing = 8;
+    const boxWidth = Math.min(35, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
+    const boxHeight = 25;
+    let currentX = margin;
+    
+    // Total Users box - Blue theme with white text
+    doc.setFillColor(59, 130, 246);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255); // White text
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(totalUsers.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Total Users', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Active Users box - Blue theme with white text
+    doc.setFillColor(37, 99, 235);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255); // White text
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(activeUsers.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Active Users', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Drivers box - Blue theme with white text
+    doc.setFillColor(29, 78, 216);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255); // White text
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(drivers.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Drivers', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Staff box - Blue theme with white text
+    doc.setFillColor(30, 64, 175);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255); // White text
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(staff.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Staff', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    // Role distribution table - moved to separate page to prevent overlap
+    const roleTableY = statsY + 50;
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Role Distribution', margin, roleTableY);
+    
+    const roleData = [
+      ['Role', 'Count', 'Percentage'],
+      ['Drivers', drivers.toString(), `${((drivers/totalUsers)*100).toFixed(1)}%`],
+      ['Staff', staff.toString(), `${((staff/totalUsers)*100).toFixed(1)}%`],
+      ['Passengers', passengers.toString(), `${((passengers/totalUsers)*100).toFixed(1)}%`],
+      ['Admins', admins.toString(), `${((admins/totalUsers)*100).toFixed(1)}%`]
+    ];
+    
+    autoTable(doc, {
+      startY: roleTableY + 8,
+      head: [roleData[0]],
+      body: roleData.slice(1),
+      styles: { 
+        fontSize: 10, 
+        cellPadding: 4,
+        textColor: [30, 30, 30]
+      },
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: [255, 255, 255],
+        halign: 'center',
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: { 
+        fillColor: [248, 250, 252] 
+      },
+      columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'center' },
+        2: { halign: 'center' }
+      },
+      margin: { left: margin, right: margin }
+    });
 
-  doc.setFontSize(11);
-  doc.setTextColor(100);
-  doc.text(
-    `Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`,
-    105,
-    23,
-    { align: "center" }
-  );
-  doc.text(`Total Records: ${list.length}`, 105, 30, { align: "center" });
+    // Add new page for user details table to prevent overlap
+    doc.addPage();
+    
+    // Add header to second page
+    doc.setFontSize(16);
+    doc.setTextColor(59, 130, 246);
+    doc.setFont(undefined, 'bold');
+    doc.text('BusZone+', margin, margin + 10);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont(undefined, 'normal');
+    doc.text('Premium Bus Rental Management System', margin, margin + 16);
+    
+    // Main user data table - now on separate page
+    const tableStartY = margin + 30;
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('User Details', margin, tableStartY);
+    
+    // Prepare table data with responsive formatting
+    const tableColumns = [
+      { header: 'ID', dataKey: 'id', width: 20 },
+      { header: 'Name', dataKey: 'name', width: 45 },
+      { header: 'Email', dataKey: 'email', width: 55 },
+      { header: 'Role', dataKey: 'role', width: 20 },
+      { header: 'Status', dataKey: 'status', width: 20 },
+      { header: 'Join Date', dataKey: 'joinDate', width: 25 }
+    ];
+    
+    const tableRows = list.map((u, index) => ({
+      id: (u._id || u.id).toString().substring(0, 6) + '...',
+      name: `${u.firstName || ''} ${u.lastName || ''}`.trim().substring(0, 20) || u.username?.substring(0, 15),
+      email: u.email?.substring(0, 25) + (u.email?.length > 25 ? '...' : ''),
+      role: u.role?.charAt(0).toUpperCase() + u.role?.slice(1) || 'N/A',
+      status: u.isActive !== false ? 'Active' : 'Inactive',
+      joinDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-GB') : 'N/A'
+    }));
 
-  const tableColumn = ["ID", "Username", "Name", "Email", "Role", "Status"];
-  const tableRows = list.map((u) => [
-    u._id || u.id,
-    u.username,
-    `${u.firstName || ""} ${u.lastName || ""}`,
-    u.email,
-    u.role,
-    u.isActive ? "Active" : "Inactive",
-  ]);
+    autoTable(doc, {
+      startY: tableStartY + 8,
+      columns: tableColumns,
+      body: tableRows,
+      styles: { 
+        fontSize: 8, 
+        cellPadding: 2,
+        textColor: [30, 30, 30],
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+        overflow: 'linebreak',
+        halign: 'left'
+      },
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: [255, 255, 255],
+        halign: 'center',
+        fontStyle: 'bold',
+        fontSize: 10
+      },
+      alternateRowStyles: { 
+        fillColor: [248, 250, 252] 
+      },
+      columnStyles: {
+        id: { halign: 'center', fontSize: 7, cellWidth: 20 },
+        name: { halign: 'left', fontSize: 8, cellWidth: 45, overflow: 'linebreak' },
+        email: { halign: 'left', fontSize: 7, cellWidth: 55, overflow: 'linebreak' },
+        role: { halign: 'center', fontSize: 8, cellWidth: 20 },
+        status: { halign: 'center', fontSize: 8, cellWidth: 20 },
+        joinDate: { halign: 'center', fontSize: 7, cellWidth: 25 }
+      },
+      margin: { left: margin, right: margin },
+      tableWidth: 'auto',
+      showHead: 'everyPage',
+      didDrawPage: function (data) {
+        // Add footer on each page
+        const pageNumber = doc.internal.getNumberOfPages();
+        const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+        
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Page ${currentPage} of ${pageNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+        doc.text('BusZone+ User Management Report', pageWidth / 2, pageHeight - 5, { align: 'center' });
+      }
+    });
 
-  // ✅ Use autoTable function directly
-  autoTable(doc, {
-    startY: 40,
-    head: [tableColumn],
-    body: tableRows,
-    styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: {
-      fillColor: [41, 128, 185],
-      textColor: [255, 255, 255],
-      halign: "center",
-    },
-    alternateRowStyles: { fillColor: [245, 245, 245] },
-  });
+    // Add footer with company info
+    const finalY = doc.lastAutoTable.finalY || pageHeight - 30;
+    if (finalY < pageHeight - 40) {
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      doc.text('This report was generated by BusZone+ Management System', pageWidth / 2, finalY + 20, { align: 'center' });
+      doc.text('For support, contact: info@buszoneplus.com | +94 704 222 777', pageWidth / 2, finalY + 25, { align: 'center' });
+    }
 
-  doc.save(`user_report_${Date.now()}.pdf`);
-};
+    // Save the PDF
+    const fileName = `BusZone_UserReport_${currentDate.toISOString().split('T')[0]}_${Date.now()}.pdf`;
+    doc.save(fileName);
+    toast.success("PDF report generated successfully!");
+  };
 
 
   const handleExport = () => {
