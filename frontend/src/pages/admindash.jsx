@@ -1485,8 +1485,10 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
+    if (window.confirm('Are you sure you want to logout? You will be redirected to the login page.')) {
+      logout();
+      navigate('/login', { replace: true });
+    }
   };
 
   return (
@@ -1494,9 +1496,21 @@ const AdminDashboard = () => {
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 shadow-lg transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} border-r border-slate-800 overflow-y-auto`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-slate-800">
-          <div className="flex items-center">
-            <img src="https://via.placeholder.com/40x40?text=BZ+" alt="BusZone+" className="h-8 w-8 mr-2 rounded" />
-            <h1 className="text-xl font-bold text-white">BusZone+</h1>
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="bg-gradient-to-r from-blue-400 to-cyan-500 p-3 rounded-xl shadow-lg">
+                <Bus className="h-8 w-8 text-white" />
+              </div>
+              <div className="absolute -top-1 -right-1 bg-cyan-400 w-4 h-4 rounded-full"></div>
+            </div>
+            <div>
+              <div className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+                BusZone+
+              </div>
+              <div className="text-xs text-slate-400">
+                Admin Panel
+              </div>
+            </div>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded-md hover:bg-slate-800 text-white">
             <X className="w-5 h-5" />

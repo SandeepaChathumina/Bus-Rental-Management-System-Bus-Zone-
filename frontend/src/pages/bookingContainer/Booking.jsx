@@ -533,9 +533,11 @@ const BookingNavbar = () => {
   };
 
   const handleLogout = () => {
-    logout();
-    setShowProfileDropdown(false);
-    navigate('/login');
+    if (window.confirm('Are you sure you want to logout? You will be redirected to the login page.')) {
+      logout();
+      setShowProfileDropdown(false);
+      navigate('/login');
+    }
   };
 
   const handleNotificationsClick = () => {

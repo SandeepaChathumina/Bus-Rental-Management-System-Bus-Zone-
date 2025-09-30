@@ -25,13 +25,31 @@ const BookingSearch = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const locations = [
-    'Colombo', 'Kandy', 'Galle', 'Jaffna', 'Negombo', 'Trincomalee',
-    'Anuradhapura', 'Polonnaruwa', 'Matara', 'Hambantota', 'Ratnapura'
+    // Western Province
+    'Colombo', 'Gampaha', 'Kalutara',
+    // Central Province
+    'Kandy', 'Matale', 'Nuwara Eliya',
+    // Southern Province
+    'Galle', 'Matara', 'Hambantota',
+    // Northern Province
+    'Jaffna', 'Kilinochchi', 'Mannar', 'Mullaitivu', 'Vavuniya',
+    // Eastern Province
+    'Batticaloa', 'Ampara', 'Trincomalee',
+    // North Western Province
+    'Kurunegala', 'Puttalam',
+    // North Central Province
+    'Anuradhapura', 'Polonnaruwa',
+    // Uva Province
+    'Badulla', 'Monaragala',
+    // Sabaragamuwa Province
+    'Ratnapura', 'Kegalle'
   ];
 
   const timeSlots = [
+    '00:00', '01:00', '02:00', '03:00', '04:00', '05:00',
     '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
-    '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
+    '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
+    '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
   ];
 
   const handleInputChange = (field, value) => {
@@ -45,6 +63,25 @@ const BookingSearch = () => {
     e.preventDefault();
     if (!searchData.from || !searchData.to || !searchData.travelDate) {
       alert('Please fill in all required fields');
+      return;
+    }
+
+    // Validate dates
+    if (searchData.travelDate < today) {
+      alert('Departure date cannot be in the past');
+      return;
+    }
+
+    if (isReturnTrip && searchData.returnDate) {
+      if (searchData.returnDate <= searchData.travelDate) {
+        alert('Return date must be after departure date');
+        return;
+      }
+    }
+
+    // Validate passengers
+    if (searchData.passengers < 1 || searchData.passengers > 50) {
+      alert('Number of passengers must be between 1 and 50');
       return;
     }
 
@@ -73,6 +110,11 @@ const BookingSearch = () => {
 
   const isReturnTrip = searchData.tripType === 'round-trip';
   const today = new Date().toISOString().split('T')[0];
+  
+  // Calculate minimum return date (departure date + 1 day)
+  const minReturnDate = searchData.travelDate ? 
+    new Date(new Date(searchData.travelDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] : 
+    today;
 
   return (
     <div className="bg-gradient-to-r from-slate-900 to-slate-800 py-12">
@@ -184,7 +226,7 @@ const BookingSearch = () => {
                       type="date"
                       value={searchData.returnDate}
                       onChange={(e) => handleInputChange('returnDate', e.target.value)}
-                      min={searchData.travelDate || today}
+                      min={minReturnDate}
                       className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required={isReturnTrip}
                     />
@@ -214,15 +256,16 @@ const BookingSearch = () => {
                 <label className="text-slate-300 text-sm font-medium mb-2 block">Passengers</label>
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                  <select
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
                     value={searchData.passengers}
-                    onChange={(e) => handleInputChange('passengers', parseInt(e.target.value))}
+                    onChange={(e) => handleInputChange('passengers', parseInt(e.target.value) || 1)}
                     className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                      <option key={num} value={num}>{num} {num === 1 ? 'Passenger' : 'Passengers'}</option>
-                    ))}
-                  </select>
+                    placeholder="Number of passengers (1-50)"
+                    required
+                  />
                 </div>
               </div>
 

@@ -224,13 +224,6 @@ const LoginPage = () => {
                   </Link>
                 </p>
               </div>
-
-              {/* Demo Credentials Hint */}
-              <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                <p className="text-sm text-blue-700 text-center">
-                  <strong>Demo:</strong> Use your registered username and password
-                </p>
-              </div>
             </div>
           </div>
         </div>
