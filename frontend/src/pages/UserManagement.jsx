@@ -1029,32 +1029,17 @@ const UserManagement = () => {
     const margin = 15;
     const contentWidth = pageWidth - (margin * 2);
 
-    // Add BusZone+ Logo and Header
-    try {
-      // Try to add the logo from assets
-      const logoPath = '/src/assets/reportlogo.png';
-      doc.addImage(logoPath, 'PNG', margin, margin, 30, 20);
-    } catch (error) {
-      // Fallback to blue background with bus emoji if logo fails to load
-      doc.setFillColor(59, 130, 246); // Blue color for logo background
-      doc.roundedRect(margin, margin, 30, 20, 3, 3, 'F');
-      doc.setFillColor(255, 255, 255);
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text('🚌', margin + 15, margin + 12, { align: 'center' });
-    }
-    
-    // Company name - positioned to avoid overlap
-    doc.setFontSize(14);
+    // Add BusZone+ Header (without logo)
+    doc.setFontSize(18);
     doc.setTextColor(59, 130, 246);
     doc.setFont(undefined, 'bold');
-    doc.text('BusZone+', margin + 35, margin + 10);
+    doc.text('BusZone+', margin, margin + 10);
     
-    // Subtitle - positioned below company name
-    doc.setFontSize(9);
+    // Subtitle
+    doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     doc.setFont(undefined, 'normal');
-    doc.text('Premium Bus Rental Management System', margin + 35, margin + 16);
+    doc.text('Premium Bus Rental Management System', margin, margin + 16);
     
     // Report title
     doc.setFontSize(20);

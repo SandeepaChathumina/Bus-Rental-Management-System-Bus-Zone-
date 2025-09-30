@@ -38,6 +38,10 @@ import {
   Printer
 } from 'lucide-react';
 
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import toast from 'react-hot-toast';
+
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 // Booking Card Component for Admin
@@ -478,6 +482,11 @@ const AllBookings = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [stats, setStats] = useState({});
+  
+  // Report generation state
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFormat, setExportFormat] = useState('csv');
+  const [exportLoading, setExportLoading] = useState(false);
 
   useEffect(() => {
     fetchAllBookings();
@@ -664,8 +673,12 @@ const AllBookings = () => {
     link.click();
   };
 
-  const exportAllBookings = () => {
-    // Generate CSV export
+  const exportCSV = (list) => {
+    if (!list || list.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+    
     const csvHeaders = [
       'Booking ID',
       'Customer Name',
@@ -683,17 +696,17 @@ const AllBookings = () => {
       'Created At'
     ];
 
-    const csvData = filteredBookings.map(booking => [
+    const csvData = list.map(booking => [
       booking.bookingId,
-      `${booking.user?.firstName} ${booking.user?.lastName}`,
-      booking.user?.email,
-      `${booking.route?.from} → ${booking.route?.to}`,
+      `${booking.user?.firstName || ''} ${booking.user?.lastName || ''}`.trim(),
+      booking.user?.email || '',
+      `${booking.route?.from || ''} → ${booking.route?.to || ''}`,
       new Date(booking.travelDate).toLocaleDateString(),
       booking.departureTime,
       booking.numberOfPassengers,
-      booking.seats?.map(seat => seat.seatNumber).join('; '),
-      booking.bus?.busType,
-      booking.bus?.numberPlate,
+      booking.seats?.map(seat => seat.seatNumber).join('; ') || '',
+      booking.bus?.busType || '',
+      booking.bus?.numberPlate || '',
       booking.totalAmount,
       booking.bookingStatus,
       booking.paymentStatus,
@@ -701,71 +714,271 @@ const AllBookings = () => {
     ]);
 
     const csvContent = [csvHeaders, ...csvData]
-      .map(row => row.map(field => `"${field}"`).join(','))
+      .map(row => row.map(field => `"${String(field || '')}"`).join(','))
       .join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `all-bookings-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `BusZone_Bookings_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV report generated!");
   };
 
-  const exportDetailedReport = () => {
-    // Generate detailed JSON report
-    const detailedReport = {
-      exportDate: new Date().toISOString(),
-      totalBookings: filteredBookings.length,
-      totalRevenue: filteredBookings.reduce((sum, booking) => sum + booking.totalAmount, 0),
-      statusBreakdown: {
-        confirmed: filteredBookings.filter(b => b.bookingStatus === 'Confirmed').length,
-        pending: filteredBookings.filter(b => b.bookingStatus === 'Pending').length,
-        cancelled: filteredBookings.filter(b => b.bookingStatus === 'Cancelled').length,
-        completed: filteredBookings.filter(b => b.bookingStatus === 'Completed').length,
-      },
-      paymentBreakdown: {
-        paid: filteredBookings.filter(b => b.paymentStatus === 'Paid').length,
-        pending: filteredBookings.filter(b => b.paymentStatus === 'Pending').length,
-        failed: filteredBookings.filter(b => b.paymentStatus === 'Failed').length,
-        refunded: filteredBookings.filter(b => b.paymentStatus === 'Refunded').length,
-      },
-      bookings: filteredBookings.map(booking => ({
-        bookingId: booking.bookingId,
-        customer: {
-          name: `${booking.user?.firstName} ${booking.user?.lastName}`,
-          email: booking.user?.email
-        },
-        route: {
-          from: booking.route?.from,
-          to: booking.route?.to
-        },
-        travelDate: booking.travelDate,
-        departureTime: booking.departureTime,
-        passengers: booking.numberOfPassengers,
-        seats: booking.seats?.map(seat => ({
-          seatNumber: seat.seatNumber,
-          passengerName: seat.passengerName,
-          passengerNIC: seat.passengerNIC
-        })),
-        bus: {
-          type: booking.bus?.busType,
-          numberPlate: booking.bus?.numberPlate
-        },
-        amount: booking.totalAmount,
-        bookingStatus: booking.bookingStatus,
-        paymentStatus: booking.paymentStatus,
-        createdAt: booking.createdAt
-      }))
-    };
+  const exportPDF = (list) => {
+    if (!list || list.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
 
-    const dataStr = JSON.stringify(detailedReport, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `detailed-bookings-report-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
+    const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation for better table layout
+    
+    // Page dimensions
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+
+    // Add BusZone+ Header (without logo)
+    doc.setFontSize(18);
+    doc.setTextColor(59, 130, 246);
+    doc.setFont(undefined, 'bold');
+    doc.text('BusZone+', margin, margin + 10);
+    
+    // Subtitle
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont(undefined, 'normal');
+    doc.text('Premium Bus Rental Management System', margin, margin + 16);
+    
+    // Report title
+    doc.setFontSize(18);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Booking Management Report', pageWidth / 2, margin + 22, { align: 'center' });
+    
+    // Report metadata
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont(undefined, 'normal');
+    const currentDate = new Date();
+    doc.text(`Generated on: ${currentDate.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })} at ${currentDate.toLocaleTimeString()}`, pageWidth / 2, margin + 28, { align: 'center' });
+    
+    // Statistics section
+    const statsY = margin + 35;
+    doc.setFontSize(11);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Report Summary', margin, statsY);
+    
+    // Calculate statistics
+    const totalBookings = list.length;
+    const confirmedBookings = list.filter(b => b.bookingStatus === 'confirmed').length;
+    const pendingBookings = list.filter(b => b.bookingStatus === 'pending').length;
+    const cancelledBookings = list.filter(b => b.bookingStatus === 'cancelled').length;
+    const totalRevenue = list.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
+    
+    // Statistics boxes - reduced spacing
+    const availableWidth = pageWidth - (margin * 2);
+    const boxCount = 4;
+    const boxSpacing = 6;
+    const boxWidth = Math.min(40, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
+    const boxHeight = 20;
+    let currentX = margin;
+    
+    // Total Bookings box
+    doc.setFillColor(59, 130, 246);
+    doc.roundedRect(currentX, statsY + 5, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text(totalBookings.toString(), currentX + boxWidth/2, statsY + 14, { align: 'center' });
+    doc.setFontSize(6);
+    doc.text('Total Bookings', currentX + boxWidth/2, statsY + 19, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Confirmed Bookings box
+    doc.setFillColor(37, 99, 235);
+    doc.roundedRect(currentX, statsY + 5, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text(confirmedBookings.toString(), currentX + boxWidth/2, statsY + 14, { align: 'center' });
+    doc.setFontSize(6);
+    doc.text('Confirmed', currentX + boxWidth/2, statsY + 19, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Pending Bookings box
+    doc.setFillColor(29, 78, 216);
+    doc.roundedRect(currentX, statsY + 5, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text(pendingBookings.toString(), currentX + boxWidth/2, statsY + 14, { align: 'center' });
+    doc.setFontSize(6);
+    doc.text('Pending', currentX + boxWidth/2, statsY + 19, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Revenue box
+    doc.setFillColor(30, 64, 175);
+    doc.roundedRect(currentX, statsY + 5, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text(`LKR ${totalRevenue.toLocaleString()}`, currentX + boxWidth/2, statsY + 14, { align: 'center' });
+    doc.setFontSize(6);
+    doc.text('Total Revenue', currentX + boxWidth/2, statsY + 19, { align: 'center' });
+
+    // Add role distribution table to first page with more space
+    const roleTableY = statsY + 40;
+    doc.setFontSize(11);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Booking Status Distribution', margin, roleTableY);
+    
+    const statusData = [
+      ['Status', 'Count', 'Percentage'],
+      ['Confirmed', confirmedBookings.toString(), `${((confirmedBookings/totalBookings)*100).toFixed(1)}%`],
+      ['Pending', pendingBookings.toString(), `${((pendingBookings/totalBookings)*100).toFixed(1)}%`],
+      ['Cancelled', cancelledBookings.toString(), `${((cancelledBookings/totalBookings)*100).toFixed(1)}%`]
+    ];
+    
+    autoTable(doc, {
+      startY: roleTableY + 5,
+      head: [statusData[0]],
+      body: statusData.slice(1),
+      styles: { 
+        fontSize: 9, 
+        cellPadding: 3,
+        textColor: [30, 30, 30]
+      },
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: [255, 255, 255],
+        halign: 'center',
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: { 
+        fillColor: [248, 250, 252] 
+      },
+      margin: { left: margin, right: margin },
+      tableWidth: 'auto'
+    });
+
+    // Add new page for booking details table
+    doc.addPage();
+    
+    // Add header to second page
+    doc.setFontSize(16);
+    doc.setTextColor(59, 130, 246);
+    doc.setFont(undefined, 'bold');
+    doc.text('BusZone+', margin, margin + 10);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont(undefined, 'normal');
+    doc.text('Premium Bus Rental Management System', margin, margin + 16);
+    
+    // Main booking data table
+    const tableStartY = margin + 30;
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Booking Details', margin, tableStartY);
+    
+    // Prepare table data with responsive formatting
+    const tableColumns = [
+      { header: 'Booking ID', dataKey: 'bookingId', width: 20 },
+      { header: 'Customer', dataKey: 'customer', width: 35 },
+      { header: 'From', dataKey: 'from', width: 25 },
+      { header: 'To', dataKey: 'to', width: 25 },
+      { header: 'Travel Date', dataKey: 'travelDate', width: 20 },
+      { header: 'Amount', dataKey: 'amount', width: 18 },
+      { header: 'Status', dataKey: 'status', width: 18 },
+      { header: 'Payment', dataKey: 'payment', width: 18 }
+    ];
+    
+    const tableRows = list.map((booking, index) => ({
+      bookingId: booking.bookingId?.substring(0, 8) + '...',
+      customer: `${booking.user?.firstName || ''} ${booking.user?.lastName || ''}`.trim().substring(0, 20),
+      from: booking.route?.from?.substring(0, 20) || 'N/A',
+      to: booking.route?.to?.substring(0, 20) || 'N/A',
+      travelDate: new Date(booking.travelDate).toLocaleDateString('en-GB'),
+      amount: `LKR ${booking.totalAmount?.toLocaleString() || '0'}`,
+      status: booking.bookingStatus?.charAt(0).toUpperCase() + booking.bookingStatus?.slice(1) || 'N/A',
+      payment: booking.paymentStatus?.charAt(0).toUpperCase() + booking.paymentStatus?.slice(1) || 'N/A'
+    }));
+
+    autoTable(doc, {
+      startY: tableStartY + 8,
+      columns: tableColumns,
+      body: tableRows,
+      styles: { 
+        fontSize: 8, 
+        cellPadding: 2,
+        textColor: [30, 30, 30],
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+        overflow: 'linebreak',
+        halign: 'left'
+      },
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: [255, 255, 255],
+        halign: 'center',
+        fontStyle: 'bold',
+        fontSize: 10
+      },
+      alternateRowStyles: { 
+        fillColor: [248, 250, 252] 
+      },
+      columnStyles: {
+        bookingId: { halign: 'center', fontSize: 7, cellWidth: 20 },
+        customer: { halign: 'left', fontSize: 8, cellWidth: 35, overflow: 'linebreak' },
+        from: { halign: 'left', fontSize: 7, cellWidth: 25, overflow: 'linebreak' },
+        to: { halign: 'left', fontSize: 7, cellWidth: 25, overflow: 'linebreak' },
+        travelDate: { halign: 'center', fontSize: 7, cellWidth: 20 },
+        amount: { halign: 'center', fontSize: 7, cellWidth: 18 },
+        status: { halign: 'center', fontSize: 8, cellWidth: 18 },
+        payment: { halign: 'center', fontSize: 8, cellWidth: 18 }
+      },
+      margin: { left: margin, right: margin },
+      tableWidth: 'auto',
+      showHead: 'everyPage',
+      didDrawPage: function (data) {
+        // Add footer on each page
+        const pageNumber = doc.internal.getNumberOfPages();
+        const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+        
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Page ${currentPage} of ${pageNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+        doc.text('BusZone+ Booking Management Report', pageWidth / 2, pageHeight - 5, { align: 'center' });
+      }
+    });
+
+    // Add footer with company info
+    const finalY = doc.lastAutoTable.finalY || pageHeight - 30;
+    if (finalY < pageHeight - 40) {
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      doc.text('This report was generated by BusZone+ Management System', pageWidth / 2, finalY + 20, { align: 'center' });
+      doc.text('For support, contact: info@buszoneplus.com | +94 704 222 777', pageWidth / 2, finalY + 25, { align: 'center' });
+    }
+
+    // Save the PDF
+    const fileName = `BusZone_BookingReport_${currentDate.toISOString().split('T')[0]}_${Date.now()}.pdf`;
+    doc.save(fileName);
+    toast.success("PDF report generated successfully!");
   };
 
   if (isLoading) {
@@ -818,18 +1031,18 @@ const AllBookings = () => {
           </div>
           <div className="flex space-x-3">
             <button
-              onClick={exportAllBookings}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center"
+              onClick={() => exportCSV(filteredBookings)}
+              className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors flex items-center"
             >
               <DownloadCloud className="h-5 w-5 mr-2" />
               Export CSV
             </button>
             <button
-              onClick={exportDetailedReport}
-              className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors flex items-center"
+              onClick={() => exportPDF(filteredBookings)}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center"
             >
               <FileText className="h-5 w-5 mr-2" />
-              Detailed Report
+              PDF Report
             </button>
             <button
               onClick={fetchAllBookings}
@@ -843,41 +1056,41 @@ const AllBookings = () => {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg border border-blue-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Bookings</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalBookings || 0}</p>
+                <p className="text-sm text-blue-700 font-medium">Total Bookings</p>
+                <p className="text-2xl font-bold text-blue-900">{stats.totalBookings || 0}</p>
               </div>
               <BarChart3 className="h-8 w-8 text-blue-600" />
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-lg border border-green-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Confirmed</p>
-                <p className="text-2xl font-bold text-green-600">{stats.confirmedBookings || 0}</p>
+                <p className="text-sm text-green-700 font-medium">Confirmed</p>
+                <p className="text-2xl font-bold text-green-800">{stats.confirmedBookings || 0}</p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 shadow-lg border border-yellow-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pendingBookings || 0}</p>
+                <p className="text-sm text-yellow-700 font-medium">Pending</p>
+                <p className="text-2xl font-bold text-yellow-800">{stats.pendingBookings || 0}</p>
               </div>
               <Clock className="h-8 w-8 text-yellow-600" />
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 shadow-lg border border-purple-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-purple-600">LKR {(stats.totalRevenue || 0).toLocaleString()}</p>
+                <p className="text-sm text-purple-700 font-medium">Total Revenue</p>
+                <p className="text-2xl font-bold text-purple-800">LKR {(stats.totalRevenue || 0).toLocaleString()}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-purple-600" />
             </div>
@@ -885,25 +1098,25 @@ const AllBookings = () => {
         </div>
 
         {/* Advanced Filters */}
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 mb-8">
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg border border-blue-200 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-500" />
               <input
                 type="text"
                 placeholder="Search bookings..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               />
             </div>
 
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-500" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
               >
                 <option value="">All Statuses</option>
                 <option value="confirmed">Confirmed</option>
@@ -914,11 +1127,11 @@ const AllBookings = () => {
             </div>
 
             <div className="relative">
-              <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-500" />
               <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
               >
                 <option value="">All Payments</option>
                 <option value="paid">Paid</option>
@@ -929,21 +1142,21 @@ const AllBookings = () => {
             </div>
 
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-500" />
               <input
                 type="date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               />
             </div>
 
             <div className="relative">
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-500 pointer-events-none" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                className="w-full pl-4 pr-10 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
               >
                 <option value="createdAt">Sort by Date Created</option>
                 <option value="travelDate">Sort by Travel Date</option>
