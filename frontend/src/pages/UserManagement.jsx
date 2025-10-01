@@ -1120,7 +1120,8 @@ const UserManagement = () => {
 
       toast.success(
         `${role.charAt(0).toUpperCase() + role.slice(1)} created successfully! ${
-          role === "driver" ? "Login credentials have been sent to the driver's email." : ""
+          role === "driver" ? "Login credentials have been sent to the driver's email." : 
+          role === "staff" ? "Login credentials have been sent to the staff's email." : ""
         }`
       );
     } catch (err) {

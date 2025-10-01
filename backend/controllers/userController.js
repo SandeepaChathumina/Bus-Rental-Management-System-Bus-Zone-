@@ -2,7 +2,7 @@ import User from '../models/user.js';
 import DriverProfile from '../models/driverProfile.js';
 import StaffProfile from '../models/staffProfile.js';
 import generateToken from '../utils/generateToken.js';
-import { sendDriverCredentials } from '../utils/emailService.js';
+import { sendDriverCredentials, sendStaffCredentials } from '../utils/emailService.js';
 
 // ==================== REGISTER USER ====================
 const registerUser = async (req, res) => {
@@ -118,6 +118,45 @@ const registerUser = async (req, res) => {
       }
     } else if (role === 'staff') {
       userWithProfile.staffProfile = await StaffProfile.findOne({ user: user._id });
+      
+      // Send email with credentials to staff
+      try {
+        console.log('🚀 Starting email sending process for staff:', user.email);
+        console.log('🔍 Environment check:');
+        console.log('EMAIL_USER:', process.env.EMAIL_USER);
+        console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set (length: ' + process.env.EMAIL_PASS.length + ')' : 'Not set');
+        console.log('EMAIL_SERVICE:', process.env.EMAIL_SERVICE);
+        
+        const emailData = {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username,
+          email: user.email,
+          password: password, // Send the original password before hashing
+          phone: user.phone,
+          employeeId: employeeId,
+          staffRole: staffRole
+        };
+        
+        console.log('📧 Email data prepared:', {
+          firstName: emailData.firstName,
+          lastName: emailData.lastName,
+          email: emailData.email,
+          username: emailData.username,
+          employeeId: emailData.employeeId,
+          staffRole: emailData.staffRole
+        });
+        
+        const emailResult = await sendStaffCredentials(emailData);
+        if (emailResult.success) {
+          console.log('✅ Staff credentials email sent successfully');
+        } else {
+          console.error('❌ Failed to send staff credentials email:', emailResult.error);
+        }
+      } catch (emailError) {
+        console.error('❌ Error sending staff credentials email:', emailError);
+        // Don't fail the user creation if email fails
+      }
     }
 
     res.status(201).json({
