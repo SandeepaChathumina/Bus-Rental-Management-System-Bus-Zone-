@@ -791,11 +791,14 @@ const DriverDashboard = () => {
   }, []);
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
+    const confirmLogout = window.confirm('Are you sure you want to logout?');
+    if (confirmLogout) {
+      try {
+        await logout();
+        navigate('/login');
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
     }
   };
 
@@ -951,7 +954,10 @@ const DriverDashboard = () => {
 
             <div className="flex items-center space-x-4">
               {/* Notifications */}
-              <button className="relative p-2 hover:bg-slate-700 rounded-lg transition-colors">
+              <button 
+                onClick={() => navigate('/notifications')}
+                className="relative p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              >
                 <Bell className="w-5 h-5 text-slate-300" />
                 {notificationCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">

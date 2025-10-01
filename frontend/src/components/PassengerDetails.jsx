@@ -31,6 +31,17 @@ const PassengerDetails = () => {
     phone: ''
   });
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
+  const [emailValidation, setEmailValidation] = useState({
+    isValid: false,
+    message: '',
+    isChecking: false
+  });
+  const [phoneValidation, setPhoneValidation] = useState({
+    isValid: false,
+    message: '',
+    isChecking: false
+  });
+  const [passengerValidations, setPassengerValidations] = useState({});
 
   // Calculate number of days and total amount
   const calculatePricing = () => {
@@ -90,6 +101,158 @@ const PassengerDetails = () => {
     setContactInfo(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  // Email validation function
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Phone validation function
+  const validatePhone = (phone) => {
+    const phoneRegex = /^0\d{9}$/;
+    return phoneRegex.test(phone);
+  };
+
+  // Passenger validation functions
+  // Name validation removed - no validation needed
+
+  const validateNIC = (nic) => {
+    const nicRegex = /^\d{9}[Vv]$|^\d{12}$/;
+    return nicRegex.test(nic);
+  };
+
+  const validateAge = (age) => {
+    const ageNum = parseInt(age);
+    return ageNum >= 1 && ageNum <= 120;
+  };
+
+  const validateGender = (gender) => {
+    return ['male', 'female', 'other'].includes(gender);
+  };
+
+  // Handle email change with validation
+  const handleEmailChange = (value) => {
+    setContactInfo(prev => ({
+      ...prev,
+      email: value
+    }));
+
+    // Reset validation state
+    setEmailValidation({
+      isValid: false,
+      message: '',
+      isChecking: false
+    });
+
+    // Only validate if email is not empty
+    if (value.trim()) {
+      setEmailValidation(prev => ({
+        ...prev,
+        isChecking: true
+      }));
+
+      // Debounce validation
+      setTimeout(() => {
+        const isValid = validateEmail(value);
+        setEmailValidation({
+          isValid,
+          message: isValid ? '✓ Valid email address' : '✗ Please enter a valid email address',
+          isChecking: false
+        });
+      }, 500);
+    }
+  };
+
+  // Handle phone change with validation
+  const handlePhoneChange = (value) => {
+    // Only allow digits and limit to 10 characters
+    const cleanValue = value.replace(/\D/g, '').slice(0, 10);
+    
+    setContactInfo(prev => ({
+      ...prev,
+      phone: cleanValue
+    }));
+
+    // Reset validation state
+    setPhoneValidation({
+      isValid: false,
+      message: '',
+      isChecking: false
+    });
+
+    // Only validate if phone is not empty
+    if (cleanValue.trim()) {
+      setPhoneValidation(prev => ({
+        ...prev,
+        isChecking: true
+      }));
+
+      // Debounce validation
+      setTimeout(() => {
+        const isValid = validatePhone(cleanValue);
+        setPhoneValidation({
+          isValid,
+          message: isValid ? '✓ Valid phone number' : '✗ Phone must start with 0 and be exactly 10 digits',
+          isChecking: false
+        });
+      }, 500);
+    }
+  };
+
+  // Handle passenger field changes with validation
+  const handlePassengerFieldChange = (index, field, value) => {
+    // Update passenger data
+    const updatedPassengers = [...passengerDetails];
+    updatedPassengers[index][field] = value;
+    setPassengerDetails(updatedPassengers);
+
+    // Initialize validation for this passenger if not exists
+    if (!passengerValidations[index]) {
+      setPassengerValidations(prev => ({
+        ...prev,
+        [index]: {}
+      }));
+    }
+
+    // Validate the specific field
+    let isValid = false;
+    let message = '';
+
+    switch (field) {
+      case 'name':
+        // No validation for name - always valid
+        isValid = true;
+        message = '';
+        break;
+      case 'nic':
+        isValid = validateNIC(value);
+        message = isValid ? '✓ Valid NIC' : '✗ NIC must be 9 digits + V or 12 digits';
+        break;
+      case 'age':
+        isValid = validateAge(value);
+        message = isValid ? '✓ Valid age' : '✗ Age must be between 1 and 120 years';
+        break;
+      case 'gender':
+        isValid = validateGender(value);
+        message = isValid ? '✓ Gender selected' : '✗ Please select a gender';
+        break;
+      default:
+        return;
+    }
+
+    // Update validation state for this field
+    setPassengerValidations(prev => ({
+      ...prev,
+      [index]: {
+        ...prev[index],
+        [field]: {
+          isValid,
+          message
+        }
+      }
     }));
   };
 
@@ -159,18 +322,36 @@ const PassengerDetails = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate all fields
-    const allPassengersValid = passengerDetails.every(passenger => 
-      passenger.name && passenger.nic && passenger.age && passenger.gender
-    );
+    // Validate all passenger fields
+    const allPassengersValid = passengerDetails.every((passenger, index) => {
+      const validations = passengerValidations[index] || {};
+      return (
+        passenger.name && // Just check if name exists, no validation
+        passenger.nic && validateNIC(passenger.nic) &&
+        passenger.age && validateAge(passenger.age) &&
+        passenger.gender && validateGender(passenger.gender)
+      );
+    });
     
     if (!allPassengersValid) {
-      alert('Please fill in all passenger details');
+      alert('Please fill in all passenger details with valid information');
       return;
     }
     
     if (!contactInfo.email || !contactInfo.phone) {
       alert('Please fill in your contact information');
+      return;
+    }
+
+    // Check email validation
+    if (!emailValidation.isValid && contactInfo.email.trim()) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    // Check phone validation
+    if (!phoneValidation.isValid && contactInfo.phone.trim()) {
+      alert('Please enter a valid phone number (must start with 0 and be exactly 10 digits)');
       return;
     }
 
@@ -321,11 +502,32 @@ const PassengerDetails = () => {
                     <input
                       type="email"
                       value={contactInfo.email}
-                      onChange={(e) => handleContactChange('email', e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) => handleEmailChange(e.target.value)}
+                      className={`w-full px-4 py-3 bg-slate-700 border rounded-xl text-white focus:outline-none focus:ring-2 transition-colors ${
+                        emailValidation.isValid 
+                          ? 'border-green-500 focus:ring-green-500' 
+                          : emailValidation.message && !emailValidation.isValid
+                          ? 'border-red-500 focus:ring-red-500'
+                          : 'border-slate-600 focus:ring-blue-500'
+                      }`}
                       required
                       disabled={isCreatingBooking}
+                      placeholder="Enter your email address"
                     />
+                    {emailValidation.message && (
+                      <p className={`text-xs mt-1 flex items-center ${
+                        emailValidation.isValid ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {emailValidation.isChecking ? (
+                          <>
+                            <Loader className="w-3 h-3 mr-1 animate-spin" />
+                            Validating...
+                          </>
+                        ) : (
+                          emailValidation.message
+                        )}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="text-slate-400 text-sm mb-2 block flex items-center">
@@ -335,11 +537,32 @@ const PassengerDetails = () => {
                     <input
                       type="tel"
                       value={contactInfo.phone}
-                      onChange={(e) => handleContactChange('phone', e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      className={`w-full px-4 py-3 bg-slate-700 border rounded-xl text-white focus:outline-none focus:ring-2 transition-colors ${
+                        phoneValidation.isValid 
+                          ? 'border-green-500 focus:ring-green-500' 
+                          : phoneValidation.message && !phoneValidation.isValid
+                          ? 'border-red-500 focus:ring-red-500'
+                          : 'border-slate-600 focus:ring-blue-500'
+                      }`}
                       required
                       disabled={isCreatingBooking}
+                      placeholder="0XXXXXXXXX (10 digits)"
                     />
+                    {phoneValidation.message && (
+                      <p className={`text-xs mt-1 flex items-center ${
+                        phoneValidation.isValid ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {phoneValidation.isChecking ? (
+                          <>
+                            <Loader className="w-3 h-3 mr-1 animate-spin" />
+                            Validating...
+                          </>
+                        ) : (
+                          phoneValidation.message
+                        )}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -361,10 +584,11 @@ const PassengerDetails = () => {
                           <input
                             type="text"
                             value={passenger.name}
-                            onChange={(e) => handlePassengerChange(index, 'name', e.target.value)}
+                            onChange={(e) => handlePassengerFieldChange(index, 'name', e.target.value)}
                             className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
                             disabled={isCreatingBooking}
+                            placeholder="Enter full name"
                           />
                         </div>
                         
@@ -373,11 +597,33 @@ const PassengerDetails = () => {
                           <input
                             type="text"
                             value={passenger.nic}
-                            onChange={(e) => handlePassengerChange(index, 'nic', e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onChange={(e) => {
+                              let value = e.target.value;
+                              // Auto-uppercase 'v' for NIC
+                              if (value.toLowerCase().endsWith('v') && value.length <= 10) {
+                                value = value.slice(0, -1) + 'V';
+                              }
+                              handlePassengerFieldChange(index, 'nic', value);
+                            }}
+                            className={`w-full px-4 py-3 bg-slate-700 border rounded-xl text-white focus:outline-none focus:ring-2 transition-colors ${
+                              passengerValidations[index]?.nic?.isValid 
+                                ? 'border-green-500 focus:ring-green-500' 
+                                : passengerValidations[index]?.nic?.message && !passengerValidations[index]?.nic?.isValid
+                                ? 'border-red-500 focus:ring-red-500'
+                                : 'border-slate-600 focus:ring-blue-500'
+                            }`}
                             required
                             disabled={isCreatingBooking}
+                            placeholder="9 digits + V or 12 digits"
+                            maxLength={12}
                           />
+                          {passengerValidations[index]?.nic?.message && (
+                            <p className={`text-xs mt-1 ${
+                              passengerValidations[index].nic.isValid ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              {passengerValidations[index].nic.message}
+                            </p>
+                          )}
                         </div>
                         
                         <div>
@@ -387,19 +633,52 @@ const PassengerDetails = () => {
                             min="1"
                             max="120"
                             value={passenger.age}
-                            onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Prevent negative values
+                              if (value < 0) {
+                                return;
+                              }
+                              handlePassengerFieldChange(index, 'age', value);
+                            }}
+                            onKeyDown={(e) => {
+                              // Prevent minus key and other invalid keys
+                              if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                                e.preventDefault();
+                              }
+                            }}
+                            className={`w-full px-4 py-3 bg-slate-700 border rounded-xl text-white focus:outline-none focus:ring-2 transition-colors ${
+                              passengerValidations[index]?.age?.isValid 
+                                ? 'border-green-500 focus:ring-green-500' 
+                                : passengerValidations[index]?.age?.message && !passengerValidations[index]?.age?.isValid
+                                ? 'border-red-500 focus:ring-red-500'
+                                : 'border-slate-600 focus:ring-blue-500'
+                            }`}
                             required
                             disabled={isCreatingBooking}
+                            placeholder="Enter age (1-120)"
                           />
+                          {passengerValidations[index]?.age?.message && (
+                            <p className={`text-xs mt-1 ${
+                              passengerValidations[index].age.isValid ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              {passengerValidations[index].age.message}
+                            </p>
+                          )}
                         </div>
                         
                         <div>
                           <label className="text-slate-400 text-sm mb-2 block">Gender</label>
                           <select
                             value={passenger.gender}
-                            onChange={(e) => handlePassengerChange(index, 'gender', e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onChange={(e) => handlePassengerFieldChange(index, 'gender', e.target.value)}
+                            className={`w-full px-4 py-3 bg-slate-700 border rounded-xl text-white focus:outline-none focus:ring-2 transition-colors ${
+                              passengerValidations[index]?.gender?.isValid 
+                                ? 'border-green-500 focus:ring-green-500' 
+                                : passengerValidations[index]?.gender?.message && !passengerValidations[index]?.gender?.isValid
+                                ? 'border-red-500 focus:ring-red-500'
+                                : 'border-slate-600 focus:ring-blue-500'
+                            }`}
                             required
                             disabled={isCreatingBooking}
                           >
@@ -408,6 +687,13 @@ const PassengerDetails = () => {
                             <option value="female">Female</option>
                             <option value="other">Other</option>
                           </select>
+                          {passengerValidations[index]?.gender?.message && (
+                            <p className={`text-xs mt-1 ${
+                              passengerValidations[index].gender.isValid ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              {passengerValidations[index].gender.message}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>

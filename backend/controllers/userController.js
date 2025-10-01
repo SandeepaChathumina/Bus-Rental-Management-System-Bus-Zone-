@@ -2,6 +2,7 @@ import User from '../models/user.js';
 import DriverProfile from '../models/driverProfile.js';
 import StaffProfile from '../models/staffProfile.js';
 import generateToken from '../utils/generateToken.js';
+import { sendDriverCredentials, sendStaffCredentials } from '../utils/emailService.js';
 
 // ==================== REGISTER USER ====================
 const registerUser = async (req, res) => {
@@ -78,8 +79,84 @@ const registerUser = async (req, res) => {
     let userWithProfile = user.toJSON();
     if (role === 'driver') {
       userWithProfile.driverProfile = await DriverProfile.findOne({ user: user._id });
+      
+      // Send email with credentials to driver
+      try {
+        console.log('🚀 Starting email sending process for driver:', user.email);
+        console.log('🔍 Environment check:');
+        console.log('EMAIL_USER:', process.env.EMAIL_USER);
+        console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set (length: ' + process.env.EMAIL_PASS.length + ')' : 'Not set');
+        console.log('EMAIL_SERVICE:', process.env.EMAIL_SERVICE);
+        
+        const emailData = {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username,
+          email: user.email,
+          password: password, // Send the original password before hashing
+          phone: user.phone,
+          licenseNumber: licenseNumber,
+          emergencyContact: emergencyContact
+        };
+        
+        console.log('📧 Email data prepared:', {
+          firstName: emailData.firstName,
+          lastName: emailData.lastName,
+          email: emailData.email,
+          username: emailData.username
+        });
+        
+        const emailResult = await sendDriverCredentials(emailData);
+        if (emailResult.success) {
+          console.log('✅ Driver credentials email sent successfully');
+        } else {
+          console.error('❌ Failed to send driver credentials email:', emailResult.error);
+        }
+      } catch (emailError) {
+        console.error('❌ Error sending driver credentials email:', emailError);
+        // Don't fail the user creation if email fails
+      }
     } else if (role === 'staff') {
       userWithProfile.staffProfile = await StaffProfile.findOne({ user: user._id });
+      
+      // Send email with credentials to staff
+      try {
+        console.log('🚀 Starting email sending process for staff:', user.email);
+        console.log('🔍 Environment check:');
+        console.log('EMAIL_USER:', process.env.EMAIL_USER);
+        console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set (length: ' + process.env.EMAIL_PASS.length + ')' : 'Not set');
+        console.log('EMAIL_SERVICE:', process.env.EMAIL_SERVICE);
+        
+        const emailData = {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username,
+          email: user.email,
+          password: password, // Send the original password before hashing
+          phone: user.phone,
+          employeeId: employeeId,
+          staffRole: staffRole
+        };
+        
+        console.log('📧 Email data prepared:', {
+          firstName: emailData.firstName,
+          lastName: emailData.lastName,
+          email: emailData.email,
+          username: emailData.username,
+          employeeId: emailData.employeeId,
+          staffRole: emailData.staffRole
+        });
+        
+        const emailResult = await sendStaffCredentials(emailData);
+        if (emailResult.success) {
+          console.log('✅ Staff credentials email sent successfully');
+        } else {
+          console.error('❌ Failed to send staff credentials email:', emailResult.error);
+        }
+      } catch (emailError) {
+        console.error('❌ Error sending staff credentials email:', emailError);
+        // Don't fail the user creation if email fails
+      }
     }
 
     res.status(201).json({
@@ -115,6 +192,14 @@ const loginUser = async (req, res) => {
 
     console.log('Password matched for user:', username);
 
+    // Check if user is active
+    if (!user.isActive) {
+      console.log('User is deactivated:', username);
+      return res.status(401).json({ message: 'Account is deactivated. Please contact administrator.' });
+    }
+
+    console.log('User is active:', username);
+
     // Convert user to object and remove password
     let userData = user.toObject();
     delete userData.password;
@@ -144,6 +229,7 @@ const loginUser = async (req, res) => {
 const getUsers = async (req, res) => {
   try {
     const users = await User.find({}).select('-password');
+    console.log('Found users:', users.length, 'users with isActive status:', users.map(u => ({ username: u.username, isActive: u.isActive })));
 
     const usersWithProfiles = await Promise.all(
       users.map(async (user) => {
@@ -157,8 +243,10 @@ const getUsers = async (req, res) => {
       })
     );
 
+    console.log('Returning users with profiles:', usersWithProfiles.map(u => ({ username: u.username, isActive: u.isActive })));
     res.json(usersWithProfiles);
   } catch (error) {
+    console.error('Get users error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -263,10 +351,14 @@ const updateUser = async (req, res) => {
 // ==================== DELETE / DEACTIVATE ====================
 const deleteUser = async (req, res) => {
   try {
+    console.log('Deactivating user with ID:', req.params.id);
     const user = await User.findById(req.params.id);
     if (!user) {
+      console.log('User not found:', req.params.id);
       return res.status(404).json({ message: 'User not found' });
     }
+
+    console.log('User found:', user.username, 'Current isActive:', user.isActive);
 
     // Only admin can deactivate
     if (req.user.role !== 'admin') {
@@ -276,8 +368,10 @@ const deleteUser = async (req, res) => {
     user.isActive = false;
     await user.save();
 
+    console.log('User deactivated successfully:', user.username, 'New isActive:', user.isActive);
     res.json({ message: 'User deactivated successfully' });
   } catch (error) {
+    console.error('Deactivate user error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -388,13 +482,35 @@ const checkNICAvailability = async (req, res) => {
   }
 };
 
+// ==================== CHECK EMPLOYEE ID AVAILABILITY ====================
+const checkEmployeeIdAvailability = async (req, res) => {
+  try {
+    const { employeeId } = req.query;
+    
+    if (!employeeId) {
+      return res.status(400).json({ message: 'Employee ID parameter is required' });
+    }
+    
+    // Check if employee ID already exists in staff profiles
+    const existingStaff = await StaffProfile.findOne({ employeeId });
+    
+    return res.json({ available: !existingStaff });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // ==================== ACTIVATE USER ====================
 const activateUser = async (req, res) => {
   try {
+    console.log('Activating user with ID:', req.params.id);
     const user = await User.findById(req.params.id);
     if (!user) {
+      console.log('User not found:', req.params.id);
       return res.status(404).json({ message: 'User not found' });
     }
+
+    console.log('User found:', user.username, 'Current isActive:', user.isActive);
 
     // Only admin can activate
     if (req.user.role !== 'admin') {
@@ -404,8 +520,10 @@ const activateUser = async (req, res) => {
     user.isActive = true;
     await user.save();
 
+    console.log('User activated successfully:', user.username, 'New isActive:', user.isActive);
     res.json({ message: 'User activated successfully' });
   } catch (error) {
+    console.error('Activate user error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -422,5 +540,6 @@ export {
   checkUsernameAvailability,
   checkEmailAvailability,
   checkPhoneAvailability,
-  checkNICAvailability
+  checkNICAvailability,
+  checkEmployeeIdAvailability
 };

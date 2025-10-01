@@ -26,6 +26,11 @@ const notificationSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  status: {
+    type: String,
+    enum: ['draft', 'sent', 'scheduled', 'active'],
+    default: 'draft'
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

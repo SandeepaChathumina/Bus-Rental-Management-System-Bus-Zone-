@@ -10,7 +10,9 @@ import {
   updateNotification,
   deleteNotification,
   toggleNotificationStatus,
-  getNotificationStats
+  getNotificationStats,
+  sendNotification,
+  testNotificationVisibility
 } from '../controllers/notificationController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -40,5 +42,9 @@ router.route('/:id')
   .delete(deleteNotification);
 
 router.patch('/:id/status', toggleNotificationStatus);
+router.post('/:id/send', sendNotification);
+
+// Test endpoint (remove in production)
+router.get('/test-visibility', testNotificationVisibility);
 
 export default router;

@@ -60,6 +60,9 @@ const StaffDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+  
+  // Notification state
+  const [notificationCount, setNotificationCount] = useState(0);
 
   // Maintenance state
   const [maintenances, setMaintenances] = useState([]);
@@ -127,6 +130,11 @@ const StaffDashboard = () => {
   useEffect(() => {
     filterMaintenances();
   }, [maintenances, searchTerm, filterStatus, filterPriority]);
+
+  // Fetch notifications
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   // Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
@@ -251,6 +259,24 @@ const StaffDashboard = () => {
       setCostStats(response.data);
     } catch (error) {
       console.error('Failed to fetch cost stats', error);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/notifications/my-notifications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        const notifications = response.data.data || [];
+        const unreadCount = notifications.filter(n => !n.isRead).length;
+        setNotificationCount(unreadCount);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications', error);
+      setNotificationCount(0);
     }
   };
 
@@ -660,8 +686,11 @@ const StaffDashboard = () => {
   };
 
   const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
+    const confirmLogout = window.confirm('Are you sure you want to logout?');
+    if (confirmLogout) {
+      logout();
+      navigate('/login', { replace: true });
+    }
   };
 
   const StatCard = ({ title, value, icon: Icon, trend, onClick }) => (
@@ -1020,9 +1049,16 @@ const StaffDashboard = () => {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="p-2 rounded-lg hover:bg-slate-700 transition-colors relative">
+              <button 
+                onClick={() => navigate('/notifications')}
+                className="p-2 rounded-lg hover:bg-slate-700 transition-colors relative"
+              >
                 <Bell className="w-5 h-5 text-slate-300" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                {notificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {notificationCount}
+                  </span>
+                )}
               </button>
               <UserProfileDropdown />
             </div>

@@ -47,10 +47,10 @@ const RegisterPage = () => {
 
   // Email validation regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  // Phone validation regex - exactly 10 digits
+  // Phone validation regex - must start with 0 and be exactly 10 digits
   const phoneRegex = /^0\d{9}$/;
-  // NIC validation regex - 9 or 12 digits only
-  const nicRegex = /^\d{9}$|^\d{12}$/;
+  // NIC validation regex - 9 digits + V or 12 digits
+  const nicRegex = /^\d{9}[Vv]$|^\d{12}$/;
   // Password validation - at least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
@@ -221,12 +221,12 @@ const RegisterPage = () => {
         [name]: limitedValue
       });
     } 
-    // For NIC field, only allow numbers and limit to 12 digits
+    // For NIC field, allow numbers and V character
     else if (name === 'nic') {
-      // Remove any non-digit characters
-      const numericValue = value.replace(/\D/g, '');
-      // Limit to 12 digits
-      const limitedValue = numericValue.slice(0, 12);
+      // Allow digits and V/v character, convert to uppercase
+      const cleanValue = value.replace(/[^\dVv]/g, '').toUpperCase();
+      // Limit to 10 characters (9 digits + V) or 12 digits
+      const limitedValue = cleanValue.length <= 10 ? cleanValue : cleanValue.slice(0, 12);
       
       setFormData({
         ...formData,
@@ -288,7 +288,7 @@ const RegisterPage = () => {
     // Check if phone number is valid and available (if provided)
     if (formData.phone) {
       if (!phoneRegex.test(formData.phone)) {
-        toast.error('Phone number must be exactly 10 digits (0-9 only).');
+        toast.error('Phone number must start with 0 and be exactly 10 digits.');
         return;
       }
       
@@ -300,7 +300,7 @@ const RegisterPage = () => {
     
     // Check if NIC is valid and available
     if (!nicRegex.test(formData.nic)) {
-      toast.error('NIC must be either 9 digits (old format) or 12 digits (new format).');
+      toast.error('NIC must be either 9 digits + V (old format) or 12 digits (new format).');
       return;
     }
     
@@ -629,7 +629,7 @@ const RegisterPage = () => {
                       </div>
                     </div>
                     {!checkingPhone && phoneValid === false && formData.phone && hasInteracted.phone && (
-                      <p className="mt-2 text-sm text-red-600">Phone number must be exactly 10 digits (0-9 only).</p>
+                      <p className="mt-2 text-sm text-red-600">Phone number must start with 0 and be exactly 10 digits.</p>
                     )}
                     {!checkingPhone && phoneAvailable === false && hasInteracted.phone && (
                       <p className="mt-2 text-sm text-red-600">Phone number is already registered. Please use a different phone number.</p>
@@ -652,7 +652,7 @@ const RegisterPage = () => {
                         className={`w-full px-5 py-4 border-2 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500 ${
                           getBorderColor('nic', nicValid, nicAvailable, checkingNIC)
                         }`}
-                        placeholder="Enter 9 or 12 digit NIC number"
+                        placeholder="Enter 9 digits + V or 12 digits"
                         value={formData.nic}
                         onChange={handleChange}
                         onBlur={handleBlur}
@@ -674,7 +674,7 @@ const RegisterPage = () => {
                       </div>
                     </div>
                     {!checkingNIC && nicValid === false && formData.nic && hasInteracted.nic && (
-                      <p className="mt-2 text-sm text-red-600">NIC must be either 9 digits (old format) or 12 digits (new format).</p>
+                      <p className="mt-2 text-sm text-red-600">NIC must be either 9 digits + V (old format) or 12 digits (new format).</p>
                     )}
                     {!checkingNIC && nicAvailable === false && hasInteracted.nic && (
                       <p className="mt-2 text-sm text-red-600">NIC is already registered. Please use a different NIC number.</p>

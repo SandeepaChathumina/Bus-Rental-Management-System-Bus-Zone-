@@ -7,6 +7,7 @@ import Payment from '../models/payment.js';
 import Invoice from '../models/invoice.js';
 import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
+import { sendBookingConfirmation } from '../utils/emailService.js';
 
 // Create new booking
 export const createBooking = async (req, res) => {
@@ -832,12 +833,24 @@ export const processBookingPayment = async (req, res) => {
       totalAmount: booking.totalAmount
     };
 
+    console.log('📱 QR Code Data to be encoded:', JSON.stringify(qrData, null, 2));
+
     try {
       const qrCodeImage = await QRCode.toDataURL(JSON.stringify(qrData));
       booking.qrCode = qrCodeImage;
-      console.log('QR code generated successfully');
+      console.log('✅ QR code generated successfully');
+      console.log('📱 QR code length:', qrCodeImage.length);
+      console.log('📱 QR code starts with:', qrCodeImage.substring(0, 50));
+      console.log('📱 QR code is data URL:', qrCodeImage.startsWith('data:image/'));
+      console.log('📱 QR code contains valid booking data:', {
+        bookingId: qrData.bookingId,
+        passenger: qrData.passenger,
+        busNumber: qrData.busNumber,
+        travelDate: qrData.travelDate,
+        seats: qrData.seats
+      });
     } catch (qrError) {
-      console.error('QR code generation error:', qrError);
+      console.error('❌ QR code generation error:', qrError);
     }
 
     await booking.save();
@@ -846,6 +859,44 @@ export const processBookingPayment = async (req, res) => {
     // Generate invoice
     const invoice = await generateInvoice(payment, booking);
     console.log('Invoice generated:', invoice);
+    
+    // Send booking confirmation email with QR code
+    try {
+      console.log('📧 ===== ATTEMPTING TO SEND BOOKING EMAIL =====');
+      console.log('📧 Full booking object:', JSON.stringify(booking, null, 2));
+      console.log('📧 Booking object structure:', {
+        _id: booking._id,
+        bookingId: booking.bookingId,
+        contactInfo: booking.contactInfo,
+        hasQRCode: !!booking.qrCode,
+        route: booking.route,
+        travelDate: booking.travelDate,
+        seats: booking.seats?.length || 0
+      });
+      
+      // Check if we have the required data - try multiple possible locations for email
+      let emailAddress = booking.contactInfo?.email || booking.user?.email;
+      
+      if (!emailAddress) {
+        console.error('❌ NO EMAIL ADDRESS FOUND IN BOOKING!');
+        console.error('❌ contactInfo:', booking.contactInfo);
+        console.error('❌ user:', booking.user);
+        console.error('❌ Available booking fields:', Object.keys(booking));
+        return; // Don't try to send email without email address
+      }
+      
+      console.log('📧 Email address found:', emailAddress);
+      
+      const emailResult = await sendBookingConfirmation(booking);
+      if (emailResult.success) {
+        console.log('✅ Booking confirmation email sent successfully');
+      } else {
+        console.error('❌ Failed to send booking confirmation email:', emailResult.error);
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending booking confirmation email:', emailError);
+      // Don't fail the payment if email fails
+    }
 
     const responseData = {
       success: true,

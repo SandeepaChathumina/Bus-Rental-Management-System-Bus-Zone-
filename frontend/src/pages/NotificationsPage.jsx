@@ -65,21 +65,19 @@ const NotificationsPage = () => {
       setLoading(true);
       const token = localStorage.getItem("token");
 
+      console.log('🔔 Frontend: Fetching notifications...');
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/notifications`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/notifications/my-notifications`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      console.log('🔔 Frontend: Response received:', response.data);
       const notificationsData = response.data.data || [];
+      console.log('🔔 Frontend: Notifications data:', notificationsData);
       const userRole = user?.role || "passenger";
 
-      const filteredData = notificationsData.filter(
-        (n) =>
-          n.isActive &&
-          (n.targetAudience === "all" ||
-            n.targetAudience === userRole ||
-            n.targetAudience === "all_users")
-      );
+      // Backend already handles filtering, so use data directly
+      const filteredData = notificationsData;
 
       const sortedData = filteredData.sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)

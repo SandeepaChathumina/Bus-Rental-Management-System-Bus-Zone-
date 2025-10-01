@@ -68,7 +68,7 @@ const NotificationBell = () => {
       // Try to fetch from API first
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/notifications`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/notifications/my-notifications`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
