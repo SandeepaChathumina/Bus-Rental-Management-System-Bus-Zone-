@@ -660,8 +660,11 @@ const StaffDashboard = () => {
   };
 
   const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
+    const confirmLogout = window.confirm('Are you sure you want to logout?');
+    if (confirmLogout) {
+      logout();
+      navigate('/login', { replace: true });
+    }
   };
 
   const StatCard = ({ title, value, icon: Icon, trend, onClick }) => (

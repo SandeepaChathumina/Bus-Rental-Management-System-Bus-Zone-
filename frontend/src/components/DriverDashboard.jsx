@@ -791,11 +791,14 @@ const DriverDashboard = () => {
   }, []);
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
+    const confirmLogout = window.confirm('Are you sure you want to logout?');
+    if (confirmLogout) {
+      try {
+        await logout();
+        navigate('/login');
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
     }
   };
 
