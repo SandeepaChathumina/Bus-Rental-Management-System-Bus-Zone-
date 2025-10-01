@@ -1580,13 +1580,6 @@ const UserManagement = () => {
               </select>
             </div>
 
-            <button
-              onClick={() => setShowExportModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              <span>Export</span>
-            </button>
           </div>
 
           <DataTable
@@ -1633,7 +1626,7 @@ const UserManagement = () => {
             </button>
 
             <button
-              onClick={() => exportCSV(users)}
+              onClick={() => setShowExportModal(true)}
               className="flex items-center justify-between px-4 py-3 bg-blue-900/10 rounded hover:bg-blue-900/20 transition-colors"
             >
               <div className="flex items-center space-x-3">
