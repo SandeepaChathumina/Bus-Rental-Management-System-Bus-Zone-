@@ -30,6 +30,7 @@ const AdminNotificationPanel = () => {
   });
 
   const [formErrors, setFormErrors] = useState({});
+  const [dateErrors, setDateErrors] = useState({});
 
   useEffect(() => {
     fetchNotifications();
@@ -159,6 +160,40 @@ const AdminNotificationPanel = () => {
     setFilteredNotifications(filtered);
   };
 
+  const validateDates = () => {
+    const errors = {};
+    const now = new Date();
+    const currentDateTime = now.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
+    
+    // Validate expiry date
+    if (formData.expiresAt) {
+      const expiryDate = new Date(formData.expiresAt);
+      if (expiryDate <= now) {
+        errors.expiresAt = 'Expiry date must be in the future';
+      }
+    }
+    
+    // Validate schedule send date
+    if (formData.sendAt) {
+      const sendDate = new Date(formData.sendAt);
+      if (sendDate <= now) {
+        errors.sendAt = 'Schedule send date must be in the future';
+      }
+    }
+    
+    // Validate that schedule send is before expiry (if both are set)
+    if (formData.sendAt && formData.expiresAt) {
+      const sendDate = new Date(formData.sendAt);
+      const expiryDate = new Date(formData.expiresAt);
+      if (sendDate >= expiryDate) {
+        errors.sendAt = 'Schedule send date must be before expiry date';
+      }
+    }
+    
+    setDateErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const validateForm = () => {
     const errors = {};
     
@@ -183,7 +218,8 @@ const AdminNotificationPanel = () => {
     }
     
     setFormErrors(errors);
-    return Object.keys(errors).length === 0;
+    const dateValidation = validateDates();
+    return Object.keys(errors).length === 0 && dateValidation;
   };
 
   const handleSubmit = async (e) => {
@@ -267,6 +303,7 @@ const AdminNotificationPanel = () => {
       sendAt: notification.sendAt ? new Date(notification.sendAt).toISOString().slice(0, 16) : '',
     });
     setFormErrors({});
+    setDateErrors({});
     setShowForm(true);
   };
 
@@ -286,6 +323,22 @@ const AdminNotificationPanel = () => {
     }
   };
 
+  const handleDateChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+    
+    // Clear previous date errors for this field
+    setDateErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[field];
+      return newErrors;
+    });
+    
+    // Validate dates in real-time
+    setTimeout(() => {
+      validateDates();
+    }, 100);
+  };
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -300,6 +353,7 @@ const AdminNotificationPanel = () => {
       status: 'draft'
     });
     setFormErrors({});
+    setDateErrors({});
     setEditingNotification(null);
     setShowForm(false);
   };
@@ -655,9 +709,15 @@ const AdminNotificationPanel = () => {
                 <input
                   type="datetime-local"
                   value={formData.expiresAt}
-                  onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  onChange={(e) => handleDateChange('expiresAt', e.target.value)}
+                  min={new Date().toISOString().slice(0, 16)}
+                  className={`w-full px-3 py-2 bg-slate-700 border ${dateErrors.expiresAt ? 'border-red-500' : 'border-slate-600'} rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500`}
                 />
+                {dateErrors.expiresAt ? (
+                  <p className="text-red-400 text-xs mt-1">{dateErrors.expiresAt}</p>
+                ) : (
+                  <p className="text-slate-400 text-xs mt-1">Must be a future date and time</p>
+                )}
               </div>
               
               <div>
@@ -665,9 +725,15 @@ const AdminNotificationPanel = () => {
                 <input
                   type="datetime-local"
                   value={formData.sendAt}
-                  onChange={(e) => setFormData({ ...formData, sendAt: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  onChange={(e) => handleDateChange('sendAt', e.target.value)}
+                  min={new Date().toISOString().slice(0, 16)}
+                  className={`w-full px-3 py-2 bg-slate-700 border ${dateErrors.sendAt ? 'border-red-500' : 'border-slate-600'} rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500`}
                 />
+                {dateErrors.sendAt ? (
+                  <p className="text-red-400 text-xs mt-1">{dateErrors.sendAt}</p>
+                ) : (
+                  <p className="text-slate-400 text-xs mt-1">Must be a future date and time</p>
+                )}
               </div>
             </div>
 
