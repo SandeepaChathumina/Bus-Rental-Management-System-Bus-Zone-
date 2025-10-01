@@ -10,6 +10,7 @@ import DriverProfile from '../models/driverProfile.js';
 import stripe from '../config/stripe.js';
 import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
+import { sendBookingConfirmation } from '../utils/emailService.js';
 
 // Helper function to find booking
 const findBooking = async (identifier) => {
@@ -333,6 +334,39 @@ export const confirmStripePayment = async (req, res) => {
             
             await payment.booking.save();
             await generateInvoice(payment, payment.booking);
+            
+            // Send booking confirmation email with QR code
+            try {
+              console.log('📧 ===== PAYMENT CONTROLLER: SENDING BOOKING EMAIL =====');
+              console.log('📧 Payment booking data:', {
+                bookingId: payment.booking.bookingId,
+                contactInfo: payment.booking.contactInfo,
+                hasQRCode: !!payment.booking.qrCode,
+                email: payment.booking.contactInfo?.email
+              });
+              
+              // Check if we have the required data - try multiple possible locations for email
+              const emailAddress = payment.booking.contactInfo?.email || payment.booking.user?.email;
+              
+              if (!emailAddress) {
+                console.error('❌ PAYMENT CONTROLLER: NO EMAIL ADDRESS FOUND!');
+                console.error('❌ contactInfo:', payment.booking.contactInfo);
+                console.error('❌ user:', payment.booking.user);
+                return;
+              }
+              
+              console.log('📧 PAYMENT CONTROLLER: Using email address:', emailAddress);
+              
+              const emailResult = await sendBookingConfirmation(payment.booking);
+              if (emailResult.success) {
+                console.log('✅ PAYMENT CONTROLLER: Booking confirmation email sent successfully');
+              } else {
+                console.error('❌ PAYMENT CONTROLLER: Failed to send booking confirmation email:', emailResult.error);
+              }
+            } catch (emailError) {
+              console.error('❌ PAYMENT CONTROLLER: Error sending booking confirmation email:', emailError);
+              // Don't fail the payment if email fails
+            }
           }
           break;
 
