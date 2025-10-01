@@ -11,7 +11,8 @@ import {
   checkUsernameAvailability,
   checkEmailAvailability,
   checkPhoneAvailability,
-  checkNICAvailability
+  checkNICAvailability,
+  checkEmployeeIdAvailability
   
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
@@ -96,6 +97,7 @@ router.get('/check-username', checkUsernameAvailability);
 router.get('/check-email', checkEmailAvailability);
 router.get('/check-phone', checkPhoneAvailability);
 router.get('/check-nic', checkNICAvailability);
+router.get('/check-employee-id', checkEmployeeIdAvailability);
 router.post('/admin/register', protect, admin, registerUser);
 router.post('/login', loginUser);
 router.get('/report', protect, admin, getUserReport);

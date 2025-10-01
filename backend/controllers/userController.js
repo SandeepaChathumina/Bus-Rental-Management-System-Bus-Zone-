@@ -388,6 +388,24 @@ const checkNICAvailability = async (req, res) => {
   }
 };
 
+// ==================== CHECK EMPLOYEE ID AVAILABILITY ====================
+const checkEmployeeIdAvailability = async (req, res) => {
+  try {
+    const { employeeId } = req.query;
+    
+    if (!employeeId) {
+      return res.status(400).json({ message: 'Employee ID parameter is required' });
+    }
+    
+    // Check if employee ID already exists in staff profiles
+    const existingStaff = await StaffProfile.findOne({ employeeId });
+    
+    return res.json({ available: !existingStaff });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // ==================== ACTIVATE USER ====================
 const activateUser = async (req, res) => {
   try {
@@ -422,5 +440,6 @@ export {
   checkUsernameAvailability,
   checkEmailAvailability,
   checkPhoneAvailability,
-  checkNICAvailability
+  checkNICAvailability,
+  checkEmployeeIdAvailability
 };

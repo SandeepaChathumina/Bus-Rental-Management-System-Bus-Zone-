@@ -160,13 +160,21 @@ checkLicenseNumber: async (licenseNumber, users) => {
 },
 
 
-  // Check if employee ID is unique (placeholder - implement backend endpoint)
-  checkEmployeeId: async (employeeId, users) => {
+  // Check if employee ID format is valid (EMP + 3 digits)
+  validateEmployeeId: (employeeId) => {
+    const employeeIdRegex = /^EMP\d{3}$/;
+    return employeeIdRegex.test(employeeId.toUpperCase());
+  },
+
+  // Check if employee ID is available
+  checkEmployeeId: async (employeeId) => {
     try {
-      const exists = users.some(
-        (u) => u.staffProfile?.employeeId === employeeId
+      const response = await axios.get(
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/users/check-employee-id?employeeId=${employeeId}`
       );
-      return !exists; // true if unique, false if already exists
+      return response.data.available;
     } catch (error) {
       console.error("Employee ID check failed:", error);
       return false;
@@ -524,11 +532,16 @@ const ValidationMessages = ({ validation, field }) => {
         );
 
       case "employeeId":
-        return validation.employeeId.isValid ? (
-          <p className="text-green-400">✓ Employee ID available</p>
-        ) : (
-          <p className="text-red-400">✗ Employee ID already exists</p>
-        );
+        if (!validation.employeeId.checked) {
+          return <p className="text-slate-400 text-xs">Enter employee ID (EMP + 3 digits, e.g., EMP001)</p>;
+        }
+        if (validation.employeeId.isValid && validation.employeeId.available) {
+          return <p className="text-green-400">✓ Employee ID available</p>;
+        } else if (validation.employeeId.isValid && !validation.employeeId.available) {
+          return <p className="text-red-400">✗ Employee ID already exists</p>;
+        } else {
+          return <p className="text-red-400">✗ Must be EMP followed by 3 digits (e.g., EMP001)</p>;
+        }
 
       case "licenseExpiry":
         if (!validation.licenseExpiry.checked) {
@@ -700,7 +713,7 @@ const UserManagement = () => {
     phone: { isValid: false, available: false, checked: false },
     licenseNumber: { isValid: false, checked: false },
     licenseExpiry: { isValid: false, checked: false },
-    employeeId: { isValid: false, checked: false },
+    employeeId: { isValid: false, available: false, checked: false },
   };
 
   const [form, setForm] = useState(initialForm);
@@ -914,26 +927,45 @@ const UserManagement = () => {
 
   useEffect(() => {
     const validateEmployeeId = async () => {
-      if (form.employeeId.length >= 2) {
-        const isAvailable = await validationUtils.checkEmployeeId(
-          form.employeeId,
-          users // Pass the current users array to check against
-        );
-        setValidation((prev) => ({
-          ...prev,
-          employeeId: { isValid: isAvailable, checked: true },
-        }));
+      if (form.employeeId.length >= 6) {
+        // First check format
+        const isFormatValid = validationUtils.validateEmployeeId(form.employeeId);
+        if (isFormatValid) {
+          // Then check availability
+          const isAvailable = await validationUtils.checkEmployeeId(form.employeeId);
+          setValidation((prev) => ({
+            ...prev,
+            employeeId: { 
+              isValid: isAvailable, 
+              available: isAvailable, 
+              checked: true 
+            },
+          }));
+        } else {
+          setValidation((prev) => ({
+            ...prev,
+            employeeId: { 
+              isValid: false, 
+              available: false, 
+              checked: true 
+            },
+          }));
+        }
       } else {
         setValidation((prev) => ({
           ...prev,
-          employeeId: { isValid: false, checked: false },
+          employeeId: { 
+            isValid: false, 
+            available: false, 
+            checked: false 
+          },
         }));
       }
     };
 
     const timeoutId = setTimeout(validateEmployeeId, 500);
     return () => clearTimeout(timeoutId);
-  }, [form.employeeId, users]);
+  }, [form.employeeId]);
 
   const resetValidation = () => {
     setValidation(initialValidation);
@@ -961,6 +993,7 @@ const UserManagement = () => {
     return (
       baseValid &&
       validation.employeeId.isValid &&
+      validation.employeeId.available &&
       form.staffRole?.trim().length > 0
     );
   }
@@ -1504,26 +1537,36 @@ const UserManagement = () => {
         <div className="col-span-2 bg-slate-800 rounded-xl p-6 border border-slate-700">
           <div className="flex items-center space-x-3 mb-4">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search users..."
-                className="pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg w-full"
-              />
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Search Users
+              </label>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name, email, or username..."
+                  className="pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg w-full"
+                />
+              </div>
             </div>
 
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="bg-slate-700 text-white px-3 py-2 rounded-lg"
-            >
-              <option value="all">All Roles</option>
-              <option value="admin">Admin</option>
-              <option value="driver">Driver</option>
-              <option value="staff">Staff</option>
-              <option value="passenger">Passenger</option>
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Filter by Role
+              </label>
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="bg-slate-700 text-white px-3 py-2 rounded-lg"
+              >
+                <option value="all">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="driver">Driver</option>
+                <option value="staff">Staff</option>
+                <option value="passenger">Passenger</option>
+              </select>
+            </div>
 
             <button
               onClick={() => setShowExportModal(true)}
@@ -1869,8 +1912,8 @@ const UserManagement = () => {
                 className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors w-full"
               />
               {!form.staffRole && (
-                <p className="text-red-400 text-xs mt-1">
-                  ✗ Staff role is required
+                <p className="text-slate-400 text-xs mt-1">
+                  Please enter the staff member's role (e.g., Manager, Supervisor, Clerk)
                 </p>
               )}
             </div>
@@ -1878,9 +1921,21 @@ const UserManagement = () => {
             <FormField
               field="employeeId"
               label="Employee ID"
-              placeholder="Enter employee ID"
+              placeholder="Enter employee ID (e.g., EMP001)"
               value={form.employeeId}
-              onChange={(e) => setForm({ ...form, employeeId: e.target.value })}
+              onChange={(e) => {
+                // Auto-uppercase and limit to 6 characters (EMP + 3 digits)
+                let value = e.target.value.toUpperCase();
+                // Remove any non-alphanumeric characters except EMP prefix
+                if (value.startsWith('EMP')) {
+                  value = 'EMP' + value.slice(3).replace(/\D/g, '');
+                } else {
+                  value = value.replace(/[^A-Z0-9]/g, '');
+                }
+                // Limit to 6 characters
+                value = value.slice(0, 6);
+                setForm({ ...form, employeeId: value });
+              }}
               validation={validation}
             />
           </div>
