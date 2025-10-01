@@ -41,6 +41,10 @@ const userSchema = new mongoose.Schema({
     enum: ['passenger', 'admin', 'driver','staff'],
     default: 'passenger',
   },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
 }, {
   timestamps: true,
 });

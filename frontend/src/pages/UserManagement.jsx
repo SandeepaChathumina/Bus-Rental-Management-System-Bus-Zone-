@@ -1011,6 +1011,7 @@ const UserManagement = () => {
       const res = await axios.get(
         `${import.meta.env.VITE_BACKEND_URL}/api/users`
       );
+      console.log('Fetched users:', res.data);
       setUsers(res.data || []);
     } catch (err) {
       console.error("fetchUsers error", err);
@@ -1034,6 +1035,7 @@ const UserManagement = () => {
 
   const deactivateUser = async (u) => {
     if (!window.confirm(`Deactivate ${u.firstName || u.username}?`)) return;
+    console.log('Deactivating user:', u);
     try {
       await axios.delete(
         `${import.meta.env.VITE_BACKEND_URL}/api/users/${u._id || u.id}`
@@ -1043,7 +1045,10 @@ const UserManagement = () => {
           p._id === (u._id || u.id) ? { ...p, isActive: false } : p
         )
       );
+      console.log('User deactivated successfully:', u._id);
       toast.success("User deactivated successfully");
+      // Refresh the users list to ensure data consistency
+      setTimeout(() => fetchUsers(), 500);
     } catch (err) {
       console.error("deactivate error", err);
       toast.error(err.response?.data?.message || "Failed to deactivate user");
@@ -1055,6 +1060,7 @@ const UserManagement = () => {
 
   const activateUser = async (u) => {
     if (!window.confirm(`Activate ${u.firstName || u.username}?`)) return;
+    console.log('Activating user:', u);
     setActivatingId(u._id);
     try {
       await axios.patch(
@@ -1067,7 +1073,10 @@ const UserManagement = () => {
           p._id === (u._id || u.id) ? { ...p, isActive: true } : p
         )
       );
+      console.log('User activated successfully:', u._id);
       toast.success("User activated successfully");
+      // Refresh the users list to ensure data consistency
+      setTimeout(() => fetchUsers(), 500);
     } catch (err) {
       console.error("activate error", err);
       toast.error(err.response?.data?.message || "Failed to activate user");

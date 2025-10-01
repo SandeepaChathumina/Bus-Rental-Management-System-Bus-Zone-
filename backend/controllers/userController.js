@@ -192,6 +192,14 @@ const loginUser = async (req, res) => {
 
     console.log('Password matched for user:', username);
 
+    // Check if user is active
+    if (!user.isActive) {
+      console.log('User is deactivated:', username);
+      return res.status(401).json({ message: 'Account is deactivated. Please contact administrator.' });
+    }
+
+    console.log('User is active:', username);
+
     // Convert user to object and remove password
     let userData = user.toObject();
     delete userData.password;
@@ -221,6 +229,7 @@ const loginUser = async (req, res) => {
 const getUsers = async (req, res) => {
   try {
     const users = await User.find({}).select('-password');
+    console.log('Found users:', users.length, 'users with isActive status:', users.map(u => ({ username: u.username, isActive: u.isActive })));
 
     const usersWithProfiles = await Promise.all(
       users.map(async (user) => {
@@ -234,8 +243,10 @@ const getUsers = async (req, res) => {
       })
     );
 
+    console.log('Returning users with profiles:', usersWithProfiles.map(u => ({ username: u.username, isActive: u.isActive })));
     res.json(usersWithProfiles);
   } catch (error) {
+    console.error('Get users error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -340,10 +351,14 @@ const updateUser = async (req, res) => {
 // ==================== DELETE / DEACTIVATE ====================
 const deleteUser = async (req, res) => {
   try {
+    console.log('Deactivating user with ID:', req.params.id);
     const user = await User.findById(req.params.id);
     if (!user) {
+      console.log('User not found:', req.params.id);
       return res.status(404).json({ message: 'User not found' });
     }
+
+    console.log('User found:', user.username, 'Current isActive:', user.isActive);
 
     // Only admin can deactivate
     if (req.user.role !== 'admin') {
@@ -353,8 +368,10 @@ const deleteUser = async (req, res) => {
     user.isActive = false;
     await user.save();
 
+    console.log('User deactivated successfully:', user.username, 'New isActive:', user.isActive);
     res.json({ message: 'User deactivated successfully' });
   } catch (error) {
+    console.error('Deactivate user error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -486,10 +503,14 @@ const checkEmployeeIdAvailability = async (req, res) => {
 // ==================== ACTIVATE USER ====================
 const activateUser = async (req, res) => {
   try {
+    console.log('Activating user with ID:', req.params.id);
     const user = await User.findById(req.params.id);
     if (!user) {
+      console.log('User not found:', req.params.id);
       return res.status(404).json({ message: 'User not found' });
     }
+
+    console.log('User found:', user.username, 'Current isActive:', user.isActive);
 
     // Only admin can activate
     if (req.user.role !== 'admin') {
@@ -499,8 +520,10 @@ const activateUser = async (req, res) => {
     user.isActive = true;
     await user.save();
 
+    console.log('User activated successfully:', user.username, 'New isActive:', user.isActive);
     res.json({ message: 'User activated successfully' });
   } catch (error) {
+    console.error('Activate user error:', error);
     res.status(500).json({ message: error.message });
   }
 };
