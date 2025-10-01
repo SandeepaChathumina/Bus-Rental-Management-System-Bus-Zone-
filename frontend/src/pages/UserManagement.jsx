@@ -1119,7 +1119,9 @@ const UserManagement = () => {
       setShowStaffModal(false);
 
       toast.success(
-        `${role.charAt(0).toUpperCase() + role.slice(1)} created successfully!`
+        `${role.charAt(0).toUpperCase() + role.slice(1)} created successfully! ${
+          role === "driver" ? "Login credentials have been sent to the driver's email." : ""
+        }`
       );
     } catch (err) {
       console.error("createUser error", err);

@@ -2,6 +2,7 @@ import User from '../models/user.js';
 import DriverProfile from '../models/driverProfile.js';
 import StaffProfile from '../models/staffProfile.js';
 import generateToken from '../utils/generateToken.js';
+import { sendDriverCredentials } from '../utils/emailService.js';
 
 // ==================== REGISTER USER ====================
 const registerUser = async (req, res) => {
@@ -78,6 +79,43 @@ const registerUser = async (req, res) => {
     let userWithProfile = user.toJSON();
     if (role === 'driver') {
       userWithProfile.driverProfile = await DriverProfile.findOne({ user: user._id });
+      
+      // Send email with credentials to driver
+      try {
+        console.log('🚀 Starting email sending process for driver:', user.email);
+        console.log('🔍 Environment check:');
+        console.log('EMAIL_USER:', process.env.EMAIL_USER);
+        console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set (length: ' + process.env.EMAIL_PASS.length + ')' : 'Not set');
+        console.log('EMAIL_SERVICE:', process.env.EMAIL_SERVICE);
+        
+        const emailData = {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username,
+          email: user.email,
+          password: password, // Send the original password before hashing
+          phone: user.phone,
+          licenseNumber: licenseNumber,
+          emergencyContact: emergencyContact
+        };
+        
+        console.log('📧 Email data prepared:', {
+          firstName: emailData.firstName,
+          lastName: emailData.lastName,
+          email: emailData.email,
+          username: emailData.username
+        });
+        
+        const emailResult = await sendDriverCredentials(emailData);
+        if (emailResult.success) {
+          console.log('✅ Driver credentials email sent successfully');
+        } else {
+          console.error('❌ Failed to send driver credentials email:', emailResult.error);
+        }
+      } catch (emailError) {
+        console.error('❌ Error sending driver credentials email:', emailError);
+        // Don't fail the user creation if email fails
+      }
     } else if (role === 'staff') {
       userWithProfile.staffProfile = await StaffProfile.findOne({ user: user._id });
     }
