@@ -305,6 +305,17 @@ const AdminNotificationPanel = () => {
     setFormErrors({});
     setDateErrors({});
     setShowForm(true);
+    
+    // Show warning if notification is already sent
+    if (notification.status === 'sent') {
+      toast('⚠️ This notification has already been sent. Changes will affect future visibility.', {
+        duration: 4000,
+        style: {
+          background: '#f59e0b',
+          color: '#fff',
+        },
+      });
+    }
   };
 
   const handleDelete = async (id) => {
@@ -320,6 +331,45 @@ const AdminNotificationPanel = () => {
     } catch (error) {
       console.error('Error deleting notification:', error);
       toast.error('Failed to delete notification');
+    }
+  };
+
+  const sendNotification = async (id) => {
+    if (!window.confirm('Are you sure you want to send this notification? It will be visible to the target audience.')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/notifications/${id}/send`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Notification sent successfully');
+      refreshData();
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      toast.error('Failed to send notification');
+    }
+  };
+
+  const bulkUpdateStatus = async (notificationIds, newStatus) => {
+    if (!window.confirm(`Are you sure you want to update ${notificationIds.length} notifications to ${newStatus} status?`)) return;
+    
+    try {
+      console.log(`Updating ${notificationIds.length} notifications to status: ${newStatus}`);
+      const token = localStorage.getItem('token');
+      const promises = notificationIds.map(id => {
+        console.log(`Updating notification ${id} to status ${newStatus}`);
+        return axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/notifications/${id}`, 
+          { status: newStatus }, 
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      });
+      
+      await Promise.all(promises);
+      toast.success(`${notificationIds.length} notifications updated successfully`);
+      refreshData();
+    } catch (error) {
+      console.error('Error bulk updating notifications:', error);
+      toast.error('Failed to update notifications');
     }
   };
 
@@ -358,21 +408,6 @@ const AdminNotificationPanel = () => {
     setShowForm(false);
   };
 
-  const sendNotification = async (id) => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/notifications/${id}/send`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast.success('Notification sent successfully');
-      refreshData();
-    } catch (error) {
-      console.error('Error sending notification:', error);
-      toast.error('Failed to send notification');
-    }
-  };
 
   const toggleStatus = async (id) => {
     try {
@@ -430,9 +465,9 @@ const AdminNotificationPanel = () => {
 
   const userTypes = [
     { value: 'all', label: 'All Users' },
-    { value: 'admins', label: 'Admins' },
+    { value: 'passengers', label: 'Passengers' },
     { value: 'drivers', label: 'Drivers' },
-    { value: 'passengers', label: 'Passengers' }
+    { value: 'staff', label: 'Staff' }
   ];
 
   const statusTypes = [
@@ -616,6 +651,70 @@ const AdminNotificationPanel = () => {
               </select>
             </div>
           )}
+          
+          {/* Bulk Actions */}
+          <div className="mt-4 p-4 bg-slate-700/50 rounded-lg border border-slate-600">
+            <h4 className="text-sm font-medium text-slate-300 mb-3">Bulk Actions</h4>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => {
+                  const draftNotifications = filteredNotifications.filter(n => n.status === 'draft');
+                  if (draftNotifications.length > 0) {
+                    bulkUpdateStatus(draftNotifications.map(n => n._id), 'sent');
+                  } else {
+                    toast('No draft notifications found');
+                  }
+                }}
+                className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+              >
+                Send All Drafts
+              </button>
+              <button
+                onClick={() => {
+                  const sentNotifications = filteredNotifications.filter(n => n.status === 'sent');
+                  if (sentNotifications.length > 0) {
+                    bulkUpdateStatus(sentNotifications.map(n => n._id), 'draft');
+                  } else {
+                    toast('No sent notifications found');
+                  }
+                }}
+                className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition-colors"
+              >
+                Revert to Draft
+              </button>
+              <button
+                onClick={() => {
+                  const activeNotifications = filteredNotifications.filter(n => n.isActive);
+                  if (activeNotifications.length > 0) {
+                    bulkUpdateStatus(activeNotifications.map(n => n._id), 'draft');
+                  } else {
+                    toast('No active notifications found');
+                  }
+                }}
+                className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
+              >
+                Deactivate All
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const token = localStorage.getItem('token');
+                    const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/notifications/test-visibility?role=passenger&userType=passenger`, {
+                      headers: { Authorization: `Bearer ${token}` }
+                    });
+                    console.log('Test visibility result:', response.data);
+                    toast.success('Check console for visibility test results');
+                  } catch (error) {
+                    console.error('Test visibility error:', error);
+                    toast.error('Failed to test visibility');
+                  }
+                }}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+              >
+                Test Visibility
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -863,11 +962,25 @@ const AdminNotificationPanel = () => {
                         {channelConfig?.label || notification.deliveryChannel || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
+                        <div className="flex items-center space-x-2">
                           {getStatusIcon(notification.status)}
-                          <span className="ml-2 text-sm text-slate-300 capitalize">
-                            {notification.status || 'draft'}
-                          </span>
+                          <select
+                            value={notification.status || 'draft'}
+                            onChange={(e) => {
+                              const newStatus = e.target.value;
+                              if (newStatus !== notification.status) {
+                                if (window.confirm(`Change status from ${notification.status} to ${newStatus}?`)) {
+                                  bulkUpdateStatus([notification._id], newStatus);
+                                }
+                              }
+                            }}
+                            className="text-xs bg-slate-700 border border-slate-600 rounded px-2 py-1 text-slate-300 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                          >
+                            <option value="draft">Draft</option>
+                            <option value="sent">Sent</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="active">Active</option>
+                          </select>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
