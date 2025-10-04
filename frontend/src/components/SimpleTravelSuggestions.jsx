@@ -185,13 +185,33 @@ const SimpleTravelSuggestions = ({ destination, onClose }) => {
                       <p className="text-gray-500 text-sm mb-3 line-clamp-2">{place.description}</p>
                     )}
                     
-                    {place.website && (
-                      <a href={place.website} target="_blank" rel="noopener noreferrer" 
-                         className="inline-flex items-center text-blue-600 text-sm font-medium hover:text-blue-800 transition-colors">
-                        <span className="mr-1">🌐</span>
-                        Visit Website
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {place.website && (
+                        <a href={place.website} target="_blank" rel="noopener noreferrer" 
+                           className="inline-flex items-center text-blue-600 text-sm font-medium hover:text-blue-800 transition-colors bg-blue-50 px-3 py-1 rounded-full">
+                          <span className="mr-1">🌐</span>
+                          Website
+                        </a>
+                      )}
+                      <a 
+                        href={`https://www.google.com/maps/place/?q=place_id:${place.id}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-green-600 text-sm font-medium hover:text-green-800 transition-colors bg-green-50 px-3 py-1 rounded-full"
+                      >
+                        <span className="mr-1">🗺️</span>
+                        View on Maps
                       </a>
-                    )}
+                      <a 
+                        href={`https://www.google.com/maps/dir/?api=1&destination=place_id:${place.id}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-purple-600 text-sm font-medium hover:text-purple-800 transition-colors bg-purple-50 px-3 py-1 rounded-full"
+                      >
+                        <span className="mr-1">🧭</span>
+                        Directions
+                      </a>
+                    </div>
                   </div>
                 </div>
               ))}

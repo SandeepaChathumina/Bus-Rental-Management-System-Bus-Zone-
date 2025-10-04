@@ -200,7 +200,7 @@ const BookingSearch = () => {
                   <select
                     value={searchData.to}
                     onChange={(e) => handleInputChange('to', e.target.value)}
-                    className="w-full pl-10 pr-16 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-20 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   >
                     <option value="">Select Destination</option>
@@ -212,7 +212,7 @@ const BookingSearch = () => {
                     <button
                       type="button"
                       onClick={() => handleShowTravelSuggestions(searchData.to)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 hover:bg-slate-600 rounded-lg transition-colors"
+                      className="absolute right-6 top-1/2 transform -translate-y-1/2 p-2 hover:bg-slate-600 rounded-lg transition-colors"
                       title="Discover places to visit"
                     >
                       <Sparkles className="h-4 w-4 text-cyan-400" />

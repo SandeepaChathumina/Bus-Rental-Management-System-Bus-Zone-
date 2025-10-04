@@ -29,7 +29,7 @@ class DirectGooglePlacesService {
 
       // Get detailed information for top places
       const detailedPlaces = await Promise.all(
-        places.slice(0, 8).map(async (place) => {
+        places.slice(0, 20).map(async (place) => {
           try {
             const details = await this.getPlaceDetails(place.place_id);
             // Get photo URLs
