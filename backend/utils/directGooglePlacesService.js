@@ -32,6 +32,11 @@ class DirectGooglePlacesService {
         places.slice(0, 8).map(async (place) => {
           try {
             const details = await this.getPlaceDetails(place.place_id);
+            // Get photo URLs
+            const photoUrls = details.photos ? details.photos.slice(0, 3).map(photo => 
+              this.getPhotoUrl(photo.photo_reference, 400)
+            ) : [];
+
             return {
               id: place.place_id,
               name: place.name,
@@ -41,6 +46,7 @@ class DirectGooglePlacesService {
               vicinity: place.formatted_address || place.vicinity,
               types: place.types,
               photos: details.photos || [],
+              photoUrls: photoUrls,
               opening_hours: details.opening_hours || null,
               website: details.website || null,
               formatted_phone_number: details.formatted_phone_number || null,
@@ -60,6 +66,7 @@ class DirectGooglePlacesService {
               vicinity: place.formatted_address || place.vicinity,
               types: place.types,
               photos: [],
+              photoUrls: [],
               opening_hours: null,
               website: null,
               formatted_phone_number: null,
@@ -134,14 +141,22 @@ class DirectGooglePlacesService {
   }
 
   /**
+   * Get hotels and accommodations
+   */
+  async getHotels(destination) {
+    return this.getRealPlaces(destination, 'lodging');
+  }
+
+  /**
    * Get comprehensive destination info
    */
   async getDestinationInfo(destination) {
     try {
-      const [attractions, restaurants, shopping] = await Promise.all([
+      const [attractions, restaurants, shopping, hotels] = await Promise.all([
         this.getTouristAttractions(destination),
         this.getRestaurants(destination),
-        this.getShoppingPlaces(destination)
+        this.getShoppingPlaces(destination),
+        this.getHotels(destination)
       ]);
 
       return {
@@ -156,6 +171,10 @@ class DirectGooglePlacesService {
         shopping: {
           count: shopping.length,
           places: shopping
+        },
+        hotels: {
+          count: hotels.length,
+          places: hotels
         }
       };
     } catch (error) {

@@ -4,6 +4,7 @@ import {
   getRealTravelPlaces,
   getRealTouristAttractions,
   getRealRestaurants,
+  getHotels,
   getRealDestinationInfo
 } from '../controllers/realPlacesController.js';
 
@@ -20,6 +21,10 @@ router.get('/attractions', getRealTouristAttractions);
 // Get real restaurants for a destination
 // GET /api/real-places/restaurants?destination=Colombo
 router.get('/restaurants', getRealRestaurants);
+
+// Get real hotels and accommodations for a destination
+// GET /api/real-places/hotels?destination=Colombo
+router.get('/hotels', getHotels);
 
 // Get comprehensive real destination information
 // GET /api/real-places/destination?destination=Colombo

@@ -23,6 +23,8 @@ export const getRealTravelPlaces = async (req, res) => {
       places = await directGooglePlacesService.getRestaurants(destination);
     } else if (type === 'shopping') {
       places = await directGooglePlacesService.getShoppingPlaces(destination);
+    } else if (type === 'hotels') {
+      places = await directGooglePlacesService.getHotels(destination);
     }
 
     res.json({
@@ -107,6 +109,40 @@ export const getRealRestaurants = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch real restaurants',
+      error: error.message
+    });
+  }
+};
+
+// Get hotels and accommodations
+export const getHotels = async (req, res) => {
+  try {
+    const { destination } = req.query;
+
+    if (!destination) {
+      return res.status(400).json({
+        success: false,
+        message: 'Destination parameter is required'
+      });
+    }
+
+    console.log(`Fetching real hotels for ${destination}`);
+
+    const hotels = await directGooglePlacesService.getHotels(destination);
+
+    res.json({
+      success: true,
+      destination,
+      count: hotels.length,
+      hotels: hotels,
+      source: hotels.length > 0 && hotels[0].source ? hotels[0].source : 'unknown'
+    });
+
+  } catch (error) {
+    console.error('Error fetching real hotels:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch real hotels',
       error: error.message
     });
   }
