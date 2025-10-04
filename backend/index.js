@@ -14,7 +14,6 @@ import paymentRouter from './routes/paymentRouter.js';
 import scheduleRouter from './routes/scheduleRouter.js';
 import staffProfileRoutes from './routes/staffProfileRoutes.js';
 import chatbotRouter from './routes/chatbotRouter.js';
-import simplePlacesRouter from './routes/simplePlacesRouter.js';
 import realPlacesRouter from './routes/realPlacesRouter.js';
 
 dotenv.config();
@@ -43,7 +42,6 @@ app.use('/api/lost-items', lostItemRouter);
 app.use('/api/payments',paymentRouter);
 app.use('/api/schedules', scheduleRouter);
 app.use('/api/chatbot', chatbotRouter);
-app.use('/api/simple-places', simplePlacesRouter);
 app.use('/api/real-places', realPlacesRouter);
 
 app.get('/', (req, res) => {
