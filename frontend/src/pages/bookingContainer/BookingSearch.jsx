@@ -7,9 +7,11 @@ import {
   Users, 
   ArrowRight,
   Search,
-  RefreshCw
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import SimpleTravelSuggestions from '../../components/SimpleTravelSuggestions';
 
 const BookingSearch = () => {
   const navigate = useNavigate();
@@ -23,6 +25,8 @@ const BookingSearch = () => {
     tripType: 'one-way'
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showTravelSuggestions, setShowTravelSuggestions] = useState(false);
+  const [selectedDestination, setSelectedDestination] = useState('');
 
   const locations = [
     // Western Province
@@ -57,6 +61,13 @@ const BookingSearch = () => {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleShowTravelSuggestions = (destination) => {
+    if (destination) {
+      setSelectedDestination(destination);
+      setShowTravelSuggestions(true);
+    }
   };
 
   const handleSearch = async (e) => {
@@ -189,7 +200,7 @@ const BookingSearch = () => {
                   <select
                     value={searchData.to}
                     onChange={(e) => handleInputChange('to', e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-16 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   >
                     <option value="">Select Destination</option>
@@ -197,6 +208,16 @@ const BookingSearch = () => {
                       <option key={location} value={location}>{location}</option>
                     ))}
                   </select>
+                  {searchData.to && (
+                    <button
+                      type="button"
+                      onClick={() => handleShowTravelSuggestions(searchData.to)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 hover:bg-slate-600 rounded-lg transition-colors"
+                      title="Discover places to visit"
+                    >
+                      <Sparkles className="h-4 w-4 text-cyan-400" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -319,6 +340,14 @@ const BookingSearch = () => {
           </div>
         </div>
       </div>
+
+      {/* Simple Travel Suggestions Modal */}
+      {showTravelSuggestions && (
+        <SimpleTravelSuggestions
+          destination={selectedDestination}
+          onClose={() => setShowTravelSuggestions(false)}
+        />
+      )}
     </div>
   );
 };
