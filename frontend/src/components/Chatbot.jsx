@@ -53,7 +53,7 @@ const Chatbot = () => {
         content: msg.text
       }));
 
-      const response = await axios.post('/api/chatbot/chat', {
+      const response = await axios.post('http://localhost:3000/api/chatbot/chat-smart', {
         message: inputMessage,
         conversationHistory
       });
