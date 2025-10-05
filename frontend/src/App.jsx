@@ -32,6 +32,7 @@ import Checkout from './pages/checkout/Checkout';
 import BookingSuccess from './pages/booking-success/BookingSuccess';
 import GalleryPage from './pages/GalleryPage';
 import PaymentManagement from './pages/PaymentManagement';
+import Chatbot from './components/Chatbot';
 
 // ✅ Import ProtectedRoute
 import ProtectedRoute from './components/ProtectedRoute';
@@ -229,6 +230,7 @@ function App() {
                             />
             </Routes>
           </main>
+          <Chatbot />
           <Toaster position="top-right" />
         </div>
       </Router>
