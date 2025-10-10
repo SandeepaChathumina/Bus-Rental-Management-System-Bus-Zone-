@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import jsQR from 'jsqr';
 import {
   Users,
   QrCode,
@@ -23,6 +23,175 @@ import {
   UserX
 } from 'lucide-react';
 
+// QR Scanner Component with jsQR
+const QRScanner = ({ onScan, onError }) => {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [stream, setStream] = useState(null);
+  const animationFrameRef = useRef(null);
+
+  const startCamera = async () => {
+    try {
+      // Stop any existing stream
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+
+      // Request camera access
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
+      });
+      
+      setStream(mediaStream);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.play();
+        setIsScanning(true);
+        
+        // Start QR scanning
+        scanQRCode();
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      onError(`Camera access denied: ${error.message}`);
+    }
+  };
+
+  const stopCamera = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setIsScanning(false);
+    
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  };
+
+  const scanQRCode = () => {
+    if (!videoRef.current || !canvasRef.current || !isScanning) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    // Only scan if video is ready
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      // Set canvas dimensions to match video
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // Draw video frame to canvas
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Get image data for QR code scanning
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Use jsQR to detect QR code
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'dontInvert',
+      });
+
+      // If QR code is detected
+      if (code) {
+        console.log('QR Code detected:', code.data);
+        onScan(code.data);
+        stopCamera(); // Stop camera after successful scan
+        return;
+      }
+    }
+
+    // Continue scanning
+    if (isScanning) {
+      animationFrameRef.current = requestAnimationFrame(scanQRCode);
+    }
+  };
+
+  useEffect(() => {
+    if (isScanning) {
+      animationFrameRef.current = requestAnimationFrame(scanQRCode);
+    }
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isScanning]);
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
+  return (
+    <div className="text-center">
+      <div className="relative bg-black rounded-lg overflow-hidden mb-4 mx-auto max-w-md">
+        <video
+          ref={videoRef}
+          className="w-full h-64 object-cover"
+          playsInline
+          muted
+        />
+        {isScanning && (
+          <>
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="border-4 border-blue-400 border-dashed rounded-lg w-48 h-48 animate-pulse"></div>
+            </div>
+            <div className="absolute bottom-4 left-0 right-0 text-center">
+              <p className="text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm inline-block">
+                Point camera at QR code
+              </p>
+            </div>
+          </>
+        )}
+        {!isScanning && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
+            <div className="text-center text-slate-500">
+              <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
+              <p>Camera not active</p>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <canvas ref={canvasRef} className="hidden" />
+      
+      <div className="flex justify-center space-x-4">
+        {!isScanning ? (
+          <button
+            onClick={startCamera}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 flex items-center transition-all"
+          >
+            <Camera className="w-5 h-5 mr-2" />
+            Start Camera
+          </button>
+        ) : (
+          <button
+            onClick={stopCamera}
+            className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-500 flex items-center transition-all"
+          >
+            <CameraOff className="w-5 h-5 mr-2" />
+            Stop Camera
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const AttendanceManagement = () => {
   const { user: authUser } = useAuth();
   const [activeTab, setActiveTab] = useState('records');
@@ -40,10 +209,10 @@ const AttendanceManagement = () => {
   const [selectedUserForQR, setSelectedUserForQR] = useState('');
   const [scanResult, setScanResult] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [qrGenerating, setQrGenerating] = useState(false);
-  const scannerRef = useRef(null);
+  const [manualQrInput, setManualQrInput] = useState('');
+  const [scanningStatus, setScanningStatus] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -55,17 +224,6 @@ const AttendanceManagement = () => {
     }
   }, [currentPage, selectedUser, startDate, endDate, statusFilter, activeTab]);
 
-  useEffect(() => {
-    // Clean up scanner when component unmounts or tab changes
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(error => {
-          console.log("Scanner cleanup:", error);
-        });
-      }
-    };
-  }, [activeTab]);
-
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -75,7 +233,6 @@ const AttendanceManagement = () => {
         }
       });
       
-      // Filter to only include drivers and staff
       const driversAndStaff = response.data.filter(user => 
         user.role === 'driver' || user.role === 'staff'
       );
@@ -107,30 +264,19 @@ const AttendanceManagement = () => {
         }
       );
       
-      console.log('Attendance API response:', response.data);
-      
-      // Handle mongoose-paginate-v2 response format
       if (response.data && response.data.docs && Array.isArray(response.data.docs)) {
         setAttendanceRecords(response.data.docs);
         setTotalPages(response.data.totalPages || 1);
         setTotalRecords(response.data.totalDocs || response.data.docs.length);
-      } 
-      // Fallback for other response formats
-      else if (response.data && Array.isArray(response.data)) {
+      } else if (response.data && Array.isArray(response.data)) {
         setAttendanceRecords(response.data);
         setTotalPages(1);
         setTotalRecords(response.data.length);
-      }
-      else {
-        console.error('Unexpected API response format:', response.data);
+      } else {
         setAttendanceRecords([]);
       }
     } catch (error) {
       console.error('Error fetching attendance records:', error);
-      if (error.response) {
-        console.error('API Error Response:', error.response.data);
-        console.error('API Error Status:', error.response.status);
-      }
       setAttendanceRecords([]);
     } finally {
       setLoading(false);
@@ -168,6 +314,8 @@ const AttendanceManagement = () => {
 
   const handleScan = async (qrData) => {
     try {
+      setScanningStatus('Processing QR code...');
+      
       const token = localStorage.getItem('token');
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/attendance/scan-qr`,
@@ -181,72 +329,45 @@ const AttendanceManagement = () => {
       );
       
       setScanResult(response.data);
+      setScanningStatus('QR code processed successfully!');
       
-      // Refresh records after scanning
+      // Clear status after 3 seconds
+      setTimeout(() => {
+        setScanningStatus('');
+      }, 3000);
+      
       fetchAttendanceRecords();
     } catch (error) {
       console.error('Error scanning QR code:', error);
-      alert('Error scanning QR code: ' + (error.response?.data?.message || error.message));
+      const errorMessage = error.response?.data?.message || error.message;
+      setScanningStatus(`Error: ${errorMessage}`);
+      alert('Error scanning QR code: ' + errorMessage);
+      
+      // Clear error status after 5 seconds
+      setTimeout(() => {
+        setScanningStatus('');
+      }, 5000);
     }
   };
 
   const handleManualScan = () => {
-    const qrData = prompt('Please paste the QR code data:');
-    if (qrData) {
-      handleScan(qrData);
+    if (manualQrInput.trim()) {
+      handleScan(manualQrInput.trim());
+      setManualQrInput('');
+    } else {
+      alert('Please enter QR code data');
     }
   };
 
-  const startScanner = () => {
-    setCameraError(null);
-    setIsScanning(true);
-    setScanResult(null);
-    
-    // Clear any previous scanner
-    if (scannerRef.current) {
-      scannerRef.current.clear().catch(error => {
-        console.log("Scanner clear error:", error);
-      });
-    }
-    
-    // Initialize the scanner
-    scannerRef.current = new Html5QrcodeScanner(
-      "qr-reader",
-      { 
-        fps: 10, 
-        qrbox: { width: 250, height: 250 },
-        supportedScanTypes: [] 
-      },
-      false
-    );
-    
-    scannerRef.current.render(
-      (decodedText) => {
-        // Successfully scanned
-        setIsScanning(false);
-        if (scannerRef.current) {
-          scannerRef.current.clear();
-        }
-        handleScan(decodedText);
-      },
-      (error) => {
-        // Most errors can be ignored as they're usually parsing errors
-        console.log("QR Scan error (usually not critical):", error);
-      }
-    ).catch(err => {
-      console.error("Failed to initialize scanner:", err);
-      setCameraError("Failed to access camera. Please check permissions.");
-      setIsScanning(false);
-    });
+  const handleCameraError = (error) => {
+    setCameraError(error);
+    setScanningStatus(`Camera Error: ${error}`);
   };
 
-  const stopScanner = () => {
-    setIsScanning(false);
-    if (scannerRef.current) {
-      scannerRef.current.clear().catch(error => {
-        console.log("Scanner stop error:", error);
-      });
-    }
+  const handleQrDetected = (qrData) => {
+    console.log('QR Code detected in parent:', qrData);
+    setScanningStatus('QR code detected! Processing...');
+    handleScan(qrData);
   };
 
   const formatDate = (dateString) => {
@@ -278,7 +399,6 @@ const AttendanceManagement = () => {
         }
       );
       
-      // Handle report response format
       let records = [];
       if (response.data && response.data.records && Array.isArray(response.data.records)) {
         records = response.data.records;
@@ -286,7 +406,6 @@ const AttendanceManagement = () => {
         records = response.data;
       }
       
-      // Convert to CSV
       const headers = 'Name,Role,Date,Check-In Time,Check-Out Time,Status\n';
       const csvData = records.map(record => 
         `${record.userId?.firstName || ''} ${record.userId?.lastName || ''},${record.userId?.role || ''},${formatDate(record.date)},${record.checkInTime ? formatTime(record.checkInTime) : 'N/A'},${record.checkOutTime ? formatTime(record.checkOutTime) : 'N/A'},${record.status || ''}`
@@ -322,7 +441,6 @@ const AttendanceManagement = () => {
         }
       );
       
-      // Refresh the records
       fetchAttendanceRecords();
       alert('Attendance record deleted successfully');
     } catch (error) {
@@ -694,7 +812,7 @@ const AttendanceManagement = () => {
         </div>
       )}
 
-      {/* Scan QR Tab */}
+      {/* Scan QR Tab - UPDATED WITH WORKING QR SCANNER */}
       {activeTab === 'scan' && (
         <div className="bg-slate-800 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-white mb-6 text-center">QR Code Scanner</h3>
@@ -706,44 +824,53 @@ const AttendanceManagement = () => {
                 <span>{cameraError}</span>
               </div>
             )}
+
+            {scanningStatus && (
+              <div className={`p-4 rounded-lg mb-6 flex items-center ${
+                scanningStatus.includes('Error') 
+                  ? 'bg-red-900/30 border border-red-700 text-red-300' 
+                  : 'bg-blue-900/30 border border-blue-700 text-blue-300'
+              }`}>
+                {scanningStatus.includes('Error') ? (
+                  <XCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                ) : (
+                  <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                )}
+                <span>{scanningStatus}</span>
+              </div>
+            )}
             
             <div className="bg-slate-900 rounded-xl p-6 mb-6 border border-slate-700 shadow-lg">
-              <div className="relative">
-                <div id="qr-reader" className="mx-auto mb-4 rounded-lg overflow-hidden"></div>
-                
-                {isScanning && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="border-4 border-blue-400 border-dashed rounded-lg w-64 h-64 animate-pulse"></div>
-                  </div>
-                )}
-              </div>
+              {/* Working QR Scanner */}
+              <QRScanner 
+                onScan={handleQrDetected}
+                onError={handleCameraError}
+              />
               
-              <div className="flex justify-center space-x-4 mt-6">
-                {!isScanning ? (
+              {/* Manual Input Section */}
+              <div className="mt-6 pt-6 border-t border-slate-700">
+                <h4 className="text-md font-semibold text-white mb-3 text-center">Manual QR Input</h4>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Paste QR code data here..."
+                    className="flex-1 bg-slate-700 border border-slate-600 rounded-md px-3 py-2 text-white"
+                    value={manualQrInput}
+                    onChange={(e) => setManualQrInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleManualScan();
+                      }
+                    }}
+                  />
                   <button
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 flex items-center transition-all shadow-md hover:shadow-lg"
-                    onClick={startScanner}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-500 flex items-center"
+                    onClick={handleManualScan}
                   >
-                    <Camera className="w-5 h-5 mr-2" />
-                    Start Camera
+                    <Scan className="w-4 h-4 mr-2" />
+                    Submit
                   </button>
-                ) : (
-                  <button
-                    className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-500 flex items-center transition-all shadow-md hover:shadow-lg"
-                    onClick={stopScanner}
-                  >
-                    <CameraOff className="w-5 h-5 mr-2" />
-                    Stop Camera
-                  </button>
-                )}
-                
-                <button
-                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-500 flex items-center transition-all shadow-md hover:shadow-lg"
-                  onClick={handleManualScan}
-                >
-                  <Scan className="w-5 h-5 mr-2" />
-                  Manual Input
-                </button>
+                </div>
               </div>
             </div>
             
@@ -814,19 +941,23 @@ const AttendanceManagement = () => {
               <ul className="text-slate-400 space-y-2 text-sm">
                 <li className="flex items-start">
                   <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
-                  <span>Position the QR code within the camera viewfinder</span>
+                  <span>Click "Start Camera" to begin scanning</span>
                 </li>
                 <li className="flex items-start">
                   <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
-                  <span>Ensure good lighting for better scanning accuracy</span>
+                  <span>Position the QR code within the camera view</span>
                 </li>
                 <li className="flex items-start">
                   <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
-                  <span>Hold the device steady until the code is recognized</span>
+                  <span>Ensure good lighting for better scanning</span>
                 </li>
                 <li className="flex items-start">
                   <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
-                  <span>Use manual input if camera is not available</span>
+                  <span>Hold the QR code steady until it's detected</span>
+                </li>
+                <li className="flex items-start">
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                  <span>Use manual input if camera scanning doesn't work</span>
                 </li>
               </ul>
             </div>
