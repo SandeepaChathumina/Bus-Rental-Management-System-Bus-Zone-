@@ -278,7 +278,7 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCa
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-sky-200 bg-opacity-80 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200">
