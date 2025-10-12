@@ -212,7 +212,7 @@ const ExportModal = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={onClose}></div>
+      <div className="fixed inset-0 bg-blue-100 bg-opacity-80 z-40" onClick={onClose}></div>
       <div className="flex items-center justify-center min-h-screen px-4 z-50 relative">
         <div className="bg-white border border-blue-200 rounded-2xl p-6 w-full max-w-md shadow-xl">
           <div className="flex items-center justify-between mb-4">
