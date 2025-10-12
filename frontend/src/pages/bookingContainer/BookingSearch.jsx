@@ -128,12 +128,12 @@ const BookingSearch = () => {
     today;
 
   return (
-    <div className="bg-gradient-to-r from-slate-900 to-slate-800 py-12">
+    <div className="bg-gradient-to-r from-blue-50 to-sky-50 py-12">
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-3xl p-8 border border-slate-700/50 shadow-xl">
+        <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 border border-blue-200/50 shadow-xl">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Find Your Perfect Ride</h2>
-            <p className="text-slate-400">Search and book luxury buses with ease</p>
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">Find Your Perfect Ride</h2>
+            <p className="text-gray-600">Search and book luxury buses with ease</p>
           </div>
           
           <form onSubmit={handleSearch} className="space-y-6">
@@ -151,8 +151,8 @@ const BookingSearch = () => {
                   />
                   <div className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
                     searchData.tripType === type
-                      ? 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white'
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      ? 'bg-gradient-to-r from-blue-500 to-sky-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}>
                     {type === 'one-way' ? 'One Way' : 'Round Trip'}
                   </div>
@@ -163,13 +163,13 @@ const BookingSearch = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
               {/* From Location */}
               <div className="lg:col-span-3">
-                <label className="text-slate-300 text-sm font-medium mb-2 block">From</label>
+                <label className="text-gray-700 text-sm font-medium mb-2 block">From</label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
                   <select
                     value={searchData.from}
                     onChange={(e) => handleInputChange('from', e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
                     <option value="">Select Departure</option>
@@ -185,22 +185,22 @@ const BookingSearch = () => {
                 <button
                   type="button"
                   onClick={swapLocations}
-                  className="p-3 bg-slate-700 hover:bg-slate-600 rounded-xl transition-colors"
+                  className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
                   title="Swap locations"
                 >
-                  <RefreshCw className="h-5 w-5 text-slate-300" />
+                  <RefreshCw className="h-5 w-5 text-gray-600" />
                 </button>
               </div>
 
               {/* To Location */}
               <div className="lg:col-span-3">
-                <label className="text-slate-300 text-sm font-medium mb-2 block">To</label>
+                <label className="text-gray-700 text-sm font-medium mb-2 block">To</label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
                   <select
                     value={searchData.to}
                     onChange={(e) => handleInputChange('to', e.target.value)}
-                    className="w-full pl-10 pr-20 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-20 py-3 bg-white border border-gray-300 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
                     <option value="">Select Destination</option>
@@ -212,10 +212,10 @@ const BookingSearch = () => {
                     <button
                       type="button"
                       onClick={() => handleShowTravelSuggestions(searchData.to)}
-                      className="absolute right-6 top-1/2 transform -translate-y-1/2 p-2 hover:bg-slate-600 rounded-lg transition-colors"
+                      className="absolute right-6 top-1/2 transform -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
                       title="Discover places to visit"
                     >
-                      <Sparkles className="h-4 w-4 text-cyan-400" />
+                      <Sparkles className="h-4 w-4 text-sky-500" />
                     </button>
                   )}
                 </div>
@@ -223,15 +223,15 @@ const BookingSearch = () => {
 
               {/* Departure Date */}
               <div className="lg:col-span-2">
-                <label className="text-slate-300 text-sm font-medium mb-2 block">Departure Date</label>
+                <label className="text-gray-700 text-sm font-medium mb-2 block">Departure Date</label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
                   <input
                     type="date"
                     value={searchData.travelDate}
                     onChange={(e) => handleInputChange('travelDate', e.target.value)}
                     min={today}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
                 </div>
@@ -240,15 +240,15 @@ const BookingSearch = () => {
               {/* Return Date */}
               {isReturnTrip && (
                 <div className="lg:col-span-2">
-                  <label className="text-slate-300 text-sm font-medium mb-2 block">Return Date</label>
+                  <label className="text-gray-700 text-sm font-medium mb-2 block">Return Date</label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
                     <input
                       type="date"
                       value={searchData.returnDate}
                       onChange={(e) => handleInputChange('returnDate', e.target.value)}
                       min={minReturnDate}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required={isReturnTrip}
                     />
                   </div>
@@ -257,13 +257,13 @@ const BookingSearch = () => {
 
               {/* Departure Time */}
               <div className="lg:col-span-2">
-                <label className="text-slate-300 text-sm font-medium mb-2 block">Departure Time</label>
+                <label className="text-gray-700 text-sm font-medium mb-2 block">Departure Time</label>
                 <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
                   <select
                     value={searchData.departureTime}
                     onChange={(e) => handleInputChange('departureTime', e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     {timeSlots.map(time => (
                       <option key={time} value={time}>{time}</option>
@@ -274,16 +274,16 @@ const BookingSearch = () => {
 
               {/* Passengers */}
               <div className="lg:col-span-2">
-                <label className="text-slate-300 text-sm font-medium mb-2 block">Passengers</label>
+                <label className="text-gray-700 text-sm font-medium mb-2 block">Passengers</label>
                 <div className="relative">
-                  <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
                   <input
                     type="number"
                     min="1"
                     max="50"
                     value={searchData.passengers}
                     onChange={(e) => handleInputChange('passengers', parseInt(e.target.value) || 1)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Number of passengers (1-50)"
                     required
                   />
@@ -295,7 +295,7 @@ const BookingSearch = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
+                  className="w-full bg-gradient-to-r from-blue-500 to-sky-500 hover:from-blue-600 hover:to-sky-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
                 >
                   {isLoading ? (
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -312,7 +312,7 @@ const BookingSearch = () => {
 
           {/* Quick Suggestions */}
           <div className="mt-8">
-            <h3 className="text-slate-300 text-sm font-medium mb-3">Popular Routes</h3>
+            <h3 className="text-gray-700 text-sm font-medium mb-3">Popular Routes</h3>
             <div className="flex flex-wrap gap-2">
               {[
                 { from: 'Colombo', to: 'Kandy' },
@@ -331,7 +331,7 @@ const BookingSearch = () => {
                       departureTime: '08:00'
                     }));
                   }}
-                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-slate-300 text-sm transition-colors"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-700 text-sm transition-colors"
                 >
                   {route.from} → {route.to}
                 </button>
