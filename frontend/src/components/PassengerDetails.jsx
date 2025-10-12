@@ -77,12 +77,12 @@ const PassengerDetails = () => {
 
   if (!bus || !passengers) {
     return (
-      <div className="min-h-screen bg-slate-950 pt-32 pb-16 px-6">
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 pt-32 pb-16 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">Invalid booking session</h2>
+          <h2 className="text-2xl font-bold text-slate-800 mb-4">Invalid booking session</h2>
           <button
             onClick={() => navigate('/bus')}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-semibold"
+            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
           >
             Back to Bus Search
           </button>
@@ -387,21 +387,28 @@ const PassengerDetails = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 pt-32 pb-16 px-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 pt-32 pb-16 px-6 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-10 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-cyan-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-sky-400/20 rounded-full blur-2xl animate-bounce"></div>
+      </div>
+      
+      <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center text-slate-400 hover:text-white transition-colors"
+            className="flex items-center text-slate-600 hover:text-slate-800 transition-colors bg-white/80 backdrop-blur-lg px-4 py-2 rounded-xl shadow-lg hover:shadow-xl"
             disabled={isCreatingBooking}
           >
             <ArrowLeft className="mr-2" />
             Back
           </button>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-white">Passenger Details</h1>
-            <p className="text-slate-400">Complete your booking information</p>
+            <h1 className="text-3xl font-bold text-slate-800">Passenger Details</h1>
+            <p className="text-slate-600">Complete your booking information</p>
           </div>
           <div className="w-20"></div>
         </div>
@@ -409,60 +416,60 @@ const PassengerDetails = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Booking Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-slate-800/50 rounded-2xl p-6 mb-6">
-              <h2 className="text-xl font-bold text-white mb-4">Booking Summary</h2>
+            <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-blue-200/50 shadow-2xl">
+              <h2 className="text-xl font-bold text-slate-800 mb-4">Booking Summary</h2>
               
               <div className="space-y-4">
-                <div className="flex items-center text-slate-300">
-                  <MapPin className="h-5 w-5 mr-2 text-blue-400" />
+                <div className="flex items-center text-slate-600">
+                  <MapPin className="h-5 w-5 mr-2 text-blue-600" />
                   <span className="font-medium">Route:</span>
                   <span className="ml-2">{searchParams?.from} → {searchParams?.to}</span>
                 </div>
                 
-                <div className="flex items-center text-slate-300">
-                  <Clock className="h-5 w-5 mr-2 text-blue-400" />
+                <div className="flex items-center text-slate-600">
+                  <Clock className="h-5 w-5 mr-2 text-blue-600" />
                   <span className="font-medium">Departure:</span>
                   <span className="ml-2">{searchParams?.departureTime}</span>
                 </div>
                 
-                <div className="flex items-center text-slate-300">
-                  <Calendar className="h-5 w-5 mr-2 text-blue-400" />
+                <div className="flex items-center text-slate-600">
+                  <Calendar className="h-5 w-5 mr-2 text-blue-600" />
                   <span className="font-medium">Date:</span>
                   <span className="ml-2">{searchParams?.travelDate}</span>
                 </div>
                 
                 {searchParams?.returnDate && (
-                  <div className="flex items-center text-slate-300">
-                    <Calendar className="h-5 w-5 mr-2 text-blue-400" />
+                  <div className="flex items-center text-slate-600">
+                    <Calendar className="h-5 w-5 mr-2 text-blue-600" />
                     <span className="font-medium">Return:</span>
                     <span className="ml-2">{searchParams?.returnDate}</span>
                   </div>
                 )}
                 
-                <div className="flex items-center text-slate-300">
-                  <Users className="h-5 w-5 mr-2 text-blue-400" />
+                <div className="flex items-center text-slate-600">
+                  <Users className="h-5 w-5 mr-2 text-blue-600" />
                   <span className="font-medium">Passengers:</span>
                   <span className="ml-2">{passengers.length}</span>
                 </div>
                 
-                <div className="flex items-center text-slate-300">
+                <div className="flex items-center text-slate-600">
                   <span className="font-medium">Seats:</span>
                   <span className="ml-2">{selectedSeats.join(', ')}</span>
                 </div>
                 
-                <div className="flex items-center text-slate-300">
+                <div className="flex items-center text-slate-600">
                   <span className="font-medium">Bus Type:</span>
                   <span className="ml-2">{bus.busType} - {bus.numberPlate}</span>
                 </div>
                 
                 {/* Pricing Breakdown */}
-                <div className="pt-4 border-t border-slate-700">
+                <div className="pt-4 border-t border-blue-200">
                   <div className="mb-3">
-                    <h4 className="text-slate-300 font-medium mb-2 flex items-center">
+                    <h4 className="text-slate-700 font-medium mb-2 flex items-center">
                       <Calculator className="h-4 w-4 mr-2" />
                       Pricing Breakdown
                     </h4>
-                    <div className="text-sm text-slate-400 space-y-1">
+                    <div className="text-sm text-slate-600 space-y-1">
                       <div className="flex justify-between">
                         <span>Base Price ({pricing.numberOfDays} day{pricing.numberOfDays > 1 ? 's' : ''}):</span>
                         <span>Rs. {pricing.basePrice}/day</span>
@@ -476,9 +483,9 @@ const PassengerDetails = () => {
                     </div>
                   </div>
                   
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-700">
-                    <span className="text-slate-300 font-medium">Total Amount:</span>
-                    <span className="text-blue-400 font-bold text-xl">Rs. {pricing.totalAmount}</span>
+                  <div className="flex justify-between items-center pt-2 border-t border-blue-200">
+                    <span className="text-slate-700 font-medium">Total Amount:</span>
+                    <span className="text-blue-600 font-bold text-xl">Rs. {pricing.totalAmount}</span>
                   </div>
                 </div>
               </div>
@@ -487,15 +494,15 @@ const PassengerDetails = () => {
 
           {/* Right Column - Passenger Details Form */}
           <div className="lg:col-span-2">
-            <form onSubmit={handleSubmit} className="bg-slate-800/50 rounded-2xl p-6">
-              <h2 className="text-xl font-bold text-white mb-6">Passenger Information</h2>
+            <form onSubmit={handleSubmit} className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 border border-blue-200/50 shadow-2xl">
+              <h2 className="text-xl font-bold text-slate-800 mb-6">Passenger Information</h2>
               
               {/* Contact Information */}
               <div className="mb-8">
-                <h3 className="text-lg font-semibold text-white mb-4">Contact Details</h3>
+                <h3 className="text-lg font-semibold text-slate-800 mb-4">Contact Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-slate-400 text-sm mb-2 block flex items-center">
+                    <label className="text-slate-700 text-sm mb-2 block flex items-center">
                       <Mail className="h-4 w-4 mr-2" />
                       Email Address
                     </label>
@@ -503,12 +510,12 @@ const PassengerDetails = () => {
                       type="email"
                       value={contactInfo.email}
                       onChange={(e) => handleEmailChange(e.target.value)}
-                      className={`w-full px-4 py-3 bg-slate-700 border rounded-xl text-white focus:outline-none focus:ring-2 transition-colors ${
+                      className={`w-full px-4 py-3 bg-blue-50/50 border rounded-xl text-slate-800 focus:outline-none focus:ring-2 transition-colors ${
                         emailValidation.isValid 
                           ? 'border-green-500 focus:ring-green-500' 
                           : emailValidation.message && !emailValidation.isValid
                           ? 'border-red-500 focus:ring-red-500'
-                          : 'border-slate-600 focus:ring-blue-500'
+                          : 'border-blue-200 focus:ring-blue-500'
                       }`}
                       required
                       disabled={isCreatingBooking}
@@ -516,7 +523,7 @@ const PassengerDetails = () => {
                     />
                     {emailValidation.message && (
                       <p className={`text-xs mt-1 flex items-center ${
-                        emailValidation.isValid ? 'text-green-400' : 'text-red-400'
+                        emailValidation.isValid ? 'text-green-600' : 'text-red-600'
                       }`}>
                         {emailValidation.isChecking ? (
                           <>
@@ -530,7 +537,7 @@ const PassengerDetails = () => {
                     )}
                   </div>
                   <div>
-                    <label className="text-slate-400 text-sm mb-2 block flex items-center">
+                    <label className="text-slate-700 text-sm mb-2 block flex items-center">
                       <Phone className="h-4 w-4 mr-2" />
                       Phone Number
                     </label>
@@ -538,12 +545,12 @@ const PassengerDetails = () => {
                       type="tel"
                       value={contactInfo.phone}
                       onChange={(e) => handlePhoneChange(e.target.value)}
-                      className={`w-full px-4 py-3 bg-slate-700 border rounded-xl text-white focus:outline-none focus:ring-2 transition-colors ${
+                      className={`w-full px-4 py-3 bg-blue-50/50 border rounded-xl text-slate-800 focus:outline-none focus:ring-2 transition-colors ${
                         phoneValidation.isValid 
                           ? 'border-green-500 focus:ring-green-500' 
                           : phoneValidation.message && !phoneValidation.isValid
                           ? 'border-red-500 focus:ring-red-500'
-                          : 'border-slate-600 focus:ring-blue-500'
+                          : 'border-blue-200 focus:ring-blue-500'
                       }`}
                       required
                       disabled={isCreatingBooking}
@@ -551,7 +558,7 @@ const PassengerDetails = () => {
                     />
                     {phoneValidation.message && (
                       <p className={`text-xs mt-1 flex items-center ${
-                        phoneValidation.isValid ? 'text-green-400' : 'text-red-400'
+                        phoneValidation.isValid ? 'text-green-600' : 'text-red-600'
                       }`}>
                         {phoneValidation.isChecking ? (
                           <>
@@ -569,23 +576,23 @@ const PassengerDetails = () => {
 
               {/* Passenger Details */}
               <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Passenger Details</h3>
+                <h3 className="text-lg font-semibold text-slate-800 mb-4">Passenger Details</h3>
                 <div className="space-y-6">
                   {passengerDetails.map((passenger, index) => (
-                    <div key={index} className="bg-slate-700/30 rounded-xl p-4">
-                      <h4 className="text-white font-medium mb-4 flex items-center">
+                    <div key={index} className="bg-blue-50/50 rounded-xl p-4 border border-blue-200/50">
+                      <h4 className="text-slate-800 font-medium mb-4 flex items-center">
                         <User className="h-4 w-4 mr-2" />
                         Passenger {index + 1} - Seat {passenger.seatNumber}
                       </h4>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="text-slate-400 text-sm mb-2 block">Full Name</label>
+                          <label className="text-slate-700 text-sm mb-2 block">Full Name</label>
                           <input
                             type="text"
                             value={passenger.name}
                             onChange={(e) => handlePassengerFieldChange(index, 'name', e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
                             disabled={isCreatingBooking}
                             placeholder="Enter full name"
@@ -593,7 +600,7 @@ const PassengerDetails = () => {
                         </div>
                         
                         <div>
-                          <label className="text-slate-400 text-sm mb-2 block">NIC/Passport</label>
+                          <label className="text-slate-700 text-sm mb-2 block">NIC/Passport</label>
                           <input
                             type="text"
                             value={passenger.nic}
@@ -605,12 +612,12 @@ const PassengerDetails = () => {
                               }
                               handlePassengerFieldChange(index, 'nic', value);
                             }}
-                            className={`w-full px-4 py-3 bg-slate-700 border rounded-xl text-white focus:outline-none focus:ring-2 transition-colors ${
+                            className={`w-full px-4 py-3 bg-white border rounded-xl text-slate-800 focus:outline-none focus:ring-2 transition-colors ${
                               passengerValidations[index]?.nic?.isValid 
                                 ? 'border-green-500 focus:ring-green-500' 
                                 : passengerValidations[index]?.nic?.message && !passengerValidations[index]?.nic?.isValid
                                 ? 'border-red-500 focus:ring-red-500'
-                                : 'border-slate-600 focus:ring-blue-500'
+                                : 'border-blue-200 focus:ring-blue-500'
                             }`}
                             required
                             disabled={isCreatingBooking}
@@ -619,7 +626,7 @@ const PassengerDetails = () => {
                           />
                           {passengerValidations[index]?.nic?.message && (
                             <p className={`text-xs mt-1 ${
-                              passengerValidations[index].nic.isValid ? 'text-green-400' : 'text-red-400'
+                              passengerValidations[index].nic.isValid ? 'text-green-600' : 'text-red-600'
                             }`}>
                               {passengerValidations[index].nic.message}
                             </p>
@@ -627,7 +634,7 @@ const PassengerDetails = () => {
                         </div>
                         
                         <div>
-                          <label className="text-slate-400 text-sm mb-2 block">Age</label>
+                          <label className="text-slate-700 text-sm mb-2 block">Age</label>
                           <input
                             type="number"
                             min="1"
@@ -647,12 +654,12 @@ const PassengerDetails = () => {
                                 e.preventDefault();
                               }
                             }}
-                            className={`w-full px-4 py-3 bg-slate-700 border rounded-xl text-white focus:outline-none focus:ring-2 transition-colors ${
+                            className={`w-full px-4 py-3 bg-white border rounded-xl text-slate-800 focus:outline-none focus:ring-2 transition-colors ${
                               passengerValidations[index]?.age?.isValid 
                                 ? 'border-green-500 focus:ring-green-500' 
                                 : passengerValidations[index]?.age?.message && !passengerValidations[index]?.age?.isValid
                                 ? 'border-red-500 focus:ring-red-500'
-                                : 'border-slate-600 focus:ring-blue-500'
+                                : 'border-blue-200 focus:ring-blue-500'
                             }`}
                             required
                             disabled={isCreatingBooking}
@@ -660,7 +667,7 @@ const PassengerDetails = () => {
                           />
                           {passengerValidations[index]?.age?.message && (
                             <p className={`text-xs mt-1 ${
-                              passengerValidations[index].age.isValid ? 'text-green-400' : 'text-red-400'
+                              passengerValidations[index].age.isValid ? 'text-green-600' : 'text-red-600'
                             }`}>
                               {passengerValidations[index].age.message}
                             </p>
@@ -668,16 +675,16 @@ const PassengerDetails = () => {
                         </div>
                         
                         <div>
-                          <label className="text-slate-400 text-sm mb-2 block">Gender</label>
+                          <label className="text-slate-700 text-sm mb-2 block">Gender</label>
                           <select
                             value={passenger.gender}
                             onChange={(e) => handlePassengerFieldChange(index, 'gender', e.target.value)}
-                            className={`w-full px-4 py-3 bg-slate-700 border rounded-xl text-white focus:outline-none focus:ring-2 transition-colors ${
+                            className={`w-full px-4 py-3 bg-white border rounded-xl text-slate-800 focus:outline-none focus:ring-2 transition-colors ${
                               passengerValidations[index]?.gender?.isValid 
                                 ? 'border-green-500 focus:ring-green-500' 
                                 : passengerValidations[index]?.gender?.message && !passengerValidations[index]?.gender?.isValid
                                 ? 'border-red-500 focus:ring-red-500'
-                                : 'border-slate-600 focus:ring-blue-500'
+                                : 'border-blue-200 focus:ring-blue-500'
                             }`}
                             required
                             disabled={isCreatingBooking}
@@ -689,7 +696,7 @@ const PassengerDetails = () => {
                           </select>
                           {passengerValidations[index]?.gender?.message && (
                             <p className={`text-xs mt-1 ${
-                              passengerValidations[index].gender.isValid ? 'text-green-400' : 'text-red-400'
+                              passengerValidations[index].gender.isValid ? 'text-green-600' : 'text-red-600'
                             }`}>
                               {passengerValidations[index].gender.message}
                             </p>
@@ -706,7 +713,7 @@ const PassengerDetails = () => {
                 <button
                   type="submit"
                   disabled={isCreatingBooking}
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
                 >
                   {isCreatingBooking ? (
                     <>

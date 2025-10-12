@@ -45,7 +45,7 @@ import toast from 'react-hot-toast';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 // Booking Card Component for Admin
-const AdminBookingCard = ({ booking, onViewDetails, onDownloadReport }) => {
+const AdminBookingCard = ({ booking, onViewDetails }) => {
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
       case 'confirmed':
@@ -92,19 +92,19 @@ const AdminBookingCard = ({ booking, onViewDetails, onDownloadReport }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+    <div className="bg-white/90 rounded-2xl p-6 shadow-lg border border-sky-100 hover:shadow-xl transition-all duration-300">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <Bus className="h-5 w-5 text-blue-600" />
+          <div className="p-2 bg-sky-100 rounded-lg">
+            <Bus className="h-5 w-5 text-sky-600" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-900">
+            <h3 className="text-lg font-bold text-slate-800">
               {booking.bus?.busType || 'Standard'} Coach
             </h3>
-            <p className="text-sm text-gray-600 font-mono">{booking.bookingId}</p>
-            <p className="text-xs text-gray-500">
+            <p className="text-sm text-slate-600 font-mono">{booking.bookingId}</p>
+            <p className="text-xs text-slate-500">
               by {booking.user?.firstName} {booking.user?.lastName}
             </p>
           </div>
@@ -115,7 +115,7 @@ const AdminBookingCard = ({ booking, onViewDetails, onDownloadReport }) => {
             {booking.bookingStatus}
           </span>
           {isUpcomingBooking(booking.travelDate) && (
-            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+            <span className="px-2 py-1 bg-sky-100 text-sky-800 rounded-full text-xs font-medium">
               Upcoming
             </span>
           )}
@@ -124,10 +124,10 @@ const AdminBookingCard = ({ booking, onViewDetails, onDownloadReport }) => {
 
       {/* Route Information */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center text-gray-700">
-          <MapPin className="h-4 w-4 mr-2 text-blue-500" />
+        <div className="flex items-center text-slate-700">
+          <MapPin className="h-4 w-4 mr-2 text-sky-500" />
           <span className="font-medium">{booking.route?.from}</span>
-          <span className="mx-2 text-gray-400">→</span>
+          <span className="mx-2 text-slate-400">→</span>
           <span className="font-medium">{booking.route?.to}</span>
         </div>
         <span className={`text-xs font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
@@ -137,34 +137,34 @@ const AdminBookingCard = ({ booking, onViewDetails, onDownloadReport }) => {
 
       {/* Travel Details */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div className="flex items-center text-gray-600">
-          <Calendar className="h-4 w-4 mr-2 text-blue-500" />
+        <div className="flex items-center text-slate-600">
+          <Calendar className="h-4 w-4 mr-2 text-sky-500" />
           <div>
-            <p className="text-xs text-gray-500">Travel Date</p>
+            <p className="text-xs text-slate-500">Travel Date</p>
             <p className="text-sm font-medium">{formatDate(booking.travelDate)}</p>
           </div>
         </div>
 
-        <div className="flex items-center text-gray-600">
-          <Clock className="h-4 w-4 mr-2 text-blue-500" />
+        <div className="flex items-center text-slate-600">
+          <Clock className="h-4 w-4 mr-2 text-sky-500" />
           <div>
-            <p className="text-xs text-gray-500">Departure</p>
+            <p className="text-xs text-slate-500">Departure</p>
             <p className="text-sm font-medium">{booking.departureTime || 'N/A'}</p>
           </div>
         </div>
 
-        <div className="flex items-center text-gray-600">
-          <Users className="h-4 w-4 mr-2 text-blue-500" />
+        <div className="flex items-center text-slate-600">
+          <Users className="h-4 w-4 mr-2 text-sky-500" />
           <div>
-            <p className="text-xs text-gray-500">Passengers</p>
+            <p className="text-xs text-slate-500">Passengers</p>
             <p className="text-sm font-medium">{booking.numberOfPassengers}</p>
           </div>
         </div>
 
-        <div className="flex items-center text-gray-600">
-          <CreditCard className="h-4 w-4 mr-2 text-blue-500" />
+        <div className="flex items-center text-slate-600">
+          <CreditCard className="h-4 w-4 mr-2 text-sky-500" />
           <div>
-            <p className="text-xs text-gray-500">Amount</p>
+            <p className="text-xs text-slate-500">Amount</p>
             <p className="text-sm font-medium">LKR {booking.totalAmount?.toLocaleString()}</p>
           </div>
         </div>
@@ -172,12 +172,12 @@ const AdminBookingCard = ({ booking, onViewDetails, onDownloadReport }) => {
 
       {/* Quick Info */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-gray-50 rounded-lg p-2">
-          <p className="text-xs text-gray-500">Bus Plate</p>
+        <div className="bg-slate-50 rounded-lg p-2">
+          <p className="text-xs text-slate-500">Bus Plate</p>
           <p className="text-sm font-medium">{booking.bus?.numberPlate || 'N/A'}</p>
         </div>
-        <div className="bg-gray-50 rounded-lg p-2">
-          <p className="text-xs text-gray-500">Contact</p>
+        <div className="bg-slate-50 rounded-lg p-2">
+          <p className="text-xs text-slate-500">Contact</p>
           <p className="text-sm font-medium">{booking.user?.email || 'N/A'}</p>
         </div>
       </div>
@@ -186,24 +186,17 @@ const AdminBookingCard = ({ booking, onViewDetails, onDownloadReport }) => {
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => onViewDetails(booking)}
-          className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          className="flex items-center px-3 py-2 bg-sky-600 text-white rounded-lg text-sm font-medium hover:bg-sky-700 transition-colors shadow-md"
         >
           <Eye className="h-4 w-4 mr-2" />
           Details
         </button>
 
-        <button
-          onClick={() => onDownloadReport(booking)}
-          className="flex items-center px-3 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
-        >
-          <DownloadCloud className="h-4 w-4 mr-2" />
-          Report
-        </button>
       </div>
 
       {/* Metadata */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="flex justify-between text-xs text-gray-500">
+      <div className="mt-4 pt-4 border-t border-slate-200">
+        <div className="flex justify-between text-xs text-slate-500">
           <span>Created: {new Date(booking.createdAt).toLocaleDateString()}</span>
           <span>ID: {booking._id?.slice(-8) || 'N/A'}</span>
         </div>
@@ -234,24 +227,24 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-gradient-to-br from-sky-200 via-blue-200 to-cyan-200 bg-opacity-80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Booking Management</h2>
-            <p className="text-gray-600">Booking ID: {booking.bookingId}</p>
+            <h2 className="text-2xl font-bold text-slate-800">Booking Management</h2>
+            <p className="text-slate-600">Booking ID: {booking.bookingId}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
           >
-            <X className="h-6 w-6 text-gray-500" />
+            <X className="h-6 w-6 text-slate-500" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-gray-200">
+        <div className="border-b border-slate-200">
           <div className="flex space-x-1 px-6">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -261,8 +254,8 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-t-lg transition-colors ${
                     activeTab === tab.id
-                      ? 'bg-blue-100 text-blue-700 border-b-2 border-blue-700'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'bg-sky-100 text-sky-700 border-b-2 border-sky-700'
+                      : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
                   <Icon className="h-4 w-4 mr-2" />
@@ -278,43 +271,43 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
           {activeTab === 'details' && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-blue-50 rounded-xl p-4">
-                  <h4 className="text-lg font-semibold text-blue-900 mb-3">Travel Information</h4>
+                <div className="bg-sky-50 rounded-xl p-4">
+                  <h4 className="text-lg font-semibold text-sky-900 mb-3">Travel Information</h4>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-blue-700">Route:</span>
+                      <span className="text-sky-700">Route:</span>
                       <span className="font-medium">{booking.route?.from} → {booking.route?.to}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-blue-700">Travel Date:</span>
+                      <span className="text-sky-700">Travel Date:</span>
                       <span className="font-medium">{formatDate(booking.travelDate)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-blue-700">Departure Time:</span>
+                      <span className="text-sky-700">Departure Time:</span>
                       <span className="font-medium">{booking.departureTime}</span>
                     </div>
                     {booking.returnDate && (
                       <div className="flex justify-between">
-                        <span className="text-blue-700">Return Date:</span>
+                        <span className="text-sky-700">Return Date:</span>
                         <span className="font-medium">{formatDate(booking.returnDate)}</span>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="bg-green-50 rounded-xl p-4">
-                  <h4 className="text-lg font-semibold text-green-900 mb-3">Bus Information</h4>
+                <div className="bg-emerald-50 rounded-xl p-4">
+                  <h4 className="text-lg font-semibold text-emerald-900 mb-3">Bus Information</h4>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-green-700">Bus Type:</span>
+                      <span className="text-emerald-700">Bus Type:</span>
                       <span className="font-medium">{booking.bus?.busType} Coach</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-green-700">Number Plate:</span>
+                      <span className="text-emerald-700">Number Plate:</span>
                       <span className="font-medium">{booking.bus?.numberPlate}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-green-700">Capacity:</span>
+                      <span className="text-emerald-700">Capacity:</span>
                       <span className="font-medium">{booking.bus?.capacity} seats</span>
                     </div>
                   </div>
@@ -322,36 +315,36 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
               </div>
 
               {/* Status Overview */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h4 className="text-lg font-semibold text-gray-900 mb-3">Status Overview</h4>
+              <div className="bg-slate-50 rounded-xl p-4">
+                <h4 className="text-lg font-semibold text-slate-800 mb-3">Status Overview</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
-                    <p className="text-sm text-gray-600">Booking Status</p>
+                    <p className="text-sm text-slate-600">Booking Status</p>
                     <p className={`text-lg font-bold ${
-                      booking.bookingStatus === 'Confirmed' ? 'text-green-600' :
-                      booking.bookingStatus === 'Pending' ? 'text-yellow-600' :
-                      booking.bookingStatus === 'Cancelled' ? 'text-red-600' : 'text-blue-600'
+                      booking.bookingStatus === 'Confirmed' ? 'text-emerald-600' :
+                      booking.bookingStatus === 'Pending' ? 'text-amber-600' :
+                      booking.bookingStatus === 'Cancelled' ? 'text-red-600' : 'text-sky-600'
                     }`}>
                       {booking.bookingStatus}
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-gray-600">Payment Status</p>
+                    <p className="text-sm text-slate-600">Payment Status</p>
                     <p className={`text-lg font-bold ${
-                      booking.paymentStatus === 'Paid' ? 'text-green-600' :
-                      booking.paymentStatus === 'Pending' ? 'text-yellow-600' :
-                      booking.paymentStatus === 'Failed' ? 'text-red-600' : 'text-blue-600'
+                      booking.paymentStatus === 'Paid' ? 'text-emerald-600' :
+                      booking.paymentStatus === 'Pending' ? 'text-amber-600' :
+                      booking.paymentStatus === 'Failed' ? 'text-red-600' : 'text-sky-600'
                     }`}>
                       {booking.paymentStatus}
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-gray-600">Total Amount</p>
-                    <p className="text-lg font-bold text-gray-900">LKR {booking.totalAmount?.toLocaleString()}</p>
+                    <p className="text-sm text-slate-600">Total Amount</p>
+                    <p className="text-lg font-bold text-slate-800">LKR {booking.totalAmount?.toLocaleString()}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-gray-600">Passengers</p>
-                    <p className="text-lg font-bold text-gray-900">{booking.numberOfPassengers}</p>
+                    <p className="text-sm text-slate-600">Passengers</p>
+                    <p className="text-lg font-bold text-slate-800">{booking.numberOfPassengers}</p>
                   </div>
                 </div>
               </div>
@@ -360,22 +353,22 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
 
           {activeTab === 'passengers' && (
             <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-gray-900">Passenger Details</h4>
+              <h4 className="text-lg font-semibold text-slate-800">Passenger Details</h4>
               {booking.seats?.map((seat, index) => (
-                <div key={index} className="bg-gray-50 rounded-xl p-4">
+                <div key={index} className="bg-slate-50 rounded-xl p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <User className="h-5 w-5 mr-3 text-blue-500" />
+                      <User className="h-5 w-5 mr-3 text-sky-500" />
                       <div>
-                        <p className="font-medium text-gray-900">{seat.passengerName}</p>
-                        <p className="text-sm text-gray-600">
+                        <p className="font-medium text-slate-800">{seat.passengerName}</p>
+                        <p className="text-sm text-slate-600">
                           {seat.passengerAge} years, {seat.passengerGender} • NIC: {seat.passengerNIC}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-500">Seat Number</p>
-                      <p className="text-lg font-bold text-blue-600">{seat.seatNumber}</p>
+                      <p className="text-sm text-slate-500">Seat Number</p>
+                      <p className="text-lg font-bold text-sky-600">{seat.seatNumber}</p>
                     </div>
                   </div>
                 </div>
@@ -385,16 +378,16 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
 
           {activeTab === 'payment' && (
             <div className="space-y-6">
-              <div className="bg-green-50 rounded-xl p-4">
-                <h4 className="text-lg font-semibold text-green-900 mb-3">Payment Information</h4>
+              <div className="bg-emerald-50 rounded-xl p-4">
+                <h4 className="text-lg font-semibold text-emerald-900 mb-3">Payment Information</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-green-700">Payment Status</p>
-                    <p className="text-xl font-bold text-green-600">{booking.paymentStatus}</p>
+                    <p className="text-sm text-emerald-700">Payment Status</p>
+                    <p className="text-xl font-bold text-emerald-600">{booking.paymentStatus}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-green-700">Total Amount</p>
-                    <p className="text-xl font-bold text-green-600">LKR {booking.totalAmount?.toLocaleString()}</p>
+                    <p className="text-sm text-emerald-700">Total Amount</p>
+                    <p className="text-xl font-bold text-emerald-600">LKR {booking.totalAmount?.toLocaleString()}</p>
                   </div>
                 </div>
               </div>
@@ -550,67 +543,6 @@ const AllBookings = () => {
   };
 
 
-  const handleDownloadReport = (booking) => {
-    try {
-      const doc = new jsPDF();
-      
-      // Header
-      doc.setFillColor(41, 128, 185);
-      doc.rect(0, 0, 210, 30, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Bus Zone - Booking Report', 20, 20);
-      
-      // Reset text color
-      doc.setTextColor(0, 0, 0);
-      
-      // Booking Information
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Booking Details', 20, 50);
-      
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      
-      const details = [
-        `Booking ID: ${booking.bookingId}`,
-        `Customer: ${booking.user?.firstName} ${booking.user?.lastName}`,
-        `Email: ${booking.user?.email}`,
-        `Route: ${booking.route?.from} → ${booking.route?.to}`,
-        `Travel Date: ${new Date(booking.travelDate).toLocaleDateString()}`,
-        `Departure Time: ${booking.departureTime}`,
-        `Passengers: ${booking.numberOfPassengers}`,
-        `Seats: ${booking.seats?.map(seat => seat.seatNumber).join(', ')}`,
-        `Bus Type: ${booking.bus?.busType}`,
-        `Number Plate: ${booking.bus?.numberPlate}`,
-        `Total Amount: LKR ${(booking.totalAmount || 0).toLocaleString()}`,
-        `Booking Status: ${booking.bookingStatus}`,
-        `Payment Status: ${booking.paymentStatus}`,
-        `Created At: ${new Date(booking.createdAt).toLocaleString()}`
-      ];
-      
-      details.forEach((detail, index) => {
-        doc.text(detail, 20, 65 + (index * 5));
-      });
-      
-      // Footer
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-      doc.text('Generated by Bus Zone Admin Dashboard', 20, 280);
-      doc.text('Generated on: ' + new Date().toLocaleString(), 20, 285);
-      
-      // Save the PDF
-      const fileName = `Booking_Report_${booking.bookingId}_${new Date().toISOString().split('T')[0]}.pdf`;
-      doc.save(fileName);
-      
-      toast.success(`Booking report generated: ${fileName}`);
-    } catch (error) {
-      console.error('Error generating report:', error);
-      toast.error('Failed to generate report');
-    }
-  };
 
   const exportCSV = (list) => {
     if (!list || list.length === 0) {
@@ -717,18 +649,16 @@ const AllBookings = () => {
     
     // Calculate statistics
     const totalBookings = list.length;
-    const confirmedBookings = list.filter(b => b.bookingStatus === 'confirmed').length;
-    const pendingBookings = list.filter(b => b.bookingStatus === 'pending').length;
-    const cancelledBookings = list.filter(b => b.bookingStatus === 'cancelled').length;
+    const confirmedBookings = list.filter(b => b.bookingStatus?.toLowerCase() === 'confirmed').length;
+    const pendingBookings = list.filter(b => b.bookingStatus?.toLowerCase() === 'pending').length;
+    const cancelledBookings = list.filter(b => b.bookingStatus?.toLowerCase() === 'cancelled').length;
     // Simple revenue calculation: add for confirmed bookings, subtract for cancelled bookings
     const totalRevenue = list.reduce((sum, booking) => {
       const amount = booking.totalAmount || 0;
-      if (booking.bookingStatus === 'Confirmed') {
-        return sum + amount; // Add confirmed bookings
-      } else if (booking.bookingStatus === 'Cancelled') {
-        return sum - amount; // Subtract cancelled bookings
+      if (booking.paymentStatus?.toLowerCase() === 'paid') {
+        return sum + amount; // Add only paid bookings
       }
-      return sum; // Don't add pending or other statuses
+      return sum; // Don't add pending, cancelled, or other statuses
     }, 0);
     
     // Statistics boxes - reduced spacing
@@ -930,35 +860,35 @@ const AllBookings = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 pt-32 pb-16 px-6">
-        <div className="max-w-6xl mx-auto text-center">
-          <Loader className="h-12 w-12 text-blue-600 mx-auto animate-spin mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading All Bookings</h2>
-          <p className="text-gray-600">Please wait while we fetch booking information...</p>
-        </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-100 pt-32 pb-16 px-6">
+      <div className="max-w-6xl mx-auto text-center">
+        <Loader className="h-12 w-12 text-sky-600 mx-auto animate-spin mb-4" />
+        <h2 className="text-2xl font-bold text-slate-700 mb-2">Loading All Bookings</h2>
+        <p className="text-slate-600">Please wait while we fetch booking information...</p>
       </div>
-    );
+    </div>
+  );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-32 pb-16 px-6">
+      <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-100 pt-32 pb-16 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{error}</h2>
-          <p className="text-gray-600 mb-6">Unable to load booking data. Please check your permissions.</p>
+          <h2 className="text-2xl font-bold text-slate-700 mb-2">{error}</h2>
+          <p className="text-slate-600 mb-6">Unable to load booking data. Please check your permissions.</p>
           <div className="space-y-3">
             <button
               onClick={fetchAllBookings}
-              className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center"
+              className="w-full bg-sky-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-sky-700 transition-colors flex items-center justify-center"
             >
               <RefreshCw className="h-5 w-5 mr-2" />
               Try Again
             </button>
             <button
               onClick={() => navigate('/dashboard')}
-              className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              className="w-full border border-slate-300 text-slate-700 px-6 py-3 rounded-lg font-semibold hover:bg-slate-50 transition-colors"
             >
               Back to Dashboard
             </button>
@@ -969,32 +899,32 @@ const AllBookings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-32 pb-16 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-100 pt-32 pb-16 px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Booking Management</h1>
-            <p className="text-gray-600">Admin panel for managing all customer bookings</p>
+            <h1 className="text-4xl font-bold text-slate-700 mb-2">Booking Management</h1>
+            <p className="text-slate-600">Admin panel for managing all customer bookings</p>
           </div>
           <div className="flex space-x-3">
             <button
               onClick={() => exportCSV(filteredBookings)}
-              className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors flex items-center"
+              className="bg-cyan-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-cyan-600 transition-colors flex items-center shadow-lg"
             >
               <DownloadCloud className="h-5 w-5 mr-2" />
               Export CSV
             </button>
             <button
               onClick={() => exportPDF(filteredBookings)}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center"
+              className="bg-sky-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-sky-700 transition-colors flex items-center shadow-lg"
             >
               <FileText className="h-5 w-5 mr-2" />
               PDF Report
             </button>
             <button
               onClick={fetchAllBookings}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center"
+              className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors flex items-center shadow-lg"
             >
               <RefreshCw className="h-5 w-5 mr-2" />
               Refresh
@@ -1004,68 +934,68 @@ const AllBookings = () => {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg border border-blue-200">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-sky-200/50">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-700 font-medium">Total Bookings</p>
-                <p className="text-2xl font-bold text-blue-900">{stats.totalBookings || 0}</p>
+                <p className="text-sm text-sky-700 font-medium">Total Bookings</p>
+                <p className="text-2xl font-bold text-sky-900">{stats.totalBookings || 0}</p>
               </div>
-              <BarChart3 className="h-8 w-8 text-blue-600" />
+              <BarChart3 className="h-8 w-8 text-sky-600" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-lg border border-green-200">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-emerald-200/50">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-green-700 font-medium">Confirmed</p>
-                <p className="text-2xl font-bold text-green-800">{stats.confirmedBookings || 0}</p>
+                <p className="text-sm text-emerald-700 font-medium">Confirmed</p>
+                <p className="text-2xl font-bold text-emerald-800">{stats.confirmedBookings || 0}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <CheckCircle className="h-8 w-8 text-emerald-600" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 shadow-lg border border-yellow-200">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-amber-200/50">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-yellow-700 font-medium">Pending</p>
-                <p className="text-2xl font-bold text-yellow-800">{stats.pendingBookings || 0}</p>
+                <p className="text-sm text-amber-700 font-medium">Pending</p>
+                <p className="text-2xl font-bold text-amber-800">{stats.pendingBookings || 0}</p>
               </div>
-              <Clock className="h-8 w-8 text-yellow-600" />
+              <Clock className="h-8 w-8 text-amber-600" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 shadow-lg border border-purple-200">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-indigo-200/50">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-purple-700 font-medium">Total Revenue</p>
-                <p className="text-2xl font-bold text-purple-800">LKR {(stats.totalRevenue || 0).toLocaleString()}</p>
+                <p className="text-sm text-indigo-700 font-medium">Total Revenue</p>
+                <p className="text-2xl font-bold text-indigo-800">LKR {(stats.totalRevenue || 0).toLocaleString()}</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-purple-600" />
+              <TrendingUp className="h-8 w-8 text-indigo-600" />
             </div>
           </div>
         </div>
 
 
         {/* Advanced Filters */}
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg border border-blue-200 mb-8">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-sky-200/50 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-500" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500" />
               <input
                 type="text"
                 placeholder="Search bookings..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
               />
             </div>
 
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-500" />
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 appearance-none bg-white"
               >
                 <option value="">All Statuses</option>
                 <option value="confirmed">Confirmed</option>
@@ -1076,11 +1006,11 @@ const AllBookings = () => {
             </div>
 
             <div className="relative">
-              <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-500" />
+              <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500" />
               <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 appearance-none bg-white"
               >
                 <option value="">All Payments</option>
                 <option value="paid">Paid</option>
@@ -1091,21 +1021,21 @@ const AllBookings = () => {
             </div>
 
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-500" />
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500" />
               <input
                 type="date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
               />
             </div>
 
             <div className="relative">
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-500 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500 pointer-events-none" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full pl-4 pr-10 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                className="w-full pl-4 pr-10 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 appearance-none bg-white"
               >
                 <option value="createdAt">Sort by Date Created</option>
                 <option value="travelDate">Sort by Travel Date</option>
@@ -1123,25 +1053,25 @@ const AllBookings = () => {
                 setDateFilter('');
                 setSearchTerm('');
               }}
-              className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
+              className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm hover:bg-slate-200 transition-colors"
             >
               Clear All Filters
             </button>
             <button
               onClick={() => setStatusFilter('confirmed')}
-              className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm hover:bg-green-200 transition-colors"
+              className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm hover:bg-emerald-200 transition-colors"
             >
               Confirmed Only
             </button>
             <button
               onClick={() => setPaymentFilter('paid')}
-              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors"
+              className="px-3 py-1 bg-sky-100 text-sky-800 rounded-full text-sm hover:bg-sky-200 transition-colors"
             >
               Paid Only
             </button>
             <button
               onClick={() => setDateFilter(new Date().toISOString().split('T')[0])}
-              className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm hover:bg-purple-200 transition-colors"
+              className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm hover:bg-indigo-200 transition-colors"
             >
               Today's Travel
             </button>
@@ -1150,7 +1080,7 @@ const AllBookings = () => {
 
         {/* Results Count */}
         <div className="flex items-center justify-between mb-6">
-          <p className="text-gray-600">
+          <p className="text-slate-600">
             Showing {filteredBookings.length} of {bookings.length} bookings
           </p>
           {(searchTerm || statusFilter || paymentFilter || dateFilter) && (
@@ -1161,7 +1091,7 @@ const AllBookings = () => {
                 setPaymentFilter('');
                 setDateFilter('');
               }}
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
+              className="text-sky-600 hover:text-sky-700 text-sm font-medium flex items-center"
             >
               Clear all filters
               <X className="h-4 w-4 ml-1" />
@@ -1171,10 +1101,10 @@ const AllBookings = () => {
 
         {/* Bookings List */}
         {filteredBookings.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl shadow-lg border border-gray-100">
-            <Receipt className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-gray-900 mb-2">No Bookings Found</h3>
-            <p className="text-gray-600 mb-6">
+          <div className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-sky-200/50">
+            <Receipt className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-slate-700 mb-2">No Bookings Found</h3>
+            <p className="text-slate-600 mb-6">
               {bookings.length === 0 
                 ? 'No bookings have been made yet.' 
                 : 'No bookings match your current filters. Try adjusting the search criteria.'
@@ -1188,7 +1118,6 @@ const AllBookings = () => {
                 key={booking._id}
                 booking={booking}
                 onViewDetails={handleViewDetails}
-                onDownloadReport={handleDownloadReport}
               />
             ))}
           </div>
@@ -1202,23 +1131,23 @@ const AllBookings = () => {
         />
 
         {/* Report Export Information */}
-        <div className="mt-8 bg-blue-50 rounded-xl p-6 border border-blue-200">
+        <div className="mt-8 bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-sky-200/50">
           <div className="flex items-start">
-            <FileText className="h-6 w-6 text-blue-600 mr-3 mt-1 flex-shrink-0" />
+            <FileText className="h-6 w-6 text-sky-600 mr-3 mt-1 flex-shrink-0" />
             <div>
-              <h4 className="text-lg font-semibold text-blue-900 mb-2">Export Options</h4>
-              <p className="text-blue-700 mb-3">
+              <h4 className="text-lg font-semibold text-sky-900 mb-2">Export Options</h4>
+              <p className="text-sky-700 mb-3">
                 Generate comprehensive reports for analysis and record-keeping. Export data in different formats
                 based on your current filters.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="font-medium text-blue-900">CSV Export</p>
-                  <p className="text-blue-700">Basic booking data in spreadsheet format</p>
+                  <p className="font-medium text-sky-900">CSV Export</p>
+                  <p className="text-sky-700">Basic booking data in spreadsheet format</p>
                 </div>
                 <div>
-                  <p className="font-medium text-blue-900">Detailed Report</p>
-                  <p className="text-blue-700">Complete data with statistics and breakdowns</p>
+                  <p className="font-medium text-sky-900">Detailed Report</p>
+                  <p className="text-sky-700">Complete data with statistics and breakdowns</p>
                 </div>
               </div>
             </div>
@@ -1226,7 +1155,7 @@ const AllBookings = () => {
         </div>
 
         {/* Footer */}
-        <div className="mt-6 text-center text-sm text-gray-500">
+        <div className="mt-6 text-center text-sm text-slate-500">
           <p>
             Admin Dashboard • Booking Management System • Total Records: {bookings.length}
           </p>

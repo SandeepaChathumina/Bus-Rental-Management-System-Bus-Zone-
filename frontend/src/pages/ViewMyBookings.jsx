@@ -12,7 +12,6 @@ import {
   CreditCard,
   QrCode,
   Download,
-  Mail,
   X,
   RefreshCw,
   AlertCircle,
@@ -91,18 +90,18 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
   };
 
   return (
-    <div className="bg-slate-800/50 rounded-2xl p-6 shadow-lg border border-slate-700/50 hover:shadow-xl transition-all duration-300 hover:border-blue-500/50">
+    <div className="bg-white/90 rounded-2xl p-6 shadow-lg border border-sky-100 hover:shadow-xl transition-all duration-300 hover:border-sky-300">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg">
-            <Bus className="h-5 w-5 text-white" />
+          <div className="p-3 bg-sky-100 rounded-xl shadow-lg">
+            <Bus className="h-5 w-5 text-sky-600" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">
+            <h3 className="text-lg font-bold text-slate-800">
               {booking.bus?.busType || 'Standard'} Coach
             </h3>
-            <p className="text-sm text-blue-400 font-mono font-medium">{booking.bookingId}</p>
+            <p className="text-sm text-sky-600 font-mono font-medium">{booking.bookingId}</p>
           </div>
         </div>
         
@@ -115,47 +114,47 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
 
       {/* Route Information */}
       <div className="flex items-center space-x-4 mb-4">
-        <div className="flex items-center text-slate-300">
-          <MapPin className="h-4 w-4 mr-2 text-blue-400" />
+        <div className="flex items-center text-slate-700">
+          <MapPin className="h-4 w-4 mr-2 text-sky-500" />
           <span className="font-medium">{booking.route?.from}</span>
-          <span className="mx-2 text-slate-500">→</span>
+          <span className="mx-2 text-slate-400">→</span>
           <span className="font-medium">{booking.route?.to}</span>
         </div>
       </div>
 
       {/* Travel Details */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div className="flex items-center text-slate-300">
-          <Calendar className="h-4 w-4 mr-2 text-blue-400" />
+        <div className="flex items-center text-slate-600">
+          <Calendar className="h-4 w-4 mr-2 text-sky-500" />
           <div>
-            <p className="text-xs text-slate-400">Travel Date</p>
-            <p className="text-sm font-medium text-white">{formatDate(booking.travelDate)}</p>
+            <p className="text-xs text-slate-500">Travel Date</p>
+            <p className="text-sm font-medium text-slate-800">{formatDate(booking.travelDate)}</p>
           </div>
         </div>
 
         {booking.returnDate && (
-          <div className="flex items-center text-slate-300">
-            <Calendar className="h-4 w-4 mr-2 text-green-400" />
+          <div className="flex items-center text-slate-600">
+            <Calendar className="h-4 w-4 mr-2 text-emerald-500" />
             <div>
-              <p className="text-xs text-slate-400">Return Date</p>
-              <p className="text-sm font-medium text-white">{formatDate(booking.returnDate)}</p>
+              <p className="text-xs text-slate-500">Return Date</p>
+              <p className="text-sm font-medium text-slate-800">{formatDate(booking.returnDate)}</p>
             </div>
           </div>
         )}
 
-        <div className="flex items-center text-slate-300">
-          <Clock className="h-4 w-4 mr-2 text-blue-400" />
+        <div className="flex items-center text-slate-600">
+          <Clock className="h-4 w-4 mr-2 text-sky-500" />
           <div>
-            <p className="text-xs text-slate-400">Departure</p>
-            <p className="text-sm font-medium text-white">{formatTime(booking.departureTime)}</p>
+            <p className="text-xs text-slate-500">Departure</p>
+            <p className="text-sm font-medium text-slate-800">{formatTime(booking.departureTime)}</p>
           </div>
         </div>
 
-        <div className="flex items-center text-slate-300">
-          <Users className="h-4 w-4 mr-2 text-blue-400" />
+        <div className="flex items-center text-slate-600">
+          <Users className="h-4 w-4 mr-2 text-sky-500" />
           <div>
-            <p className="text-xs text-slate-400">Passengers</p>
-            <p className="text-sm font-medium text-white">{booking.numberOfPassengers}</p>
+            <p className="text-xs text-slate-500">Passengers</p>
+            <p className="text-sm font-medium text-slate-800">{booking.numberOfPassengers}</p>
           </div>
         </div>
       </div>
@@ -163,10 +162,10 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
       {/* Seats Information */}
       {booking.seats && booking.seats.length > 0 && (
         <div className="mb-4">
-          <p className="text-sm text-slate-400 mb-2">Assigned Seats:</p>
+          <p className="text-sm text-slate-500 mb-2">Assigned Seats:</p>
           <div className="flex flex-wrap gap-2">
             {booking.seats.map((seat, index) => (
-              <span key={index} className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-sm font-medium border border-blue-500/30">
+              <span key={index} className="px-2 py-1 bg-sky-100 text-sky-700 rounded text-sm font-medium border border-sky-200">
                 {seat.seatNumber}
               </span>
             ))}
@@ -175,19 +174,19 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
       )}
 
       {/* Payment Information */}
-      <div className="flex items-center justify-between mb-4 p-4 bg-slate-700/50 rounded-xl border border-slate-600/50">
+      <div className="flex items-center justify-between mb-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
         <div className="flex items-center">
-          <CreditCard className="h-4 w-4 mr-2 text-blue-400" />
+          <CreditCard className="h-4 w-4 mr-2 text-sky-500" />
           <div>
-            <p className="text-sm text-slate-300 font-medium">Payment Status</p>
+            <p className="text-sm text-slate-600 font-medium">Payment Status</p>
             <p className={`text-sm font-semibold ${getPaymentStatusColor(booking.paymentStatus)}`}>
               {booking.paymentStatus}
             </p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-sm text-slate-300 font-medium">Total Amount</p>
-          <p className="text-lg font-bold text-white">
+          <p className="text-sm text-slate-600 font-medium">Total Amount</p>
+          <p className="text-lg font-bold text-slate-800">
             LKR {booking.totalAmount?.toLocaleString() || '0'}
           </p>
         </div>
@@ -197,7 +196,7 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
       <div className="flex flex-wrap gap-3">
         <button
           onClick={() => onViewDetails(booking)}
-          className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg"
+          className="flex items-center px-4 py-2 bg-sky-600 text-white rounded-lg text-sm font-medium hover:bg-sky-700 transition-all duration-200 shadow-lg"
         >
           <Eye className="h-4 w-4 mr-2" />
           View Details
@@ -206,7 +205,7 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
         {booking.paymentStatus === 'Paid' && (
           <button
             onClick={() => onDownloadInvoice(booking)}
-            className="flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg text-sm font-medium hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg"
+            className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-all duration-200 shadow-lg"
           >
             <Download className="h-4 w-4 mr-2" />
             Invoice
@@ -216,7 +215,7 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
         {canCancelBooking(booking) && (
           <button
             onClick={() => onCancelBooking(booking)}
-            className="flex items-center px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg text-sm font-medium hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-lg hover:shadow-red-500/25 border border-red-500/20"
+            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-all duration-200 shadow-lg hover:shadow-red-500/25 border border-red-500/20"
           >
             <X className="h-4 w-4 mr-2" />
             Cancel Booking
@@ -224,7 +223,7 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
         )}
 
         {!canCancelBooking(booking) && booking.bookingStatus !== 'Cancelled' && booking.bookingStatus !== 'Completed' && (
-          <div className="flex items-center px-4 py-2 bg-gray-600/50 text-gray-400 rounded-lg text-sm font-medium border border-gray-500/30 cursor-not-allowed">
+          <div className="flex items-center px-4 py-2 bg-slate-200 text-slate-500 rounded-lg text-sm font-medium border border-slate-300 cursor-not-allowed">
             <X className="h-4 w-4 mr-2" />
             <span className="text-xs">
               {booking.bookingStatus === 'Cancelled' || booking.bookingStatus === 'Completed' 
@@ -236,8 +235,8 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
       </div>
 
       {/* Booking Created Date and Cancellation Info */}
-      <div className="mt-4 pt-4 border-t border-slate-600/50 space-y-2">
-        <p className="text-xs text-slate-400 font-medium">
+      <div className="mt-4 pt-4 border-t border-slate-200 space-y-2">
+        <p className="text-xs text-slate-500 font-medium">
           Booked on {new Date(booking.createdAt).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -248,14 +247,14 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
         </p>
         
         {canCancelBooking(booking) && (
-          <div className="flex items-center text-xs text-green-400">
+          <div className="flex items-center text-xs text-emerald-600">
             <CheckCircle className="h-3 w-3 mr-1" />
             <span>Can be cancelled until 24 hours before travel</span>
           </div>
         )}
         
         {!canCancelBooking(booking) && booking.bookingStatus !== 'Cancelled' && booking.bookingStatus !== 'Completed' && (
-          <div className="flex items-center text-xs text-red-400">
+          <div className="flex items-center text-xs text-red-500">
             <XCircle className="h-3 w-3 mr-1" />
             <span>Cannot cancel (within 24 hours of travel)</span>
           </div>
@@ -279,35 +278,35 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCa
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-sky-200 bg-opacity-80 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">Booking Details</h2>
+        <div className="flex items-center justify-between p-6 border-b border-slate-200">
+          <h2 className="text-2xl font-bold text-slate-800">Booking Details</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
           >
-            <X className="h-6 w-6 text-gray-500" />
+            <X className="h-6 w-6 text-slate-500" />
           </button>
         </div>
 
         {/* Content */}
         <div className="p-6 space-y-6">
           {/* Booking ID & Status */}
-          <div className="bg-blue-50 rounded-xl p-4">
+          <div className="bg-sky-50 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-blue-900">
+                <h3 className="text-lg font-semibold text-sky-900">
                   Booking Reference
                 </h3>
-                <p className="text-2xl font-bold text-blue-600 font-mono">
+                <p className="text-2xl font-bold text-sky-600 font-mono">
                   {booking.bookingId}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-blue-700">Status</p>
-                <p className="text-lg font-semibold text-blue-900">
+                <p className="text-sm text-sky-700">Status</p>
+                <p className="text-lg font-semibold text-sky-900">
                   {booking.bookingStatus}
                 </p>
               </div>
@@ -316,38 +315,38 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCa
 
           {/* Travel Information */}
           <div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Travel Information</h4>
+            <h4 className="text-lg font-semibold text-slate-800 mb-3">Travel Information</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center text-gray-700">
-                <MapPin className="h-5 w-5 mr-3 text-blue-500" />
+              <div className="flex items-center text-slate-700">
+                <MapPin className="h-5 w-5 mr-3 text-sky-500" />
                 <div>
-                  <p className="text-sm text-gray-500">Route</p>
+                  <p className="text-sm text-slate-500">Route</p>
                   <p className="font-medium">{booking.route?.from} → {booking.route?.to}</p>
                 </div>
               </div>
 
-              <div className="flex items-center text-gray-700">
-                <Calendar className="h-5 w-5 mr-3 text-blue-500" />
+              <div className="flex items-center text-slate-700">
+                <Calendar className="h-5 w-5 mr-3 text-sky-500" />
                 <div>
-                  <p className="text-sm text-gray-500">Travel Date</p>
+                  <p className="text-sm text-slate-500">Travel Date</p>
                   <p className="font-medium">{formatDate(booking.travelDate)}</p>
                 </div>
               </div>
 
               {booking.returnDate && (
-                <div className="flex items-center text-gray-700">
-                  <Calendar className="h-5 w-5 mr-3 text-green-500" />
+                <div className="flex items-center text-slate-700">
+                  <Calendar className="h-5 w-5 mr-3 text-emerald-500" />
                   <div>
-                    <p className="text-sm text-gray-500">Return Date</p>
+                    <p className="text-sm text-slate-500">Return Date</p>
                     <p className="font-medium">{formatDate(booking.returnDate)}</p>
                   </div>
                 </div>
               )}
 
-              <div className="flex items-center text-gray-700">
-                <Clock className="h-5 w-5 mr-3 text-blue-500" />
+              <div className="flex items-center text-slate-700">
+                <Clock className="h-5 w-5 mr-3 text-sky-500" />
                 <div>
-                  <p className="text-sm text-gray-500">Departure Time</p>
+                  <p className="text-sm text-slate-500">Departure Time</p>
                   <p className="font-medium">{booking.departureTime}</p>
                 </div>
               </div>
@@ -356,21 +355,21 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCa
 
           {/* Bus Information */}
           <div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Bus Information</h4>
-            <div className="bg-gray-50 rounded-xl p-4">
+            <h4 className="text-lg font-semibold text-slate-800 mb-3">Bus Information</h4>
+            <div className="bg-slate-50 rounded-xl p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center text-gray-700">
-                  <Bus className="h-5 w-5 mr-3 text-blue-500" />
+                <div className="flex items-center text-slate-700">
+                  <Bus className="h-5 w-5 mr-3 text-sky-500" />
                   <div>
-                    <p className="text-sm text-gray-500">Bus Type</p>
+                    <p className="text-sm text-slate-500">Bus Type</p>
                     <p className="font-medium">{booking.bus?.busType || 'Standard'} Coach</p>
                   </div>
                 </div>
 
-                <div className="flex items-center text-gray-700">
-                  <Receipt className="h-5 w-5 mr-3 text-blue-500" />
+                <div className="flex items-center text-slate-700">
+                  <Receipt className="h-5 w-5 mr-3 text-sky-500" />
                   <div>
-                    <p className="text-sm text-gray-500">Number Plate</p>
+                    <p className="text-sm text-slate-500">Number Plate</p>
                     <p className="font-medium">{booking.bus?.numberPlate || 'N/A'}</p>
                   </div>
                 </div>
@@ -381,24 +380,24 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCa
           {/* Passenger Information */}
           {booking.seats && booking.seats.length > 0 && (
             <div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-3">Passenger Information</h4>
+              <h4 className="text-lg font-semibold text-slate-800 mb-3">Passenger Information</h4>
               <div className="space-y-3">
                 {booking.seats.map((seat, index) => (
-                  <div key={index} className="bg-gray-50 rounded-xl p-4">
+                  <div key={index} className="bg-slate-50 rounded-xl p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <User className="h-5 w-5 mr-3 text-blue-500" />
+                        <User className="h-5 w-5 mr-3 text-sky-500" />
                         <div>
-                          <p className="font-medium text-gray-900">{seat.passengerName}</p>
-                          <p className="text-sm text-gray-600">
+                          <p className="font-medium text-slate-800">{seat.passengerName}</p>
+                          <p className="text-sm text-slate-600">
                             {seat.passengerAge} years, {seat.passengerGender}
                           </p>
-                          <p className="text-sm text-gray-600">NIC: {seat.passengerNIC}</p>
+                          <p className="text-sm text-slate-600">NIC: {seat.passengerNIC}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-gray-500">Seat</p>
-                        <p className="text-lg font-bold text-blue-600">{seat.seatNumber}</p>
+                        <p className="text-sm text-slate-500">Seat</p>
+                        <p className="text-lg font-bold text-sky-600">{seat.seatNumber}</p>
                       </div>
                     </div>
                   </div>
@@ -409,22 +408,22 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCa
 
           {/* Payment Information */}
           <div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Payment Information</h4>
-            <div className="bg-green-50 rounded-xl p-4">
+            <h4 className="text-lg font-semibold text-slate-800 mb-3">Payment Information</h4>
+            <div className="bg-emerald-50 rounded-xl p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center text-gray-700">
-                  <CreditCard className="h-5 w-5 mr-3 text-green-500" />
+                <div className="flex items-center text-slate-700">
+                  <CreditCard className="h-5 w-5 mr-3 text-emerald-500" />
                   <div>
-                    <p className="text-sm text-gray-500">Payment Status</p>
-                    <p className="font-semibold text-green-600">{booking.paymentStatus}</p>
+                    <p className="text-sm text-slate-500">Payment Status</p>
+                    <p className="font-semibold text-emerald-600">{booking.paymentStatus}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center text-gray-700">
-                  <Receipt className="h-5 w-5 mr-3 text-green-500" />
+                <div className="flex items-center text-slate-700">
+                  <Receipt className="h-5 w-5 mr-3 text-emerald-500" />
                   <div>
-                    <p className="text-sm text-gray-500">Total Amount</p>
-                    <p className="text-xl font-bold text-green-600">
+                    <p className="text-sm text-slate-500">Total Amount</p>
+                    <p className="text-xl font-bold text-emerald-600">
                       LKR {booking.totalAmount?.toLocaleString() || '0'}
                     </p>
                   </div>
@@ -436,15 +435,15 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCa
           {/* QR Code */}
           {booking.qrCode && (
             <div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-3">Boarding Pass</h4>
-              <div className="text-center bg-white border-2 border-gray-200 rounded-xl p-6">
-                <QrCode className="h-6 w-6 text-blue-600 mx-auto mb-3" />
+              <h4 className="text-lg font-semibold text-slate-800 mb-3">Boarding Pass</h4>
+              <div className="text-center bg-white border-2 border-sky-200 rounded-xl p-6">
+                <QrCode className="h-6 w-6 text-sky-600 mx-auto mb-3" />
                 <img 
                   src={booking.qrCode} 
                   alt="QR Code" 
                   className="w-32 h-32 mx-auto mb-3"
                 />
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-slate-600">
                   Show this QR code when boarding the bus
                 </p>
               </div>
@@ -452,29 +451,18 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCa
           )}
 
           {/* Actions */}
-          <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+          <div className="flex flex-wrap gap-3 pt-4 border-t border-slate-200">
             {booking.paymentStatus === 'Paid' && (
               <button
                 onClick={() => onDownloadInvoice(booking)}
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+                className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Download Invoice
               </button>
             )}
 
-            <button
-              onClick={() => window.print()}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-            >
-              <Receipt className="h-4 w-4 mr-2" />
-              Print Details
-            </button>
 
-            <button className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors">
-              <Mail className="h-4 w-4 mr-2" />
-              Email Details
-            </button>
 
             {/* Cancel Booking Button in Modal */}
             {(() => {
@@ -502,7 +490,7 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCa
                   Cancel Booking
                 </button>
               ) : (
-                <div className="flex items-center px-4 py-2 bg-gray-400 text-white rounded-lg font-medium cursor-not-allowed opacity-50">
+                <div className="flex items-center px-4 py-2 bg-slate-400 text-white rounded-lg font-medium cursor-not-allowed opacity-50">
                   <X className="h-4 w-4 mr-2" />
                   Cancel Not Available
                 </div>
@@ -669,11 +657,11 @@ const ViewMyBookings = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 pt-32 pb-16 px-6">
+      <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-100 pt-32 pb-16 px-6">
         <div className="max-w-6xl mx-auto text-center">
-          <Loader className="h-12 w-12 text-blue-400 mx-auto animate-spin mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">Loading Your Bookings</h2>
-          <p className="text-slate-400">Please wait while we fetch your booking information...</p>
+          <Loader className="h-12 w-12 text-sky-600 mx-auto animate-spin mb-4" />
+          <h2 className="text-2xl font-bold text-slate-700 mb-2">Loading Your Bookings</h2>
+          <p className="text-slate-600">Please wait while we fetch your booking information...</p>
         </div>
       </div>
     );
@@ -681,22 +669,22 @@ const ViewMyBookings = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-950 pt-32 pb-16 px-6">
+      <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-100 pt-32 pb-16 px-6">
         <div className="max-w-2xl mx-auto text-center">
-          <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">Unable to Load Bookings</h2>
-          <p className="text-slate-400 mb-6">{error}</p>
+          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-slate-700 mb-2">Unable to Load Bookings</h2>
+          <p className="text-slate-600 mb-6">{error}</p>
           <div className="space-y-3">
             <button
               onClick={fetchBookings}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg flex items-center justify-center"
+              className="w-full bg-sky-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-sky-700 transition-all duration-200 shadow-lg flex items-center justify-center"
             >
               <RefreshCw className="h-5 w-5 mr-2" />
               Try Again
             </button>
             <button
               onClick={() => navigate('/bus')}
-              className="w-full border border-blue-300 text-blue-700 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+              className="w-full border border-sky-300 text-sky-700 px-6 py-3 rounded-lg font-semibold hover:bg-sky-50 transition-colors"
             >
               Book a New Trip
             </button>
@@ -707,26 +695,26 @@ const ViewMyBookings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 pt-32 pb-16 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-100 pt-32 pb-16 px-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => navigate('/booking')}
-              className="flex items-center px-4 py-2 bg-slate-800/50 text-slate-300 rounded-lg font-medium hover:bg-slate-700/50 transition-all duration-200 border border-slate-600/50"
+              className="flex items-center px-4 py-2 bg-white/80 text-slate-700 rounded-lg font-medium hover:bg-white transition-all duration-200 border border-sky-200 shadow-md"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Booking
             </button>
             <div>
-              <h1 className="text-4xl font-bold text-white mb-2">My Bookings</h1>
-              <p className="text-slate-400">Manage and track all your bus bookings</p>
+              <h1 className="text-4xl font-bold text-slate-700 mb-2">My Bookings</h1>
+              <p className="text-slate-600">Manage and track all your bus bookings</p>
             </div>
           </div>
           <button
             onClick={() => navigate('/booking')}
-            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg flex items-center"
+            className="bg-sky-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-sky-700 transition-all duration-200 shadow-lg flex items-center"
           >
             <Bus className="h-5 w-5 mr-2" />
             Book New Trip
@@ -735,75 +723,75 @@ const ViewMyBookings = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-slate-800/50 rounded-xl p-6 shadow-lg border border-slate-700/50">
+          <div className="bg-white/80 rounded-xl p-6 shadow-lg border border-sky-200/50">
             <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg">
-                <Receipt className="h-6 w-6 text-white" />
+              <div className="p-3 bg-sky-100 rounded-xl shadow-lg">
+                <Receipt className="h-6 w-6 text-sky-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm text-slate-300 font-medium">Total Bookings</p>
-                <p className="text-2xl font-bold text-white">{stats.total}</p>
+                <p className="text-sm text-sky-700 font-medium">Total Bookings</p>
+                <p className="text-2xl font-bold text-sky-900">{stats.total}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-800/50 rounded-xl p-6 shadow-lg border border-slate-700/50">
+          <div className="bg-white/80 rounded-xl p-6 shadow-lg border border-emerald-200/50">
             <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg">
-                <CheckCircle className="h-6 w-6 text-white" />
+              <div className="p-3 bg-emerald-100 rounded-xl shadow-lg">
+                <CheckCircle className="h-6 w-6 text-emerald-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm text-slate-300 font-medium">Confirmed</p>
-                <p className="text-2xl font-bold text-green-400">{stats.confirmed}</p>
+                <p className="text-sm text-emerald-700 font-medium">Confirmed</p>
+                <p className="text-2xl font-bold text-emerald-800">{stats.confirmed}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-800/50 rounded-xl p-6 shadow-lg border border-slate-700/50">
+          <div className="bg-white/80 rounded-xl p-6 shadow-lg border border-amber-200/50">
             <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl shadow-lg">
-                <Clock className="h-6 w-6 text-white" />
+              <div className="p-3 bg-amber-100 rounded-xl shadow-lg">
+                <Clock className="h-6 w-6 text-amber-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm text-slate-300 font-medium">Pending</p>
-                <p className="text-2xl font-bold text-amber-400">{stats.pending}</p>
+                <p className="text-sm text-amber-700 font-medium">Pending</p>
+                <p className="text-2xl font-bold text-amber-800">{stats.pending}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-800/50 rounded-xl p-6 shadow-lg border border-slate-700/50">
+          <div className="bg-white/80 rounded-xl p-6 shadow-lg border border-red-200/50">
             <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-r from-red-500 to-red-600 rounded-xl shadow-lg">
-                <XCircle className="h-6 w-6 text-white" />
+              <div className="p-3 bg-red-100 rounded-xl shadow-lg">
+                <XCircle className="h-6 w-6 text-red-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm text-slate-300 font-medium">Cancelled</p>
-                <p className="text-2xl font-bold text-red-400">{stats.cancelled}</p>
+                <p className="text-sm text-red-700 font-medium">Cancelled</p>
+                <p className="text-2xl font-bold text-red-800">{stats.cancelled}</p>
               </div>
             </div>
           </div>
         </div>
 
        {/* Filters */}
-<div className="bg-slate-800/50 rounded-xl p-6 shadow-lg border border-slate-700/50 mb-8">
+<div className="bg-white/80 rounded-xl p-6 shadow-lg border border-sky-200/50 mb-8">
   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
     <div className="relative">
-      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-400" />
+      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500" />
       <input
         type="text"
         placeholder="Search bookings..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full pl-10 pr-4 py-3 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-700 text-white placeholder-slate-400"
+        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white text-slate-700 placeholder-slate-500"
       />
     </div>
 
     <div className="relative">
-      <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-400" />
+      <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500" />
       <select
         value={statusFilter}
         onChange={(e) => setStatusFilter(e.target.value)}
-        className="w-full pl-10 pr-4 py-3 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-slate-700 text-white"
+        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 appearance-none bg-white text-slate-700"
       >
         <option value="">All Statuses</option>
         <option value="confirmed">Confirmed</option>
@@ -811,25 +799,25 @@ const ViewMyBookings = () => {
         <option value="cancelled">Cancelled</option>
         <option value="completed">Completed</option>
       </select>
-      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-400 pointer-events-none" />
+      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500 pointer-events-none" />
     </div>
 
     <div className="relative">
-      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-400" />
+      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500" />
       <select
         value={sortBy}
         onChange={(e) => setSortBy(e.target.value)}
-        className="w-full pl-10 pr-4 py-3 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-slate-700 text-white"
+        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 appearance-none bg-white text-slate-700"
       >
         <option value="createdAt">Sort by Booking Date</option>
         <option value="travelDate">Sort by Travel Date</option>
       </select>
-      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-400 pointer-events-none" />
+      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500 pointer-events-none" />
     </div>
 
     <button
       onClick={fetchBookings}
-      className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg"
+      className="flex items-center justify-center px-4 py-3 bg-sky-600 text-white rounded-lg font-semibold hover:bg-sky-700 transition-all duration-200 shadow-lg"
     >
       <RefreshCw className="h-5 w-5 mr-2" />
       Refresh
@@ -839,13 +827,13 @@ const ViewMyBookings = () => {
 
 {/* Results Count */}
 <div className="flex items-center justify-between mb-6">
-  <p className="text-slate-400">
+  <p className="text-slate-600">
     Showing {filteredBookings.length} of {bookings.length} bookings
   </p>
   {searchTerm && (
     <button
       onClick={() => setSearchTerm('')}
-      className="text-blue-400 hover:text-blue-300 text-sm font-medium flex items-center"
+      className="text-sky-600 hover:text-sky-700 text-sm font-medium flex items-center"
     >
       Clear search
       <X className="h-4 w-4 ml-1" />
@@ -855,15 +843,15 @@ const ViewMyBookings = () => {
 
 {/* Bookings List */}
 {filteredBookings.length === 0 ? (
-  <div className="text-center py-16 bg-slate-800/50 rounded-2xl shadow-lg border border-slate-700/50">
+  <div className="text-center py-16 bg-white/80 rounded-2xl shadow-lg border border-sky-200/50">
     {bookings.length === 0 ? (
       <>
         <Receipt className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-white mb-2">No Bookings Yet</h3>
-        <p className="text-slate-400 mb-6">You haven't made any bookings yet. Start your journey with us!</p>
+        <h3 className="text-xl font-bold text-slate-700 mb-2">No Bookings Yet</h3>
+        <p className="text-slate-600 mb-6">You haven't made any bookings yet. Start your journey with us!</p>
         <button
           onClick={() => navigate('/bus')}
-          className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg flex items-center mx-auto"
+          className="bg-sky-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-sky-700 transition-all duration-200 shadow-lg flex items-center mx-auto"
         >
           <Bus className="h-5 w-5 mr-2" />
           Book Your First Trip
@@ -872,14 +860,14 @@ const ViewMyBookings = () => {
     ) : (
       <>
         <Search className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-white mb-2">No Matching Bookings</h3>
-        <p className="text-slate-400 mb-6">Try adjusting your search criteria or filters</p>
+        <h3 className="text-xl font-bold text-slate-700 mb-2">No Matching Bookings</h3>
+        <p className="text-slate-600 mb-6">Try adjusting your search criteria or filters</p>
         <button
           onClick={() => {
             setSearchTerm('');
             setStatusFilter('');
           }}
-          className="bg-gradient-to-r from-gray-600 to-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-gray-700 hover:to-gray-800 transition-all duration-200 shadow-lg"
+          className="bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-slate-700 transition-all duration-200 shadow-lg"
         >
           Clear All Filters
         </button>
@@ -910,25 +898,25 @@ const ViewMyBookings = () => {
 />
 
 {/* Support Information */}
-<div className="mt-8 bg-slate-800/50 rounded-xl p-6 border border-slate-700/50">
+<div className="mt-8 bg-white/80 rounded-xl p-6 border border-sky-200/50">
   <div className="flex items-start">
-    <Phone className="h-6 w-6 text-blue-400 mr-3 mt-1 flex-shrink-0" />
+    <Phone className="h-6 w-6 text-sky-600 mr-3 mt-1 flex-shrink-0" />
     <div>
-      <h4 className="text-lg font-semibold text-white mb-2">Need Help with Your Bookings?</h4>
-      <p className="text-slate-300 mb-3">
+      <h4 className="text-lg font-semibold text-slate-800 mb-2">Need Help with Your Bookings?</h4>
+      <p className="text-slate-600 mb-3">
         Our customer support team is here to assist you with any questions about your bookings, 
         cancellations, or travel plans.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div>
-          <p className="font-medium text-white">Contact Support</p>
-          <p className="text-slate-300">support@buszone.com</p>
-          <p className="text-slate-300">+94 704 222 777</p>
+          <p className="font-medium text-slate-800">Contact Support</p>
+          <p className="text-slate-600">support@buszone.com</p>
+          <p className="text-slate-600">+94 704 222 777</p>
         </div>
         <div>
-          <p className="font-medium text-white">Support Hours</p>
-          <p className="text-slate-300">24/7 Customer Support</p>
-          <p className="text-slate-300">Emergency: +94 704 222 888</p>
+          <p className="font-medium text-slate-800">Support Hours</p>
+          <p className="text-slate-600">24/7 Customer Support</p>
+          <p className="text-slate-600">Emergency: +94 704 222 888</p>
         </div>
       </div>
     </div>
@@ -936,7 +924,7 @@ const ViewMyBookings = () => {
 </div>
 
 {/* Footer Note */}
-<div className="mt-6 text-center text-sm text-slate-400">
+<div className="mt-6 text-center text-sm text-slate-500">
   <p>
     For any booking modifications or special requests, please contact our support team at least 
     24 hours before your scheduled departure.

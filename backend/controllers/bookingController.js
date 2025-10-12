@@ -522,7 +522,7 @@ export const getBookingStats = async (req, res) => {
     // Get total bookings count
     const totalBookings = await Booking.countDocuments();
     
-    // Simple revenue calculation: add confirmed bookings, subtract cancelled bookings
+    // Revenue calculation: add paid bookings, subtract only cancelled bookings that were paid
     const revenueStats = await Booking.aggregate([
       {
         $group: {
@@ -530,9 +530,9 @@ export const getBookingStats = async (req, res) => {
           totalRevenue: {
             $sum: {
               $cond: [
-                { $eq: ['$bookingStatus', 'Confirmed'] },
+                { $eq: ['$paymentStatus', 'Paid'] },
                 '$totalAmount',
-                { $cond: [{ $eq: ['$bookingStatus', 'Cancelled'] }, { $multiply: ['$totalAmount', -1] }, 0] }
+                0
               ]
             }
           },
@@ -551,7 +551,7 @@ export const getBookingStats = async (req, res) => {
       }
     ]);
 
-    // Get monthly revenue trend (simple: confirmed bookings - cancelled bookings)
+    // Get monthly revenue trend (only paid bookings)
     const monthlyTrend = await Booking.aggregate([
       {
         $match: {
@@ -567,9 +567,9 @@ export const getBookingStats = async (req, res) => {
           revenue: { 
             $sum: {
               $cond: [
-                { $eq: ['$bookingStatus', 'Confirmed'] },
+                { $eq: ['$paymentStatus', 'Paid'] },
                 '$totalAmount',
-                { $cond: [{ $eq: ['$bookingStatus', 'Cancelled'] }, { $multiply: ['$totalAmount', -1] }, 0] }
+                0
               ]
             }
           },
