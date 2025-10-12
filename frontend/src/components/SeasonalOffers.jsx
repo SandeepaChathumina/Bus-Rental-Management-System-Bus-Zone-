@@ -225,8 +225,7 @@ const SeasonalOffersPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 pt-16">
-        <Navbar />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
         <div className="container mx-auto px-4 py-8">
           <div className="animate-pulse">
             <div className="h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl w-1/3 mb-8"></div>
@@ -254,9 +253,7 @@ const SeasonalOffersPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 pt-16">
-      <Navbar />
-      
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
