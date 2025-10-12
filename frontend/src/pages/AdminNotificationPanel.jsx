@@ -855,9 +855,12 @@ const AdminNotificationPanel = () => {
 
   if (loading) {
     return (
-      <div className="p-8 text-center text-gray-500">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-        <p className="mt-4">Loading notifications...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg font-medium">Loading notifications...</p>
+          <p className="text-gray-500 text-sm mt-2">Please wait while we fetch your data</p>
+        </div>
       </div>
     );
   }
