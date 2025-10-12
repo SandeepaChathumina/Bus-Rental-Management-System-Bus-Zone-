@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { generateBookingInvoicePDF, generateSimpleBookingPDF } from '../utils/pdfGenerator';
 import { 
   Calendar,
   Clock,
@@ -215,16 +216,27 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
         {canCancelBooking(booking) && (
           <button
             onClick={() => onCancelBooking(booking)}
-            className="flex items-center px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg text-sm font-medium hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-lg"
+            className="flex items-center px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg text-sm font-medium hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-lg hover:shadow-red-500/25 border border-red-500/20"
           >
             <X className="h-4 w-4 mr-2" />
-            Cancel
+            Cancel Booking
           </button>
+        )}
+
+        {!canCancelBooking(booking) && booking.bookingStatus !== 'Cancelled' && booking.bookingStatus !== 'Completed' && (
+          <div className="flex items-center px-4 py-2 bg-gray-600/50 text-gray-400 rounded-lg text-sm font-medium border border-gray-500/30 cursor-not-allowed">
+            <X className="h-4 w-4 mr-2" />
+            <span className="text-xs">
+              {booking.bookingStatus === 'Cancelled' || booking.bookingStatus === 'Completed' 
+                ? 'Cannot cancel' 
+                : 'Cancel not available (within 24h)'}
+            </span>
+          </div>
         )}
       </div>
 
-      {/* Booking Created Date */}
-      <div className="mt-4 pt-4 border-t border-slate-600/50">
+      {/* Booking Created Date and Cancellation Info */}
+      <div className="mt-4 pt-4 border-t border-slate-600/50 space-y-2">
         <p className="text-xs text-slate-400 font-medium">
           Booked on {new Date(booking.createdAt).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -234,13 +246,27 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
             minute: '2-digit'
           })}
         </p>
+        
+        {canCancelBooking(booking) && (
+          <div className="flex items-center text-xs text-green-400">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            <span>Can be cancelled until 24 hours before travel</span>
+          </div>
+        )}
+        
+        {!canCancelBooking(booking) && booking.bookingStatus !== 'Cancelled' && booking.bookingStatus !== 'Completed' && (
+          <div className="flex items-center text-xs text-red-400">
+            <XCircle className="h-3 w-3 mr-1" />
+            <span>Cannot cancel (within 24 hours of travel)</span>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 // Booking Details Modal Component
-const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice }) => {
+const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCancelBooking }) => {
   if (!isOpen || !booking) return null;
 
   const formatDate = (dateString) => {
@@ -449,6 +475,39 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice }) =>
               <Mail className="h-4 w-4 mr-2" />
               Email Details
             </button>
+
+            {/* Cancel Booking Button in Modal */}
+            {(() => {
+              const canCancel = () => {
+                if (booking.bookingStatus === 'Cancelled' || booking.bookingStatus === 'Completed') {
+                  return false;
+                }
+                
+                const travelDate = new Date(booking.travelDate);
+                const now = new Date();
+                const hoursUntilTravel = (travelDate - now) / (1000 * 60 * 60);
+                
+                return hoursUntilTravel > 24;
+              };
+
+              return canCancel() ? (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onCancelBooking(booking);
+                  }}
+                  className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel Booking
+                </button>
+              ) : (
+                <div className="flex items-center px-4 py-2 bg-gray-400 text-white rounded-lg font-medium cursor-not-allowed opacity-50">
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel Not Available
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -552,7 +611,9 @@ const ViewMyBookings = () => {
   };
 
   const handleCancelBooking = async (booking) => {
-    if (!window.confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
+    const confirmMessage = `Are you sure you want to cancel this booking?\n\nBooking ID: ${booking.bookingId}\nRoute: ${booking.route?.from} → ${booking.route?.to}\nTravel Date: ${new Date(booking.travelDate).toLocaleDateString()}\n\nThis action cannot be undone and you will receive a refund.`;
+    
+    if (!window.confirm(confirmMessage)) {
       return;
     }
 
@@ -569,37 +630,29 @@ const ViewMyBookings = () => {
       if (response.data.success) {
         // Refresh bookings
         fetchBookings();
-        alert('Booking cancelled successfully');
+        alert('✅ Booking cancelled successfully! You will receive a refund within 3-5 business days.');
       } else {
-        alert(response.data.message || 'Failed to cancel booking');
+        alert(`❌ ${response.data.message || 'Failed to cancel booking'}`);
       }
     } catch (error) {
       console.error('Error cancelling booking:', error);
-      alert(error.response?.data?.message || 'Failed to cancel booking');
+      const errorMessage = error.response?.data?.message || 'Failed to cancel booking';
+      alert(`❌ ${errorMessage}`);
     }
   };
 
   const handleDownloadInvoice = async (booking) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `${BACKEND_URL}/api/bookings/${booking._id}/invoice`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      if (response.data.success) {
-        // For now, just print the page
-        // In a real implementation, you'd generate and download a PDF
-        window.print();
-        alert('Invoice downloaded successfully');
-      } else {
-        alert('Invoice not available for this booking');
-      }
+      console.log('Starting invoice download for booking:', booking.bookingId);
+      
+      // Generate simple PDF first (more reliable)
+      const fileName = generateSimpleBookingPDF(booking);
+      console.log('PDF generated successfully:', fileName);
+      
+      alert(`✅ Invoice downloaded successfully!\nFile: ${fileName}`);
     } catch (error) {
       console.error('Error downloading invoice:', error);
-      alert('Failed to download invoice');
+      alert(`❌ Failed to download invoice: ${error.message}`);
     }
   };
 
@@ -853,6 +906,7 @@ const ViewMyBookings = () => {
   isOpen={showDetailsModal}
   onClose={() => setShowDetailsModal(false)}
   onDownloadInvoice={handleDownloadInvoice}
+  onCancelBooking={handleCancelBooking}
 />
 
 {/* Support Information */}

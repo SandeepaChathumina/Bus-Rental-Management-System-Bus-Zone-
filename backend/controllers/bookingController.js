@@ -522,18 +522,20 @@ export const getBookingStats = async (req, res) => {
     // Get total bookings count
     const totalBookings = await Booking.countDocuments();
     
-    // Get total revenue from successful payments
-    const revenueStats = await Payment.aggregate([
-      {
-        $match: {
-          status: 'success',
-          paymentType: 'booking'
-        }
-      },
+    // Simple revenue calculation: add confirmed bookings, subtract cancelled bookings
+    const revenueStats = await Booking.aggregate([
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: '$amount' },
+          totalRevenue: {
+            $sum: {
+              $cond: [
+                { $eq: ['$bookingStatus', 'Confirmed'] },
+                '$totalAmount',
+                { $cond: [{ $eq: ['$bookingStatus', 'Cancelled'] }, { $multiply: ['$totalAmount', -1] }, 0] }
+              ]
+            }
+          },
           totalBookings: { $sum: 1 }
         }
       }
@@ -549,12 +551,10 @@ export const getBookingStats = async (req, res) => {
       }
     ]);
 
-    // Get monthly revenue trend
-    const monthlyTrend = await Payment.aggregate([
+    // Get monthly revenue trend (simple: confirmed bookings - cancelled bookings)
+    const monthlyTrend = await Booking.aggregate([
       {
         $match: {
-          status: 'success',
-          paymentType: 'booking',
           createdAt: { $gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) }
         }
       },
@@ -564,7 +564,15 @@ export const getBookingStats = async (req, res) => {
             year: { $year: '$createdAt' },
             month: { $month: '$createdAt' }
           },
-          revenue: { $sum: '$amount' },
+          revenue: { 
+            $sum: {
+              $cond: [
+                { $eq: ['$bookingStatus', 'Confirmed'] },
+                '$totalAmount',
+                { $cond: [{ $eq: ['$bookingStatus', 'Cancelled'] }, { $multiply: ['$totalAmount', -1] }, 0] }
+              ]
+            }
+          },
           bookings: { $sum: 1 }
         }
       },
