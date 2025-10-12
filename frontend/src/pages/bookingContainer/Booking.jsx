@@ -764,6 +764,121 @@ const BookingHero = () => {
   );
 };
 
+// Footer Component
+const Footer = () => {
+  return (
+    <footer className="w-full px-6 lg:px-8 py-12 bg-gradient-to-br from-blue-100 to-cyan-100">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-8">
+        <div className="space-y-5 col-span-2">
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-3 rounded-xl shadow-lg">
+                <Bus className="h-8 w-8 text-white" />
+              </div>
+              <div className="absolute -top-1 -right-1 bg-cyan-400 w-4 h-4 rounded-full"></div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                BusZone+
+              </div>
+              <div className="text-xs text-blue-600/70">
+                Premium Bus Rentals
+              </div>
+            </div>
+          </div>
+          <p className="text-slate-600 text-base font-normal pr-10">
+            Experience luxury, reliability, and comfort with our premium bus rental services. 
+            We provide exceptional transportation solutions for all your needs.
+          </p>
+        </div>
+
+        <div className="space-y-5">
+          <h1 className="text-lg font-medium text-slate-800">About Us</h1>
+          <ul className="space-y-3 text-slate-600 text-base font-normal">
+            <li>
+              <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>About Us</a>
+            </li>
+            <li>
+              <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Contact Us</a>
+            </li>
+            <li>
+              <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Privacy Policy</a>
+            </li>
+            <li>
+              <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Terms and Conditions</a>
+            </li>
+          </ul>
+        </div>
+
+        <div className="space-y-5">
+          <h1 className="text-lg font-medium text-slate-800">Services</h1>
+          <ul className="space-y-3 text-slate-600 text-base font-normal">
+            <li>
+              <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Safety Guarantee</a>
+            </li>
+            <li>
+              <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>FAQ & Support</a>
+            </li>
+            <li>
+              <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Luxury Buses</a>
+            </li>
+            <li>
+              <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Enough Facilities</a>
+            </li>
+          </ul>
+        </div>
+
+        <div className="space-y-5">
+          <h1 className="text-lg font-medium text-slate-800">Get In Touch</h1>
+          <div className="space-y-4">
+            <div className="flex gap-x-3">
+              <MapPin className='text-lg text-blue-600 mt-1 flex-shrink-0' />
+              <div className="flex flex-col">
+                <p className="text-sm text-slate-600">
+                  For Support & Reservations
+                </p>
+                <p className="text-sm text-slate-700">
+                  123, Main Street, Anytown, USA
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-x-3">
+              <Phone className='text-lg text-blue-600 mt-1 flex-shrink-0' />
+              <div className="flex flex-col">
+                <p className="text-sm text-slate-600">
+                  Call Us Anytime
+                </p>
+                <p className="text-sm text-slate-700">
+                  +94 704 222 777
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-x-3">
+              <Mail className='text-lg text-blue-600 mt-1 flex-shrink-0' />
+              <div className="flex flex-col">
+                <p className="text-sm text-slate-600">
+                  Email Us
+                </p>
+                <p className="text-sm text-slate-700">
+                  info@buszoneplus.com
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-blue-200 text-center">
+        <p className="text-slate-500 text-sm">
+          © {new Date().getFullYear()} BusZone+. All rights reserved.
+        </p>
+      </div>
+    </footer>
+  );
+};
+
 // Main Booking Component
 const Booking = () => {
   return (
@@ -809,6 +924,9 @@ const Booking = () => {
           </div>
         </div>
       </div>
+      
+      {/* Footer Section */}
+      <Footer />
     </div>
   );
 };
