@@ -60,7 +60,7 @@ export const generateBookingInvoicePDF = (booking, invoice) => {
     
     const bookingDetails = [
       `Booking ID: ${booking.bookingId}`,
-      `Route: ${booking.route?.from || 'N/A'} → ${booking.route?.to || 'N/A'}`,
+      `Route: ${booking.route?.from || 'N/A'} to ${booking.route?.to || 'N/A'}`,
       `Travel Date: ${new Date(booking.travelDate).toLocaleDateString()}`,
       `Departure Time: ${booking.departureTime || 'N/A'}`,
       `Bus Type: ${booking.bus?.busType || 'N/A'}`,
@@ -132,51 +132,80 @@ export const generateSimpleBookingPDF = (booking) => {
   try {
     const doc = new jsPDF();
     
-    // Header
-    doc.setFillColor(41, 128, 185);
-    doc.rect(0, 0, 210, 30, 'F');
+    // Simple color scheme
+    const primaryBlue = [59, 130, 246]; // Blue-500
+    const darkGray = [75, 85, 99]; // Gray-600
+    const lightGray = [156, 163, 175]; // Gray-400
     
+    // Simple header
+    doc.setFillColor(...primaryBlue);
+    doc.rect(0, 0, 210, 35, 'F');
+    
+    // Company name
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text('Bus Zone - Booking Confirmation', 20, 20);
+    doc.text('BusZone - Booking Confirmation', 20, 20);
     
     // Reset text color
     doc.setTextColor(0, 0, 0);
     
-    // Booking Information
-    doc.setFontSize(14);
+    // Booking Details Section
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('Booking Details', 20, 50);
+    doc.text('Booking Details', 20, 55);
     
-    doc.setFontSize(10);
+    // Simple booking information with proper spacing
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     
+    let yPos = 70;
     const details = [
       `Booking ID: ${booking.bookingId}`,
-      `Route: ${booking.route?.from || 'N/A'} → ${booking.route?.to || 'N/A'}`,
+      `Route: ${booking.route?.from || 'N/A'} to ${booking.route?.to || 'N/A'}`,
       `Travel Date: ${new Date(booking.travelDate).toLocaleDateString()}`,
       `Departure Time: ${booking.departureTime || 'N/A'}`,
       `Bus: ${booking.bus?.busType || 'N/A'} (${booking.bus?.numberPlate || 'N/A'})`,
       `Passengers: ${booking.numberOfPassengers || 0}`,
-      `Seats: ${booking.seats?.map(s => s.seatNumber).join(', ') || 'N/A'}`,
       `Status: ${booking.bookingStatus}`,
       `Payment: ${booking.paymentStatus}`,
       `Total Amount: LKR ${(booking.totalAmount || 0).toLocaleString()}`
     ];
     
     details.forEach((detail, index) => {
-      doc.text(detail, 20, 65 + (index * 5));
+      doc.text(detail, 20, yPos + (index * 10));
     });
     
-    // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Thank you for choosing Bus Zone!', 20, 280);
-    doc.text('Generated on: ' + new Date().toLocaleString(), 20, 285);
+    // Add space before passenger section
+    yPos = yPos + (details.length * 10) + 15;
+    
+    // Passenger details (if available)
+    if (booking.seats && booking.seats.length > 0) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Passenger Information', 20, yPos);
+      
+      yPos += 15;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      
+      booking.seats.forEach((seat, index) => {
+        doc.text(`Passenger ${index + 1}: ${seat.passengerName || 'N/A'}`, 20, yPos);
+        doc.text(`  Seat: ${seat.seatNumber || 'N/A'}`, 30, yPos + 8);
+        doc.text(`  Age: ${seat.passengerAge || 'N/A'}, Gender: ${seat.passengerGender || 'N/A'}`, 30, yPos + 16);
+        yPos += 30;
+      });
+    }
+    
+    // Simple footer with proper spacing
+    yPos = Math.max(yPos + 20, 250);
+    doc.setFontSize(10);
+    doc.setTextColor(...lightGray);
+    doc.text('Thank you for choosing BusZone!', 20, yPos);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, yPos + 8);
     
     // Save the PDF
-    const fileName = `Booking_${booking.bookingId}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const fileName = `Booking_Confirmation_${booking.bookingId}_${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fileName);
     
     return fileName;
