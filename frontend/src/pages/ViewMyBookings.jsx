@@ -462,13 +462,6 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCa
               </button>
             )}
 
-            <button
-              onClick={() => window.print()}
-              className="flex items-center px-4 py-2 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 transition-colors"
-            >
-              <Receipt className="h-4 w-4 mr-2" />
-              Print Details
-            </button>
 
 
             {/* Cancel Booking Button in Modal */}
