@@ -187,14 +187,14 @@ const StatusBadge = ({ status }) => {
   const s =
     typeof status === "boolean" ? (status ? "Active" : "Inactive") : status;
   const colors = {
-    active: "bg-green-900/30 text-green-400",
-    inactive: "bg-red-900/30 text-red-400",
-    admin: "bg-yellow-900/30 text-yellow-300",
-    driver: "bg-indigo-900/30 text-indigo-300",
-    staff: "bg-teal-900/30 text-teal-300",
-    passenger: "bg-gray-900/30 text-gray-300",
+    active: "bg-green-100 text-green-800 border border-green-200",
+    inactive: "bg-red-100 text-red-800 border border-red-200",
+    admin: "bg-amber-100 text-amber-800 border border-amber-200",
+    driver: "bg-blue-100 text-blue-800 border border-blue-200",
+    staff: "bg-cyan-100 text-cyan-800 border border-cyan-200",
+    passenger: "bg-gray-100 text-gray-800 border border-gray-200",
   };
-  const cls = colors[(s || "").toLowerCase()] || "bg-slate-700 text-slate-300";
+  const cls = colors[(s || "").toLowerCase()] || "bg-gray-100 text-gray-800 border border-gray-200";
   return <span className={`px-2 py-1 text-xs rounded ${cls}`}>{s}</span>;
 };
 
@@ -203,7 +203,7 @@ const UserAvatar = ({ src, name, className = "" }) => {
   if (!src) {
     return (
       <div
-        className={`bg-blue-600 rounded-full flex items-center justify-center text-white font-medium ${className}`}
+        className={`bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-medium shadow-md ${className}`}
       >
         {name ? name.charAt(0).toUpperCase() : "U"}
       </div>
@@ -213,7 +213,7 @@ const UserAvatar = ({ src, name, className = "" }) => {
     <img
       src={src}
       alt={name}
-      className={`rounded-full object-cover ${className}`}
+      className={`rounded-full object-cover shadow-md ${className}`}
     />
   );
 };
@@ -222,12 +222,12 @@ const UserAvatar = ({ src, name, className = "" }) => {
 const Modal = ({ title, onClose, children }) => (
   <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto pt-12">
     <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-    <div className="relative bg-slate-800 border border-slate-600 rounded-xl p-6 z-60 w-full max-w-4xl shadow-xl">
+    <div className="relative bg-white border border-blue-200 rounded-xl p-6 z-60 w-full max-w-4xl shadow-2xl">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-white">{title}</h3>
+        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
         <button
           onClick={onClose}
-          className="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-700 transition-colors"
+          className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -252,33 +252,33 @@ const DataTable = ({
   const toggle = (id) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
   return (
-    <div className="bg-slate-800 rounded-xl overflow-hidden">
+    <div className="bg-white rounded-xl overflow-hidden border border-blue-200 shadow-lg">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-slate-700/50">
+          <thead className="bg-gradient-to-r from-blue-50 to-blue-100">
             <tr>
               {expandable && <th className="w-10 px-4 py-3"></th>}
               {columns.map((c, i) => (
                 <th
                   key={i}
-                  className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider"
+                  className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider"
                 >
                   {c.label}
                 </th>
               ))}
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-700">
+          <tbody className="divide-y divide-blue-100">
             {loading ? (
               Array(5)
                 .fill(0)
                 .map((_, idx) => (
                   <tr key={idx}>
                     <td colSpan={columns.length + 2} className="p-6">
-                      <div className="bg-gray-700 h-4 w-1/2 rounded animate-pulse" />
+                      <div className="bg-blue-100 h-4 w-1/2 rounded animate-pulse" />
                     </td>
                   </tr>
                 ))
@@ -286,7 +286,7 @@ const DataTable = ({
               <tr>
                 <td
                   colSpan={columns.length + 2}
-                  className="p-6 text-center text-slate-400"
+                  className="p-6 text-center text-gray-500"
                 >
                   No records found
                 </td>
@@ -294,12 +294,12 @@ const DataTable = ({
             ) : (
               data.map((row, idx) => (
                 <React.Fragment key={row._id || row.id || idx}>
-                  <tr className="hover:bg-slate-700/30 transition-colors duration-200">
+                  <tr className="hover:bg-blue-50 transition-colors duration-200">
                     {expandable && (
                       <td className="px-4 py-4">
                         <button
                           onClick={() => toggle(row._id || row.id)}
-                          className="text-slate-400 hover:text-white"
+                          className="text-gray-400 hover:text-blue-600"
                         >
                           {expanded[row._id || row.id] ? (
                             <ChevronDown className="w-4 h-4" />
@@ -312,7 +312,7 @@ const DataTable = ({
                     {columns.map((c, i) => (
                       <td
                         key={i}
-                        className="px-6 py-4 whitespace-nowrap text-sm text-slate-200"
+                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-700"
                       >
                         {c.render
                           ? c.render(row[c.key], row)
@@ -324,7 +324,7 @@ const DataTable = ({
                         {onView && (
                           <button
                             onClick={() => onView(row)}
-                            className="text-blue-400 hover:text-blue-300"
+                            className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
                             title="View Details"
                           >
                             <Eye className="w-4 h-4" />
@@ -333,7 +333,7 @@ const DataTable = ({
                         {onEdit && (
                           <button
                             onClick={() => onEdit(row)}
-                            className="text-indigo-400 hover:text-indigo-300"
+                            className="text-indigo-600 hover:text-indigo-800 p-1 rounded hover:bg-indigo-100"
                             title="Edit User"
                           >
                             <Edit className="w-4 h-4" />
@@ -342,7 +342,7 @@ const DataTable = ({
                         {onDelete && row.isActive !== false && (
                           <button
                             onClick={() => onDelete(row)}
-                            className="text-red-400 hover:text-red-300"
+                            className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100"
                             title="Deactivate User"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -351,7 +351,7 @@ const DataTable = ({
                         {onActivate && row.isActive === false && (
                           <button
                             onClick={() => onActivate(row)}
-                            className="text-green-400 hover:text-green-300"
+                            className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-100"
                             title="Activate User"
                           >
                             <CheckCircle className="w-4 h-4" />
@@ -361,39 +361,39 @@ const DataTable = ({
                     </td>
                   </tr>
                   {expandable && expanded[row._id || row.id] && (
-                    <tr className="bg-slate-750/50">
+                    <tr className="bg-blue-50">
                       <td
                         colSpan={columns.length + 2}
-                        className="px-4 py-4 text-sm text-slate-300"
+                        className="px-4 py-4 text-sm text-gray-700"
                       >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           <div>
-                            <span className="font-medium">Email:</span>{" "}
+                            <span className="font-medium text-blue-800">Email:</span>{" "}
                             {row.email}
                           </div>
                           <div>
-                            <span className="font-medium">Phone:</span>{" "}
+                            <span className="font-medium text-blue-800">Phone:</span>{" "}
                             {row.phone || "—"}
                           </div>
                           <div>
-                            <span className="font-medium">NIC:</span>{" "}
+                            <span className="font-medium text-blue-800">NIC:</span>{" "}
                             {row.nic || "—"}
                           </div>
                           <div>
-                            <span className="font-medium">Joined:</span>{" "}
+                            <span className="font-medium text-blue-800">Joined:</span>{" "}
                             {row.createdAt
                               ? new Date(row.createdAt).toLocaleString()
                               : "—"}
                           </div>
                           {row.driverProfile && (
                             <div>
-                              <span className="font-medium">License:</span>{" "}
+                              <span className="font-medium text-blue-800">License:</span>{" "}
                               {row.driverProfile.licenseNumber}
                             </div>
                           )}
                           {row.staffProfile && (
                             <div>
-                              <span className="font-medium">Employee ID:</span>{" "}
+                              <span className="font-medium text-blue-800">Employee ID:</span>{" "}
                               {row.staffProfile.employeeId}
                             </div>
                           )}
@@ -419,19 +419,19 @@ const ValidationMessages = ({ validation, field }) => {
     switch (field) {
       case "username":
         return validation.username.available ? (
-          <p className="text-green-400">✓ Username available</p>
+          <p className="text-green-600">✓ Username available</p>
         ) : (
-          <p className="text-red-400">✗ Username already taken</p>
+          <p className="text-red-600">✗ Username already taken</p>
         );
 
       case "email":
         if (!validation.email.valid) {
-          return <p className="text-red-400">✗ {validation.email.message}</p>;
+          return <p className="text-red-600">✗ {validation.email.message}</p>;
         }
         return validation.email.available ? (
-          <p className="text-green-400">✓ Email available</p>
+          <p className="text-green-600">✓ Email available</p>
         ) : (
-          <p className="text-red-400">✗ Email already registered</p>
+          <p className="text-red-600">✗ Email already registered</p>
         );
 
       case "password":
@@ -439,7 +439,7 @@ const ValidationMessages = ({ validation, field }) => {
           <div className="text-xs">
             <p
               className={
-                validation.password.isValid ? "text-green-400" : "text-red-400"
+                validation.password.isValid ? "text-green-600" : "text-red-600"
               }
             >
               {validation.password.isValid
@@ -451,8 +451,8 @@ const ValidationMessages = ({ validation, field }) => {
                 <span
                   className={
                     validation.password.requirements.minLength
-                      ? "text-green-400"
-                      : "text-red-400"
+                      ? "text-green-600"
+                      : "text-red-600"
                   }
                 >
                   • 8+ chars
@@ -460,8 +460,8 @@ const ValidationMessages = ({ validation, field }) => {
                 <span
                   className={
                     validation.password.requirements.hasUpperCase
-                      ? "text-green-400"
-                      : "text-red-400"
+                      ? "text-green-600"
+                      : "text-red-600"
                   }
                 >
                   • A-Z
@@ -469,8 +469,8 @@ const ValidationMessages = ({ validation, field }) => {
                 <span
                   className={
                     validation.password.requirements.hasLowerCase
-                      ? "text-green-400"
-                      : "text-red-400"
+                      ? "text-green-600"
+                      : "text-red-600"
                   }
                 >
                   • a-z
@@ -478,8 +478,8 @@ const ValidationMessages = ({ validation, field }) => {
                 <span
                   className={
                     validation.password.requirements.hasNumbers
-                      ? "text-green-400"
-                      : "text-red-400"
+                      ? "text-green-600"
+                      : "text-red-600"
                   }
                 >
                   • 0-9
@@ -487,8 +487,8 @@ const ValidationMessages = ({ validation, field }) => {
                 <span
                   className={
                     validation.password.requirements.hasSpecialChar
-                      ? "text-green-400"
-                      : "text-red-400"
+                      ? "text-green-600"
+                      : "text-red-600"
                   }
                 >
                   • !@#$
@@ -500,57 +500,57 @@ const ValidationMessages = ({ validation, field }) => {
 
       case "nic":
         if (!validation.nic.checked) {
-          return <p className="text-slate-400 text-xs">Enter a valid NIC number</p>;
+          return <p className="text-gray-500 text-xs">Enter a valid NIC number</p>;
         }
         if (validation.nic.isValid && validation.nic.available) {
-          return <p className="text-green-400">✓ NIC number available</p>;
+          return <p className="text-green-600">✓ NIC number available</p>;
         } else if (validation.nic.isValid && !validation.nic.available) {
-          return <p className="text-red-400">✗ NIC number already exists</p>;
+          return <p className="text-red-600">✗ NIC number already exists</p>;
         } else {
-          return <p className="text-red-400">✗ NIC must be 9 digits + V or 12 digits</p>;
+          return <p className="text-red-600">✗ NIC must be 9 digits + V or 12 digits</p>;
         }
 
       case "phone":
         if (!validation.phone.checked) {
-          return <p className="text-slate-400 text-xs">Enter a valid phone number</p>;
+          return <p className="text-gray-500 text-xs">Enter a valid phone number</p>;
         }
         if (validation.phone.isValid && validation.phone.available) {
-          return <p className="text-green-400">✓ Phone number available</p>;
+          return <p className="text-green-600">✓ Phone number available</p>;
         } else if (validation.phone.isValid && !validation.phone.available) {
-          return <p className="text-red-400">✗ Phone number already exists</p>;
+          return <p className="text-red-600">✗ Phone number already exists</p>;
         } else {
-          return <p className="text-red-400">✗ Must start with 0 and be exactly 10 digits</p>;
+          return <p className="text-red-600">✗ Must start with 0 and be exactly 10 digits</p>;
         }
 
       case "licenseNumber":
         return validation.licenseNumber.isValid ? (
-          <p className="text-green-400">✓ Valid license format</p>
+          <p className="text-green-600">✓ Valid license format</p>
         ) : (
-          <p className="text-red-400">
+          <p className="text-red-600">
             ✗ Must be capital letter followed by 7 digits (e.g., B1234567)
           </p>
         );
 
       case "employeeId":
         if (!validation.employeeId.checked) {
-          return <p className="text-slate-400 text-xs">Enter employee ID (EMP + 3 digits, e.g., EMP001)</p>;
+          return <p className="text-gray-500 text-xs">Enter employee ID (EMP + 3 digits, e.g., EMP001)</p>;
         }
         if (validation.employeeId.isValid && validation.employeeId.available) {
-          return <p className="text-green-400">✓ Employee ID available</p>;
+          return <p className="text-green-600">✓ Employee ID available</p>;
         } else if (validation.employeeId.isValid && !validation.employeeId.available) {
-          return <p className="text-red-400">✗ Employee ID already exists</p>;
+          return <p className="text-red-600">✗ Employee ID already exists</p>;
         } else {
-          return <p className="text-red-400">✗ Must be EMP followed by 3 digits (e.g., EMP001)</p>;
+          return <p className="text-red-600">✗ Must be EMP followed by 3 digits (e.g., EMP001)</p>;
         }
 
       case "licenseExpiry":
         if (!validation.licenseExpiry.checked) {
-          return <p className="text-slate-400 text-xs">Please select a future date</p>;
+          return <p className="text-gray-500 text-xs">Please select a future date</p>;
         }
         return validation.licenseExpiry.isValid ? (
-          <p className="text-green-400">✓ Valid expiry date</p>
+          <p className="text-green-600">✓ Valid expiry date</p>
         ) : (
-          <p className="text-red-400">✗ Please select a future date</p>
+          <p className="text-red-600">✗ Please select a future date</p>
         );
 
       default:
@@ -574,7 +574,7 @@ const FormField = ({
 }) => (
   <div>
     {label && (
-      <label className="block text-sm font-medium text-slate-300 mb-2">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
         {label}
       </label>
     )}
@@ -583,7 +583,7 @@ const FormField = ({
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className={`p-3 bg-slate-700 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-colors w-full ${
+      className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
         validation[field]?.checked
           ? (() => {
               // For fields with both isValid and available (phone, nic)
@@ -607,7 +607,7 @@ const FormField = ({
               // Default to red if checked but no clear validation state
               return "border-red-500 focus:ring-red-500";
             })()
-          : "border-slate-600 focus:ring-blue-500"
+          : "border-blue-300 focus:ring-blue-500"
       }`}
       {...props}
     />
@@ -621,10 +621,10 @@ const ExportModal = ({ show, onClose, format, setFormat, itemCount, onExport, lo
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
-      <div className="relative bg-slate-800 border border-slate-600 rounded-xl p-6 z-60 w-full max-w-md shadow-xl">
+      <div className="relative bg-white border border-blue-200 rounded-xl p-6 z-60 w-full max-w-md shadow-2xl">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-white">Export Report</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <h3 className="text-lg font-semibold text-gray-800">Export Report</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -633,8 +633,8 @@ const ExportModal = ({ show, onClose, format, setFormat, itemCount, onExport, lo
             onClick={() => setFormat("csv")}
             className={`p-3 border-2 rounded-lg ${
               format === "csv"
-                ? "border-green-500 bg-green-900/20 text-green-400"
-                : "border-slate-600 text-slate-400"
+                ? "border-green-500 bg-green-50 text-green-700"
+                : "border-blue-300 text-gray-600 hover:bg-blue-50"
             }`}
           >
             <FileText className="w-6 h-6 mx-auto mb-1" /> CSV
@@ -643,24 +643,24 @@ const ExportModal = ({ show, onClose, format, setFormat, itemCount, onExport, lo
             onClick={() => setFormat("pdf")}
             className={`p-3 border-2 rounded-lg ${
               format === "pdf"
-                ? "border-red-500 bg-red-900/20 text-red-400"
-                : "border-slate-600 text-slate-400"
+                ? "border-red-500 bg-red-50 text-red-700"
+                : "border-blue-300 text-gray-600 hover:bg-blue-50"
             }`}
           >
             <FileText className="w-6 h-6 mx-auto mb-1" /> PDF
           </button>
         </div>
-        <div className="bg-slate-700/50 rounded p-2 text-sm text-slate-300 mb-4">
+        <div className="bg-blue-50 rounded p-2 text-sm text-gray-700 mb-4">
           <Calendar className="inline w-4 h-4 mr-1" /> Report will include {itemCount} users
         </div>
         <div className="flex justify-end space-x-2">
-          <button onClick={onClose} className="px-3 py-1 text-slate-300 hover:text-white">
+          <button onClick={onClose} className="px-3 py-1 text-gray-600 hover:text-gray-800">
             Cancel
           </button>
           <button
             onClick={onExport}
             disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md"
           >
             {loading ? "Generating..." : "Export Now"}
           </button>
@@ -1164,11 +1164,11 @@ const UserManagement = () => {
             className="w-8 h-8 mr-3"
           />
           <div>
-            <div className="font-medium text-white">
+            <div className="font-medium text-gray-800">
               {`${row.firstName || ""} ${row.lastName || ""}`.trim() ||
                 row.username}
             </div>
-            <div className="text-xs text-slate-400">
+            <div className="text-xs text-gray-500">
               ID: {row._id || row.id}
             </div>
           </div>
@@ -1286,9 +1286,9 @@ const UserManagement = () => {
     
     // Statistics boxes - responsive layout
     const availableWidth = pageWidth - (margin * 2);
-    const boxCount = 4;
-    const boxSpacing = 8;
-    const boxWidth = Math.min(35, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
+    const boxCount = 5;
+    const boxSpacing = 6;
+    const boxWidth = Math.min(30, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
     const boxHeight = 25;
     let currentX = margin;
     
@@ -1337,6 +1337,18 @@ const UserManagement = () => {
     doc.text(staff.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
     doc.setFontSize(7);
     doc.text('Staff', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Passengers box - Blue theme with white text
+    doc.setFillColor(14, 165, 233);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255); // White text
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(passengers.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Passengers', currentX + boxWidth/2, statsY + 25, { align: 'center' });
     
     // Role distribution table - moved to separate page to prevent overlap
     const roleTableY = statsY + 50;
@@ -1494,93 +1506,102 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-300">Total Users</p>
-              <h3 className="text-2xl text-white">{users.length}</h3>
-            </div>
-            <Users className="w-8 h-8 text-slate-300" />
-          </div>
-        </div>
-
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-300">Drivers</p>
-              <h3 className="text-2xl text-white">
-                {users.filter((u) => u.role === "driver").length}
-              </h3>
-            </div>
-            <UserCheck className="w-8 h-8 text-slate-300" />
-          </div>
-        </div>
-
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-300">Staff</p>
-              <h3 className="text-2xl text-white">
-                {users.filter((u) => u.role === "staff").length}
-              </h3>
-            </div>
-            <Settings className="w-8 h-8 text-slate-300" />
-          </div>
-        </div>
-
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-300">Passengers</p>
-              <h3 className="text-2xl text-white">
-                {users.filter((u) => u.role === "passenger").length}
-              </h3>
-            </div>
-            <Users className="w-8 h-8 text-slate-300" />
-          </div>
-        </div>
-      </div>
-
-      {/* Controls + Table */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="col-span-2 bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="relative flex-1">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Search Users
-              </label>
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name, email, or username..."
-                  className="pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg w-full"
-                />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-6">
+      <div className="space-y-6">
+        {/* Stat Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total Users</p>
+                <h3 className="text-2xl text-gray-800 font-bold">{users.length}</h3>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-full">
+                <Users className="w-8 h-8 text-blue-600" />
               </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Filter by Role
-              </label>
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="bg-slate-700 text-white px-3 py-2 rounded-lg"
-              >
-                <option value="all">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="driver">Driver</option>
-                <option value="staff">Staff</option>
-                <option value="passenger">Passenger</option>
-              </select>
-            </div>
-
           </div>
+
+          <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Drivers</p>
+                <h3 className="text-2xl text-gray-800 font-bold">
+                  {users.filter((u) => u.role === "driver").length}
+                </h3>
+              </div>
+              <div className="p-3 bg-cyan-100 rounded-full">
+                <UserCheck className="w-8 h-8 text-cyan-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Staff</p>
+                <h3 className="text-2xl text-gray-800 font-bold">
+                  {users.filter((u) => u.role === "staff").length}
+                </h3>
+              </div>
+              <div className="p-3 bg-indigo-100 rounded-full">
+                <Settings className="w-8 h-8 text-indigo-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Passengers</p>
+                <h3 className="text-2xl text-gray-800 font-bold">
+                  {users.filter((u) => u.role === "passenger").length}
+                </h3>
+              </div>
+              <div className="p-3 bg-green-100 rounded-full">
+                <Users className="w-8 h-8 text-green-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Controls + Table */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="col-span-2 bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="relative flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search Users
+                </label>
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by name, email, or username..."
+                    className="pl-10 pr-4 py-2 bg-white border border-blue-300 text-gray-800 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter by Role
+                </label>
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="bg-white text-gray-800 px-3 py-2 rounded-lg border border-blue-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">All Roles</option>
+                  <option value="admin">Admin</option>
+                  <option value="driver">Driver</option>
+                  <option value="staff">Staff</option>
+                  <option value="passenger">Passenger</option>
+                </select>
+              </div>
+
+            </div>
 
           <DataTable
             data={filteredUsers}
@@ -1602,40 +1623,40 @@ const UserManagement = () => {
         loading={exportLoading}
       />
 
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <h3 className="text-lg text-white mb-3">Quick Actions</h3>
-          <div className="grid grid-cols-1 gap-3">
-            <button
-              onClick={() => setShowDriverModal(true)}
-              className="flex items-center justify-between px-4 py-3 bg-teal-900/10 rounded hover:bg-teal-900/20 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <Plus className="w-5 h-5 text-teal-300" />
-                <span className="text-sm text-teal-300">Add Driver</span>
-              </div>
-            </button>
+          <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+            <h3 className="text-lg text-gray-800 mb-3 font-semibold">Quick Actions</h3>
+            <div className="grid grid-cols-1 gap-3">
+              <button
+                onClick={() => setShowDriverModal(true)}
+                className="flex items-center justify-between px-4 py-3 bg-cyan-50 border border-cyan-200 rounded-lg hover:bg-cyan-100 transition-colors group"
+              >
+                <div className="flex items-center space-x-3">
+                  <Plus className="w-5 h-5 text-cyan-600 group-hover:text-cyan-700" />
+                  <span className="text-sm text-cyan-700 font-medium">Add Driver</span>
+                </div>
+              </button>
 
-            <button
-              onClick={() => setShowStaffModal(true)}
-              className="flex items-center justify-between px-4 py-3 bg-pink-900/10 rounded hover:bg-pink-900/20 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <Plus className="w-5 h-5 text-pink-300" />
-                <span className="text-sm text-pink-300">Add Staff</span>
-              </div>
-            </button>
+              <button
+                onClick={() => setShowStaffModal(true)}
+                className="flex items-center justify-between px-4 py-3 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors group"
+              >
+                <div className="flex items-center space-x-3">
+                  <Plus className="w-5 h-5 text-indigo-600 group-hover:text-indigo-700" />
+                  <span className="text-sm text-indigo-700 font-medium">Add Staff</span>
+                </div>
+              </button>
 
-            <button
-              onClick={() => setShowExportModal(true)}
-              className="flex items-center justify-between px-4 py-3 bg-blue-900/10 rounded hover:bg-blue-900/20 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <Download className="w-5 h-5 text-slate-300" />
-                <span className="text-sm text-slate-300">Export All</span>
-              </div>
-            </button>
+              <button
+                onClick={() => setShowExportModal(true)}
+                className="flex items-center justify-between px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors group"
+              >
+                <div className="flex items-center space-x-3">
+                  <Download className="w-5 h-5 text-blue-600 group-hover:text-blue-700" />
+                  <span className="text-sm text-blue-700 font-medium">Export All</span>
+                </div>
+              </button>
+            </div>
           </div>
-        </div>
       </div>
 
       {/* Add Driver Modal */}
@@ -1650,7 +1671,7 @@ const UserManagement = () => {
           }}
         >
           {createError && (
-            <div className="text-red-400 mb-4 p-3 bg-red-900/20 rounded-lg">
+            <div className="text-red-600 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               {createError}
             </div>
           )}
@@ -1762,7 +1783,7 @@ const UserManagement = () => {
             />
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Emergency Contact
               </label>
               <input
@@ -1770,9 +1791,9 @@ const UserManagement = () => {
                 placeholder="Emergency Contact"
                 value={form.emergencyContact}
                 readOnly
-                className="p-3 bg-slate-600 border border-slate-500 rounded-lg text-slate-300 placeholder-slate-400 focus:outline-none w-full cursor-not-allowed"
+                className="p-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 placeholder-gray-400 focus:outline-none w-full cursor-not-allowed"
               />
-              <p className="text-slate-400 text-xs mt-1">
+              <p className="text-gray-500 text-xs mt-1">
                 Company emergency contact (cannot be changed)
               </p>
             </div>
@@ -1786,7 +1807,7 @@ const UserManagement = () => {
                 resetValidation();
                 setCreateError(null);
               }}
-              className="px-4 py-2 bg-slate-700 rounded-lg text-white hover:bg-slate-600 transition-colors"
+              className="px-4 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 transition-colors"
             >
               Cancel
             </button>
@@ -1794,8 +1815,8 @@ const UserManagement = () => {
               onClick={() => createUser("driver")}
               className={`px-4 py-2 rounded-lg text-white font-medium transition-colors flex items-center justify-center ${
                 isFormValid("driver") && !creating
-                  ? "bg-teal-600 hover:bg-teal-700"
-                  : "bg-gray-600 cursor-not-allowed"
+                  ? "bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 shadow-md"
+                  : "bg-gray-400 cursor-not-allowed"
               }`}
               disabled={!isFormValid("driver") || creating}
             >
@@ -1824,7 +1845,7 @@ const UserManagement = () => {
           }}
         >
           {createError && (
-            <div className="text-red-400 mb-4 p-3 bg-red-900/20 rounded-lg">
+            <div className="text-red-600 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               {createError}
             </div>
           )}
@@ -1905,7 +1926,7 @@ const UserManagement = () => {
             />
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Staff Role
               </label>
               <input
@@ -1914,10 +1935,10 @@ const UserManagement = () => {
                 onChange={(e) =>
                   setForm({ ...form, staffRole: e.target.value })
                 }
-                className="p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors w-full"
+                className="p-3 bg-white border border-blue-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors w-full"
               />
               {!form.staffRole && (
-                <p className="text-slate-400 text-xs mt-1">
+                <p className="text-gray-500 text-xs mt-1">
                   Please enter the staff member's role (e.g., Manager, Supervisor, Clerk)
                 </p>
               )}
@@ -1953,7 +1974,7 @@ const UserManagement = () => {
                 resetValidation();
                 setCreateError(null);
               }}
-              className="px-4 py-2 bg-slate-700 rounded-lg text-white hover:bg-slate-600 transition-colors"
+              className="px-4 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 transition-colors"
             >
               Cancel
             </button>
@@ -1961,8 +1982,8 @@ const UserManagement = () => {
               onClick={() => createUser("staff")}
               className={`px-4 py-2 rounded-lg text-white font-medium transition-colors flex items-center justify-center ${
                 isFormValid("staff") && !creating
-                  ? "bg-teal-600 hover:bg-teal-700"
-                  : "bg-gray-600 cursor-not-allowed"
+                  ? "bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 shadow-md"
+                  : "bg-gray-400 cursor-not-allowed"
               }`}
               disabled={!isFormValid("staff") || creating}
             >
@@ -1978,6 +1999,7 @@ const UserManagement = () => {
           </div>
         </Modal>
       )}
+      </div>
     </div>
   );
 };
