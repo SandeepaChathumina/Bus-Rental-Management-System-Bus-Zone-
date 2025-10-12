@@ -227,7 +227,7 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-gradient-to-br from-sky-200 via-blue-200 to-cyan-200 bg-opacity-80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200">
