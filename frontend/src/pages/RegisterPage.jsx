@@ -316,12 +316,12 @@ const RegisterPage = () => {
     }
     
     setLoading(true);
-  const result = await register(formData);
-  
-  if (result.success) {
-    toast.success('Registration successful! Please login to continue.');
-    navigate('/login'); // Navigate to login instead of dashboard
-  } else {
+    const result = await register(formData);
+    
+    if (result.success) {
+      toast.success('Registration successful! Please login to continue.');
+      navigate('/login'); // Navigate to login instead of dashboard
+    } else {
       // Check specific error types
       if (result.message.includes('phone') && result.message.includes('duplicate')) {
         toast.error('Phone number is already registered. Please use a different phone number.');
@@ -383,96 +383,61 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
-      {/* Animated Background Elements */}
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 relative overflow-hidden flex items-center justify-center p-4">
+      {/* Background Image with Light Overlay */}
       <div className="absolute inset-0">
-        <div className="absolute top-10 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-indigo-500/10 rounded-full blur-2xl animate-bounce"></div>
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10"
+          style={{ backgroundImage: `url(${b5Image})` }}
+        ></div>
+        <div className="absolute inset-0 bg-white/30"></div>
+        
+        {/* Animated Background Elements */}
+        <div className="absolute top-10 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-cyan-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-sky-400/20 rounded-full blur-2xl animate-bounce"></div>
       </div>
 
       {/* Home Button */}
       <button
         onClick={handleHomeClick}
-        className="absolute top-8 left-8 z-20 flex items-center gap-3 px-6 py-3 bg-white/10 backdrop-blur-lg hover:bg-white/20 text-white rounded-2xl shadow-2xl transition-all duration-300 hover:scale-105 border border-white/20"
+        className="absolute top-8 left-8 z-20 flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-lg hover:bg-white text-slate-700 rounded-2xl shadow-xl transition-all duration-300 hover:scale-105 border border-blue-200/50"
       >
         <FaHome className="text-lg" />
         <span className="font-semibold">Home</span>
       </button>
 
-      <div className="flex min-h-screen">
-        {/* Left Side - Branding */}
-        <div className="hidden lg:flex lg:w-2/5 relative items-center justify-center p-12">
-          {/* Background */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
-            style={{ backgroundImage: `url(${b5Image})` }}
-          ></div>
-          
-          {/* Branding Card */}
-          <div className="relative z-10 bg-white/10 backdrop-blur-2xl rounded-3xl p-12 border border-white/20 shadow-2xl max-w-lg">
-            <div className="text-center">
-              <div className="mb-8">
-                <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-3xl flex items-center justify-center shadow-2xl">
-                  <FaBus className="text-4xl text-white" />
-                </div>
-                <h1 className="text-4xl font-bold text-white mb-4">Join BusZone+</h1>
-                <div className="w-16 h-1 bg-gradient-to-r from-blue-400 to-cyan-500 mx-auto rounded-full"></div>
-              </div>
-
-              <h2 className="text-2xl font-bold text-white mb-6 leading-tight">
-                Start Your Journey With Us
-              </h2>
-              <p className="text-lg text-blue-100 mb-8 leading-relaxed">
-                Create your account and experience premium bus services with advanced booking and management features
-              </p>
-
-              {/* Benefits */}
-              <div className="space-y-4 text-left">
-                {[
-                  "Easy Online Booking",
-                  "Real-time Bus Tracking", 
-                  "Secure Payment System",
-                  "24/7 Customer Support"
-                ].map((benefit, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-cyan-400 rounded-full flex-shrink-0"></div>
-                    <span className="text-blue-100">{benefit}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side - Registration Form */}
-        <div className="w-full lg:w-3/5 flex items-center justify-center p-8">
-          <div className="w-full max-w-2xl">
+      {/* Centered Registration Container */}
+      <div className="relative z-10 w-full max-w-2xl flex items-center justify-center">
+        {/* Registration Form */}
+        <div className="w-full flex items-center justify-center">
+          <div className="w-full max-w-lg">
             {/* Mobile Header */}
             <div className="lg:hidden text-center mb-8">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center">
+              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <FaBus className="text-3xl text-white" />
               </div>
-              <h1 className="text-3xl font-bold text-white">BusZone+</h1>
+              <h1 className="text-3xl font-bold text-slate-800">BusZone+</h1>
+              <p className="text-slate-600 mt-2">Create your account to get started</p>
             </div>
 
             {/* Registration Card */}
-            <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-10 border border-white/20">
+            <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-10 border border-blue-200/50">
               <div className="text-center mb-8">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg">
                   <FaUserPlus className="text-2xl text-white" />
                 </div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-3">Create Account</h2>
-                <p className="text-gray-600 text-lg">Join thousands of satisfied customers</p>
+                <h2 className="text-3xl font-bold text-slate-800 mb-3">Create Account</h2>
+                <p className="text-slate-600 text-lg">Join thousands of satisfied customers</p>
               </div>
 
               {/* Registration Form */}
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Name Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 mb-3">
-                      <FaUser className="inline mr-2 text-blue-500" />
+                    <label htmlFor="firstName" className="block text-sm font-semibold text-slate-700 mb-3">
+                      <FaUser className="inline mr-2 text-blue-500 text-xs" />
                       First Name
                     </label>
                     <input
@@ -480,7 +445,7 @@ const RegisterPage = () => {
                       name="firstName"
                       type="text"
                       required
-                      className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500"
+                      className="w-full px-5 py-4 border-2 border-blue-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-blue-50/50 focus:bg-white text-slate-800 placeholder-slate-500 shadow-sm"
                       placeholder="Enter first name"
                       value={formData.firstName}
                       onChange={handleChange}
@@ -488,8 +453,8 @@ const RegisterPage = () => {
                     />
                   </div>
                   <div>
-                    <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 mb-3">
-                      <FaUser className="inline mr-2 text-blue-500" />
+                    <label htmlFor="lastName" className="block text-sm font-semibold text-slate-700 mb-3">
+                      <FaUser className="inline mr-2 text-blue-500 text-xs" />
                       Last Name
                     </label>
                     <input
@@ -497,7 +462,7 @@ const RegisterPage = () => {
                       name="lastName"
                       type="text"
                       required
-                      className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500"
+                      className="w-full px-5 py-4 border-2 border-blue-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-blue-50/50 focus:bg-white text-slate-800 placeholder-slate-500 shadow-sm"
                       placeholder="Enter last name"
                       value={formData.lastName}
                       onChange={handleChange}
@@ -507,10 +472,10 @@ const RegisterPage = () => {
                 </div>
 
                 {/* Username and Email */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-3">
-                      <FaUser className="inline mr-2 text-blue-500" />
+                    <label htmlFor="username" className="block text-sm font-semibold text-slate-700 mb-3">
+                      <FaUser className="inline mr-2 text-blue-500 text-xs" />
                       Username
                     </label>
                     <div className="relative">
@@ -519,7 +484,7 @@ const RegisterPage = () => {
                         name="username"
                         type="text"
                         required
-                        className={`w-full px-5 py-4 border-2 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500 ${
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500 text-sm ${
                           getBorderColor('username', null, usernameAvailable, checkingUsername)
                         }`}
                         placeholder="Choose username"
@@ -527,28 +492,28 @@ const RegisterPage = () => {
                         onChange={handleChange}
                         onBlur={handleBlur}
                       />
-                      <div className="absolute right-3 top-4">
+                      <div className="absolute right-3 top-3">
                         {checkingUsername && (
-                          <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                          <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
                         )}
                         {!checkingUsername && usernameAvailable === true && hasInteracted.username && (
-                          <FaCheck className="h-5 w-5 text-green-500" />
+                          <FaCheck className="h-4 w-4 text-green-500" />
                         )}
                         {!checkingUsername && usernameAvailable === false && hasInteracted.username && (
-                          <FaExclamationTriangle className="h-5 w-5 text-red-500" />
+                          <FaExclamationTriangle className="h-4 w-4 text-red-500" />
                         )}
                       </div>
                     </div>
                     {!checkingUsername && usernameAvailable === false && hasInteracted.username && (
-                      <p className="mt-2 text-sm text-red-600">Username is already taken. Please choose another one.</p>
+                      <p className="mt-1 text-xs text-red-600">Username is already taken.</p>
                     )}
                     {!checkingUsername && usernameAvailable === true && hasInteracted.username && (
-                      <p className="mt-2 text-sm text-green-600">Username is available!</p>
+                      <p className="mt-1 text-xs text-green-600">Username is available!</p>
                     )}
                   </div>
                   <div>
-                    <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-3">
-                      <FaEnvelope className="inline mr-2 text-blue-500" />
+                    <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-3">
+                      <FaEnvelope className="inline mr-2 text-blue-500 text-xs" />
                       Email Address
                     </label>
                     <div className="relative">
@@ -557,7 +522,7 @@ const RegisterPage = () => {
                         name="email"
                         type="email"
                         required
-                        className={`w-full px-5 py-4 border-2 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500 ${
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500 text-sm ${
                           getBorderColor('email', emailValid, emailAvailable, checkingEmail)
                         }`}
                         placeholder="Enter email address"
@@ -565,38 +530,38 @@ const RegisterPage = () => {
                         onChange={handleChange}
                         onBlur={handleBlur}
                       />
-                      <div className="absolute right-3 top-4">
+                      <div className="absolute right-3 top-3">
                         {checkingEmail && (
-                          <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                          <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
                         )}
                         {!checkingEmail && emailAvailable === true && hasInteracted.email && (
-                          <FaCheck className="h-5 w-5 text-green-500" />
+                          <FaCheck className="h-4 w-4 text-green-500" />
                         )}
                         {!checkingEmail && emailAvailable === false && hasInteracted.email && (
-                          <FaExclamationTriangle className="h-5 w-5 text-red-500" />
+                          <FaExclamationTriangle className="h-4 w-4 text-red-500" />
                         )}
                         {!checkingEmail && emailValid === false && formData.email && hasInteracted.email && (
-                          <FaExclamationTriangle className="h-5 w-5 text-red-500" />
+                          <FaExclamationTriangle className="h-4 w-4 text-red-500" />
                         )}
                       </div>
                     </div>
                     {!checkingEmail && emailValid === false && formData.email && hasInteracted.email && (
-                      <p className="mt-2 text-sm text-red-600">Please enter a valid email address.</p>
+                      <p className="mt-1 text-xs text-red-600">Please enter a valid email address.</p>
                     )}
                     {!checkingEmail && emailAvailable === false && hasInteracted.email && (
-                      <p className="mt-2 text-sm text-red-600">Email is already registered. Please use a different email.</p>
+                      <p className="mt-1 text-xs text-red-600">Email is already registered.</p>
                     )}
                     {!checkingEmail && emailAvailable === true && hasInteracted.email && (
-                      <p className="mt-2 text-sm text-green-600">Email is available!</p>
+                      <p className="mt-1 text-xs text-green-600">Email is available!</p>
                     )}
                   </div>
                 </div>
 
                 {/* Phone and NIC */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-3">
-                      <FaPhone className="inline mr-2 text-blue-500" />
+                    <label htmlFor="phone" className="block text-sm font-semibold text-slate-700 mb-3">
+                      <FaPhone className="inline mr-2 text-blue-500 text-xs" />
                       Phone Number
                     </label>
                     <div className="relative">
@@ -604,43 +569,43 @@ const RegisterPage = () => {
                         id="phone"
                         name="phone"
                         type="text"
-                        className={`w-full px-5 py-4 border-2 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500 ${
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500 text-sm ${
                           getBorderColor('phone', phoneValid, phoneAvailable, checkingPhone)
                         }`}
-                        placeholder="Enter 10-digit phone number (optional)"
+                        placeholder="Enter 10-digit phone"
                         value={formData.phone}
                         onChange={handleChange}
                         onBlur={handleBlur}
                         maxLength={10}
                       />
-                      <div className="absolute right-3 top-4">
+                      <div className="absolute right-3 top-3">
                         {checkingPhone && (
-                          <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                          <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
                         )}
                         {!checkingPhone && phoneAvailable === false && hasInteracted.phone && (
-                          <FaExclamationTriangle className="h-5 w-5 text-red-500" />
+                          <FaExclamationTriangle className="h-4 w-4 text-red-500" />
                         )}
                         {!checkingPhone && phoneValid === false && formData.phone && hasInteracted.phone && (
-                          <FaExclamationTriangle className="h-5 w-5 text-red-500" />
+                          <FaExclamationTriangle className="h-4 w-4 text-red-500" />
                         )}
                         {!checkingPhone && phoneValid === true && phoneAvailable === true && formData.phone && hasInteracted.phone && (
-                          <FaCheck className="h-5 w-5 text-green-500" />
+                          <FaCheck className="h-4 w-4 text-green-500" />
                         )}
                       </div>
                     </div>
                     {!checkingPhone && phoneValid === false && formData.phone && hasInteracted.phone && (
-                      <p className="mt-2 text-sm text-red-600">Phone number must start with 0 and be exactly 10 digits.</p>
+                      <p className="mt-1 text-xs text-red-600">Must start with 0 and be 10 digits.</p>
                     )}
                     {!checkingPhone && phoneAvailable === false && hasInteracted.phone && (
-                      <p className="mt-2 text-sm text-red-600">Phone number is already registered. Please use a different phone number.</p>
+                      <p className="mt-1 text-xs text-red-600">Phone number is already registered.</p>
                     )}
                     {!checkingPhone && phoneValid === true && phoneAvailable === true && formData.phone && hasInteracted.phone && (
-                      <p className="mt-2 text-sm text-green-600">Phone number is available!</p>
+                      <p className="mt-1 text-xs text-green-600">Phone number is available!</p>
                     )}
                   </div>
                   <div>
-                    <label htmlFor="nic" className="block text-sm font-semibold text-gray-700 mb-3">
-                      <FaIdCard className="inline mr-2 text-blue-500" />
+                    <label htmlFor="nic" className="block text-sm font-semibold text-slate-700 mb-3">
+                      <FaIdCard className="inline mr-2 text-blue-500 text-xs" />
                       NIC Number
                     </label>
                     <div className="relative">
@@ -649,53 +614,53 @@ const RegisterPage = () => {
                         name="nic"
                         type="text"
                         required
-                        className={`w-full px-5 py-4 border-2 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500 ${
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500 text-sm ${
                           getBorderColor('nic', nicValid, nicAvailable, checkingNIC)
                         }`}
-                        placeholder="Enter 9 digits + V or 12 digits"
+                        placeholder="Enter NIC number"
                         value={formData.nic}
                         onChange={handleChange}
                         onBlur={handleBlur}
                         maxLength={12}
                       />
-                      <div className="absolute right-3 top-4">
+                      <div className="absolute right-3 top-3">
                         {checkingNIC && (
-                          <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                          <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
                         )}
                         {!checkingNIC && nicAvailable === false && hasInteracted.nic && (
-                          <FaExclamationTriangle className="h-5 w-5 text-red-500" />
+                          <FaExclamationTriangle className="h-4 w-4 text-red-500" />
                         )}
                         {!checkingNIC && nicValid === false && formData.nic && hasInteracted.nic && (
-                          <FaExclamationTriangle className="h-5 w-5 text-red-500" />
+                          <FaExclamationTriangle className="h-4 w-4 text-red-500" />
                         )}
                         {!checkingNIC && nicValid === true && nicAvailable === true && formData.nic && hasInteracted.nic && (
-                          <FaCheck className="h-5 w-5 text-green-500" />
+                          <FaCheck className="h-4 w-4 text-green-500" />
                         )}
                       </div>
                     </div>
                     {!checkingNIC && nicValid === false && formData.nic && hasInteracted.nic && (
-                      <p className="mt-2 text-sm text-red-600">NIC must be either 9 digits + V (old format) or 12 digits (new format).</p>
+                      <p className="mt-1 text-xs text-red-600">9 digits + V or 12 digits required.</p>
                     )}
                     {!checkingNIC && nicAvailable === false && hasInteracted.nic && (
-                      <p className="mt-2 text-sm text-red-600">NIC is already registered. Please use a different NIC number.</p>
+                      <p className="mt-1 text-xs text-red-600">NIC is already registered.</p>
                     )}
                     {!checkingNIC && nicValid === true && nicAvailable === true && formData.nic && hasInteracted.nic && (
-                      <p className="mt-2 text-sm text-green-600">NIC is available!</p>
+                      <p className="mt-1 text-xs text-green-600">NIC is available!</p>
                     )}
                   </div>
                 </div>
 
                 {/* Address */}
                 <div>
-                  <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-3">
-                    <FaMapMarkerAlt className="inline mr-2 text-blue-500" />
+                  <label htmlFor="address" className="block text-sm font-semibold text-slate-700 mb-3">
+                    <FaMapMarkerAlt className="inline mr-2 text-blue-500 text-xs" />
                     Address
                   </label>
                   <input
                     id="address"
                     name="address"
                     type="text"
-                    className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500 text-sm"
                     placeholder="Enter your address"
                     value={formData.address}
                     onChange={handleChange}
@@ -705,8 +670,8 @@ const RegisterPage = () => {
 
                 {/* Password */}
                 <div>
-                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-3">
-                    <FaLock className="inline mr-2 text-blue-500" />
+                  <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-3">
+                    <FaLock className="inline mr-2 text-blue-500 text-xs" />
                     Password
                   </label>
                   <div className="relative">
@@ -715,7 +680,7 @@ const RegisterPage = () => {
                       name="password"
                       type={showPassword ? "text" : "password"}
                       required
-                      className={`w-full px-5 py-4 border-2 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500 ${
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-gray-800 placeholder-gray-500 text-sm ${
                         !hasInteracted.password ? 'border-gray-200' : 
                         passwordValid === false ? 'border-red-500' : 
                         passwordValid === true ? 'border-green-500' : 
@@ -726,19 +691,19 @@ const RegisterPage = () => {
                       onChange={handleChange}
                       onBlur={handleBlur}
                     />
-                    <div className="absolute right-3 top-4 flex items-center space-x-2">
+                    <div className="absolute right-3 top-3 flex items-center space-x-2">
                       <button
                         type="button"
                         onClick={togglePasswordVisibility}
                         className="text-gray-400 hover:text-gray-600"
                       >
-                        {showPassword ? <FaEyeSlash className="h-5 w-5" /> : <FaEye className="h-5 w-5" />}
+                        {showPassword ? <FaEyeSlash className="h-4 w-4" /> : <FaEye className="h-4 w-4" />}
                       </button>
                       {hasInteracted.password && passwordValid === true && (
-                        <FaCheck className="h-5 w-5 text-green-500" />
+                        <FaCheck className="h-4 w-4 text-green-500" />
                       )}
                       {hasInteracted.password && passwordValid === false && (
-                        <FaExclamationTriangle className="h-5 w-5 text-red-500" />
+                        <FaExclamationTriangle className="h-4 w-4 text-red-500" />
                       )}
                     </div>
                   </div>
@@ -747,8 +712,8 @@ const RegisterPage = () => {
                   {hasInteracted.password && formData.password && (
                     <div className="mt-3">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium text-gray-700">Password strength:</span>
-                        <span className={`text-sm font-semibold ${
+                        <span className="text-xs font-medium text-gray-700">Password strength:</span>
+                        <span className={`text-xs font-semibold ${
                           passwordStrength <= 1 ? 'text-red-600' :
                           passwordStrength <= 2 ? 'text-orange-600' :
                           passwordStrength <= 3 ? 'text-yellow-600' :
@@ -758,29 +723,26 @@ const RegisterPage = () => {
                           {getPasswordStrengthText()}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
                         <div 
-                          className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
+                          className={`h-1.5 rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
                           style={{ width: `${(passwordStrength / 5) * 100}%` }}
                         ></div>
                       </div>
                       
                       {/* Password requirements */}
-                      <div className="mt-2 text-xs text-gray-600">
+                      <div className="mt-2 text-xs text-gray-600 grid grid-cols-2 gap-1">
                         <p className={formData.password.length >= 8 ? 'text-green-600' : 'text-red-600'}>
-                          • At least 8 characters long {formData.password.length >= 8 ? '✓' : '✗'}
+                          • 8+ characters {formData.password.length >= 8 ? '✓' : '✗'}
                         </p>
                         <p className={/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-red-600'}>
-                          • At least one uppercase letter {/[A-Z]/.test(formData.password) ? '✓' : '✗'}
+                          • Uppercase {/[A-Z]/.test(formData.password) ? '✓' : '✗'}
                         </p>
                         <p className={/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-red-600'}>
-                          • At least one lowercase letter {/[a-z]/.test(formData.password) ? '✓' : '✗'}
-                        </p>
-                        <p className={/\d/.test(formData.password) ? 'text-green-600' : 'text-red-600'}>
-                          • At least one number {/\d/.test(formData.password) ? '✓' : '✗'}
+                          • Lowercase {/[a-z]/.test(formData.password) ? '✓' : '✗'}
                         </p>
                         <p className={/[@$!%*?&]/.test(formData.password) ? 'text-green-600' : 'text-red-600'}>
-                          • At least one special character (@$!%*?&) {/[@$!%*?&]/.test(formData.password) ? '✓' : '✗'}
+                          • Special char {/[@$!%*?&]/.test(formData.password) ? '✓' : '✗'}
                         </p>
                       </div>
                     </div>
@@ -791,16 +753,16 @@ const RegisterPage = () => {
                 <button
                   type="submit"
                   disabled={loading || usernameAvailable === false || emailAvailable === false || emailValid === false || nicAvailable === false || nicValid === false || passwordValid === false || (formData.phone && (phoneValid === false || phoneAvailable === false))}
-                  className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl transform transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-lg"
+                  className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transform transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-lg"
                 >
                   {loading ? (
-                    <div className="flex items-center justify-center gap-3">
-                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                       Creating Account...
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center gap-3">
-                      <FaUserPlus className="text-lg" />
+                    <div className="flex items-center justify-center gap-2">
+                      <FaUserPlus className="text-sm" />
                       Create Account
                     </div>
                   )}
@@ -808,8 +770,8 @@ const RegisterPage = () => {
               </form>
 
               {/* Login Link */}
-              <div className="text-center mt-8 pt-6 border-t border-gray-200">
-                <p className="text-gray-600">
+              <div className="text-center mt-8 pt-6 border-t border-blue-200">
+                <p className="text-slate-600">
                   Already have an account?{' '}
                   <Link
                     to="/login"
