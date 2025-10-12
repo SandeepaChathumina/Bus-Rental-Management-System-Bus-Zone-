@@ -212,27 +212,27 @@ const ExportModal = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={onClose}></div>
+      <div className="fixed inset-0 bg-blue-100 bg-opacity-80 z-40" onClick={onClose}></div>
       <div className="flex items-center justify-center min-h-screen px-4 z-50 relative">
-        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-xl">
+        <div className="bg-white border border-blue-200 rounded-2xl p-6 w-full max-w-md shadow-xl">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-white">{title}</h3>
-            <button onClick={onClose} className="text-slate-400 hover:text-white">
+            <h3 className="text-lg font-medium text-gray-800">{title}</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
               <X className="w-5 h-5" />
             </button>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Export Format</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Export Format</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setFormat("csv")}
                   className={`p-4 border-2 rounded-lg transition-all ${
                     format === "csv"
-                      ? "border-green-500 bg-green-900/20 text-green-400"
-                      : "border-slate-600 text-slate-400 hover:border-slate-500"
+                      ? "border-green-500 bg-green-100 text-green-800"
+                      : "border-blue-300 text-gray-600 hover:border-blue-400 hover:bg-blue-50"
                   }`}
                 >
                   <FileText className="w-8 h-8 mx-auto mb-2" />
@@ -244,8 +244,8 @@ const ExportModal = ({
                   onClick={() => setFormat("pdf")}
                   className={`p-4 border-2 rounded-lg transition-all ${
                     format === "pdf"
-                      ? "border-red-500 bg-red-900/20 text-red-400"
-                      : "border-slate-600 text-slate-400 hover:border-slate-500"
+                      ? "border-red-500 bg-red-100 text-red-800"
+                      : "border-blue-300 text-gray-600 hover:border-blue-400 hover:bg-blue-50"
                   }`}
                 >
                   <FileText className="w-8 h-8 mx-auto mb-2" />
@@ -255,12 +255,12 @@ const ExportModal = ({
               </div>
             </div>
 
-            <div className="bg-slate-700/50 rounded-lg p-3">
-              <div className="flex items-center text-sm text-slate-300">
+            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+              <div className="flex items-center text-sm text-gray-700">
                 <Calendar className="w-4 h-4 mr-2" />
                 <span>Report will include {itemCount} records</span>
               </div>
-              <div className="text-xs text-slate-400 mt-1">
+              <div className="text-xs text-gray-500 mt-1">
                 Generated on {new Date().toLocaleDateString()} at{" "}
                 {new Date().toLocaleTimeString()}
               </div>
@@ -269,7 +269,7 @@ const ExportModal = ({
             <div className="flex justify-end space-x-3 pt-4">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                 disabled={loading}
               >
                 Cancel
@@ -841,46 +841,47 @@ const AttendanceManagement = () => {
   });
 
   return (
-    <div className="space-y-6">
-      {/* Tabs */}
-      <div className="flex border-b border-slate-700">
-        <button
-          className={`px-4 py-2 font-medium ${activeTab === 'records' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400'}`}
-          onClick={() => setActiveTab('records')}
-        >
-          Attendance Records
-        </button>
-        {authUser?.role === 'admin' && (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-6">
+      <div className="space-y-6">
+        {/* Tabs */}
+        <div className="flex border-b border-blue-200 bg-white rounded-t-xl p-2">
           <button
-            className={`px-4 py-2 font-medium ${activeTab === 'qr' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400'}`}
-            onClick={() => setActiveTab('qr')}
+            className={`px-4 py-2 font-medium rounded-lg transition-colors ${activeTab === 'records' ? 'text-blue-600 bg-blue-100' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'}`}
+            onClick={() => setActiveTab('records')}
           >
-            QR Management
+            Attendance Records
           </button>
-        )}
-        <button
-          className={`px-4 py-2 font-medium ${activeTab === 'scan' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400'}`}
-          onClick={() => setActiveTab('scan')}
-        >
-          Scan QR
-        </button>
-      </div>
+          {authUser?.role === 'admin' && (
+            <button
+              className={`px-4 py-2 font-medium rounded-lg transition-colors ${activeTab === 'qr' ? 'text-blue-600 bg-blue-100' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'}`}
+              onClick={() => setActiveTab('qr')}
+            >
+              QR Management
+            </button>
+          )}
+          <button
+            className={`px-4 py-2 font-medium rounded-lg transition-colors ${activeTab === 'scan' ? 'text-blue-600 bg-blue-100' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'}`}
+            onClick={() => setActiveTab('scan')}
+          >
+            Scan QR
+          </button>
+        </div>
 
       {/* Attendance Records Tab */}
       {activeTab === 'records' && (
         <div>
           {/* Filters */}
-          <div className="bg-slate-800 rounded-lg p-4 mb-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Filters</h3>
+          <div className="bg-white rounded-xl p-6 mb-6 border border-blue-200 shadow-lg">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-300 mb-1">Search</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
                 <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                  <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Search by name, role, date, or status..."
-                    className="w-full pl-10 bg-slate-700 border border-slate-600 rounded-md px-3 py-2 text-white"
+                    className="w-full pl-10 bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -888,9 +889,9 @@ const AttendanceManagement = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">User</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
                 <select
-                  className="w-full bg-slate-700 border border-slate-600 rounded-md px-3 py-2 text-white"
+                  className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={selectedUser}
                   onChange={(e) => setSelectedUser(e.target.value)}
                 >
@@ -904,9 +905,9 @@ const AttendanceManagement = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
-                  className="w-full bg-slate-700 border border-slate-600 rounded-md px-3 py-2 text-white"
+                  className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -920,7 +921,7 @@ const AttendanceManagement = () => {
             
             <div className="flex justify-end items-end space-x-3 mt-4">
               <button
-                className="px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-600"
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                 onClick={() => {
                   setSelectedUser('');
                   setStatusFilter('');
@@ -932,7 +933,7 @@ const AttendanceManagement = () => {
               </button>
               
               <button
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-500 flex items-center"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center transition-colors"
                 onClick={() => setShowExportModal(true)}
               >
                 <Download className="w-4 h-4 mr-2" />
@@ -940,7 +941,7 @@ const AttendanceManagement = () => {
               </button>
 
               <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 flex items-center"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center transition-colors"
                 onClick={fetchAttendanceRecords}
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
@@ -950,33 +951,33 @@ const AttendanceManagement = () => {
           </div>
 
           {/* Attendance Records Table */}
-          <div className="bg-slate-800 rounded-lg p-4">
+          <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-white">Attendance Records</h3>
-              <div className="text-slate-300 text-sm">
+              <h3 className="text-lg font-semibold text-gray-800">Attendance Records</h3>
+              <div className="text-gray-600 text-sm">
                 Showing {filteredRecords.length} of {totalRecords} records
               </div>
             </div>
             
             {loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto"></div>
-                <p className="text-slate-400 mt-2">Loading records...</p>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-gray-600 mt-2">Loading records...</p>
               </div>
             ) : filteredRecords.length === 0 ? (
-              <div className="text-center py-8 text-slate-400">
+              <div className="text-center py-8 text-gray-600">
                 {attendanceRecords.length === 0 ? (
                   <div>
                     <p>No attendance records found.</p>
                     <p className="text-sm mt-2">Please check if:</p>
-                    <ul className="text-sm text-slate-500 mt-1">
+                    <ul className="text-sm text-gray-500 mt-1">
                       <li>- The API endpoint is correct</li>
                       <li>- You have proper authentication</li>
                       <li>- There are attendance records in the database</li>
                     </ul>
                     <button 
                       onClick={fetchAttendanceRecords}
-                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 flex items-center mx-auto"
+                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center mx-auto transition-colors"
                     >
                       <RefreshCw className="w-4 h-4 mr-2" />
                       Try Again
@@ -991,47 +992,47 @@ const AttendanceManagement = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full table-auto">
                     <thead>
-                      <tr className="bg-slate-700 text-left">
-                        <th className="px-4 py-2 text-slate-300">User</th>
-                        <th className="px-4 py-2 text-slate-300">Date</th>
-                        <th className="px-4 py-2 text-slate-300">Check-In</th>
-                        <th className="px-4 py-2 text-slate-300">Check-Out</th>
-                        <th className="px-4 py-2 text-slate-300">Status</th>
+                      <tr className="bg-gradient-to-r from-blue-50 to-blue-100 text-left">
+                        <th className="px-4 py-3 text-blue-800 font-semibold">User</th>
+                        <th className="px-4 py-3 text-blue-800 font-semibold">Date</th>
+                        <th className="px-4 py-3 text-blue-800 font-semibold">Check-In</th>
+                        <th className="px-4 py-3 text-blue-800 font-semibold">Check-Out</th>
+                        <th className="px-4 py-3 text-blue-800 font-semibold">Status</th>
                         {authUser?.role === 'admin' && (
-                          <th className="px-4 py-2 text-slate-300">Actions</th>
+                          <th className="px-4 py-3 text-blue-800 font-semibold">Actions</th>
                         )}
                       </tr>
                     </thead>
                     <tbody>
                       {filteredRecords.map(record => (
-                        <tr key={record._id} className="border-b border-slate-700 hover:bg-slate-750">
+                        <tr key={record._id} className="border-b border-blue-100 hover:bg-blue-50 transition-colors">
                           <td className="px-4 py-3">
                             <div className="flex items-center">
-                              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mr-3">
-                                <User className="w-4 h-4 text-white" />
+                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                <User className="w-4 h-4 text-blue-600" />
                               </div>
                               <div>
-                                <p className="text-white font-medium">
+                                <p className="text-gray-800 font-medium">
                                   {record.userId?.firstName || 'Unknown'} {record.userId?.lastName || 'User'}
                                 </p>
-                                <p className="text-slate-400 text-sm">{record.userId?.role || 'N/A'}</p>
+                                <p className="text-gray-500 text-sm">{record.userId?.role || 'N/A'}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-slate-300">
+                          <td className="px-4 py-3 text-gray-700">
                             {formatDate(record.date)}
                           </td>
-                          <td className="px-4 py-3 text-slate-300">
+                          <td className="px-4 py-3 text-gray-700">
                             {record.checkInTime ? formatTime(record.checkInTime) : 'N/A'}
                           </td>
-                          <td className="px-4 py-3 text-slate-300">
+                          <td className="px-4 py-3 text-gray-700">
                             {record.checkOutTime ? formatTime(record.checkOutTime) : 'N/A'}
                           </td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              record.status === 'Checked-In' ? 'bg-yellow-500/20 text-yellow-300' :
-                              record.status === 'Checked-Out' ? 'bg-green-500/20 text-green-300' :
-                              'bg-red-500/20 text-red-300'
+                              record.status === 'Checked-In' ? 'bg-yellow-100 text-yellow-800' :
+                              record.status === 'Checked-Out' ? 'bg-green-100 text-green-800' :
+                              'bg-red-100 text-red-800'
                             }`}>
                               {record.status || 'Unknown'}
                             </span>
@@ -1040,7 +1041,7 @@ const AttendanceManagement = () => {
                             <td className="px-4 py-3">
                               <div className="flex space-x-2">
                                 <button 
-                                  className="p-1 text-red-400 hover:text-red-300"
+                                  className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors"
                                   onClick={() => deleteAttendanceRecord(record._id)}
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -1059,19 +1060,19 @@ const AttendanceManagement = () => {
                   <div className="flex justify-center mt-6">
                     <div className="flex space-x-2 items-center">
                       <button
-                        className="p-2 rounded-md bg-slate-700 text-white disabled:opacity-50"
+                        className="p-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 hover:bg-blue-700 transition-colors"
                         disabled={currentPage === 1}
                         onClick={() => setCurrentPage(currentPage - 1)}
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
                       
-                      <span className="text-slate-300">
+                      <span className="text-gray-700">
                         Page {currentPage} of {totalPages}
                       </span>
                       
                       <button
-                        className="p-2 rounded-md bg-slate-700 text-white disabled:opacity-50"
+                        className="p-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 hover:bg-blue-700 transition-colors"
                         disabled={currentPage === totalPages}
                         onClick={() => setCurrentPage(currentPage + 1)}
                       >
@@ -1088,14 +1089,14 @@ const AttendanceManagement = () => {
 
       {/* QR Management Tab (Admin only) */}
       {activeTab === 'qr' && authUser?.role === 'admin' && (
-        <div className="bg-slate-800 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Generate QR Codes</h3>
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Generate QR Codes</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Select User</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select User</label>
               <select
-                className="w-full bg-slate-700 border border-slate-600 rounded-md px-3 py-2 text-white"
+                className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={selectedUserForQR}
                 onChange={(e) => setSelectedUserForQR(e.target.value)}
               >
@@ -1108,7 +1109,7 @@ const AttendanceManagement = () => {
               </select>
               
               <button
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 onClick={generateQRCode}
                 disabled={!selectedUserForQR || qrGenerating}
               >
@@ -1129,11 +1130,11 @@ const AttendanceManagement = () => {
             <div className="flex justify-center">
               {qrCode ? (
                 <div className="text-center">
-                  <img src={qrCode} alt="QR Code" className="w-48 h-48 mx-auto border-4 border-white rounded-lg shadow-lg" />
-                  <p className="text-slate-300 mt-4 text-sm">Scan this QR code to check in/out</p>
+                  <img src={qrCode} alt="QR Code" className="w-48 h-48 mx-auto border-4 border-blue-200 rounded-lg shadow-lg" />
+                  <p className="text-gray-600 mt-4 text-sm">Scan this QR code to check in/out</p>
                   <div className="mt-4 flex justify-center space-x-3">
                     <button
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 flex items-center text-sm"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center text-sm transition-colors"
                       onClick={() => {
                         const link = document.createElement('a');
                         link.href = qrCode;
@@ -1145,7 +1146,7 @@ const AttendanceManagement = () => {
                       Download
                     </button>
                     <button
-                      className="px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-600 flex items-center text-sm"
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 flex items-center text-sm transition-colors"
                       onClick={() => setQrCode(null)}
                     >
                       <XCircle className="w-4 h-4 mr-1" />
@@ -1154,9 +1155,9 @@ const AttendanceManagement = () => {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center w-48 h-48 bg-slate-700 rounded-lg border-2 border-dashed border-slate-600">
-                  <QrCode className="w-12 h-12 text-slate-500 mb-2" />
-                  <p className="text-slate-400 text-center text-sm p-4">Select a user and generate QR code</p>
+                <div className="flex flex-col items-center justify-center w-48 h-48 bg-blue-50 rounded-lg border-2 border-dashed border-blue-300">
+                  <QrCode className="w-12 h-12 text-blue-400 mb-2" />
+                  <p className="text-gray-600 text-center text-sm p-4">Select a user and generate QR code</p>
                 </div>
               )}
             </div>
@@ -1166,12 +1167,12 @@ const AttendanceManagement = () => {
 
       {/* Scan QR Tab - UPDATED WITH WORKING QR SCANNER */}
       {activeTab === 'scan' && (
-        <div className="bg-slate-800 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-6 text-center">QR Code Scanner</h3>
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-6 text-center">QR Code Scanner</h3>
           
           <div className="max-w-2xl mx-auto">
             {cameraError && (
-              <div className="bg-red-900/30 border border-red-700 text-red-300 p-4 rounded-lg mb-6 flex items-center">
+              <div className="bg-red-100 border border-red-300 text-red-800 p-4 rounded-lg mb-6 flex items-center">
                 <XCircle className="w-5 h-5 mr-2 flex-shrink-0" />
                 <span>{cameraError}</span>
               </div>
@@ -1180,8 +1181,8 @@ const AttendanceManagement = () => {
             {scanningStatus && (
               <div className={`p-4 rounded-lg mb-6 flex items-center ${
                 scanningStatus.includes('Error') 
-                  ? 'bg-red-900/30 border border-red-700 text-red-300' 
-                  : 'bg-blue-900/30 border border-blue-700 text-blue-300'
+                  ? 'bg-red-100 border border-red-300 text-red-800' 
+                  : 'bg-blue-100 border border-blue-300 text-blue-800'
               }`}>
                 {scanningStatus.includes('Error') ? (
                   <XCircle className="w-5 h-5 mr-2 flex-shrink-0" />
@@ -1192,7 +1193,7 @@ const AttendanceManagement = () => {
               </div>
             )}
             
-            <div className="bg-slate-900 rounded-xl p-6 mb-6 border border-slate-700 shadow-lg">
+            <div className="bg-gray-50 rounded-xl p-6 mb-6 border border-blue-200 shadow-lg">
               {/* Working QR Scanner */}
               <QRScanner 
                 onScan={handleQrDetected}
@@ -1200,13 +1201,13 @@ const AttendanceManagement = () => {
               />
               
               {/* Manual Input Section */}
-              <div className="mt-6 pt-6 border-t border-slate-700">
-                <h4 className="text-md font-semibold text-white mb-3 text-center">Manual QR Input</h4>
+              <div className="mt-6 pt-6 border-t border-blue-200">
+                <h4 className="text-md font-semibold text-gray-800 mb-3 text-center">Manual QR Input</h4>
                 <div className="flex space-x-2">
                   <input
                     type="text"
                     placeholder="Paste QR code data here..."
-                    className="flex-1 bg-slate-700 border border-slate-600 rounded-md px-3 py-2 text-white"
+                    className="flex-1 bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={manualQrInput}
                     onChange={(e) => setManualQrInput(e.target.value)}
                     onKeyPress={(e) => {
@@ -1216,7 +1217,7 @@ const AttendanceManagement = () => {
                     }}
                   />
                   <button
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-500 flex items-center"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center transition-colors"
                     onClick={handleManualScan}
                   >
                     <Scan className="w-4 h-4 mr-2" />
@@ -1229,8 +1230,8 @@ const AttendanceManagement = () => {
             {scanResult && (
               <div className={`p-6 rounded-xl border mb-6 ${
                 scanResult.action === 'check-in' 
-                  ? 'bg-green-900/20 border-green-700' 
-                  : 'bg-blue-900/20 border-blue-700'
+                  ? 'bg-green-50 border-green-300' 
+                  : 'bg-blue-50 border-blue-300'
               }`}>
                 <div className="flex items-center mb-4">
                   <div className={`rounded-full p-2 mr-3 ${
@@ -1244,31 +1245,31 @@ const AttendanceManagement = () => {
                       <UserX className="w-5 h-5 text-white" />
                     )}
                   </div>
-                  <h4 className="text-lg font-semibold text-white">
+                  <h4 className="text-lg font-semibold text-gray-800">
                     {scanResult.action === 'check-in' ? 'Check-In Successful' : 'Check-Out Successful'}
                   </h4>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
                   <div>
-                    <p className="text-sm text-slate-400">User</p>
+                    <p className="text-sm text-gray-500">User</p>
                     <p className="font-medium">
                       {scanResult.attendance?.userId?.firstName} {scanResult.attendance?.userId?.lastName}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-400">Role</p>
+                    <p className="text-sm text-gray-500">Role</p>
                     <p className="font-medium capitalize">{scanResult.attendance?.userId?.role}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-400">Time</p>
+                    <p className="text-sm text-gray-500">Time</p>
                     <p className="font-medium">
                       {scanResult.attendance?.checkInTime ? 
                         new Date(scanResult.attendance.checkInTime).toLocaleTimeString() : 'N/A'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-400">Date</p>
+                    <p className="text-sm text-gray-500">Date</p>
                     <p className="font-medium">
                       {scanResult.attendance?.checkInTime ? 
                         new Date(scanResult.attendance.checkInTime).toLocaleDateString() : 'N/A'}
@@ -1276,8 +1277,8 @@ const AttendanceManagement = () => {
                   </div>
                 </div>
                 
-                <div className="mt-4 pt-4 border-t border-slate-700">
-                  <p className="text-green-300 flex items-center">
+                <div className="mt-4 pt-4 border-t border-gray-300">
+                  <p className="text-green-700 flex items-center">
                     <CheckCircle className="w-4 h-4 mr-2" />
                     {scanResult.message}
                   </p>
@@ -1285,30 +1286,30 @@ const AttendanceManagement = () => {
               </div>
             )}
             
-            <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
-              <h4 className="text-md font-semibold text-white mb-3 flex items-center">
-                <Scan className="w-5 h-5 mr-2 text-blue-400" />
+            <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+              <h4 className="text-md font-semibold text-gray-800 mb-3 flex items-center">
+                <Scan className="w-5 h-5 mr-2 text-blue-600" />
                 Scanning Instructions
               </h4>
-              <ul className="text-slate-400 space-y-2 text-sm">
+              <ul className="text-gray-600 space-y-2 text-sm">
                 <li className="flex items-start">
-                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
                   <span>Click "Start Camera" to begin scanning</span>
                 </li>
                 <li className="flex items-start">
-                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
                   <span>Position the QR code within the camera view</span>
                 </li>
                 <li className="flex items-start">
-                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
                   <span>Ensure good lighting for better scanning</span>
                 </li>
                 <li className="flex items-start">
-                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
                   <span>Hold the QR code steady until it's detected</span>
                 </li>
                 <li className="flex items-start">
-                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
                   <span>Use manual input if camera scanning doesn't work</span>
                 </li>
               </ul>
@@ -1328,6 +1329,7 @@ const AttendanceManagement = () => {
         loading={exportLoading}
         title="Export Attendance Report"
       />
+      </div>
     </div>
   );
 };

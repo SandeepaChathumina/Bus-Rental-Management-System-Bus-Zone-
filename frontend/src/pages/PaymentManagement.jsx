@@ -989,10 +989,10 @@ const PaymentManagement = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-32 pb-16 px-6">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 pt-32 pb-16 px-6">
         <div className="max-w-6xl mx-auto text-center">
           <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading Payment Data</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Loading Payment Data</h2>
           <p className="text-gray-600">Please wait while we fetch payment information...</p>
         </div>
       </div>
@@ -1001,10 +1001,10 @@ const PaymentManagement = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-32 pb-16 px-6">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 pt-32 pb-16 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{error}</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">{error}</h2>
           <p className="text-gray-600 mb-6">Unable to load payment data. Please check your permissions.</p>
           <div className="space-y-3">
             <button
@@ -1016,7 +1016,7 @@ const PaymentManagement = () => {
             </button>
             <button
               onClick={() => navigate('/dashboard')}
-              className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              className="w-full border border-blue-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
             >
               Back to Dashboard
             </button>
@@ -1027,12 +1027,12 @@ const PaymentManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-32 pb-16 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 pt-32 pb-16 px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Payment Management</h1>
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">Payment Management</h1>
             <p className="text-gray-600">Monitor and manage all payment transactions</p>
           </div>
           <div className="flex space-x-3">
@@ -1062,7 +1062,7 @@ const PaymentManagement = () => {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Revenue</p>
@@ -1077,7 +1077,7 @@ const PaymentManagement = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Successful</p>
@@ -1090,7 +1090,7 @@ const PaymentManagement = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Pending</p>
@@ -1103,7 +1103,7 @@ const PaymentManagement = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Failed/Refunded</p>
@@ -1119,8 +1119,8 @@ const PaymentManagement = () => {
 
         {/* Payment Method Breakdown */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 hover:shadow-xl transition-shadow">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <PieChart className="h-5 w-5 mr-2 text-blue-600" />
               Payment Types
             </h3>
@@ -1149,8 +1149,8 @@ const PaymentManagement = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 hover:shadow-xl transition-shadow">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <CreditCard className="h-5 w-5 mr-2 text-purple-600" />
               Payment Methods
             </h3>
@@ -1170,8 +1170,8 @@ const PaymentManagement = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 hover:shadow-xl transition-shadow">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <BarChart3 className="h-5 w-5 mr-2 text-indigo-600" />
               Quick Stats
             </h3>
@@ -1209,7 +1209,7 @@ const PaymentManagement = () => {
         </div>
 
         {/* Advanced Filters */}
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 mb-8">
+        <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -1218,7 +1218,7 @@ const PaymentManagement = () => {
                 placeholder="Search payments..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               />
             </div>
 
@@ -1227,7 +1227,7 @@ const PaymentManagement = () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
               >
                 <option value="">All Status</option>
                 <option value="success">Success</option>
@@ -1243,7 +1243,7 @@ const PaymentManagement = () => {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
               >
                 <option value="">All Types</option>
                 <option value="booking">Booking</option>
@@ -1257,7 +1257,7 @@ const PaymentManagement = () => {
               <select
                 value={methodFilter}
                 onChange={(e) => setMethodFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
               >
                 <option value="">All Methods</option>
                 <option value="card">Card</option>
@@ -1273,7 +1273,7 @@ const PaymentManagement = () => {
                 type="date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               />
             </div>
 
@@ -1282,7 +1282,7 @@ const PaymentManagement = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                className="w-full pl-4 pr-10 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
               >
                 <option value="createdAt">Sort by Date</option>
                 <option value="amount">Sort by Amount</option>
@@ -1300,7 +1300,7 @@ const PaymentManagement = () => {
                 setDateFilter('');
                 setSearchTerm('');
               }}
-              className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
+              className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition-colors"
             >
               Clear All Filters
             </button>
@@ -1343,9 +1343,9 @@ const PaymentManagement = () => {
 
         {/* Payments List */}
         {filteredPayments.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl shadow-lg border border-gray-100">
+          <div className="text-center py-16 bg-white rounded-2xl shadow-lg border border-blue-200">
             <Wallet className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-gray-900 mb-2">No Payments Found</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">No Payments Found</h3>
             <p className="text-gray-600 mb-6">
               {payments.length === 0 
                 ? 'No payments have been processed yet.' 
@@ -1376,19 +1376,19 @@ const PaymentManagement = () => {
         />
 
         {/* Report Information */}
-        <div className="mt-8 bg-blue-50 rounded-xl p-6 border border-blue-200">
+        <div className="mt-8 bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
           <div className="flex items-start">
             <Receipt className="h-6 w-6 text-blue-600 mr-3 mt-1 flex-shrink-0" />
             <div>
-              <h4 className="text-lg font-semibold text-blue-900 mb-2">Report Generation</h4>
-              <p className="text-blue-700 mb-3">
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">Report Generation</h4>
+              <p className="text-gray-600 mb-3">
                 Generate comprehensive payment reports for financial analysis and audit purposes.
                 Reports include payment summaries, status breakdowns, and detailed transaction records.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="font-medium text-blue-900">PDF Report Features</p>
-                  <ul className="text-blue-700 list-disc list-inside">
+                  <p className="font-medium text-gray-800">PDF Report Features</p>
+                  <ul className="text-gray-600 list-disc list-inside">
                     <li>Executive summary with key metrics</li>
                     <li>Detailed payment breakdowns</li>
                     <li>Status and type analysis</li>
@@ -1396,8 +1396,8 @@ const PaymentManagement = () => {
                   </ul>
                 </div>
                 <div>
-                  <p className="font-medium text-blue-900">CSV Export Features</p>
-                  <ul className="text-blue-700 list-disc list-inside">
+                  <p className="font-medium text-gray-800">CSV Export Features</p>
+                  <ul className="text-gray-600 list-disc list-inside">
                     <li>Raw payment data for analysis</li>
                     <li>Compatible with Excel and other tools</li>
                     <li>Filtered data based on current view</li>

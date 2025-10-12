@@ -369,28 +369,28 @@ const AdminDashboard = () => {
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'High':
-        return 'bg-red-900/30 text-red-400';
+        return 'bg-red-100 text-red-800';
       case 'Medium':
-        return 'bg-orange-900/30 text-orange-400';
+        return 'bg-orange-100 text-orange-800';
       case 'Low':
-        return 'bg-green-900/30 text-green-400';
+        return 'bg-green-100 text-green-800';
       default:
-        return 'bg-gray-900/30 text-gray-400';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'Completed':
-        return 'bg-green-900/30 text-green-400';
+        return 'bg-green-100 text-green-800';
       case 'In Progress':
-        return 'bg-blue-900/30 text-blue-400';
+        return 'bg-blue-100 text-blue-800';
       case 'Pending':
-        return 'bg-orange-900/30 text-orange-400';
+        return 'bg-orange-100 text-orange-800';
       case 'Cancelled':
-        return 'bg-red-900/30 text-red-400';
+        return 'bg-red-100 text-red-800';
       default:
-        return 'bg-gray-900/30 text-gray-400';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -416,8 +416,8 @@ const AdminDashboard = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold text-white">Maintenance Management</h2>
-          <p className="text-slate-400">Manage bus maintenance records and schedules</p>
+          <h2 className="text-2xl font-bold text-gray-800">Maintenance Management</h2>
+          <p className="text-gray-600">Manage bus maintenance records and schedules</p>
         </div>
         <button
           onClick={() => setShowMaintenanceModal(true)}
@@ -431,21 +431,21 @@ const AdminDashboard = () => {
       {/* Filters */}
       <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
             placeholder="Search by bus ID, plate, or issue..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2 bg-white border border-blue-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div className="flex items-center space-x-2">
-          <Filter className="text-slate-400 w-5 h-5" />
+          <Filter className="text-gray-400 w-5 h-5" />
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Status</option>
             <option value="Pending">Pending</option>
@@ -457,31 +457,31 @@ const AdminDashboard = () => {
       </div>
 
       {/* Maintenance List */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+      <div className="bg-white rounded-xl border border-blue-200 shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-slate-700">
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Bus ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Issue</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Priority</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Estimated Cost</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Start Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Est. Completion</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
+              <tr className="bg-gradient-to-r from-blue-50 to-blue-100">
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Bus ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Issue</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Priority</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Estimated Cost</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Start Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Est. Completion</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700">
+            <tbody className="divide-y divide-blue-100">
               {filteredMaintenances.map((maintenance) => (
-                <tr key={maintenance._id} className="hover:bg-slate-750 transition-colors">
+                <tr key={maintenance._id} className="hover:bg-blue-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-white">{maintenance.busId}</div>
-                    <div className="text-xs text-slate-400">{maintenance.busDetails?.numberPlate || 'N/A'}</div>
+                    <div className="text-sm font-medium text-gray-800">{maintenance.busId}</div>
+                    <div className="text-xs text-gray-500">{maintenance.busDetails?.numberPlate || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-white">{maintenance.issue}</div>
-                    <div className="text-xs text-slate-400 truncate max-w-xs">{maintenance.description}</div>
+                    <div className="text-sm font-medium text-gray-800">{maintenance.issue}</div>
+                    <div className="text-xs text-gray-500 truncate max-w-xs">{maintenance.description}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(maintenance.priority)}`}>
@@ -493,27 +493,27 @@ const AdminDashboard = () => {
                       {maintenance.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
                     {formatCurrency(maintenance.estimatedCost)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {formatDate(maintenance.startDate)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {formatDate(maintenance.estimatedCompletionDate)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEditMaintenance(maintenance)}
-                        className="text-blue-400 hover:text-blue-300 transition-colors"
+                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-1 rounded transition-colors"
                         title="Edit Maintenance"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteMaintenance(maintenance._id)}
-                        className="text-red-400 hover:text-red-300 transition-colors"
+                        className="text-red-600 hover:text-red-800 hover:bg-red-100 p-1 rounded transition-colors"
                         title="Delete Maintenance"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -528,9 +528,9 @@ const AdminDashboard = () => {
         
         {filteredMaintenances.length === 0 && (
           <div className="text-center py-12">
-            <Wrench className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-400">No maintenance records found</h3>
-            <p className="text-slate-500 mt-1">
+            <Wrench className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-600">No maintenance records found</h3>
+            <p className="text-gray-500 mt-1">
               {searchTerm || filterStatus !== 'all' 
                 ? 'Try adjusting your search or filter criteria' 
                 : 'Get started by adding your first maintenance record'
@@ -543,11 +543,11 @@ const AdminDashboard = () => {
       {/* Maintenance Modal */}
       {showMaintenanceModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="fixed inset-0 bg-slate-900 opacity-75 z-40" onClick={() => setShowMaintenanceModal(false)}></div>
+          <div className="fixed inset-0 bg-blue-100 bg-opacity-80 z-40" onClick={() => setShowMaintenanceModal(false)}></div>
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0 z-50 relative">
-            <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-slate-800 shadow-xl rounded-2xl border border-slate-700">
+            <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl border border-blue-200">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-white">
+                <h3 className="text-lg font-medium text-gray-800">
                   {editingMaintenance ? 'Edit Maintenance' : 'Add New Maintenance'}
                 </h3>
                 <button
@@ -565,7 +565,7 @@ const AdminDashboard = () => {
                       estimatedCompletionDate: ''
                     });
                   }}
-                  className="text-slate-400 hover:text-white"
+                  className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -573,39 +573,39 @@ const AdminDashboard = () => {
 
               <form onSubmit={handleMaintenanceSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Bus ID</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bus ID</label>
                   <input
                     type="text"
                     name="busId"
                     value={maintenanceFormData.busId}
                     onChange={handleMaintenanceInputChange}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter bus ID"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Issue</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Issue</label>
                   <input
                     type="text"
                     name="issue"
                     value={maintenanceFormData.issue}
                     onChange={handleMaintenanceInputChange}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter issue description"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Detailed Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Detailed Description</label>
                   <textarea
                     name="description"
                     value={maintenanceFormData.description}
                     onChange={handleMaintenanceInputChange}
                     rows={3}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter detailed description of the issue"
                     required
                   />
@@ -613,12 +613,12 @@ const AdminDashboard = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Priority</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
                     <select
                       name="priority"
                       value={maintenanceFormData.priority}
                       onChange={handleMaintenanceInputChange}
-                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     >
                       <option value="Low">Low</option>
@@ -628,12 +628,12 @@ const AdminDashboard = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                     <select
                       name="status"
                       value={maintenanceFormData.status}
                       onChange={handleMaintenanceInputChange}
-                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     >
                       <option value="Pending">Pending</option>
@@ -645,7 +645,7 @@ const AdminDashboard = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Estimated Cost ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Cost ($)</label>
                   <input
                     type="number"
                     name="estimatedCost"
@@ -653,7 +653,7 @@ const AdminDashboard = () => {
                     onChange={handleMaintenanceInputChange}
                     min="0"
                     step="0.01"
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter estimated cost"
                     required
                   />
@@ -661,25 +661,25 @@ const AdminDashboard = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Start Date</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                     <input
                       type="date"
                       name="startDate"
                       value={maintenanceFormData.startDate}
                       onChange={handleMaintenanceInputChange}
-                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Est. Completion Date</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Est. Completion Date</label>
                     <input
                       type="date"
                       name="estimatedCompletionDate"
                       value={maintenanceFormData.estimatedCompletionDate}
                       onChange={handleMaintenanceInputChange}
-                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
                   </div>
@@ -702,7 +702,7 @@ const AdminDashboard = () => {
                         estimatedCompletionDate: ''
                       });
                     }}
-                    className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                   >
                     Cancel
                   </button>
@@ -750,26 +750,26 @@ const AdminDashboard = () => {
       }).format(value || 0);
     }
     
-    let valueColor = 'text-white';
+    let valueColor = 'text-gray-800';
     if (isRevenue) {
-      valueColor = value >= 0 ? 'text-green-400' : 'text-red-400';
+      valueColor = value >= 0 ? 'text-green-600' : 'text-red-600';
     }
 
     return (
       <div
         onClick={onClick}
-        className="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+        className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
       >
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-slate-300">{title}</p>
+            <p className="text-sm font-medium text-gray-600">{title}</p>
             <h3 className={`text-2xl font-bold mt-1 ${valueColor}`}>
               {displayValue}
             </h3>
-            {trend && <p className="text-xs text-slate-400 mt-1">{trend}</p>}
+            {trend && <p className="text-xs text-gray-500 mt-1">{trend}</p>}
           </div>
-          <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-slate-900/30">
-            <Icon className="w-6 h-6 text-slate-300" />
+          <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-100">
+            <Icon className="w-6 h-6 text-blue-600" />
           </div>
         </div>
       </div>
@@ -832,72 +832,72 @@ const AdminDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-white">Quick Actions</h3>
-            <button className="text-slate-400 hover:text-white">
+            <h3 className="text-lg font-semibold text-gray-800">Quick Actions</h3>
+            <button className="text-gray-400 hover:text-gray-600">
               <MoreVertical className="w-5 h-5" />
             </button>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <button 
-              className="flex flex-col items-center justify-center p-4 bg-blue-900/20 rounded-lg"
+              className="flex flex-col items-center justify-center p-4 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
               onClick={() => setActiveTab('users')}
             >
-              <Plus className="w-6 h-6 text-blue-400 mb-2" />
-              <span className="text-sm font-medium text-blue-300">Add User</span>
+              <Plus className="w-6 h-6 text-blue-600 mb-2" />
+              <span className="text-sm font-medium text-blue-700">Add User</span>
             </button>
             <button
-              className="flex flex-col items-center justify-center p-4 bg-green-900/20 rounded-lg"
+              className="flex flex-col items-center justify-center p-4 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
               onClick={() => setActiveTab('buses')}
             >
-              <Plus className="w-6 h-6 text-green-400 mb-2" />
-              <span className="text-sm font-medium text-green-300">Add Bus</span>
+              <Plus className="w-6 h-6 text-green-600 mb-2" />
+              <span className="text-sm font-medium text-green-700">Add Bus</span>
             </button>
             <button
-              className="flex flex-col items-center justify-center p-4 bg-purple-900/20 rounded-lg"
+              className="flex flex-col items-center justify-center p-4 bg-purple-100 rounded-lg hover:bg-purple-200 transition-colors"
               onClick={() => setActiveTab('payments')}
             >
-              <CreditCard className="w-6 h-6 text-purple-400 mb-2" />
-              <span className="text-sm font-medium text-purple-300">Payments</span>
+              <CreditCard className="w-6 h-6 text-purple-600 mb-2" />
+              <span className="text-sm font-medium text-purple-700">Payments</span>
             </button>
             <button
-              className="flex flex-col items-center justify-center p-4 bg-orange-900/20 rounded-lg"
+              className="flex flex-col items-center justify-center p-4 bg-orange-100 rounded-lg hover:bg-orange-200 transition-colors"
               onClick={() => setActiveTab('analytics')}
             >
-              <BarChart3 className="w-6 h-6 text-orange-400 mb-2" />
-              <span className="text-sm font-medium text-orange-300">Reports</span>
+              <BarChart3 className="w-6 h-6 text-orange-600 mb-2" />
+              <span className="text-sm font-medium text-orange-700">Reports</span>
             </button>
           </div>
         </div>
 
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
               <div className="flex items-center">
-                <CreditCard className="w-4 h-4 text-green-400 mr-3" />
-                <span className="text-sm text-slate-300">New booking payment received</span>
+                <CreditCard className="w-4 h-4 text-green-600 mr-3" />
+                <span className="text-sm text-gray-700">New booking payment received</span>
               </div>
-              <span className="text-xs text-slate-400">2 min ago</span>
+              <span className="text-xs text-gray-500">2 min ago</span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
               <div className="flex items-center">
-                <Wrench className="w-4 h-4 text-orange-400 mr-3" />
-                <span className="text-sm text-slate-300">Maintenance payment processed</span>
+                <Wrench className="w-4 h-4 text-orange-600 mr-3" />
+                <span className="text-sm text-gray-700">Maintenance payment processed</span>
               </div>
-              <span className="text-xs text-slate-400">1 hour ago</span>
+              <span className="text-xs text-gray-500">1 hour ago</span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
               <div className="flex items-center">
-                <User className="w-4 h-4 text-blue-400 mr-3" />
-                <span className="text-sm text-slate-300">Salary payment completed</span>
+                <User className="w-4 h-4 text-blue-600 mr-3" />
+                <span className="text-sm text-gray-700">Salary payment completed</span>
               </div>
-              <span className="text-xs text-slate-400">3 hours ago</span>
+              <span className="text-xs text-gray-500">3 hours ago</span>
             </div>
           </div>
           {error && (
-            <div className="mt-4 bg-red-900/30 border border-red-700 text-red-300 p-3 rounded-lg">
+            <div className="mt-4 bg-red-100 border border-red-300 text-red-800 p-3 rounded-lg">
               {error}
             </div>
           )}
@@ -1209,28 +1209,28 @@ const AdminDashboard = () => {
   const FeedbackContent = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">Feedback & Complaints</h2>
+        <h2 className="text-2xl font-bold text-gray-800">Feedback & Complaints</h2>
         <div className="flex space-x-2">
           <button 
-            className={`px-4 py-2 rounded-lg text-sm ${filterType === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'}`}
+            className={`px-4 py-2 rounded-lg text-sm transition-colors ${filterType === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-blue-300 hover:bg-blue-50'}`}
             onClick={() => setFilterType('all')}
           >
             All
           </button>
           <button 
-            className={`px-4 py-2 rounded-lg text-sm ${filterType === 'feedback' ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300'}`}
+            className={`px-4 py-2 rounded-lg text-sm transition-colors ${filterType === 'feedback' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-green-300 hover:bg-green-50'}`}
             onClick={() => setFilterType('feedback')}
           >
             Feedback
           </button>
           <button 
-            className={`px-4 py-2 rounded-lg text-sm ${filterType === 'complaint' ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-300'}`}
+            className={`px-4 py-2 rounded-lg text-sm transition-colors ${filterType === 'complaint' ? 'bg-red-600 text-white' : 'bg-white text-gray-600 border border-red-300 hover:bg-red-50'}`}
             onClick={() => setFilterType('complaint')}
           >
             Complaints
           </button>
           <button 
-            className={`px-4 py-2 rounded-lg text-sm ${filterType === 'pending' ? 'bg-orange-600 text-white' : 'bg-slate-700 text-slate-300'}`}
+            className={`px-4 py-2 rounded-lg text-sm transition-colors ${filterType === 'pending' ? 'bg-orange-600 text-white' : 'bg-white text-gray-600 border border-orange-300 hover:bg-orange-50'}`}
             onClick={() => setFilterType('pending')}
           >
             Pending
@@ -1239,17 +1239,17 @@ const AdminDashboard = () => {
       </div>
 
       {error && (
-        <div className="bg-red-900/30 border border-red-700 text-red-300 p-4 rounded-lg">
+        <div className="bg-red-100 border border-red-300 text-red-800 p-4 rounded-lg">
           {error}
         </div>
       )}
 
       <div className="space-y-4">
         {filteredFeedbacks.length === 0 ? (
-          <div className="bg-slate-800 rounded-xl p-8 text-center">
-            <MessageSquare className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-400">No feedback found</h3>
-            <p className="text-slate-500 mt-1">There are no feedback entries matching your criteria.</p>
+          <div className="bg-white rounded-xl p-8 text-center border border-blue-200 shadow-lg">
+            <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-600">No feedback found</h3>
+            <p className="text-gray-500 mt-1">There are no feedback entries matching your criteria.</p>
           </div>
         ) : (
           filteredFeedbacks.map(feedback => (
@@ -1300,21 +1300,21 @@ const AdminDashboard = () => {
     };
 
     return (
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+      <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3">
-            <div className={`p-3 rounded-full ${feedback.type === 'feedback' ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+            <div className={`p-3 rounded-full ${feedback.type === 'feedback' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
               {feedback.type === 'feedback' ? <ThumbsUp size={20} /> : <AlertTriangle size={20} />}
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-medium text-white">{feedback.title}</h3>
-              <p className="text-slate-300 mt-1">{feedback.description}</p>
+              <h3 className="text-lg font-medium text-gray-800">{feedback.title}</h3>
+              <p className="text-gray-600 mt-1">{feedback.description}</p>
               
-              <div className="flex items-center mt-2 text-sm text-slate-400">
+              <div className="flex items-center mt-2 text-sm text-gray-500">
                 <span>{formatDate(feedback.send_date)}</span>
               </div>
               
-              <div className="mt-2 flex items-center text-sm text-slate-400">
+              <div className="mt-2 flex items-center text-sm text-gray-500">
                 <User className="h-3.5 w-3.5 mr-1.5" />
                 <span>User ID: {feedback.user_id || feedback.userId?._id || 'Unknown'}</span>
               </div>
@@ -1323,17 +1323,17 @@ const AdminDashboard = () => {
           
           <div className="flex items-center space-x-2">
             {feedback.status === 'closed' && (
-              <span className="px-2 py-1 bg-green-900/30 text-green-400 text-xs rounded-full flex items-center">
+              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full flex items-center">
                 <CheckCircle size={12} className="mr-1" /> Closed
               </span>
             )}
             {feedback.status === 'replied' && (
-              <span className="px-2 py-1 bg-blue-900/30 text-blue-400 text-xs rounded-full flex items-center">
+              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full flex items-center">
                 <MessageCircle size={12} className="mr-1" /> Replied
               </span>
             )}
             {!feedback.admin_reply && feedback.status !== 'closed' && (
-              <span className="px-2 py-1 bg-orange-900/30 text-orange-400 text-xs rounded-full flex items-center">
+              <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full flex items-center">
                 <AlertTriangle size={12} className="mr-1" /> Pending
               </span>
             )}
@@ -1342,13 +1342,13 @@ const AdminDashboard = () => {
 
         {feedback.admin_reply && (
           <div className="mt-4 pl-12">
-            <div className="bg-slate-700/50 rounded-lg p-4">
-              <div className="flex items-center text-sm text-slate-300 mb-2">
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-center text-sm text-gray-700 mb-2">
                 <span className="font-medium">Admin Response</span>
                 <span className="mx-2">•</span>
                 <span>{formatDate(feedback.reply_date)}</span>
               </div>
-              <p className="text-slate-100">{feedback.admin_reply}</p>
+              <p className="text-gray-800">{feedback.admin_reply}</p>
             </div>
           </div>
         )}
@@ -1356,7 +1356,7 @@ const AdminDashboard = () => {
         <div className="mt-4 pl-12">
           {replyingTo === feedback._id ? (
             <div className="space-y-3 w-full">
-              <div className="bg-slate-700 border border-slate-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500">
+              <div className="bg-white border border-blue-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500">
                 <textarea
                   ref={(el) => {
                     if (el) textareaRefs.current[feedback._id] = el;
@@ -1367,7 +1367,7 @@ const AdminDashboard = () => {
                   placeholder="Type your response here..."
                   rows={6}
                   maxLength={1000}
-                  className="w-full min-h-[150px] p-4 bg-transparent text-white placeholder-slate-400 border-none outline-none resize-none text-sm"
+                  className="w-full min-h-[150px] p-4 bg-transparent text-gray-800 placeholder-gray-400 border-none outline-none resize-none text-sm"
                   style={{
                     direction: 'ltr',
                     textAlign: 'left',
@@ -1377,8 +1377,8 @@ const AdminDashboard = () => {
                   autoFocus
                   spellCheck="false"
                 />
-                <div className="flex justify-between items-center px-4 py-3 bg-slate-800/50 border-t border-slate-600">
-                  <span className="text-xs text-slate-400">
+                <div className="flex justify-between items-center px-4 py-3 bg-blue-50 border-t border-blue-300">
+                  <span className="text-xs text-gray-500">
                     {(replyTexts[feedback._id] || '').length}/1000 characters
                   </span>
                   <div className="flex space-x-2">
@@ -1388,7 +1388,7 @@ const AdminDashboard = () => {
                         setReplyTexts(prev => ({ ...prev, [feedback._id]: '' }));
                         setError('');
                       }}
-                      className="px-4 py-2 text-sm bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+                      className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                     >
                       Cancel
                     </button>
@@ -1465,27 +1465,27 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 shadow-lg transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} border-r border-slate-800 overflow-y-auto`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-slate-800">
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} border-r border-blue-200 overflow-y-auto`}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-blue-200">
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <div className="bg-gradient-to-r from-blue-400 to-cyan-500 p-3 rounded-xl shadow-lg">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-3 rounded-xl shadow-lg">
                 <Bus className="h-8 w-8 text-white" />
               </div>
-              <div className="absolute -top-1 -right-1 bg-cyan-400 w-4 h-4 rounded-full"></div>
+              <div className="absolute -top-1 -right-1 bg-blue-500 w-4 h-4 rounded-full"></div>
             </div>
             <div>
-              <div className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+              <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
                 BusZone+
               </div>
-              <div className="text-xs text-slate-400">
+              <div className="text-xs text-gray-600">
                 Admin Panel
               </div>
             </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded-md hover:bg-slate-800 text-white">
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded-md hover:bg-blue-100 text-gray-600">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -1497,7 +1497,7 @@ const AdminDashboard = () => {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center px-4 py-3 text-left rounded-lg mb-2 ${activeTab === item.id ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                className={`w-full flex items-center px-4 py-3 text-left rounded-lg mb-2 transition-colors ${activeTab === item.id ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'}`}
               >
                 <Icon className="w-5 h-5 mr-3" />
                 <span className="font-medium">{item.label}</span>
@@ -1509,19 +1509,19 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
-        <header className="border-b border-slate-800 bg-slate-900">
+        <header className="border-b border-blue-200 bg-white">
           <div className="flex items-center justify-between h-16 px-6">
             <div className="flex items-center">
-              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-md hover:bg-slate-800 text-white mr-4">
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-md hover:bg-blue-100 text-gray-600 mr-4">
                 <Menu className="w-5 h-5" />
               </button>
-              <h2 className="text-xl font-semibold text-white capitalize">{menuItems.find(i => i.id === activeTab)?.label || 'Dashboard'}</h2>
+              <h2 className="text-xl font-semibold text-gray-800 capitalize">{menuItems.find(i => i.id === activeTab)?.label || 'Dashboard'}</h2>
             </div>
 
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <button className="p-1 rounded-full hover:bg-slate-800">
-                  <Bell className="w-6 h-6 text-slate-300" />
+                <button className="p-1 rounded-full hover:bg-blue-100">
+                  <Bell className="w-6 h-6 text-gray-600" />
                 </button>
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center animate-pulse">3</span>
               </div>
@@ -1529,15 +1529,15 @@ const AdminDashboard = () => {
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-blue-600 rounded-full" />
                 <div className="hidden md:block">
-                  <p className="text-sm font-medium text-white">{authUser?.firstName || 'Admin'}</p>
-                  <p className="text-xs text-slate-400">{authUser?.role || 'Super Admin'}</p>
+                  <p className="text-sm font-medium text-gray-800">{authUser?.firstName || 'Admin'}</p>
+                  <p className="text-xs text-gray-600">{authUser?.role || 'Super Admin'}</p>
                 </div>
-                <ChevronDown className="w-4 h-4 text-slate-400" />
+                <ChevronDown className="w-4 h-4 text-gray-600" />
               </div>
 
               <button
                 onClick={handleLogout}
-                className="flex items-center px-3 py-2 rounded-lg text-red-400 hover:bg-red-900/30 hover:text-red-300 text-sm"
+                className="flex items-center px-3 py-2 rounded-lg text-red-600 hover:bg-red-100 hover:text-red-700 text-sm transition-colors"
               >
                 <LogOut className="w-4 h-4 mr-2" /> Logout
               </button>
@@ -1546,11 +1546,11 @@ const AdminDashboard = () => {
         </header>
 
         <main className="p-6">
-          {isLoading ? <div className="text-slate-400">Loading dashboard...</div> : renderContent()}
+          {isLoading ? <div className="text-gray-600">Loading dashboard...</div> : renderContent()}
         </main>
       </div>
 
-      {sidebarOpen && <div className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden" onClick={() => setSidebarOpen(false)}></div>}
+      {sidebarOpen && <div className="fixed inset-0 z-40 bg-blue-100 bg-opacity-80 lg:hidden" onClick={() => setSidebarOpen(false)}></div>}
     </div>
   );
 };

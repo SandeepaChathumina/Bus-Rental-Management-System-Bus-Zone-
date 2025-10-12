@@ -24,30 +24,30 @@ const Navbar = () => {
   const navigate = useNavigate();
   
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md z-50 border-b border-slate-700/50">
+    <nav className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-md z-50 border-b border-blue-200 shadow-sm">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-3">
           <div className="relative">
-            <div className="bg-gradient-to-r from-blue-400 to-cyan-500 p-2 rounded-xl shadow-lg">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-2 rounded-xl shadow-lg">
               <Bus className="h-6 w-6 text-white" />
             </div>
-            <div className="absolute -top-1 -right-1 bg-cyan-400 w-3 h-3 rounded-full"></div>
+            <div className="absolute -top-1 -right-1 bg-blue-400 w-3 h-3 rounded-full"></div>
           </div>
           <div>
-            <div className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+            <div className="text-xl font-bold bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent">
               BusZone+
             </div>
-            <div className="text-xs text-slate-400">
+            <div className="text-xs text-gray-600">
               Premium Bus Rentals
             </div>
           </div>
         </Link>
 
         <div className="flex items-center space-x-6">
-          <Link to="/" className="text-slate-300 hover:text-white transition-colors">Home</Link>
-          <Link to="/booking" className="text-slate-300 hover:text-white transition-colors">Booking</Link>
-          <Link to="/offers" className="text-amber-400 font-semibold">Offers</Link>
-          <Link to="/contact" className="text-slate-300 hover:text-white transition-colors">Contact</Link>
+          <Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors">Home</Link>
+          <Link to="/booking" className="text-gray-600 hover:text-blue-600 transition-colors">Booking</Link>
+          <Link to="/offers" className="text-blue-600 font-semibold">Offers</Link>
+          <Link to="/contact" className="text-gray-600 hover:text-blue-600 transition-colors">Contact</Link>
         </div>
       </div>
     </nav>
@@ -57,9 +57,9 @@ const Navbar = () => {
 // Simple Footer component
 const Footer = () => {
   return (
-    <footer className="bg-slate-900 border-t border-slate-800 mt-16">
+    <footer className="bg-white border-t border-blue-200 mt-16 shadow-sm">
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center text-slate-400">
+        <div className="text-center text-gray-600">
           <p>© 2024 BusZone+. All rights reserved.</p>
           <p className="mt-2">Discover the world with our seasonal offers</p>
         </div>
@@ -225,24 +225,23 @@ const SeasonalOffersPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-16">
-        <Navbar />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
         <div className="container mx-auto px-4 py-8">
           <div className="animate-pulse">
-            <div className="h-12 bg-gradient-to-r from-violet-700 to-purple-600 rounded-xl w-1/3 mb-8"></div>
+            <div className="h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl w-1/3 mb-8"></div>
             <div className="flex flex-wrap gap-3 mb-8">
               {[1, 2, 3, 4, 5, 6].map(item => (
-                <div key={item} className="h-10 bg-slate-700 rounded-full w-24"></div>
+                <div key={item} className="h-10 bg-blue-200 rounded-full w-24"></div>
               ))}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map(item => (
-                <div key={item} className="bg-slate-800 rounded-2xl p-6 h-96">
-                  <div className="h-40 bg-slate-700 rounded-xl mb-4"></div>
-                  <div className="h-6 bg-slate-700 rounded mb-3"></div>
-                  <div className="h-4 bg-slate-700 rounded mb-2"></div>
-                  <div className="h-4 bg-slate-700 rounded mb-4 w-3/4"></div>
-                  <div className="h-10 bg-slate-700 rounded"></div>
+                <div key={item} className="bg-white rounded-2xl p-6 h-96 border border-blue-200">
+                  <div className="h-40 bg-blue-100 rounded-xl mb-4"></div>
+                  <div className="h-6 bg-blue-200 rounded mb-3"></div>
+                  <div className="h-4 bg-blue-200 rounded mb-2"></div>
+                  <div className="h-4 bg-blue-200 rounded mb-4 w-3/4"></div>
+                  <div className="h-10 bg-blue-200 rounded"></div>
                 </div>
               ))}
             </div>
@@ -254,46 +253,37 @@ const SeasonalOffersPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-16">
-      <Navbar />
-      
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
       <div className="container mx-auto px-4 py-8">
-        {/* Error message */}
-        {error && (
-          <div className="bg-amber-900/30 border border-amber-700 text-amber-200 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
-        )}
-        
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           <div className="flex items-center mb-4 lg:mb-0">
             <Link 
               to="/booking" 
-              className="flex items-center text-violet-400 hover:text-violet-300 mr-6 transition-all duration-300 hover:scale-105"
+              className="flex items-center text-blue-600 hover:text-blue-700 mr-6 transition-all duration-300 hover:scale-105"
             >
               <ArrowLeft className="h-6 w-6 mr-2" />
               Back to Booking
             </Link>
             <div className="flex items-center">
               <div className="relative">
-                <Tag className="h-10 w-10 mr-4 text-amber-400" />
-                <Sparkles className="absolute -top-2 -right-2 h-5 w-5 text-amber-400 animate-pulse" />
+                <Tag className="h-10 w-10 mr-4 text-blue-600" />
+                <Sparkles className="absolute -top-2 -right-2 h-5 w-5 text-blue-500 animate-pulse" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-400 via-orange-400 to-pink-400 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-blue-500 to-blue-700 bg-clip-text text-transparent">
                   Seasonal Offers
                 </h1>
-                <p className="text-slate-400 mt-1">
+                <p className="text-gray-600 mt-1">
                   Discover amazing deals for every season
                 </p>
               </div>
             </div>
           </div>
           
-          <div className="bg-slate-800/50 rounded-xl p-3">
-            <span className="text-slate-300 mr-3">Showing:</span>
-            <span className="text-amber-400 font-semibold">
+          <div className="bg-white/80 rounded-xl p-3 border border-blue-200 shadow-sm">
+            <span className="text-gray-600 mr-3">Showing:</span>
+            <span className="text-blue-600 font-semibold">
               {filteredOffers.length} {filteredOffers.length === 1 ? 'offer' : 'offers'}
             </span>
           </div>
@@ -301,8 +291,8 @@ const SeasonalOffersPage = () => {
 
         {/* Season Filter */}
         <div className="mb-8">
-          <h2 className="text-lg font-semibold text-slate-300 mb-4 flex items-center">
-            <Zap className="h-5 w-5 mr-2 text-amber-400" />
+          <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+            <Zap className="h-5 w-5 mr-2 text-blue-600" />
             Filter by Season
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -312,8 +302,8 @@ const SeasonalOffersPage = () => {
                 onClick={() => setSelectedSeason(season.id)}
                 className={`flex items-center px-4 py-2 rounded-full transition-all duration-300 transform hover:scale-105 ${
                   selectedSeason === season.id
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
+                    : 'bg-white text-gray-600 hover:bg-blue-50 border border-blue-200'
                 }`}
               >
                 <span className="text-lg mr-2">{season.icon}</span>
@@ -332,10 +322,10 @@ const SeasonalOffersPage = () => {
             return (
               <div 
                 key={offer._id} 
-                className="group relative bg-slate-800 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-500 hover:scale-105"
+                className="group relative bg-white rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-500 hover:scale-105 border border-blue-200 shadow-lg"
               >
                 {/* Background Image with fallback */}
-                <div className="relative h-40 overflow-hidden bg-slate-700">
+                <div className="relative h-40 overflow-hidden bg-blue-100">
                   <img 
                     src={getSeasonImage(offer.type)} 
                     alt={offer.type} 
@@ -344,24 +334,24 @@ const SeasonalOffersPage = () => {
                       e.target.style.display = 'none';
                     }}
                   />
-                  <div className={`absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/80`}></div>
+                  <div className={`absolute inset-0 bg-gradient-to-b from-transparent to-gray-900/60`}></div>
                   
                   {/* Premium Badge */}
                   {offer.featured && (
-                    <div className="absolute top-4 left-4 bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 px-3 py-1 rounded-full text-sm font-bold flex items-center">
+                    <div className="absolute top-4 left-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center">
                       <Star className="h-4 w-4 mr-1 fill-current" />
                       Featured
                     </div>
                   )}
                   
                   {/* Season Badge */}
-                  <div className="absolute top-4 right-4 bg-slate-900/80 text-white px-3 py-1 rounded-full text-sm font-semibold backdrop-blur-sm">
+                  <div className="absolute top-4 right-4 bg-white/90 text-gray-800 px-3 py-1 rounded-full text-sm font-semibold backdrop-blur-sm border border-blue-200">
                     {seasonIcon} {offer.type.charAt(0).toUpperCase() + offer.type.slice(1)}
                   </div>
                   
                   {/* Discount Badge */}
                   <div className="absolute bottom-4 left-4">
-                    <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 px-4 py-2 rounded-xl font-bold text-lg shadow-lg">
+                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-xl font-bold text-lg shadow-lg">
                       {offer.discountPercent}% OFF
                     </div>
                   </div>
@@ -369,34 +359,34 @@ const SeasonalOffersPage = () => {
 
                 {/* Content */}
                 <div className="p-6">
-                  <h3 className="text-xl font-bold text-white mb-3 group-hover:text-amber-300 transition-colors">
+                  <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-blue-600 transition-colors">
                     {offer.title}
                   </h3>
                   
-                  <p className="text-slate-300 mb-4 leading-relaxed">
+                  <p className="text-gray-600 mb-4 leading-relaxed">
                     {offer.message}
                   </p>
                   
                   <div className="space-y-2 mb-6">
-                    <div className="flex items-center text-sm text-slate-400">
+                    <div className="flex items-center text-sm text-gray-500">
                       <Users className="h-4 w-4 mr-2" />
                       <span>For: {offer.targetUserType || 'All Passengers'}</span>
                     </div>
                     
                     {offer.expiryDate && (
-                      <div className="flex items-center text-sm text-slate-400">
+                      <div className="flex items-center text-sm text-gray-500">
                         <Calendar className="h-4 w-4 mr-2" />
                         <span>Valid until: {new Date(offer.expiryDate).toLocaleDateString()}</span>
                       </div>
                     )}
                     
-                    <div className="flex items-center text-sm text-slate-400">
+                    <div className="flex items-center text-sm text-gray-500">
                       <Clock className="h-4 w-4 mr-2" />
                       <span>Added: {new Date(offer.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
                   
-                  <button className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-violet-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 group-hover:shadow-lg flex items-center justify-center">
+                  <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 group-hover:shadow-lg flex items-center justify-center">
                     <Gift className="h-5 w-5 mr-2" />
                     Claim This Offer
                     <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
@@ -404,7 +394,7 @@ const SeasonalOffersPage = () => {
                 </div>
 
                 {/* Hover Effect */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${seasonGradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500 rounded-2xl`}></div>
+                <div className={`absolute inset-0 bg-gradient-to-br ${seasonGradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500 rounded-2xl`}></div>
               </div>
             );
           })}
@@ -413,13 +403,13 @@ const SeasonalOffersPage = () => {
         {filteredOffers.length === 0 && (
           <div className="text-center py-16">
             <div className="relative mx-auto w-24 h-24 mb-6">
-              <Tag className="h-24 w-24 text-violet-600/50 mx-auto" />
-              <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-amber-400 animate-pulse" />
+              <Tag className="h-24 w-24 text-blue-400/50 mx-auto" />
+              <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-blue-500 animate-pulse" />
             </div>
-            <h3 className="text-2xl font-semibold text-white mb-3">
+            <h3 className="text-2xl font-semibold text-gray-800 mb-3">
               No {selectedSeason !== 'all' ? selectedSeason : ''} Offers Available
             </h3>
-            <p className="text-slate-400 max-w-md mx-auto">
+            <p className="text-gray-600 max-w-md mx-auto">
               {selectedSeason !== 'all' 
                 ? `Check back later for ${selectedSeason} season offers!`
                 : 'No seasonal offers available at the moment. Please check back soon!'
@@ -428,7 +418,7 @@ const SeasonalOffersPage = () => {
             {selectedSeason !== 'all' && (
               <button
                 onClick={() => setSelectedSeason('all')}
-                className="mt-4 bg-violet-600 text-white px-6 py-2 rounded-lg hover:bg-violet-700 transition-colors"
+                className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 View All Seasons
               </button>
