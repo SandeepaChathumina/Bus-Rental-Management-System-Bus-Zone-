@@ -522,22 +522,17 @@ export const getBookingStats = async (req, res) => {
     // Get total bookings count
     const totalBookings = await Booking.countDocuments();
     
-    // Get total revenue from successful payments minus refunds
-    const revenueStats = await Payment.aggregate([
-      {
-        $match: {
-          paymentType: 'booking'
-        }
-      },
+    // Simple revenue calculation: add confirmed bookings, subtract cancelled bookings
+    const revenueStats = await Booking.aggregate([
       {
         $group: {
           _id: null,
-          totalRevenue: { 
+          totalRevenue: {
             $sum: {
               $cond: [
-                { $eq: ['$status', 'success'] },
-                '$amount',
-                { $cond: [{ $eq: ['$status', 'refunded'] }, { $multiply: ['$amount', -1] }, 0] }
+                { $eq: ['$bookingStatus', 'Confirmed'] },
+                '$totalAmount',
+                { $cond: [{ $eq: ['$bookingStatus', 'Cancelled'] }, { $multiply: ['$totalAmount', -1] }, 0] }
               ]
             }
           },
@@ -556,11 +551,10 @@ export const getBookingStats = async (req, res) => {
       }
     ]);
 
-    // Get monthly revenue trend (including refunds)
-    const monthlyTrend = await Payment.aggregate([
+    // Get monthly revenue trend (simple: confirmed bookings - cancelled bookings)
+    const monthlyTrend = await Booking.aggregate([
       {
         $match: {
-          paymentType: 'booking',
           createdAt: { $gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) }
         }
       },
@@ -573,9 +567,9 @@ export const getBookingStats = async (req, res) => {
           revenue: { 
             $sum: {
               $cond: [
-                { $eq: ['$status', 'success'] },
-                '$amount',
-                { $cond: [{ $eq: ['$status', 'refunded'] }, { $multiply: ['$amount', -1] }, 0] }
+                { $eq: ['$bookingStatus', 'Confirmed'] },
+                '$totalAmount',
+                { $cond: [{ $eq: ['$bookingStatus', 'Cancelled'] }, { $multiply: ['$totalAmount', -1] }, 0] }
               ]
             }
           },

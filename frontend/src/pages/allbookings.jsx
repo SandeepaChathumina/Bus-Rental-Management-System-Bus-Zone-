@@ -720,19 +720,15 @@ const AllBookings = () => {
     const confirmedBookings = list.filter(b => b.bookingStatus === 'confirmed').length;
     const pendingBookings = list.filter(b => b.bookingStatus === 'pending').length;
     const cancelledBookings = list.filter(b => b.bookingStatus === 'cancelled').length;
-    // Calculate revenue considering refunds
+    // Simple revenue calculation: add for confirmed bookings, subtract for cancelled bookings
     const totalRevenue = list.reduce((sum, booking) => {
       const amount = booking.totalAmount || 0;
-      // If booking is cancelled and payment status is refunded, subtract the amount
-      if (booking.bookingStatus === 'Cancelled' && booking.paymentStatus === 'Refunded') {
-        return sum - amount;
+      if (booking.bookingStatus === 'Confirmed') {
+        return sum + amount; // Add confirmed bookings
+      } else if (booking.bookingStatus === 'Cancelled') {
+        return sum - amount; // Subtract cancelled bookings
       }
-      // If payment is successful, add the amount
-      if (booking.paymentStatus === 'Paid') {
-        return sum + amount;
-      }
-      // For other statuses, don't add to revenue
-      return sum;
+      return sum; // Don't add pending or other statuses
     }, 0);
     
     // Statistics boxes - reduced spacing
@@ -1041,62 +1037,14 @@ const AllBookings = () => {
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 shadow-lg border border-purple-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-purple-700 font-medium">Net Revenue</p>
+                <p className="text-sm text-purple-700 font-medium">Total Revenue</p>
                 <p className="text-2xl font-bold text-purple-800">LKR {(stats.totalRevenue || 0).toLocaleString()}</p>
-                <p className="text-xs text-purple-600 mt-1">After refunds</p>
               </div>
               <TrendingUp className="h-8 w-8 text-purple-600" />
             </div>
           </div>
         </div>
 
-        {/* Revenue Breakdown */}
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 shadow-lg border border-green-200 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Breakdown</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg p-4 border border-green-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-green-700 font-medium">Gross Revenue</p>
-                  <p className="text-xl font-bold text-green-800">
-                    LKR {bookings
-                      .filter(b => b.paymentStatus === 'Paid')
-                      .reduce((sum, b) => sum + (b.totalAmount || 0), 0)
-                      .toLocaleString()}
-                  </p>
-                </div>
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg p-4 border border-red-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-red-700 font-medium">Refunds</p>
-                  <p className="text-xl font-bold text-red-800">
-                    LKR {bookings
-                      .filter(b => b.bookingStatus === 'Cancelled' && b.paymentStatus === 'Refunded')
-                      .reduce((sum, b) => sum + (b.totalAmount || 0), 0)
-                      .toLocaleString()}
-                  </p>
-                </div>
-                <XCircle className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg p-4 border border-purple-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-purple-700 font-medium">Net Revenue</p>
-                  <p className="text-xl font-bold text-purple-800">
-                    LKR {(stats.totalRevenue || 0).toLocaleString()}
-                  </p>
-                </div>
-                <TrendingUp className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Advanced Filters */}
         <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg border border-blue-200 mb-8">
