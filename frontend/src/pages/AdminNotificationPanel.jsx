@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, X, Save, Bell, Send, BarChart3, RefreshCw, Eye, Filter, Download } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, X, Save, Bell, Send, BarChart3, RefreshCw, Eye, Filter, Download, FileText, Calendar } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const AdminNotificationPanel = () => {
   const [notifications, setNotifications] = useState([]);
@@ -15,6 +17,9 @@ const AdminNotificationPanel = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFormat, setExportFormat] = useState('csv');
+  const [exportLoading, setExportLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -31,6 +36,61 @@ const AdminNotificationPanel = () => {
 
   const [formErrors, setFormErrors] = useState({});
   const [dateErrors, setDateErrors] = useState({});
+
+  // Export Modal Component
+  const ExportModal = ({ show, onClose, format, setFormat, itemCount, onExport, loading }) => {
+    if (!show) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
+        <div className="relative bg-white border border-blue-200 rounded-xl p-6 z-60 w-full max-w-md shadow-2xl">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Export Report</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <button
+              onClick={() => setFormat("csv")}
+              className={`p-3 border-2 rounded-lg ${
+                format === "csv"
+                  ? "border-green-500 bg-green-50 text-green-700"
+                  : "border-blue-300 text-gray-600 hover:bg-blue-50"
+              }`}
+            >
+              <FileText className="w-6 h-6 mx-auto mb-1" /> CSV
+            </button>
+            <button
+              onClick={() => setFormat("pdf")}
+              className={`p-3 border-2 rounded-lg ${
+                format === "pdf"
+                  ? "border-red-500 bg-red-50 text-red-700"
+                  : "border-blue-300 text-gray-600 hover:bg-blue-50"
+              }`}
+            >
+              <FileText className="w-6 h-6 mx-auto mb-1" /> PDF
+            </button>
+          </div>
+          <div className="bg-blue-50 rounded p-2 text-sm text-gray-700 mb-4">
+            <Calendar className="inline w-4 h-4 mr-1" /> Report will include {itemCount} notifications
+          </div>
+          <div className="flex justify-end space-x-2">
+            <button onClick={onClose} className="px-3 py-1 text-gray-600 hover:text-gray-800">
+              Cancel
+            </button>
+            <button
+              onClick={onExport}
+              disabled={loading}
+              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md"
+            >
+              {loading ? "Generating..." : "Export Now"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   useEffect(() => {
     fetchNotifications();
@@ -455,6 +515,289 @@ const AdminNotificationPanel = () => {
     return [headers, ...rows].join('\n');
   };
 
+  const exportPDF = (list) => {
+    if (!list || list.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+
+    const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation for better table layout
+    
+    // Page dimensions
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
+
+    // Add BusZone+ Header
+    doc.setFontSize(18);
+    doc.setTextColor(59, 130, 246);
+    doc.setFont(undefined, 'bold');
+    doc.text('BusZone+', margin, margin + 10);
+    
+    // Subtitle
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont(undefined, 'normal');
+    doc.text('Premium Bus Rental Management System', margin, margin + 16);
+    
+    // Report title
+    doc.setFontSize(20);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Notification Management Report', pageWidth / 2, margin + 25, { align: 'center' });
+    
+    // Report metadata
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont(undefined, 'normal');
+    const currentDate = new Date();
+    doc.text(`Generated on: ${currentDate.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })} at ${currentDate.toLocaleTimeString()}`, pageWidth / 2, margin + 32, { align: 'center' });
+    
+    // Statistics section
+    const statsY = margin + 40;
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Report Summary', margin, statsY);
+    
+    // Calculate statistics
+    const totalNotifications = list.length;
+    const activeNotifications = list.filter(n => n.isActive).length;
+    const draftNotifications = list.filter(n => n.status === 'draft').length;
+    const sentNotifications = list.filter(n => n.status === 'sent').length;
+    const scheduledNotifications = list.filter(n => n.status === 'scheduled').length;
+    
+    // Statistics boxes
+    const availableWidth = pageWidth - (margin * 2);
+    const boxCount = 5;
+    const boxSpacing = 6;
+    const boxWidth = Math.min(30, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
+    const boxHeight = 25;
+    let currentX = margin;
+    
+    // Total Notifications box
+    doc.setFillColor(59, 130, 246);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(totalNotifications.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Total', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Active Notifications box
+    doc.setFillColor(37, 99, 235);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(activeNotifications.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Active', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Draft Notifications box
+    doc.setFillColor(29, 78, 216);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(draftNotifications.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Draft', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Sent Notifications box
+    doc.setFillColor(30, 64, 175);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(sentNotifications.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Sent', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Scheduled Notifications box
+    doc.setFillColor(14, 165, 233);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(scheduledNotifications.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Scheduled', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    // Status distribution table
+    const statusTableY = statsY + 50;
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Status Distribution', margin, statusTableY);
+    
+    const statusData = [
+      ['Status', 'Count', 'Percentage'],
+      ['Active', activeNotifications.toString(), `${((activeNotifications/totalNotifications)*100).toFixed(1)}%`],
+      ['Draft', draftNotifications.toString(), `${((draftNotifications/totalNotifications)*100).toFixed(1)}%`],
+      ['Sent', sentNotifications.toString(), `${((sentNotifications/totalNotifications)*100).toFixed(1)}%`],
+      ['Scheduled', scheduledNotifications.toString(), `${((scheduledNotifications/totalNotifications)*100).toFixed(1)}%`]
+    ];
+    
+    autoTable(doc, {
+      startY: statusTableY + 8,
+      head: [statusData[0]],
+      body: statusData.slice(1),
+      styles: { 
+        fontSize: 10, 
+        cellPadding: 4,
+        textColor: [30, 30, 30]
+      },
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: [255, 255, 255],
+        halign: 'center',
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: { 
+        fillColor: [248, 250, 252] 
+      },
+      columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'center' },
+        2: { halign: 'center' }
+      },
+      margin: { left: margin, right: margin }
+    });
+
+    // Add new page for notification details table
+    doc.addPage();
+    
+    // Add header to second page
+    doc.setFontSize(16);
+    doc.setTextColor(59, 130, 246);
+    doc.setFont(undefined, 'bold');
+    doc.text('BusZone+', margin, margin + 10);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont(undefined, 'normal');
+    doc.text('Premium Bus Rental Management System', margin, margin + 16);
+    
+    // Main notification data table
+    const tableStartY = margin + 30;
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Notification Details', margin, tableStartY);
+    
+    // Prepare table data
+    const tableColumns = [
+      { header: 'Title', dataKey: 'title', width: 50 },
+      { header: 'Type', dataKey: 'type', width: 20 },
+      { header: 'Target', dataKey: 'target', width: 20 },
+      { header: 'Channel', dataKey: 'channel', width: 20 },
+      { header: 'Status', dataKey: 'status', width: 20 },
+      { header: 'Created', dataKey: 'created', width: 25 }
+    ];
+    
+    const tableRows = list.map((n, index) => ({
+      title: n.title?.substring(0, 30) + (n.title?.length > 30 ? '...' : ''),
+      type: n.type?.charAt(0).toUpperCase() + n.type?.slice(1) || 'General',
+      target: n.targetAudience?.charAt(0).toUpperCase() + n.targetAudience?.slice(1) || 'All',
+      channel: n.deliveryChannel?.charAt(0).toUpperCase() + n.deliveryChannel?.slice(1) || 'In-App',
+      status: n.isActive ? 'Active' : 'Inactive',
+      created: n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-GB') : 'N/A'
+    }));
+
+    autoTable(doc, {
+      startY: tableStartY + 8,
+      columns: tableColumns,
+      body: tableRows,
+      styles: { 
+        fontSize: 8, 
+        cellPadding: 2,
+        textColor: [30, 30, 30],
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+        overflow: 'linebreak',
+        halign: 'left'
+      },
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: [255, 255, 255],
+        halign: 'center',
+        fontStyle: 'bold',
+        fontSize: 10
+      },
+      alternateRowStyles: { 
+        fillColor: [248, 250, 252] 
+      },
+      columnStyles: {
+        title: { halign: 'left', fontSize: 8, cellWidth: 50, overflow: 'linebreak' },
+        type: { halign: 'center', fontSize: 8, cellWidth: 20 },
+        target: { halign: 'center', fontSize: 8, cellWidth: 20 },
+        channel: { halign: 'center', fontSize: 8, cellWidth: 20 },
+        status: { halign: 'center', fontSize: 8, cellWidth: 20 },
+        created: { halign: 'center', fontSize: 7, cellWidth: 25 }
+      },
+      margin: { left: margin, right: margin },
+      tableWidth: 'auto',
+      showHead: 'everyPage',
+      didDrawPage: function (data) {
+        // Add footer on each page
+        const pageNumber = doc.internal.getNumberOfPages();
+        const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+        
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Page ${currentPage} of ${pageNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+        doc.text('BusZone+ Notification Management Report', pageWidth / 2, pageHeight - 5, { align: 'center' });
+      }
+    });
+
+    // Add footer with company info
+    const finalY = doc.lastAutoTable.finalY || pageHeight - 30;
+    if (finalY < pageHeight - 40) {
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      doc.text('This report was generated by BusZone+ Management System', pageWidth / 2, finalY + 20, { align: 'center' });
+      doc.text('For support, contact: info@buszoneplus.com | +94 704 222 777', pageWidth / 2, finalY + 25, { align: 'center' });
+    }
+
+    // Save the PDF
+    const fileName = `BusZone_NotificationReport_${currentDate.toISOString().split('T')[0]}_${Date.now()}.pdf`;
+    doc.save(fileName);
+    toast.success("PDF report generated successfully!");
+  };
+
+  const handleExport = async () => {
+    setExportLoading(true);
+    try {
+      if (exportFormat === 'csv') {
+        exportNotifications();
+      } else if (exportFormat === 'pdf') {
+        exportPDF(filteredNotifications);
+      }
+      setShowExportModal(false);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Export failed');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const notificationTypes = [
     { value: 'general', label: 'General', color: 'bg-gray-500' },
     { value: 'promotional', label: 'Promotional', color: 'bg-purple-500' },
@@ -538,7 +881,7 @@ const AdminNotificationPanel = () => {
             <span>Filters</span>
           </button>
           <button
-            onClick={exportNotifications}
+            onClick={() => setShowExportModal(true)}
             className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             <Download className="h-4 w-4" />
@@ -1037,6 +1380,17 @@ const AdminNotificationPanel = () => {
           </table>
         </div>
       </div>
+
+      {/* Export Modal */}
+      <ExportModal
+        show={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        format={exportFormat}
+        setFormat={setExportFormat}
+        itemCount={filteredNotifications.length}
+        onExport={handleExport}
+        loading={exportLoading}
+      />
     </div>
   );
 };
