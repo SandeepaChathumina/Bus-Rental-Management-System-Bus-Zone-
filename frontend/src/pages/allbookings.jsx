@@ -723,12 +723,10 @@ const AllBookings = () => {
     // Simple revenue calculation: add for confirmed bookings, subtract for cancelled bookings
     const totalRevenue = list.reduce((sum, booking) => {
       const amount = booking.totalAmount || 0;
-      if (booking.bookingStatus === 'Confirmed') {
-        return sum + amount; // Add confirmed bookings
-      } else if (booking.bookingStatus === 'Cancelled') {
-        return sum - amount; // Subtract cancelled bookings
+      if (booking.paymentStatus === 'Paid') {
+        return sum + amount; // Add only paid bookings
       }
-      return sum; // Don't add pending or other statuses
+      return sum; // Don't add pending, cancelled, or other statuses
     }, 0);
     
     // Statistics boxes - reduced spacing

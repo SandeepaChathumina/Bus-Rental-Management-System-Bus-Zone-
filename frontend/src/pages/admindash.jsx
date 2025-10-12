@@ -141,26 +141,23 @@ const AdminDashboard = () => {
           busStats = await busStatsResponse.json();
         }
 
-        // Fetch payment statistics
-        let paymentStats = { totalIncome: 0, totalExpense: 0, netRevenue: 0 };
+        // Fetch booking statistics for revenue calculation
+        let bookingStats = { totalRevenue: 0 };
         try {
-          const paymentStatsResponse = await fetch(`${BACKEND_URL}/api/payments/admin/stats`, {
+          const bookingStatsResponse = await fetch(`${BACKEND_URL}/api/bookings/admin/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          if (paymentStatsResponse.ok) {
-            const paymentData = await paymentStatsResponse.json();
-            if (paymentData.success) {
-              paymentStats = {
-                totalIncome: paymentData.income || 0,
-                totalExpense: paymentData.expense || 0,
-                netRevenue: paymentData.revenue || 0
+          if (bookingStatsResponse.ok) {
+            const bookingData = await bookingStatsResponse.json();
+            if (bookingData.success) {
+              bookingStats = {
+                totalRevenue: bookingData.stats.totalRevenue || 0
               };
             }
           }
-        } catch (paymentError) {
-          console.error('Failed to fetch payment stats:', paymentError);
-          // Use fallback calculation
-          paymentStats = calculatePaymentStatsFromMockData();
+        } catch (bookingError) {
+          console.error('Failed to fetch booking stats:', bookingError);
+          bookingStats = { totalRevenue: 0 };
         }
         
         if (!mounted) return;
@@ -173,50 +170,26 @@ const AdminDashboard = () => {
           ...prev,
           totalBuses: busStats.totalBuses,
           maintenanceRequests: busStats.maintenanceBuses,
-          totalIncome: paymentStats.totalIncome,
-          totalExpense: paymentStats.totalExpense,
-          netRevenue: paymentStats.netRevenue
+          totalIncome: bookingStats.totalRevenue,
+          totalExpense: 0, // Not using expense calculation for now
+          netRevenue: bookingStats.totalRevenue
         }));
         
       } catch (err) {
         console.error('Failed to fetch dashboard data', err);
         if (mounted) {
           setTotalUsers(0);
-          // Set fallback payment stats
-          const fallbackStats = calculatePaymentStatsFromMockData();
+          // Set fallback booking stats
           setDashboardStats(prev => ({
             ...prev,
-            totalIncome: fallbackStats.totalIncome,
-            totalExpense: fallbackStats.totalExpense,
-            netRevenue: fallbackStats.netRevenue
+            totalIncome: 0,
+            totalExpense: 0,
+            netRevenue: 0
           }));
         }
       }
     };
 
-    // Fallback function to calculate payment stats
-    const calculatePaymentStatsFromMockData = () => {
-      // Mock payment data for demonstration
-      const mockPayments = [
-        { paymentType: 'booking', amount: 50000, status: 'success' },
-        { paymentType: 'booking', amount: 75000, status: 'success' },
-        { paymentType: 'salary', amount: 25000, status: 'success' },
-        { paymentType: 'maintenance', amount: 15000, status: 'success' },
-        { paymentType: 'booking', amount: 60000, status: 'success' }
-      ];
-
-      const income = mockPayments
-        .filter(p => p.paymentType === 'booking' && p.status === 'success')
-        .reduce((sum, p) => sum + p.amount, 0);
-      
-      const expense = mockPayments
-        .filter(p => (p.paymentType === 'salary' || p.paymentType === 'maintenance') && p.status === 'success')
-        .reduce((sum, p) => sum + p.amount, 0);
-      
-      const netRevenue = income - expense;
-
-      return { totalIncome: income, totalExpense: expense, netRevenue };
-    };
     
     fetchDashboardData();
     return () => { mounted = false; };
