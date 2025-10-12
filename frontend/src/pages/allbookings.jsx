@@ -717,13 +717,13 @@ const AllBookings = () => {
     
     // Calculate statistics
     const totalBookings = list.length;
-    const confirmedBookings = list.filter(b => b.bookingStatus === 'confirmed').length;
-    const pendingBookings = list.filter(b => b.bookingStatus === 'pending').length;
-    const cancelledBookings = list.filter(b => b.bookingStatus === 'cancelled').length;
+    const confirmedBookings = list.filter(b => b.bookingStatus?.toLowerCase() === 'confirmed').length;
+    const pendingBookings = list.filter(b => b.bookingStatus?.toLowerCase() === 'pending').length;
+    const cancelledBookings = list.filter(b => b.bookingStatus?.toLowerCase() === 'cancelled').length;
     // Simple revenue calculation: add for confirmed bookings, subtract for cancelled bookings
     const totalRevenue = list.reduce((sum, booking) => {
       const amount = booking.totalAmount || 0;
-      if (booking.paymentStatus === 'Paid') {
+      if (booking.paymentStatus?.toLowerCase() === 'paid') {
         return sum + amount; // Add only paid bookings
       }
       return sum; // Don't add pending, cancelled, or other statuses
