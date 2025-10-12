@@ -81,7 +81,7 @@ const AdvancedBusRentalHomepage = () => {
         "Experience world-class travel with our luxury fleet equipped with modern amenities",
       cta: "Explore Fleet",
       image: buspic1,
-      accent: "from-blue-400 to-cyan-500",
+      accent: "from-blue-600 to-cyan-600",
     },
     {
       title: "Corporate Travel Solutions",
@@ -90,7 +90,7 @@ const AdvancedBusRentalHomepage = () => {
         "Streamline your corporate events and employee transport with our dedicated services",
       cta: "Get Quote",
       image: buspic2,
-      accent: "from-blue-500 to-indigo-500",
+      accent: "from-blue-600 to-indigo-600",
     },
     {
       title: "Tourist & Event Charters",
@@ -99,7 +99,7 @@ const AdvancedBusRentalHomepage = () => {
         "Perfect for weddings, tours, and special events with customizable packages",
       cta: "Book Now",
       image: buspic3,
-      accent: "from-cyan-400 to-blue-500",
+      accent: "from-cyan-600 to-blue-600",
     },
   ];
 
@@ -139,19 +139,19 @@ const AdvancedBusRentalHomepage = () => {
       number: "50,000+",
       label: "Miles Traveled",
       icon: Navigation,
-      color: "text-blue-400",
+      color: "text-blue-600",
     },
     {
       number: "15,459",
       label: "Happy Customers",
       icon: Users,
-      color: "text-cyan-400",
+      color: "text-cyan-600",
     },
     {
       number: "150+",
       label: "Premium Buses",
       icon: Bus,
-      color: "text-indigo-400",
+      color: "text-indigo-600",
     },
     {
       number: "99.8%",
@@ -223,49 +223,49 @@ const AdvancedBusRentalHomepage = () => {
       icon: Wifi,
       title: "Free WiFi",
       description: "Stay connected throughout your journey",
-      color: "text-blue-400",
+      color: "text-blue-600",
     },
     {
       icon: Coffee,
       title: "Refreshments",
       description: "Complimentary drinks and snacks",
-      color: "text-cyan-400",
+      color: "text-cyan-600",
     },
     {
       icon: Tv,
       title: "Entertainment",
       description: "Individual screens with media options",
-      color: "text-indigo-400",
+      color: "text-indigo-600",
     },
     {
       icon: Snowflake,
       title: "AC & Heating",
       description: "Climate control for your comfort",
-      color: "text-blue-400",
+      color: "text-blue-600",
     },
     {
       icon: Music,
       title: "Audio System",
       description: "Premium sound for music and announcements",
-      color: "text-purple-400",
+      color: "text-purple-600",
     },
     {
       icon: BatteryCharging,
       title: "USB Charging",
       description: "Charge your devices on the go",
-      color: "text-cyan-400",
+      color: "text-cyan-600",
     },
     {
       icon: Luggage,
       title: "Storage Space",
       description: "Ample room for all your luggage",
-      color: "text-blue-400",
+      color: "text-blue-600",
     },
     {
       icon: Eye,
       title: "Privacy Glass",
       description: "Tinted windows for privacy and comfort",
-      color: "text-indigo-400",
+      color: "text-indigo-600",
     },
   ];
 
@@ -281,7 +281,7 @@ const AdvancedBusRentalHomepage = () => {
       ],
       price: "$199/day",
       image: buspic4,
-      color: "from-blue-500 to-cyan-500",
+      color: "from-blue-600 to-cyan-600",
     },
     {
       name: "Premium Coach",
@@ -294,7 +294,7 @@ const AdvancedBusRentalHomepage = () => {
       ],
       price: "$299/day",
       image: busimg5,
-      color: "from-indigo-500 to-blue-500",
+      color: "from-indigo-600 to-blue-600",
     },
     {
       name: "Mini Party Bus",
@@ -302,7 +302,7 @@ const AdvancedBusRentalHomepage = () => {
       features: ["LED Lighting", "Sound System", "Bar Setup", "Dance Floor"],
       price: "$349/day",
       image: busimg6,
-      color: "from-blue-500 to-indigo-500",
+      color: "from-blue-600 to-indigo-600",
     },
   ];
 
@@ -488,101 +488,101 @@ const AdvancedBusRentalHomepage = () => {
   // Footer Component
   const Footer = () => {
     return (
-      <footer className="w-full px-6 lg:px-8 py-12 bg-slate-900/70">
+      <footer className="w-full px-6 lg:px-8 py-12 bg-gradient-to-br from-blue-100 to-cyan-100">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-8">
           <div className="space-y-5 col-span-2">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <div className="bg-gradient-to-r from-blue-400 to-cyan-500 p-3 rounded-xl shadow-lg">
+                <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-3 rounded-xl shadow-lg">
                   <Bus className="h-8 w-8 text-white" />
                 </div>
                 <div className="absolute -top-1 -right-1 bg-cyan-400 w-4 h-4 rounded-full"></div>
               </div>
               <div>
-                <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+                <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                   BusZone+
                 </div>
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-blue-600/70">
                   Premium Bus Rentals
                 </div>
               </div>
             </div>
-            <p className="text-neutral-400 text-base font-normal pr-10">
+            <p className="text-slate-600 text-base font-normal pr-10">
               Experience luxury, reliability, and comfort with our premium bus rental services. 
               We provide exceptional transportation solutions for all your needs.
             </p>
           </div>
 
           <div className="space-y-5">
-            <h1 className="text-lg font-medium text-white">About Us</h1>
-            <ul className="space-y-3 text-neutral-400 text-base font-normal">
+            <h1 className="text-lg font-medium text-slate-800">About Us</h1>
+            <ul className="space-y-3 text-slate-600 text-base font-normal">
               <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>About Us</a>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>About Us</a>
               </li>
               <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Contact Us</a>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Contact Us</a>
               </li>
               <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Privacy Policy</a>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Privacy Policy</a>
               </li>
               <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Terms and Conditions</a>
-              </li>
-            </ul>
-          </div>
-
-          <div className="space-y-5">
-            <h1 className="text-lg font-medium text-white">Services</h1>
-            <ul className="space-y-3 text-neutral-400 text-base font-normal">
-              <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Safety Guarantee</a>
-              </li>
-              <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>FAQ & Support</a>
-              </li>
-              <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Luxury Buses</a>
-              </li>
-              <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Enough Facilities</a>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Terms and Conditions</a>
               </li>
             </ul>
           </div>
 
           <div className="space-y-5">
-            <h1 className="text-lg font-medium text-white">Get In Touch</h1>
+            <h1 className="text-lg font-medium text-slate-800">Services</h1>
+            <ul className="space-y-3 text-slate-600 text-base font-normal">
+              <li>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Safety Guarantee</a>
+              </li>
+              <li>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>FAQ & Support</a>
+              </li>
+              <li>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Luxury Buses</a>
+              </li>
+              <li>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Enough Facilities</a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="space-y-5">
+            <h1 className="text-lg font-medium text-slate-800">Get In Touch</h1>
             <div className="space-y-4">
               <div className="flex gap-x-3">
-                <MapPin className='text-lg text-blue-400 mt-1 flex-shrink-0' />
+                <MapPin className='text-lg text-blue-600 mt-1 flex-shrink-0' />
                 <div className="flex flex-col">
-                  <p className="text-sm text-neutral-400">
+                  <p className="text-sm text-slate-600">
                     For Support & Reservations
                   </p>
-                  <p className="text-sm text-neutral-300">
+                  <p className="text-sm text-slate-700">
                     123, Main Street, Anytown, USA
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-x-3">
-                <Phone className='text-lg text-blue-400 mt-1 flex-shrink-0' />
+                <Phone className='text-lg text-blue-600 mt-1 flex-shrink-0' />
                 <div className="flex flex-col">
-                  <p className="text-sm text-neutral-400">
+                  <p className="text-sm text-slate-600">
                     Call Us Anytime
                   </p>
-                  <p className="text-sm text-neutral-300">
+                  <p className="text-sm text-slate-700">
                     +94 704 222 777
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-x-3">
-                <Mail className='text-lg text-blue-400 mt-1 flex-shrink-0' />
+                <Mail className='text-lg text-blue-600 mt-1 flex-shrink-0' />
                 <div className="flex flex-col">
-                  <p className="text-sm text-neutral-400">
+                  <p className="text-sm text-slate-600">
                     Email Us
                   </p>
-                  <p className="text-sm text-neutral-300">
+                  <p className="text-sm text-slate-700">
                     info@buszoneplus.com
                   </p>
                 </div>
@@ -591,8 +591,8 @@ const AdvancedBusRentalHomepage = () => {
           </div>
         </div>
         
-        <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-slate-700 text-center">
-          <p className="text-neutral-500 text-sm">
+        <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-blue-200 text-center">
+          <p className="text-slate-500 text-sm">
             © {new Date().getFullYear()} BusZone+. All rights reserved.
           </p>
         </div>
@@ -601,12 +601,12 @@ const AdvancedBusRentalHomepage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 overflow-x-hidden">
       {/* Advanced Navigation */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           isScrolled
-            ? "bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 shadow-2xl py-2"
+            ? "bg-white/95 backdrop-blur-xl border-b border-blue-200/50 shadow-2xl py-2"
             : "bg-transparent py-4"
         }`}
       >
@@ -615,16 +615,16 @@ const AdvancedBusRentalHomepage = () => {
             {/* Logo */}
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <div className="bg-gradient-to-r from-blue-400 to-cyan-500 p-3 rounded-xl shadow-lg animate-pulse">
+                <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-3 rounded-xl shadow-lg animate-pulse">
                   <Bus className="h-8 w-8 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 bg-cyan-400 w-4 h-4 rounded-full animate-pulse"></div>
+                <div className="absolute -top-1 -right-1 bg-cyan-500 w-4 h-4 rounded-full animate-pulse"></div>
               </div>
               <div>
-                <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+                <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                   BusZone+
                 </div>
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-blue-600/70">
                   Premium Bus Rentals
                 </div>
               </div>
@@ -645,13 +645,13 @@ const AdvancedBusRentalHomepage = () => {
                   href={item.link}
                   className={`relative px-4 py-2 text-sm font-medium transition-all duration-300 group ${
                     item.active
-                      ? "text-blue-400"
-                      : "text-slate-300 hover:text-white"
+                      ? "text-blue-600"
+                      : "text-slate-700 hover:text-blue-600"
                   }`}
                 >
                   {item.name}
                   <span
-                    className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-400 to-cyan-500 transition-all duration-300 group-hover:w-full ${
+                    className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-cyan-600 transition-all duration-300 group-hover:w-full ${
                       item.active ? "w-full" : ""
                     }`}
                   ></span>
@@ -661,18 +661,18 @@ const AdvancedBusRentalHomepage = () => {
 
             {/* Right side */}
             <div className="hidden lg:flex items-center space-x-6">
-              <div className="flex items-center space-x-2 text-slate-300 group">
+              <div className="flex items-center space-x-2 text-slate-700 group">
                 <div className="relative">
-                  <Phone className="h-4 w-4 text-blue-400 group-hover:animate-bounce" />
-                  <div className="absolute -top-1 -right-1 bg-blue-400 w-2 h-2 rounded-full animate-ping"></div>
+                  <Phone className="h-4 w-4 text-blue-600 group-hover:animate-bounce" />
+                  <div className="absolute -top-1 -right-1 bg-blue-600 w-2 h-2 rounded-full animate-ping"></div>
                 </div>
-                <span className="text-sm group-hover:text-blue-400 transition-colors">
+                <span className="text-sm group-hover:text-blue-600 transition-colors">
                   +94 704 222 777
                 </span>
               </div>
               <div className="flex items-center space-x-3">
                 <button
-                  className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg"
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-blue-200/50"
                   onClick={() => navigate("/login")}
                 >
                   Login
@@ -683,7 +683,7 @@ const AdvancedBusRentalHomepage = () => {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden p-2 text-slate-300 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all duration-300"
+              className="lg:hidden p-2 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-300"
             >
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -691,7 +691,7 @@ const AdvancedBusRentalHomepage = () => {
 
           {/* Mobile Menu */}
           {isMenuOpen && (
-            <div className="lg:hidden absolute top-full left-0 right-0 bg-slate-900/98 backdrop-blur-xl border-b border-slate-700/50 animate-fade-in">
+            <div className="lg:hidden absolute top-full left-0 right-0 bg-white/98 backdrop-blur-xl border-b border-blue-200/50 animate-fade-in shadow-lg">
               <div className="px-6 py-6 space-y-4">
                 {[
                   { name: 'Home', link: '/' },
@@ -704,7 +704,7 @@ const AdvancedBusRentalHomepage = () => {
                   <a
                     key={item.name}
                     href={item.link}
-                    className="text-slate-300 hover:text-blue-400 py-2 text-lg font-medium transition-colors duration-300 flex items-center group"
+                    className="text-slate-700 hover:text-blue-600 py-2 text-lg font-medium transition-colors duration-300 flex items-center group"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <ArrowRight className="h-4 w-4 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -712,12 +712,12 @@ const AdvancedBusRentalHomepage = () => {
                   </a>
                 ))}
                 <div className="pt-6 border-t border-slate-700 space-y-4">
-                  <div className="flex items-center space-x-2 text-slate-300">
-                    <Phone className="h-4 w-4 text-blue-400" />
+                  <div className="flex items-center space-x-2 text-slate-700">
+                    <Phone className="h-4 w-4 text-blue-600" />
                     <span>+94 704 222 777</span>
                   </div>
                   <button
-                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 text-white py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105"
+                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg"
                     onClick={() => {
                       setIsMenuOpen(false);
                       navigate('/login');
@@ -725,7 +725,7 @@ const AdvancedBusRentalHomepage = () => {
                   >
                     Login
                   </button>
-                  <button className="w-full bg-gradient-to-r from-blue-600 to-cyan-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105">
+                  <button className="w-full bg-gradient-to-r from-blue-700 to-cyan-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg">
                     Get Quote
                   </button>
                 </div>
@@ -751,13 +751,13 @@ const AdvancedBusRentalHomepage = () => {
               className="absolute inset-0 bg-cover bg-center"
               style={{ backgroundImage: `url(${slide.image})` }}
             ></div>
-            <div className="absolute inset-0 bg-black/60"></div>
+            <div className="absolute inset-0 bg-black/30"></div>
 
             {/* Animated background elements */}
             <div className="absolute inset-0">
-              <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-              <div className="absolute bottom-20 right-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-300"></div>
-              <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl animate-bounce"></div>
+              <div className="absolute top-20 left-20 w-64 h-64 bg-blue-400/20 rounded-full blur-3xl animate-pulse"></div>
+              <div className="absolute bottom-20 right-20 w-96 h-96 bg-cyan-400/20 rounded-full blur-3xl animate-pulse delay-300"></div>
+              <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-sky-400/20 rounded-full blur-2xl animate-bounce"></div>
             </div>
 
             <div className="relative z-10 flex items-center justify-center h-full">
@@ -765,7 +765,7 @@ const AdvancedBusRentalHomepage = () => {
                 <div className="max-w-4xl mx-auto">
                   {slide.icon}
 
-                  <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-6 animate-fade-in-up delay-200">
+                  <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-6 animate-fade-in-up delay-200 drop-shadow-lg">
                     {slide.title}
                   </h1>
 
@@ -775,7 +775,7 @@ const AdvancedBusRentalHomepage = () => {
                     {slide.subtitle}
                   </p>
 
-                  <p className="text-xl text-slate-300 mb-12 max-w-3xl mx-auto animate-fade-in-up delay-400">
+                  <p className="text-xl text-blue-100 mb-12 max-w-3xl mx-auto animate-fade-in-up delay-400 drop-shadow-md">
                     {slide.description}
                   </p>
 
@@ -789,14 +789,14 @@ const AdvancedBusRentalHomepage = () => {
         {/* Slider Controls */}
         <button
           onClick={prevSlide}
-          className="absolute left-6 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-blue-500/80 text-white p-4 rounded-full transition-all duration-300 hover:scale-110 group"
+          className="absolute left-6 top-1/2 -translate-y-1/2 z-20 bg-white/30 backdrop-blur-sm hover:bg-blue-600/80 text-white p-4 rounded-full transition-all duration-300 hover:scale-110 group shadow-lg"
         >
           <ChevronLeft className="h-6 w-6 group-hover:-translate-x-1 transition-transform" />
         </button>
 
         <button
           onClick={nextSlide}
-          className="absolute right-6 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-blue-500/80 text-white p-4 rounded-full transition-all duration-300 hover:scale-110 group"
+          className="absolute right-6 top-1/2 -translate-y-1/2 z-20 bg-white/30 backdrop-blur-sm hover:bg-blue-600/80 text-white p-4 rounded-full transition-all duration-300 hover:scale-110 group shadow-lg"
         >
           <ChevronRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
         </button>
@@ -808,11 +808,11 @@ const AdvancedBusRentalHomepage = () => {
               key={index}
               onClick={() => setCurrentSlide(index)}
               className={`w-12 h-2 rounded-full transition-all duration-300 relative overflow-hidden group ${
-                index === currentSlide ? "bg-blue-400" : "bg-white/30"
+                index === currentSlide ? "bg-blue-500" : "bg-white/50"
               }`}
             >
               {index === currentSlide && (
-                <span className="absolute top-0 left-0 h-full bg-blue-200 animate-progress"></span>
+                <span className="absolute top-0 left-0 h-full bg-blue-300 animate-progress"></span>
               )}
             </button>
           ))}
@@ -821,7 +821,7 @@ const AdvancedBusRentalHomepage = () => {
 
       {/* Stats Section */}
       <div
-        className="bg-gradient-to-r from-slate-900 to-slate-800 py-20"
+        className="bg-gradient-to-r from-blue-100 to-cyan-100 py-20"
         ref={sectionRef}
       >
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -839,14 +839,14 @@ const AdvancedBusRentalHomepage = () => {
                   style={{ transitionDelay: `${index * 100}ms` }}
                 >
                   <div
-                    className={`${stat.color} bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-2xl mb-6 group-hover:scale-110 transition-all duration-500 shadow-lg group-hover:shadow-xl`}
+                    className={`${stat.color} bg-gradient-to-br from-white to-blue-50 p-6 rounded-2xl mb-6 group-hover:scale-110 transition-all duration-500 shadow-lg group-hover:shadow-xl border border-blue-200`}
                   >
                     <Icon className="h-12 w-12 mx-auto" />
                   </div>
-                  <div className="text-4xl font-bold text-white mb-2 animate-count-up">
+                  <div className="text-4xl font-bold text-slate-800 mb-2 animate-count-up">
                     {stat.number}
                   </div>
-                  <div className="text-slate-400 font-medium">{stat.label}</div>
+                  <div className="text-slate-600 font-medium">{stat.label}</div>
                 </div>
               );
             })}
@@ -855,18 +855,18 @@ const AdvancedBusRentalHomepage = () => {
       </div>
 
       {/* Features Section */}
-      <div className="bg-slate-950 py-20">
+      <div className="bg-gradient-to-br from-sky-50 to-blue-50 py-20">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-blue-400/20 to-cyan-500/20 border border-blue-400/30 mb-6">
-              <span className="text-blue-400 font-semibold">
+            <div className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 mb-6">
+              <span className="text-blue-600 font-semibold">
                 Premium Amenities
               </span>
             </div>
-            <h2 className="text-5xl font-bold text-white mb-6">
+            <h2 className="text-5xl font-bold text-slate-800 mb-6">
               Luxury Travel Experience
             </h2>
-            <p className="text-xl text-slate-400 max-w-3xl mx-auto">
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
               Enjoy a comfortable journey with our state-of-the-art amenities
               and services
             </p>
@@ -878,17 +878,17 @@ const AdvancedBusRentalHomepage = () => {
               return (
                 <div
                   key={index}
-                  className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-2xl border border-slate-700/50 hover:border-blue-400/50 transition-all duration-500 hover:transform hover:scale-105 group text-center"
+                  className="bg-gradient-to-br from-white to-blue-50 p-6 rounded-2xl border border-blue-200/50 hover:border-blue-400/50 transition-all duration-500 hover:transform hover:scale-105 group text-center shadow-lg hover:shadow-xl"
                 >
                   <div
                     className={`${feature.color} p-3 rounded-xl w-fit mx-auto mb-4 group-hover:scale-110 transition-transform duration-300`}
                   >
                     <Icon className="h-8 w-8" />
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-2 group-hover:text-blue-400 transition-colors duration-300">
+                  <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors duration-300">
                     {feature.title}
                   </h3>
-                  <p className="text-slate-400 text-sm">
+                  <p className="text-slate-600 text-sm">
                     {feature.description}
                   </p>
                 </div>
@@ -899,16 +899,16 @@ const AdvancedBusRentalHomepage = () => {
       </div>
 
       {/* Services Section */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 py-24">
+      <div className="bg-gradient-to-r from-blue-100 to-cyan-100 py-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-20">
-            <div className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-blue-400/20 to-cyan-500/20 border border-blue-400/30 mb-6">
-              <span className="text-blue-400 font-semibold">Our Services</span>
+            <div className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 mb-6">
+              <span className="text-blue-600 font-semibold">Our Services</span>
             </div>
-            <h2 className="text-5xl font-bold text-white mb-6">
+            <h2 className="text-5xl font-bold text-slate-800 mb-6">
               Premium Transportation Solutions
             </h2>
-            <p className="text-xl text-slate-400 max-w-3xl mx-auto">
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
               Experience luxury, reliability, and comfort with our comprehensive
               range of bus rental services
             </p>
@@ -920,9 +920,9 @@ const AdvancedBusRentalHomepage = () => {
               return (
                 <div
                   key={index}
-                  className={`group ${service.bgColor} p-8 rounded-3xl border border-slate-700/50 hover:border-blue-400/50 transition-all duration-500 hover:transform hover:scale-105 relative overflow-hidden`}
+                  className={`group bg-gradient-to-br from-white to-blue-50 p-8 rounded-3xl border border-blue-200/50 hover:border-blue-400/50 transition-all duration-500 hover:transform hover:scale-105 relative overflow-hidden shadow-lg hover:shadow-xl`}
                 >
-                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-400/10 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
+                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-400/20 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
 
                   <div
                     className={`bg-gradient-to-r ${service.color} p-4 rounded-2xl w-fit mb-6 group-hover:scale-110 transition-transform duration-300 relative z-10`}
@@ -930,10 +930,10 @@ const AdvancedBusRentalHomepage = () => {
                     <Icon className="h-8 w-8 text-white" />
                   </div>
 
-                  <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-blue-400 transition-colors duration-300 relative z-10">
+                  <h3 className="text-2xl font-bold text-slate-800 mb-4 group-hover:text-blue-600 transition-colors duration-300 relative z-10">
                     {service.title}
                   </h3>
-                  <p className="text-slate-400 mb-6 leading-relaxed relative z-10">
+                  <p className="text-slate-600 mb-6 leading-relaxed relative z-10">
                     {service.description}
                   </p>
 
@@ -943,13 +943,13 @@ const AdvancedBusRentalHomepage = () => {
                         key={featureIndex}
                         className="flex items-center space-x-2 text-sm"
                       >
-                        <CheckCircle className="h-4 w-4 text-cyan-400 flex-shrink-0" />
-                        <span className="text-slate-300">{feature}</span>
+                        <CheckCircle className="h-4 w-4 text-cyan-600 flex-shrink-0" />
+                        <span className="text-slate-700">{feature}</span>
                       </div>
                     ))}
                   </div>
 
-                  <button className="text-blue-400 hover:text-white font-semibold flex items-center space-x-2 group-hover:translate-x-2 transition-all duration-300 relative z-10">
+                  <button className="text-blue-600 hover:text-blue-800 font-semibold flex items-center space-x-2 group-hover:translate-x-2 transition-all duration-300 relative z-10">
                     <span>Learn More</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
@@ -961,16 +961,16 @@ const AdvancedBusRentalHomepage = () => {
       </div>
 
       {/* Fleet Section */}
-      <div className="bg-slate-950 py-24">
+      <div className="bg-gradient-to-br from-sky-50 to-blue-50 py-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-blue-400/20 to-cyan-500/20 border border-blue-400/30 mb-6">
-              <span className="text-blue-400 font-semibold">Our Fleet</span>
+            <div className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 mb-6">
+              <span className="text-blue-600 font-semibold">Our Fleet</span>
             </div>
-            <h2 className="text-5xl font-bold text-white mb-6">
+            <h2 className="text-5xl font-bold text-slate-800 mb-6">
               Luxury Vehicles
             </h2>
-            <p className="text-xl text-slate-400 max-w-3xl mx-auto">
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
               Choose from our premium selection of buses for any occasion
             </p>
           </div>
@@ -979,7 +979,7 @@ const AdvancedBusRentalHomepage = () => {
             {fleet.map((vehicle, index) => (
               <div
                 key={index}
-                className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl overflow-hidden border border-slate-700/50 hover:border-blue-400/50 transition-all duration-500 group"
+                className="bg-gradient-to-br from-white to-blue-50 rounded-3xl overflow-hidden border border-blue-200/50 hover:border-blue-400/50 transition-all duration-500 group shadow-lg hover:shadow-xl"
               >
                 <div className="h-48 overflow-hidden">
                   <img
@@ -990,11 +990,11 @@ const AdvancedBusRentalHomepage = () => {
                 </div>
 
                 <div className="p-6">
-                  <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
+                  <h3 className="text-2xl font-bold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">
                     {vehicle.name}
                   </h3>
-                  <p className="text-slate-400 mb-4 flex items-center">
-                    <Users className="h-4 w-4 mr-2 text-blue-400" />
+                  <p className="text-slate-600 mb-4 flex items-center">
+                    <Users className="h-4 w-4 mr-2 text-blue-600" />
                     {vehicle.capacity}
                   </p>
 
@@ -1002,14 +1002,14 @@ const AdvancedBusRentalHomepage = () => {
                     {vehicle.features.map((feature, i) => (
                       <div key={i} className="flex items-center mb-2">
                         <div className="w-2 h-2 bg-blue-400 rounded-full mr-3"></div>
-                        <span className="text-slate-300 text-sm">
+                        <span className="text-slate-700 text-sm">
                           {feature}
                         </span>
                       </div>
                     ))}
                   </div>
 
-                  <button className="w-full bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-500 hover:to-cyan-600 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105">
+                  <button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg">
                     View Details
                   </button>
                 </div>
@@ -1020,16 +1020,16 @@ const AdvancedBusRentalHomepage = () => {
       </div>
 
       {/* Customer Testimonials Slider - Updated with Backend Integration */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 py-24">
+      <div className="bg-gradient-to-r from-blue-100 to-cyan-100 py-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-blue-400/20 to-cyan-500/20 border border-blue-400/30 mb-6">
-              <span className="text-blue-400 font-semibold">Testimonials</span>
+            <div className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 mb-6">
+              <span className="text-blue-600 font-semibold">Testimonials</span>
             </div>
-            <h2 className="text-4xl font-bold text-white mb-4">
+            <h2 className="text-4xl font-bold text-slate-800 mb-4">
               What Our Clients Say
             </h2>
-            <p className="text-slate-400 text-lg">
+            <p className="text-slate-600 text-lg">
               {testimonials.some(t => t.type === 'customer') 
                 ? "Real feedback from our satisfied customers" 
                 : "Trusted by thousands of satisfied customers"}
@@ -1037,7 +1037,7 @@ const AdvancedBusRentalHomepage = () => {
             {loadingFeedbacks && (
               <div className="flex items-center justify-center mt-4">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
-                <span className="ml-2 text-slate-400 text-sm">Loading customer testimonials...</span>
+                <span className="ml-2 text-slate-600 text-sm">Loading customer testimonials...</span>
               </div>
             )}
             
@@ -1059,7 +1059,7 @@ const AdvancedBusRentalHomepage = () => {
                     : "opacity-0 absolute inset-0"
                 }`}
               >
-                <div className="bg-slate-900/50 backdrop-blur-sm p-8 rounded-3xl border border-slate-700/50">
+                <div className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl border border-blue-200/50 shadow-lg">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
                       {[...Array(testimonial.rating || 5)].map((_, i) => (
@@ -1077,7 +1077,7 @@ const AdvancedBusRentalHomepage = () => {
                         </div>
                       )}
                       {testimonial.isReplied && (
-                        <div className="flex items-center space-x-1 text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded-full">
+                        <div className="flex items-center space-x-1 text-xs text-blue-600 bg-blue-400/10 px-2 py-1 rounded-full">
                           <CheckCircle className="h-3 w-3" />
                           <span>Verified</span>
                         </div>
@@ -1087,11 +1087,11 @@ const AdvancedBusRentalHomepage = () => {
 
                   <div className="mb-6">
                     {testimonial.title && (
-                      <h3 className="text-lg font-semibold text-white mb-2">
+                      <h3 className="text-lg font-semibold text-slate-800 mb-2">
                         "{testimonial.title}"
                       </h3>
                     )}
-                    <p className="text-xl text-slate-300 leading-relaxed italic">
+                    <p className="text-xl text-slate-700 leading-relaxed italic">
                       "{testimonial.text}"
                     </p>
                   </div>
@@ -1107,13 +1107,13 @@ const AdvancedBusRentalHomepage = () => {
                         }}
                       />
                       <div>
-                        <div className="font-bold text-white text-lg">
+                        <div className="font-bold text-slate-800 text-lg">
                           {testimonial.name}
                         </div>
-                        <div className="text-blue-400 font-medium">
+                        <div className="text-blue-600 font-medium">
                           {testimonial.role}
                         </div>
-                        <div className="text-slate-400 text-sm">
+                        <div className="text-slate-600 text-sm">
                           {testimonial.company}
                         </div>
                       </div>
@@ -1141,8 +1141,8 @@ const AdvancedBusRentalHomepage = () => {
                     onClick={() => setCurrentTestimonial(index)}
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${
                       index === currentTestimonial
-                        ? "bg-blue-400"
-                        : "bg-slate-600"
+                        ? "bg-blue-600"
+                        : "bg-slate-400"
                     }`}
                   />
                 ))}
@@ -1164,7 +1164,7 @@ const AdvancedBusRentalHomepage = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-700 py-20 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-500 to-cyan-600 py-20 relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-0 left-0 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"></div>
@@ -1175,17 +1175,17 @@ const AdvancedBusRentalHomepage = () => {
             <h2 className="text-5xl font-bold text-white mb-6">
               Ready to Travel in Style?
             </h2>
-            <p className="text-xl text-blue-100 mb-8">
+            <p className="text-xl text-blue-50 mb-8">
               Get an instant quote and book your premium bus rental today
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-              <button className="bg-white hover:bg-gray-100 text-blue-600 px-10 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-3 group">
+              <button className="bg-white hover:bg-gray-50 text-blue-600 px-10 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-3 group">
                 <Phone className="h-5 w-5 group-hover:animate-bounce" />
                 <span>Call Now</span>
               </button>
 
-              <button className="bg-slate-900 hover:bg-slate-800 text-white px-10 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-3 group">
+              <button className="bg-slate-800 hover:bg-slate-700 text-white px-10 py-4 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-3 group">
                 <Mail className="h-5 w-5 group-hover:animate-pulse" />
                 <span>Get Quote</span>
               </button>
