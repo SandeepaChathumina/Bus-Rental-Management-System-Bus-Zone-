@@ -45,7 +45,7 @@ import toast from 'react-hot-toast';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 // Booking Card Component for Admin
-const AdminBookingCard = ({ booking, onViewDetails, onUpdateStatus, onSendNotification, onDownloadReport }) => {
+const AdminBookingCard = ({ booking, onViewDetails, onDownloadReport }) => {
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
       case 'confirmed':
@@ -193,22 +193,6 @@ const AdminBookingCard = ({ booking, onViewDetails, onUpdateStatus, onSendNotifi
         </button>
 
         <button
-          onClick={() => onUpdateStatus(booking)}
-          className="flex items-center px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
-        >
-          <Edit3 className="h-4 w-4 mr-2" />
-          Update
-        </button>
-
-        <button
-          onClick={() => onSendNotification(booking)}
-          className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
-        >
-          <Send className="h-4 w-4 mr-2" />
-          Notify
-        </button>
-
-        <button
           onClick={() => onDownloadReport(booking)}
           className="flex items-center px-3 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
         >
@@ -229,7 +213,7 @@ const AdminBookingCard = ({ booking, onViewDetails, onUpdateStatus, onSendNotifi
 };
 
 // Admin Booking Details Modal
-const AdminBookingDetailsModal = ({ booking, isOpen, onClose, onUpdateStatus, onSendNotification }) => {
+const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('details');
 
   if (!isOpen || !booking) return null;
@@ -246,8 +230,7 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose, onUpdateStatus, on
   const tabs = [
     { id: 'details', label: 'Booking Details', icon: FileText },
     { id: 'passengers', label: 'Passengers', icon: Users },
-    { id: 'payment', label: 'Payment', icon: CreditCard },
-    { id: 'actions', label: 'Admin Actions', icon: Shield }
+    { id: 'payment', label: 'Payment', icon: CreditCard }
   ];
 
   return (
@@ -418,49 +401,6 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose, onUpdateStatus, on
             </div>
           )}
 
-          {activeTab === 'actions' && (
-            <div className="space-y-6">
-              <div className="bg-red-50 rounded-xl p-4">
-                <h4 className="text-lg font-semibold text-red-900 mb-3">Admin Actions</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <button
-                    onClick={() => onUpdateStatus(booking)}
-                    className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                  >
-                    <Edit3 className="h-5 w-5 mr-2" />
-                    Update Status
-                  </button>
-                  <button
-                    onClick={() => onSendNotification(booking)}
-                    className="flex items-center justify-center px-4 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
-                  >
-                    <Send className="h-5 w-5 mr-2" />
-                    Send Notification
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Status Update */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h4 className="text-lg font-semibold text-gray-900 mb-3">Quick Status Update</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {['Confirmed', 'Pending', 'Cancelled', 'Completed'].map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => onUpdateStatus(booking, status)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                        booking.bookingStatus === status
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      {status}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -609,68 +549,67 @@ const AllBookings = () => {
     setShowDetailsModal(true);
   };
 
-  const handleUpdateStatus = async (booking, newStatus) => {
-    if (!newStatus) {
-      newStatus = prompt('Enter new status (Confirmed, Pending, Cancelled, Completed):');
-      if (!newStatus) return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.put(
-        `${BACKEND_URL}/api/bookings/${booking._id}`,
-        { bookingStatus: newStatus },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      if (response.data.success) {
-        fetchAllBookings();
-        alert(`Booking status updated to ${newStatus}`);
-      } else {
-        alert(response.data.message || 'Failed to update status');
-      }
-    } catch (error) {
-      console.error('Error updating status:', error);
-      alert(error.response?.data?.message || 'Failed to update status');
-    }
-  };
-
-  const handleSendNotification = (booking) => {
-    const message = prompt('Enter notification message:');
-    if (message) {
-      // In a real implementation, this would send an email/SMS
-      alert(`Notification sent to ${booking.user?.email}: ${message}`);
-    }
-  };
 
   const handleDownloadReport = (booking) => {
-    // Generate individual booking report
-    const reportData = {
-      bookingId: booking.bookingId,
-      customer: `${booking.user?.firstName} ${booking.user?.lastName}`,
-      email: booking.user?.email,
-      route: `${booking.route?.from} → ${booking.route?.to}`,
-      travelDate: new Date(booking.travelDate).toLocaleDateString(),
-      departureTime: booking.departureTime,
-      passengers: booking.numberOfPassengers,
-      seats: booking.seats?.map(seat => seat.seatNumber).join(', '),
-      busType: booking.bus?.busType,
-      numberPlate: booking.bus?.numberPlate,
-      totalAmount: booking.totalAmount,
-      bookingStatus: booking.bookingStatus,
-      paymentStatus: booking.paymentStatus,
-      createdAt: new Date(booking.createdAt).toLocaleString()
-    };
-    
-    const dataStr = JSON.stringify(reportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `booking-report-${booking.bookingId}.json`;
-    link.click();
+    try {
+      const doc = new jsPDF();
+      
+      // Header
+      doc.setFillColor(41, 128, 185);
+      doc.rect(0, 0, 210, 30, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Bus Zone - Booking Report', 20, 20);
+      
+      // Reset text color
+      doc.setTextColor(0, 0, 0);
+      
+      // Booking Information
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Booking Details', 20, 50);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      const details = [
+        `Booking ID: ${booking.bookingId}`,
+        `Customer: ${booking.user?.firstName} ${booking.user?.lastName}`,
+        `Email: ${booking.user?.email}`,
+        `Route: ${booking.route?.from} → ${booking.route?.to}`,
+        `Travel Date: ${new Date(booking.travelDate).toLocaleDateString()}`,
+        `Departure Time: ${booking.departureTime}`,
+        `Passengers: ${booking.numberOfPassengers}`,
+        `Seats: ${booking.seats?.map(seat => seat.seatNumber).join(', ')}`,
+        `Bus Type: ${booking.bus?.busType}`,
+        `Number Plate: ${booking.bus?.numberPlate}`,
+        `Total Amount: LKR ${(booking.totalAmount || 0).toLocaleString()}`,
+        `Booking Status: ${booking.bookingStatus}`,
+        `Payment Status: ${booking.paymentStatus}`,
+        `Created At: ${new Date(booking.createdAt).toLocaleString()}`
+      ];
+      
+      details.forEach((detail, index) => {
+        doc.text(detail, 20, 65 + (index * 5));
+      });
+      
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Generated by Bus Zone Admin Dashboard', 20, 280);
+      doc.text('Generated on: ' + new Date().toLocaleString(), 20, 285);
+      
+      // Save the PDF
+      const fileName = `Booking_Report_${booking.bookingId}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+      toast.success(`Booking report generated: ${fileName}`);
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast.error('Failed to generate report');
+    }
   };
 
   const exportCSV = (list) => {
@@ -781,7 +720,20 @@ const AllBookings = () => {
     const confirmedBookings = list.filter(b => b.bookingStatus === 'confirmed').length;
     const pendingBookings = list.filter(b => b.bookingStatus === 'pending').length;
     const cancelledBookings = list.filter(b => b.bookingStatus === 'cancelled').length;
-    const totalRevenue = list.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
+    // Calculate revenue considering refunds
+    const totalRevenue = list.reduce((sum, booking) => {
+      const amount = booking.totalAmount || 0;
+      // If booking is cancelled and payment status is refunded, subtract the amount
+      if (booking.bookingStatus === 'Cancelled' && booking.paymentStatus === 'Refunded') {
+        return sum - amount;
+      }
+      // If payment is successful, add the amount
+      if (booking.paymentStatus === 'Paid') {
+        return sum + amount;
+      }
+      // For other statuses, don't add to revenue
+      return sum;
+    }, 0);
     
     // Statistics boxes - reduced spacing
     const availableWidth = pageWidth - (margin * 2);
@@ -1089,10 +1041,59 @@ const AllBookings = () => {
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 shadow-lg border border-purple-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-purple-700 font-medium">Total Revenue</p>
+                <p className="text-sm text-purple-700 font-medium">Net Revenue</p>
                 <p className="text-2xl font-bold text-purple-800">LKR {(stats.totalRevenue || 0).toLocaleString()}</p>
+                <p className="text-xs text-purple-600 mt-1">After refunds</p>
               </div>
               <TrendingUp className="h-8 w-8 text-purple-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Revenue Breakdown */}
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 shadow-lg border border-green-200 mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Breakdown</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg p-4 border border-green-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-700 font-medium">Gross Revenue</p>
+                  <p className="text-xl font-bold text-green-800">
+                    LKR {bookings
+                      .filter(b => b.paymentStatus === 'Paid')
+                      .reduce((sum, b) => sum + (b.totalAmount || 0), 0)
+                      .toLocaleString()}
+                  </p>
+                </div>
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg p-4 border border-red-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-red-700 font-medium">Refunds</p>
+                  <p className="text-xl font-bold text-red-800">
+                    LKR {bookings
+                      .filter(b => b.bookingStatus === 'Cancelled' && b.paymentStatus === 'Refunded')
+                      .reduce((sum, b) => sum + (b.totalAmount || 0), 0)
+                      .toLocaleString()}
+                  </p>
+                </div>
+                <XCircle className="h-6 w-6 text-red-600" />
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg p-4 border border-purple-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-purple-700 font-medium">Net Revenue</p>
+                  <p className="text-xl font-bold text-purple-800">
+                    LKR {(stats.totalRevenue || 0).toLocaleString()}
+                  </p>
+                </div>
+                <TrendingUp className="h-6 w-6 text-purple-600" />
+              </div>
             </div>
           </div>
         </div>
@@ -1239,8 +1240,6 @@ const AllBookings = () => {
                 key={booking._id}
                 booking={booking}
                 onViewDetails={handleViewDetails}
-                onUpdateStatus={handleUpdateStatus}
-                onSendNotification={handleSendNotification}
                 onDownloadReport={handleDownloadReport}
               />
             ))}
@@ -1252,8 +1251,6 @@ const AllBookings = () => {
           booking={selectedBooking}
           isOpen={showDetailsModal}
           onClose={() => setShowDetailsModal(false)}
-          onUpdateStatus={handleUpdateStatus}
-          onSendNotification={handleSendNotification}
         />
 
         {/* Report Export Information */}

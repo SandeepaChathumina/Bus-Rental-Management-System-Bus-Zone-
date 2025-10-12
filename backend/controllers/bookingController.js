@@ -522,18 +522,25 @@ export const getBookingStats = async (req, res) => {
     // Get total bookings count
     const totalBookings = await Booking.countDocuments();
     
-    // Get total revenue from successful payments
+    // Get total revenue from successful payments minus refunds
     const revenueStats = await Payment.aggregate([
       {
         $match: {
-          status: 'success',
           paymentType: 'booking'
         }
       },
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: '$amount' },
+          totalRevenue: { 
+            $sum: {
+              $cond: [
+                { $eq: ['$status', 'success'] },
+                '$amount',
+                { $cond: [{ $eq: ['$status', 'refunded'] }, { $multiply: ['$amount', -1] }, 0] }
+              ]
+            }
+          },
           totalBookings: { $sum: 1 }
         }
       }
@@ -549,11 +556,10 @@ export const getBookingStats = async (req, res) => {
       }
     ]);
 
-    // Get monthly revenue trend
+    // Get monthly revenue trend (including refunds)
     const monthlyTrend = await Payment.aggregate([
       {
         $match: {
-          status: 'success',
           paymentType: 'booking',
           createdAt: { $gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) }
         }
@@ -564,7 +570,15 @@ export const getBookingStats = async (req, res) => {
             year: { $year: '$createdAt' },
             month: { $month: '$createdAt' }
           },
-          revenue: { $sum: '$amount' },
+          revenue: { 
+            $sum: {
+              $cond: [
+                { $eq: ['$status', 'success'] },
+                '$amount',
+                { $cond: [{ $eq: ['$status', 'refunded'] }, { $multiply: ['$amount', -1] }, 0] }
+              ]
+            }
+          },
           bookings: { $sum: 1 }
         }
       },
