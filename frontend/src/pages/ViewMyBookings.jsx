@@ -12,7 +12,6 @@ import {
   CreditCard,
   QrCode,
   Download,
-  Mail,
   X,
   RefreshCw,
   AlertCircle,
@@ -471,10 +470,6 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCa
               Print Details
             </button>
 
-            <button className="flex items-center px-4 py-2 bg-slate-600 text-white rounded-lg font-medium hover:bg-slate-700 transition-colors">
-              <Mail className="h-4 w-4 mr-2" />
-              Email Details
-            </button>
 
             {/* Cancel Booking Button in Modal */}
             {(() => {
