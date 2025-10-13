@@ -1062,6 +1062,7 @@ export const getUserBookings = async (req, res) => {
   try {
     const userId = req.user._id;
     const bookings = await Booking.find({ user: userId })
+      .populate('user', 'firstName lastName email phone')
       .populate('bus', 'busType numberPlate capacity')
       .sort({ createdAt: -1 });
 
