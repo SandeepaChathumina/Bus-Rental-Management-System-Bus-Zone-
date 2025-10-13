@@ -98,28 +98,26 @@ const BusManagement = () => {
   const validateForm = () => {
     const errors = {};
 
-    // Engine Number validation (only for new buses)
+    // Engine Number validation (only for new buses) - must start with ENG
     if (!editingBus) {
       if (!formData.engineNumber.trim()) {
         errors.engineNumber = 'Engine number is required';
-      } else if (!/^[A-Z0-9]{5,20}$/i.test(formData.engineNumber)) {
-        errors.engineNumber = 'Engine number must be 5-20 alphanumeric characters';
+      } else if (!/^ENG[A-Z0-9]{2,17}$/i.test(formData.engineNumber)) {
+        errors.engineNumber = 'Engine number must start with ENG followed by letters and numbers (e.g., ENG123ABC)';
       }
     }
 
-    // Number Plate validation (only for new buses) - Sri Lanka format
+    // Number Plate validation (only for new buses) - must start with N, second letter a-f, then 4 numbers
     if (!editingBus) {
       if (!formData.numberPlate.trim()) {
         errors.numberPlate = 'Number plate is required';
       } else {
-        // Sri Lankan number plate validation
-        const sriLankanPlateRegex = /^[A-Z]{2,3}\s?\d{4}$/i;
+        // Custom number plate validation: N + (a-f) + 4 digits
+        const customPlateRegex = /^N[a-fA-F]\d{4}$/i;
         const formattedPlate = formData.numberPlate.toUpperCase().replace(/\s/g, '');
         
-        if (!sriLankanPlateRegex.test(formData.numberPlate)) {
-          errors.numberPlate = 'Number plate must be in Sri Lankan format (e.g., ABC 1234, AB 1234, or ABC1234)';
-        } else if (formattedPlate.length < 6 || formattedPlate.length > 7) {
-          errors.numberPlate = 'Number plate must be 6-7 characters (e.g., ABC1234 or AB1234)';
+        if (!customPlateRegex.test(formData.numberPlate)) {
+          errors.numberPlate = 'Number plate must start with N, second letter a-f, followed by 4 numbers (e.g., NA1234, NB5678)';
         }
       }
     }
@@ -257,10 +255,25 @@ const BusManagement = () => {
       processedValue = value.toUpperCase();
     }
 
-    setFormData({
+    // Auto-fill capacity based on bus type
+    let newFormData = {
       ...formData,
       [name]: processedValue
-    });
+    };
+
+    // Auto-fill capacity when bus type changes
+    if (name === 'busType' && !editingBus) {
+      const capacityMap = {
+        'Standard': 51,
+        'Luxury': 40,
+        'Deluxe': 55,
+        'Mini': 35,
+        'Double Decker': 78
+      };
+      newFormData.capacity = capacityMap[value] || '';
+    }
+
+    setFormData(newFormData);
   };
 
   const handleImageUpload = (imageUrl) => {
@@ -1031,7 +1044,7 @@ const BusManagement = () => {
                         ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
                         : formErrors.engineNumber ? 'border-red-500 focus:ring-red-500' : 'border-blue-300 focus:ring-blue-500'
                     }`}
-                    placeholder="Enter engine number"
+                    placeholder="Enter engine number (e.g., ENG123ABC)"
                     required
                     disabled={editingBus}
                   />
@@ -1064,6 +1077,9 @@ const BusManagement = () => {
                   {formErrors.capacity && (
                     <p className="text-red-600 text-xs mt-1">{formErrors.capacity}</p>
                   )}
+                  {!editingBus && !formErrors.capacity && (
+                    <p className="text-gray-500 text-xs mt-1">Capacity auto-fills based on bus type selection</p>
+                  )}
                 </div>
 
                 <div>
@@ -1081,7 +1097,7 @@ const BusManagement = () => {
                         ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
                         : formErrors.numberPlate ? 'border-red-500 focus:ring-red-500' : 'border-blue-300 focus:ring-blue-500'
                     }`}
-                    placeholder="Enter number plate (e.g., ABC 1234)"
+                    placeholder="Enter number plate (e.g., NA1234)"
                     required
                     disabled={editingBus}
                   />
@@ -1089,7 +1105,7 @@ const BusManagement = () => {
                     <p className="text-red-600 text-xs mt-1">{formErrors.numberPlate}</p>
                   )}
                   {!editingBus && !formErrors.numberPlate && (
-                    <p className="text-gray-500 text-xs mt-1">Format: 2-3 letters followed by 4 digits (e.g., ABC 1234, AB 1234)</p>
+                    <p className="text-gray-500 text-xs mt-1">Format: N + (a-f) + 4 digits (e.g., NA1234, NB5678)</p>
                   )}
                 </div>
 
