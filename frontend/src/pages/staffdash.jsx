@@ -9,7 +9,6 @@ import {
   Edit,
   Trash2,
   Filter,
-  Download,
   Save,
   X,
   Wrench,
@@ -33,24 +32,9 @@ import {
   BookOpen,
   UserCheck,
   MessageSquare,
-  FileText,
-  Sheet,
   Eye
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import * as XLSX from 'xlsx';
-// Fixed PDF imports - using dynamic import to avoid SSR issues
-let jsPDF;
-let autoTable;
-
-if (typeof window !== 'undefined') {
-  import('jspdf').then((module) => {
-    jsPDF = module.default;
-  });
-  import('jspdf-autotable').then((module) => {
-    autoTable = module.default;
-  });
-}
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
@@ -60,7 +44,6 @@ const StaffDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   
   // Notification state
   const [notificationCount, setNotificationCount] = useState(0);
@@ -80,11 +63,6 @@ const StaffDashboard = () => {
     byStatus: [],
     byPriority: [],
     summary: { pending: 0, inProgress: 0, completed: 0 }
-  });
-  const [costStats, setCostStats] = useState({
-    overall: { totalSpent: 0, averageCost: 0, totalRequests: 0, minCost: 0, maxCost: 0 },
-    monthly: [],
-    byPriority: []
   });
   const [maintenanceActiveTab, setMaintenanceActiveTab] = useState('list');
   const [errors, setErrors] = useState({});
@@ -108,11 +86,7 @@ const StaffDashboard = () => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-    { id: 'buses', label: 'Bus Management', icon: Bus },
-    { id: 'schedule', label: 'Schedule', icon: Calendar },
     { id: 'attendance', label: 'Attendance', icon: UserCheck },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
@@ -126,7 +100,6 @@ const StaffDashboard = () => {
       fetchMaintenances();
       fetchActiveBuses();
       fetchStats();
-      fetchCostStats();
     }
   }, [activeTab]);
 
@@ -253,17 +226,6 @@ const StaffDashboard = () => {
     }
   };
 
-  const fetchCostStats = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${BACKEND_URL}/api/maintenance/cost-stats`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setCostStats(response.data);
-    } catch (error) {
-      console.error('Failed to fetch cost stats', error);
-    }
-  };
 
   const fetchNotifications = async () => {
     try {
@@ -307,195 +269,8 @@ const StaffDashboard = () => {
     setFilteredMaintenances(filtered);
   };
 
-  // Fixed PDF export function
-  const exportToPDF = async () => {
-    try {
-      // Dynamically import jsPDF and autoTable
-      const { default: jsPDF } = await import('jspdf');
-      const { default: autoTable } = await import('jspdf-autotable');
-      
-      const doc = new jsPDF();
-      
-      // Add header
-      doc.setFontSize(20);
-      doc.setTextColor(40, 40, 40);
-      doc.text('MAINTENANCE REQUESTS REPORT', 105, 15, { align: 'center' });
-      
-      doc.setFontSize(12);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 22, { align: 'center' });
-      doc.text(`Total Records: ${filteredMaintenances.length}`, 105, 28, { align: 'center' });
-      
-      // Prepare table data
-      const tableData = filteredMaintenances.map((maintenance, index) => [
-        index + 1,
-        maintenance.maintenanceId || 'N/A',
-        maintenance.description.substring(0, 50) + (maintenance.description.length > 50 ? '...' : ''),
-        maintenance.bus ? maintenance.bus.numberPlate : 'N/A',
-        maintenance.priority,
-        maintenance.status,
-        formatCurrency(maintenance.estimatedCost),
-        formatDate(maintenance.estimatedCompletionDate)
-      ]);
 
-      // Add table using autoTable
-      autoTable(doc, {
-        head: [['#', 'Request ID', 'Description', 'Bus', 'Priority', 'Status', 'Est. Cost', 'Est. Completion']],
-        body: tableData,
-        startY: 35,
-        theme: 'grid',
-        headStyles: {
-          fillColor: [41, 128, 185],
-          textColor: 255,
-          fontStyle: 'bold'
-        },
-        styles: {
-          fontSize: 8,
-          cellPadding: 2,
-        },
-        columnStyles: {
-          0: { cellWidth: 10 },
-          1: { cellWidth: 25 },
-          2: { cellWidth: 40 },
-          3: { cellWidth: 25 },
-          4: { cellWidth: 20 },
-          5: { cellWidth: 25 },
-          6: { cellWidth: 25 },
-          7: { cellWidth: 30 }
-        }
-      });
 
-      // Add footer
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(10);
-        doc.setTextColor(150, 150, 150);
-        doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
-      }
-
-      doc.save(`maintenance-report-${new Date().toISOString().split('T')[0]}.pdf`);
-      toast.success('PDF report generated successfully');
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF report');
-    }
-  };
-
-  // Export to Excel function
-  const exportToExcel = () => {
-    try {
-      // Prepare worksheet data
-      const worksheetData = [
-        ['MAINTENANCE REQUESTS REPORT'],
-        [`Generated on: ${new Date().toLocaleDateString()}`],
-        [`Total Records: ${filteredMaintenances.length}`],
-        [''], // Empty row for spacing
-        ['#', 'Request ID', 'Description', 'Bus Number', 'Bus Type', 'Priority', 'Status', 'Estimated Cost', 'Estimated Completion', 'Actual Cost', 'Actual Completion']
-      ];
-
-      // Add data rows
-      filteredMaintenances.forEach((maintenance, index) => {
-        worksheetData.push([
-          index + 1,
-          maintenance.maintenanceId || 'N/A',
-          maintenance.description,
-          maintenance.bus ? maintenance.bus.numberPlate : 'N/A',
-          maintenance.bus ? maintenance.bus.busType : 'N/A',
-          maintenance.priority,
-          maintenance.status,
-          maintenance.estimatedCost,
-          formatDate(maintenance.estimatedCompletionDate),
-          maintenance.actualCost || 'N/A',
-          maintenance.actualCompletionDate ? formatDate(maintenance.actualCompletionDate) : 'N/A'
-        ]);
-      });
-
-      // Create workbook and worksheet
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.aoa_to_sheet(worksheetData);
-
-      // Set column widths
-      const colWidths = [
-        { wch: 5 },  // #
-        { wch: 15 }, // Request ID
-        { wch: 40 }, // Description
-        { wch: 15 }, // Bus Number
-        { wch: 15 }, // Bus Type
-        { wch: 12 }, // Priority
-        { wch: 15 }, // Status
-        { wch: 15 }, // Estimated Cost
-        { wch: 20 }, // Estimated Completion
-        { wch: 15 }, // Actual Cost
-        { wch: 20 }  // Actual Completion
-      ];
-      ws['!cols'] = colWidths;
-
-      // Add worksheet to workbook
-      XLSX.utils.book_append_sheet(wb, ws, 'Maintenance Requests');
-
-      // Generate and download file
-      XLSX.writeFile(wb, `maintenance-report-${new Date().toISOString().split('T')[0]}.xlsx`);
-      toast.success('Excel report generated successfully');
-    } catch (error) {
-      console.error('Error generating Excel:', error);
-      toast.error('Failed to generate Excel report');
-    }
-  };
-
-  // Export dropdown component
-  const ExportDropdown = () => {
-    const dropdownRef = useRef(null);
-
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-          setExportDropdownOpen(false);
-        }
-      };
-
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    return (
-      <div className="relative" ref={dropdownRef}>
-        <button
-          onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
-          className="flex items-center px-4 py-2 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
-        >
-          <Download className="w-5 h-5 mr-2" />
-          Export
-          <ChevronDown className="w-4 h-4 ml-2" />
-        </button>
-
-        {exportDropdownOpen && (
-          <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1 z-50">
-            <button
-              onClick={() => {
-                exportToPDF();
-                setExportDropdownOpen(false);
-              }}
-              className="flex items-center w-full px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
-            >
-              <FileText className="w-4 h-4 mr-3" />
-              Export as PDF
-            </button>
-            <button
-              onClick={() => {
-                exportToExcel();
-                setExportDropdownOpen(false);
-              }}
-              className="flex items-center w-full px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
-            >
-              <Sheet className="w-4 h-4 mr-3" />
-              Export as Excel
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -543,7 +318,6 @@ const StaffDashboard = () => {
       setErrors({});
       fetchMaintenances();
       fetchStats();
-      fetchCostStats();
     } catch (error) {
       console.error('Failed to save maintenance request', error);
       toast.error(error.response?.data?.message || 'Failed to save maintenance request');
@@ -634,45 +408,45 @@ const StaffDashboard = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'Completed':
-        return <CheckCircle className="w-4 h-4 text-green-400" />;
+        return <CheckCircle className="w-4 h-4 text-green-800" />;
       case 'In Progress':
-        return <Clock className="w-4 h-4 text-blue-400" />;
+        return <Clock className="w-4 h-4 text-blue-800" />;
       case 'Pending':
-        return <AlertCircle className="w-4 h-4 text-yellow-400" />;
+        return <AlertCircle className="w-4 h-4 text-yellow-800" />;
       case 'Cancelled':
-        return <XCircle className="w-4 h-4 text-red-400" />;
+        return <XCircle className="w-4 h-4 text-red-800" />;
       default:
-        return <AlertCircle className="w-4 h-4 text-gray-400" />;
+        return <AlertCircle className="w-4 h-4 text-gray-800" />;
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'Completed':
-        return 'bg-green-900/30 text-green-400';
+        return 'bg-green-100 text-green-800 border border-green-200';
       case 'In Progress':
-        return 'bg-blue-900/30 text-blue-400';
+        return 'bg-blue-100 text-blue-800 border border-blue-200';
       case 'Pending':
-        return 'bg-yellow-900/30 text-yellow-400';
+        return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
       case 'Cancelled':
-        return 'bg-red-900/30 text-red-400';
+        return 'bg-red-100 text-red-800 border border-red-200';
       default:
-        return 'bg-gray-900/30 text-gray-400';
+        return 'bg-gray-100 text-gray-800 border border-gray-200';
     }
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'Critical':
-        return 'bg-red-900/30 text-red-400';
+        return 'bg-red-100 text-red-800 border border-red-200';
       case 'High':
-        return 'bg-orange-900/30 text-orange-400';
+        return 'bg-orange-100 text-orange-800 border border-orange-200';
       case 'Medium':
-        return 'bg-yellow-900/30 text-yellow-400';
+        return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
       case 'Low':
-        return 'bg-green-900/30 text-green-400';
+        return 'bg-green-100 text-green-800 border border-green-200';
       default:
-        return 'bg-gray-900/30 text-gray-400';
+        return 'bg-gray-100 text-gray-800 border border-gray-200';
     }
   };
 
@@ -682,9 +456,9 @@ const StaffDashboard = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-LK', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'LKR'
     }).format(amount || 0);
   };
 
@@ -700,16 +474,16 @@ const StaffDashboard = () => {
     let displayValue = value;
     
     if (isCurrency) {
-      displayValue = new Intl.NumberFormat('en-US', {
+      displayValue = new Intl.NumberFormat('en-LK', {
         style: 'currency',
-        currency: 'USD'
+        currency: 'LKR'
       }).format(value || 0);
     }
 
     return (
       <div
         onClick={onClick}
-        className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+        className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
       >
         <div className="flex items-center justify-between">
           <div>
@@ -717,8 +491,8 @@ const StaffDashboard = () => {
             <h3 className="text-2xl font-bold text-gray-800 mt-1">{displayValue}</h3>
             {trend && <p className="text-xs text-gray-500 mt-1">{trend}</p>}
           </div>
-          <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-100">
-            <Icon className="w-6 h-6 text-blue-600" />
+          <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600">
+            <Icon className="w-6 h-6 text-white" />
           </div>
         </div>
       </div>
@@ -735,7 +509,7 @@ const StaffDashboard = () => {
         </div>
         <button
           onClick={() => setActiveTab('maintenance')}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300"
         >
           <Wrench className="w-5 h-5 mr-2" />
           Maintenance
@@ -743,48 +517,48 @@ const StaffDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Buses</p>
               <h3 className="text-2xl font-bold text-gray-800 mt-1">48</h3>
               <p className="text-xs text-gray-500 mt-1">Active fleet</p>
             </div>
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-100">
-              <Bus className="w-6 h-6 text-blue-600" />
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600">
+              <Bus className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Available</p>
               <h3 className="text-2xl font-bold text-green-600 mt-1">32</h3>
               <p className="text-xs text-gray-500 mt-1">Ready for service</p>
             </div>
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-100">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-green-500 to-green-600">
+              <CheckCircle className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">In Service</p>
               <h3 className="text-2xl font-bold text-blue-600 mt-1">12</h3>
               <p className="text-xs text-gray-500 mt-1">Currently running</p>
             </div>
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-100">
-              <Clock className="w-6 h-6 text-blue-600" />
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600">
+              <Clock className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-blue-200 shadow-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-blue-200">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200">
           <h3 className="text-lg font-semibold text-gray-800">Bus Fleet Overview</h3>
         </div>
         <div className="p-6">
@@ -793,15 +567,15 @@ const StaffDashboard = () => {
               <div key={bus} className="border border-blue-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-gray-800">Bus {bus.toString().padStart(3, '0')}</h4>
-                  <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Available</span>
+                  <span className="px-2 py-1 text-xs rounded-full bg-gradient-to-r from-green-100 to-green-200 text-green-800 font-medium">Available</span>
                 </div>
                 <p className="text-sm text-gray-600">Standard Bus</p>
                 <p className="text-sm text-gray-500">Capacity: 50 passengers</p>
                 <div className="mt-3 flex space-x-2">
-                  <button className="flex-1 px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors">
+                  <button className="flex-1 px-3 py-1 text-xs bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 rounded hover:from-blue-200 hover:to-blue-300 transition-all duration-200 font-medium">
                     View Details
                   </button>
-                  <button className="flex-1 px-3 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors">
+                  <button className="flex-1 px-3 py-1 text-xs bg-gradient-to-r from-orange-100 to-orange-200 text-orange-700 rounded hover:from-orange-200 hover:to-orange-300 transition-all duration-200 font-medium">
                     Maintenance
                   </button>
                 </div>
@@ -821,14 +595,14 @@ const StaffDashboard = () => {
           <h2 className="text-2xl font-bold text-gray-800">Schedule Management</h2>
           <p className="text-gray-600">View and manage bus schedules and routes</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <button className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300">
           <Plus className="w-5 h-5 mr-2" />
           Add Schedule
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Today's Routes</p>
@@ -841,33 +615,33 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Completed</p>
               <h3 className="text-2xl font-bold text-green-600 mt-1">18</h3>
               <p className="text-xs text-gray-500 mt-1">Routes completed</p>
             </div>
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-100">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-green-500 to-green-600">
+              <CheckCircle className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">In Progress</p>
               <h3 className="text-2xl font-bold text-blue-600 mt-1">4</h3>
               <p className="text-xs text-gray-500 mt-1">Currently running</p>
             </div>
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-100">
-              <Clock className="w-6 h-6 text-blue-600" />
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600">
+              <Clock className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Delayed</p>
@@ -881,8 +655,8 @@ const StaffDashboard = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-blue-200 shadow-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-blue-200">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200">
           <h3 className="text-lg font-semibold text-gray-800">Today's Schedule</h3>
         </div>
         <div className="overflow-x-auto">
@@ -941,14 +715,14 @@ const StaffDashboard = () => {
           <h2 className="text-2xl font-bold text-gray-800">Driver Attendance</h2>
           <p className="text-gray-600">Manage driver attendance and schedules</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <button className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300">
           <Plus className="w-5 h-5 mr-2" />
           Mark Attendance
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Present Today</p>
@@ -961,7 +735,7 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Absent</p>
@@ -974,7 +748,7 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Late Arrivals</p>
@@ -987,7 +761,7 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Attendance Rate</p>
@@ -1001,8 +775,8 @@ const StaffDashboard = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-blue-200 shadow-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-blue-200">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200">
           <h3 className="text-lg font-semibold text-gray-800">Today's Attendance</h3>
         </div>
         <div className="overflow-x-auto">
@@ -1058,7 +832,7 @@ const StaffDashboard = () => {
           <h2 className="text-2xl font-bold text-gray-800">Notifications</h2>
           <p className="text-gray-600">View and manage system notifications</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <button className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300">
           <Bell className="w-5 h-5 mr-2" />
           Mark All Read
         </button>
@@ -1105,20 +879,10 @@ const StaffDashboard = () => {
           <h2 className="text-2xl font-bold text-gray-800">Reports & Analytics</h2>
           <p className="text-gray-600">View operational reports and analytics</p>
         </div>
-        <div className="flex space-x-2">
-          <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-            <Download className="w-5 h-5 mr-2" />
-            Export PDF
-          </button>
-          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            <Download className="w-5 h-5 mr-2" />
-            Export Excel
-          </button>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
@@ -1131,7 +895,7 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Bookings</p>
@@ -1144,7 +908,7 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Occupancy Rate</p>
@@ -1159,7 +923,7 @@ const StaffDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
@@ -1186,21 +950,9 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-3">
-            <button className="flex flex-col items-center justify-center p-4 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors">
-              <BarChart3 className="w-6 h-6 text-blue-600 mb-2" />
-              <span className="text-sm font-medium text-blue-700">Generate Report</span>
-            </button>
-            <button className="flex flex-col items-center justify-center p-4 bg-green-100 rounded-lg hover:bg-green-200 transition-colors">
-              <Download className="w-6 h-6 text-green-600 mb-2" />
-              <span className="text-sm font-medium text-green-700">Export Data</span>
-            </button>
-            <button className="flex flex-col items-center justify-center p-4 bg-purple-100 rounded-lg hover:bg-purple-200 transition-colors">
-              <Calendar className="w-6 h-6 text-purple-600 mb-2" />
-              <span className="text-sm font-medium text-purple-700">Schedule Report</span>
-            </button>
             <button className="flex flex-col items-center justify-center p-4 bg-orange-100 rounded-lg hover:bg-orange-200 transition-colors">
               <Wrench className="w-6 h-6 text-orange-600 mb-2" />
               <span className="text-sm font-medium text-orange-700">Maintenance Report</span>
@@ -1220,7 +972,7 @@ const StaffDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Profile Settings</h3>
           <div className="space-y-4">
             <div>
@@ -1256,7 +1008,7 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Notification Preferences</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -1365,7 +1117,7 @@ const StaffDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Quick Actions</h3>
             <button className="text-gray-400 hover:text-gray-600">
@@ -1404,7 +1156,7 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
@@ -1454,7 +1206,7 @@ const StaffDashboard = () => {
           <h2 className="text-2xl font-bold text-gray-800">Bus Management</h2>
           <p className="text-gray-600">Monitor and manage bus fleet</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <button className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300">
           <Plus className="w-5 h-5 mr-2" />
           Add Bus
         </button>
@@ -1508,7 +1260,7 @@ const StaffDashboard = () => {
           <h2 className="text-2xl font-bold text-gray-800">Schedule Management</h2>
           <p className="text-gray-600">View and manage bus schedules</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <button className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300">
           <Plus className="w-5 h-5 mr-2" />
           Add Schedule
         </button>
@@ -1575,14 +1327,14 @@ const StaffDashboard = () => {
           <h2 className="text-2xl font-bold text-gray-800">Attendance Management</h2>
           <p className="text-gray-600">Track driver and staff attendance</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <button className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300">
           <Plus className="w-5 h-5 mr-2" />
           Mark Attendance
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Today's Attendance</h3>
             <Clock className="w-5 h-5 text-blue-600" />
@@ -1603,7 +1355,7 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">This Week</h3>
             <Calendar className="w-5 h-5 text-blue-600" />
@@ -1624,7 +1376,7 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Quick Actions</h3>
             <MoreVertical className="w-5 h-5 text-gray-400" />
@@ -1645,56 +1397,6 @@ const StaffDashboard = () => {
     </div>
   );
 
-  // Notifications Content
-  const NotificationsContent = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">Notifications</h2>
-          <p className="text-gray-600">Stay updated with system alerts</p>
-        </div>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-          <Bell className="w-5 h-5 mr-2" />
-          Mark All Read
-        </button>
-      </div>
-
-      <div className="space-y-4">
-        {[1, 2, 3, 4, 5].map((notification) => (
-          <div key={notification} className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-blue-600" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-medium text-gray-800">
-                  {notification === 1 ? 'Maintenance Alert' : 
-                   notification === 2 ? 'New Booking' : 
-                   notification === 3 ? 'Schedule Update' : 
-                   notification === 4 ? 'System Update' : 'Reminder'}
-                </h3>
-                <p className="text-gray-600 mt-1">
-                  {notification === 1 ? 'Bus #001 requires immediate maintenance attention.' :
-                   notification === 2 ? 'New booking received for Route A - Colombo to Kandy.' :
-                   notification === 3 ? 'Schedule has been updated for tomorrow\'s routes.' :
-                   notification === 4 ? 'System maintenance scheduled for tonight at 2 AM.' :
-                   'Don\'t forget to check attendance for today.'}
-                </p>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-sm text-gray-500">2 hours ago</span>
-                  <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                    Mark as Read
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
   // Reports Content
   const ReportsContent = () => (
@@ -1704,20 +1406,10 @@ const StaffDashboard = () => {
           <h2 className="text-2xl font-bold text-gray-800">Reports & Analytics</h2>
           <p className="text-gray-600">Generate and view detailed reports</p>
         </div>
-        <div className="flex space-x-2">
-          <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-            <Download className="w-5 h-5 mr-2" />
-            Export PDF
-          </button>
-          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            <FileText className="w-5 h-5 mr-2" />
-            Generate Report
-          </button>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Maintenance Report</h3>
             <Wrench className="w-5 h-5 text-blue-600" />
@@ -1728,7 +1420,7 @@ const StaffDashboard = () => {
           </button>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Attendance Report</h3>
             <UserCheck className="w-5 h-5 text-green-600" />
@@ -1739,7 +1431,7 @@ const StaffDashboard = () => {
           </button>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Revenue Report</h3>
             <DollarSign className="w-5 h-5 text-purple-600" />
@@ -1762,7 +1454,7 @@ const StaffDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Profile Settings</h3>
           <div className="space-y-4">
             <div>
@@ -1770,7 +1462,7 @@ const StaffDashboard = () => {
               <input
                 type="text"
                 value={`${authUser?.firstName} ${authUser?.lastName}`}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 readOnly
               />
             </div>
@@ -1779,7 +1471,7 @@ const StaffDashboard = () => {
               <input
                 type="email"
                 value={authUser?.email}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 readOnly
               />
             </div>
@@ -1788,14 +1480,14 @@ const StaffDashboard = () => {
               <input
                 type="text"
                 value={authUser?.role}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 readOnly
               />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Preferences</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -1827,16 +1519,8 @@ const StaffDashboard = () => {
         return <DashboardContent />;
       case 'maintenance':
         return <MaintenanceContent />;
-      case 'buses':
-        return <BusManagementContent />;
-      case 'schedule':
-        return <ScheduleContent />;
       case 'attendance':
         return <AttendanceContent />;
-      case 'notifications':
-        return <NotificationsContent />;
-      case 'reports':
-        return <ReportsContent />;
       case 'settings':
         return <SettingsContent />;
       case 'profile':
@@ -1883,7 +1567,7 @@ const StaffDashboard = () => {
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1 z-50">
+          <div className="absolute right-0 mt-2 w-48 bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-600 rounded-lg shadow-2xl py-1 z-50">
             <div className="px-4 py-2 border-b border-slate-700">
               <div className="text-sm font-medium text-white">
                 {authUser?.firstName} {authUser?.lastName}
@@ -1895,7 +1579,7 @@ const StaffDashboard = () => {
                 setIsOpen(false);
                 setActiveTab('profile');
               }}
-              className="flex items-center w-full px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
+              className="flex items-center w-full px-4 py-2 text-sm text-slate-200 hover:bg-slate-700 hover:text-white transition-all duration-200"
             >
               <User className="w-4 h-4 mr-3" />
               My Profile
@@ -1905,7 +1589,7 @@ const StaffDashboard = () => {
                 setIsOpen(false);
                 setActiveTab('settings');
               }}
-              className="flex items-center w-full px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
+              className="flex items-center w-full px-4 py-2 text-sm text-slate-200 hover:bg-slate-700 hover:text-white transition-all duration-200"
             >
               <Settings className="w-4 h-4 mr-3" />
               Settings
@@ -1929,12 +1613,12 @@ const StaffDashboard = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold text-white">Maintenance Management</h2>
-          <p className="text-slate-400">Manage bus maintenance requests</p>
+          <h2 className="text-2xl font-bold text-gray-800">Maintenance Management</h2>
+          <p className="text-gray-600">Manage bus maintenance requests</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300"
         >
           <Plus className="w-5 h-5 mr-2" />
           New Request
@@ -1942,24 +1626,18 @@ const StaffDashboard = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-700">
+      <div className="flex border-b border-blue-200">
         <button
-          className={`px-4 py-2 font-medium ${maintenanceActiveTab === 'list' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'}`}
+          className={`px-4 py-2 font-medium ${maintenanceActiveTab === 'list' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
           onClick={() => setMaintenanceActiveTab('list')}
         >
           Maintenance List
         </button>
         <button
-          className={`px-4 py-2 font-medium ${maintenanceActiveTab === 'stats' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'}`}
+          className={`px-4 py-2 font-medium ${maintenanceActiveTab === 'stats' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
           onClick={() => setMaintenanceActiveTab('stats')}
         >
           Statistics
-        </button>
-        <button
-          className={`px-4 py-2 font-medium ${maintenanceActiveTab === 'cost' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'}`}
-          onClick={() => setMaintenanceActiveTab('cost')}
-        >
-          Cost Analysis
         </button>
       </div>
 
@@ -1968,13 +1646,13 @@ const StaffDashboard = () => {
           {/* Filters */}
           <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
                 placeholder="Search by description or bus..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 bg-white border border-blue-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -1982,7 +1660,7 @@ const StaffDashboard = () => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Status</option>
                 <option value="Pending">Pending</option>
@@ -1995,7 +1673,7 @@ const StaffDashboard = () => {
               <select
                 value={filterPriority}
                 onChange={(e) => setFilterPriority(e.target.value)}
-                className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Priority</option>
                 <option value="Critical">Critical</option>
@@ -2004,30 +1682,29 @@ const StaffDashboard = () => {
                 <option value="Low">Low</option>
               </select>
             </div>
-            <ExportDropdown />
           </div>
 
           {/* Maintenance List */}
-          <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+          <div className="bg-white rounded-xl border border-blue-200 overflow-hidden shadow-lg">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-700">
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Description</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Bus</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Priority</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Est. Cost</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Est. Completion</th>
+                  <tr className="border-b border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Bus</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider bg-blue-50">Priority</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider bg-blue-50">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Est. Cost (LKR)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Est. Completion</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700">
+                <tbody className="divide-y divide-blue-100">
                   {filteredMaintenances.map((maintenance) => (
-                    <tr key={maintenance._id} className="hover:bg-slate-750 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{maintenance.maintenanceId || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm text-slate-300 max-w-xs truncate">{maintenance.description}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                    <tr key={maintenance._id} className="hover:bg-blue-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{maintenance.maintenanceId || 'N/A'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{maintenance.description}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {maintenance.bus ? `${maintenance.bus.numberPlate} (${maintenance.bus.busType})` : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -2041,10 +1718,10 @@ const StaffDashboard = () => {
                           <span className="ml-1.5">{maintenance.status}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {formatCurrency(maintenance.estimatedCost)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {formatDate(maintenance.estimatedCompletionDate)}
                       </td>
                     </tr>
@@ -2055,9 +1732,9 @@ const StaffDashboard = () => {
             
             {filteredMaintenances.length === 0 && (
               <div className="text-center py-12">
-                <Wrench className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-400">No maintenance requests found</h3>
-                <p className="text-slate-500 mt-1">Get started by creating a new maintenance request</p>
+                <Wrench className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-600">No maintenance requests found</h3>
+                <p className="text-gray-500 mt-1">Get started by creating a new maintenance request</p>
               </div>
             )}
           </div>
@@ -2096,30 +1773,6 @@ const StaffDashboard = () => {
         </div>
       )}
 
-      {maintenanceActiveTab === 'cost' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              title="Total Spent"
-              value={formatCurrency(costStats.overall.totalSpent)}
-              icon={DollarSign}
-              trend={`${costStats.overall.totalRequests} requests`}
-            />
-            <StatCard
-              title="Average Cost"
-              value={formatCurrency(costStats.overall.averageCost)}
-              icon={BarChart3}
-              trend="Per request"
-            />
-            <StatCard
-              title="Cost Range"
-              value={`${formatCurrency(costStats.overall.minCost)} - ${formatCurrency(costStats.overall.maxCost)}`}
-              icon={DollarSign}
-              trend="Min - Max"
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -2132,9 +1785,9 @@ const StaffDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} border-r border-blue-200 overflow-y-auto`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-blue-50 to-blue-100 shadow-2xl transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} border-r border-blue-200 overflow-y-auto`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-blue-200">
           <div className="flex items-center space-x-3">
             <div className="relative">
@@ -2147,12 +1800,12 @@ const StaffDashboard = () => {
               <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
                 BusZone+
               </div>
-              <div className="text-xs text-gray-600">
+              <div className="text-xs text-gray-700">
                 Staff Portal
               </div>
             </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded-md hover:bg-blue-100 text-gray-600">
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded-md hover:bg-blue-200 text-gray-700">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -2167,8 +1820,8 @@ const StaffDashboard = () => {
                 onClick={() => setActiveTab(item.id)}
                 className={`w-full flex items-center px-4 py-3 text-left rounded-lg mb-2 transition-colors ${
                   activeTab === item.id 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' 
+                    : 'text-gray-700 hover:bg-blue-200 hover:text-blue-800'
                 }`}
               >
                 <Icon className="w-5 h-5 mr-3" />
@@ -2181,6 +1834,7 @@ const StaffDashboard = () => {
 
       {/* Main Content */}
       <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+        <div className="space-y-6">
         <header className="border-b border-blue-200 bg-white">
           <div className="flex items-center justify-between h-16 px-6">
             <div className="flex items-center">
@@ -2228,9 +1882,10 @@ const StaffDashboard = () => {
           </div>
         </header>
 
-        <main className="p-6">
+        <main>
           {isLoading ? <div className="text-gray-600">Loading dashboard...</div> : renderContent()}
         </main>
+        </div>
       </div>
 
       {sidebarOpen && <div className="fixed inset-0 z-40 bg-blue-100 bg-opacity-80 lg:hidden" onClick={() => setSidebarOpen(false)}></div>}
@@ -2238,10 +1893,10 @@ const StaffDashboard = () => {
       {/* Maintenance Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-slate-700">
+          <div className="bg-white rounded-xl border border-blue-200 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="p-6 border-b border-blue-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-white">
+                <h3 className="text-xl font-semibold text-gray-800">
                   {editingMaintenance ? 'Edit Maintenance Request' : 'New Maintenance Request'}
                 </h3>
                 <button
@@ -2272,15 +1927,15 @@ const StaffDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Bus Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Bus <span className="text-red-400">*</span>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bus <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="bus"
                     value={formData.bus}
                     onChange={handleInputChange}
-                    className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.bus ? 'border-red-500' : 'border-slate-600'
+                    className={`w-full bg-white border rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.bus ? 'border-red-500' : 'border-blue-300'
                     }`}
                   >
                     <option value="">Select a bus</option>
@@ -2290,19 +1945,19 @@ const StaffDashboard = () => {
                       </option>
                     ))}
                   </select>
-                  {errors.bus && <p className="text-red-400 text-sm mt-1">{errors.bus}</p>}
+                  {errors.bus && <p className="text-red-500 text-sm mt-1">{errors.bus}</p>}
                 </div>
 
                 {/* Priority */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Priority <span className="text-red-400">*</span>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Priority <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="priority"
                     value={formData.priority}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
@@ -2313,19 +1968,19 @@ const StaffDashboard = () => {
 
                 {/* Estimated Cost */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Estimated Cost ($) <span className="text-red-400">*</span>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Estimated Cost (LKR) <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                     <input
                       ref={estimatedCostRef}
                       type="text"
                       name="estimatedCost"
                       value={formData.estimatedCost}
                       onChange={handleNumberInput}
-                      className={`w-full pl-10 pr-3 py-2 bg-slate-700 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.estimatedCost ? 'border-red-500' : 'border-slate-600'
+                      className={`w-full pl-10 pr-3 py-2 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.estimatedCost ? 'border-red-500' : 'border-blue-300'
                       }`}
                       placeholder="0.00"
                     />
@@ -2335,8 +1990,8 @@ const StaffDashboard = () => {
 
                 {/* Estimated Completion Date */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Estimated Completion Date <span className="text-red-400">*</span>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Estimated Completion Date <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
@@ -2344,8 +1999,8 @@ const StaffDashboard = () => {
                     value={formData.estimatedCompletionDate}
                     onChange={handleInputChange}
                     min={getTodayDate()}
-                    className={`w-full px-3 py-2 bg-slate-700 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.estimatedCompletionDate ? 'border-red-500' : 'border-slate-600'
+                    className={`w-full px-3 py-2 bg-white border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.estimatedCompletionDate ? 'border-red-500' : 'border-blue-300'
                     }`}
                   />
                   {errors.estimatedCompletionDate && <p className="text-red-400 text-sm mt-1">{errors.estimatedCompletionDate}</p>}
@@ -2353,14 +2008,14 @@ const StaffDashboard = () => {
 
                 {/* Status - Only show "Pending" when adding new request */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Status
                   </label>
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={!editingMaintenance} // Disable status dropdown when adding new request
                   >
                     {editingMaintenance ? (
@@ -2384,7 +2039,7 @@ const StaffDashboard = () => {
                   <>
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Actual Cost ($) <span className="text-red-400">*</span>
+                        Actual Cost (LKR) <span className="text-red-400">*</span>
                       </label>
                       <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -2425,9 +2080,9 @@ const StaffDashboard = () => {
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Description <span className="text-red-400">*</span>
-                  <span className="text-xs text-slate-400 ml-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description <span className="text-red-500">*</span>
+                  <span className="text-xs text-gray-500 ml-2">
                     {formData.description.length}/500 characters
                   </span>
                 </label>
@@ -2436,17 +2091,17 @@ const StaffDashboard = () => {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={4}
-                  className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.description ? 'border-red-500' : 'border-slate-600'
+                  className={`w-full bg-white border rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.description ? 'border-red-500' : 'border-blue-300'
                   }`}
                   placeholder="Describe the maintenance issue (minimum 10 characters)..."
                   maxLength={500}
                 />
-                {errors.description && <p className="text-red-400 text-sm mt-1">{errors.description}</p>}
+                {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
               </div>
 
               {/* Form Actions */}
-              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-slate-700">
+              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-blue-200">
                 <button
                   type="button"
                   onClick={() => {
@@ -2465,13 +2120,13 @@ const StaffDashboard = () => {
                     });
                     setErrors({});
                   }}
-                  className="px-6 py-2 border border-slate-600 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
+                  className="px-6 py-2 border border-blue-300 text-gray-600 rounded-lg hover:bg-blue-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                  className="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md transition-colors flex items-center"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {editingMaintenance ? 'Update Request' : 'Create Request'}
