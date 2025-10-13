@@ -238,7 +238,7 @@ const DriverProfile = () => {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 border border-gray-200 shadow-sm mb-6">
+      <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-6 border border-blue-200 shadow-sm mb-6">
         <div className="flex flex-col md:flex-row items-center justify-between">
           <div className="flex items-center space-x-4 mb-4 md:mb-0">
             <div className="relative">
@@ -301,7 +301,7 @@ const DriverProfile = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Personal Information */}
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 border border-gray-200 shadow-sm">
+        <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-6 border border-blue-200 shadow-sm">
           <div className="flex items-center space-x-2 mb-4">
             <User className="h-5 w-5 text-blue-500" />
             <h2 className="text-lg font-semibold text-gray-900">Personal Information</h2>
@@ -397,7 +397,7 @@ const DriverProfile = () => {
         </div>
 
         {/* Driver Information */}
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 border border-gray-200 shadow-sm">
+        <div className="bg-gradient-to-br from-green-50 to-white rounded-2xl p-6 border border-green-200 shadow-sm">
           <div className="flex items-center space-x-2 mb-4">
             <Bus className="h-5 w-5 text-green-500" />
             <h2 className="text-lg font-semibold text-gray-900">Driver Information</h2>
@@ -478,7 +478,7 @@ const DriverProfile = () => {
         </div>
 
         {/* Bank Account Information */}
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 border border-gray-200 shadow-sm lg:col-span-2">
+        <div className="bg-gradient-to-br from-yellow-50 to-white rounded-2xl p-6 border border-yellow-200 shadow-sm lg:col-span-2">
           <div className="flex items-center space-x-2 mb-4">
             <DollarSign className="h-5 w-5 text-yellow-500" />
             <h2 className="text-lg font-semibold text-gray-900">Bank Account Information</h2>

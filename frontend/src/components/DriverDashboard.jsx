@@ -313,19 +313,19 @@ const PasswordChangeModal = React.memo(({
 
 // Separate Settings Content Component
 const SettingsContent = React.memo(({ onPasswordChangeClick }) => (
-  <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 border border-slate-700/50">
-    <h2 className="text-xl font-bold text-white mb-6">Account Settings</h2>
+  <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-5 border border-gray-200 shadow-sm">
+    <h2 className="text-xl font-bold text-gray-900 mb-6">Account Settings</h2>
     <div className="space-y-6">
       {/* Password Change Card */}
-      <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/50">
+      <div className="bg-gradient-to-br from-blue-50 to-white p-6 rounded-xl border border-blue-200 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-500/20 rounded-lg">
-              <Lock className="h-5 w-5 text-blue-400" />
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Lock className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Password & Security</h3>
-              <p className="text-slate-400 text-sm">Update your password to keep your account secure</p>
+              <h3 className="text-lg font-semibold text-gray-900">Password & Security</h3>
+              <p className="text-gray-600 text-sm">Update your password to keep your account secure</p>
             </div>
           </div>
           <button
@@ -338,102 +338,102 @@ const SettingsContent = React.memo(({ onPasswordChangeClick }) => (
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div className="text-center p-4 bg-slate-900/50 rounded-lg">
-            <div className="text-green-400 text-sm font-semibold">Last Changed</div>
-            <div className="text-slate-300 text-xs mt-1">2 months ago</div>
+          <div className="text-center p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="text-green-600 text-sm font-semibold">Last Changed</div>
+            <div className="text-gray-600 text-xs mt-1">2 months ago</div>
           </div>
-          <div className="text-center p-4 bg-slate-900/50 rounded-lg">
-            <div className="text-blue-400 text-sm font-semibold">Password Strength</div>
-            <div className="text-slate-300 text-xs mt-1">Strong</div>
+          <div className="text-center p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="text-blue-600 text-sm font-semibold">Password Strength</div>
+            <div className="text-gray-600 text-xs mt-1">Strong</div>
           </div>
-          <div className="text-center p-4 bg-slate-900/50 rounded-lg">
-            <div className="text-purple-400 text-sm font-semibold">Two-Factor</div>
-            <div className="text-slate-300 text-xs mt-1">Disabled</div>
+          <div className="text-center p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="text-purple-600 text-sm font-semibold">Two-Factor</div>
+            <div className="text-gray-600 text-xs mt-1">Disabled</div>
           </div>
         </div>
       </div>
 
       {/* Notification Settings Card */}
-      <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/50">
+      <div className="bg-gradient-to-br from-green-50 to-white p-6 rounded-xl border border-green-200 shadow-sm">
         <div className="flex items-center space-x-3 mb-4">
-          <div className="p-2 bg-green-500/20 rounded-lg">
-            <Bell className="h-5 w-5 text-green-400" />
+          <div className="p-2 bg-green-100 rounded-lg">
+            <Bell className="h-5 w-5 text-green-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-white">Notification Preferences</h3>
-            <p className="text-slate-400 text-sm">Manage how you receive notifications</p>
+            <h3 className="text-lg font-semibold text-gray-900">Notification Preferences</h3>
+            <p className="text-gray-600 text-sm">Manage how you receive notifications</p>
           </div>
         </div>
         
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-slate-900/30 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
             <div>
-              <div className="text-white font-medium">Email Notifications</div>
-              <div className="text-slate-400 text-sm">Receive updates via email</div>
+              <div className="text-gray-900 font-medium">Email Notifications</div>
+              <div className="text-gray-600 text-sm">Receive updates via email</div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
           
-          <div className="flex items-center justify-between p-3 bg-slate-900/30 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
             <div>
-              <div className="text-white font-medium">SMS Notifications</div>
-              <div className="text-slate-400 text-sm">Receive text message alerts</div>
+              <div className="text-gray-900 font-medium">SMS Notifications</div>
+              <div className="text-gray-600 text-sm">Receive text message alerts</div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
           
-          <div className="flex items-center justify-between p-3 bg-slate-900/30 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
             <div>
-              <div className="text-white font-medium">Push Notifications</div>
-              <div className="text-slate-400 text-sm">Browser and app notifications</div>
+              <div className="text-gray-900 font-medium">Push Notifications</div>
+              <div className="text-gray-600 text-sm">Browser and app notifications</div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
         </div>
       </div>
 
       {/* Privacy Settings Card */}
-      <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/50">
+      <div className="bg-gradient-to-br from-purple-50 to-white p-6 rounded-xl border border-purple-200 shadow-sm">
         <div className="flex items-center space-x-3 mb-4">
-          <div className="p-2 bg-purple-500/20 rounded-lg">
-            <Shield className="h-5 w-5 text-purple-400" />
+          <div className="p-2 bg-purple-100 rounded-lg">
+            <Shield className="h-5 w-5 text-purple-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-white">Privacy Settings</h3>
-            <p className="text-slate-400 text-sm">Control your privacy preferences</p>
+            <h3 className="text-lg font-semibold text-gray-900">Privacy Settings</h3>
+            <p className="text-gray-600 text-sm">Control your privacy preferences</p>
           </div>
         </div>
         
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-slate-900/30 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
             <div>
-              <div className="text-white font-medium">Profile Visibility</div>
-              <div className="text-slate-400 text-sm">Who can see your profile</div>
+              <div className="text-gray-900 font-medium">Profile Visibility</div>
+              <div className="text-gray-600 text-sm">Who can see your profile</div>
             </div>
-            <select className="bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select className="bg-white border border-gray-300 text-gray-900 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
               <option>Only Me</option>
               <option>Administrators</option>
               <option>All Staff</option>
             </select>
           </div>
           
-          <div className="flex items-center justify-between p-3 bg-slate-900/30 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
             <div>
-              <div className="text-white font-medium">Activity Tracking</div>
-              <div className="text-slate-400 text-sm">Track your driving activity</div>
+              <div className="text-gray-900 font-medium">Activity Tracking</div>
+              <div className="text-gray-600 text-sm">Track your driving activity</div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
         </div>
