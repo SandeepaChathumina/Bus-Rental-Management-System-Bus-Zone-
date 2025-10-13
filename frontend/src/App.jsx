@@ -38,7 +38,7 @@ import Chatbot from './components/Chatbot';
 import ProtectedRoute from './components/ProtectedRoute';
 import ViewMyBookings from './pages/ViewMyBookings';
 import AllBookings from './pages/allbookings';
-import PaymentTestPage from './pages/PaymentTestPage';
+// import PaymentTestPage from './pages/PaymentTestPage'; // File doesn't exist
 
 function App() {
   return (
@@ -98,14 +98,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
+              {/* <Route
                 path="/payment-test"
                 element={
                   <ProtectedRoute allowedRoles={['passenger', 'admin']}>
                     <PaymentTestPage />
                   </ProtectedRoute>
                 }
-              />
+              /> */}
                             <Route
                 path="/allbookings"
                 element={
