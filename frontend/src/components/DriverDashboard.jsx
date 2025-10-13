@@ -533,13 +533,13 @@ const ScheduleManagement = React.memo(() => {
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
-      case 'scheduled': return 'bg-blue-900/30 text-blue-400 border-blue-500/30';
-      case 'in progress': return 'bg-orange-900/30 text-orange-400 border-orange-500/30';
-      case 'started': return 'bg-orange-900/30 text-orange-400 border-orange-500/30';
-      case 'completed': return 'bg-green-900/30 text-green-400 border-green-500/30';
-      case 'ended': return 'bg-purple-900/30 text-purple-400 border-purple-500/30';
-      case 'cancelled': return 'bg-red-900/30 text-red-400 border-red-500/30';
-      default: return 'bg-gray-900/30 text-gray-400 border-gray-500/30';
+      case 'scheduled': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'in progress': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'started': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'completed': return 'bg-green-100 text-green-700 border-green-200';
+      case 'ended': return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'cancelled': return 'bg-red-100 text-red-700 border-red-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
@@ -633,18 +633,18 @@ const ScheduleManagement = React.memo(() => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold text-white">My Schedule</h2>
-          <p className="text-slate-400">View and manage your driving schedules</p>
+          <h2 className="text-2xl font-bold text-gray-900">My Schedule</h2>
+          <p className="text-gray-600">View and manage your driving schedules</p>
         </div>
         <div className="flex items-center space-x-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
               placeholder="Search schedules..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
@@ -652,13 +652,13 @@ const ScheduleManagement = React.memo(() => {
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-900/30 border border-red-700/30 rounded-xl p-4">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <XCircle className="w-5 h-5 text-red-400" />
+              <XCircle className="w-5 h-5 text-red-500" />
               <div>
-                <h3 className="text-red-400 font-medium">Error Loading Schedules</h3>
-                <p className="text-red-300 text-sm">{error}</p>
+                <h3 className="text-red-700 font-medium">Error Loading Schedules</h3>
+                <p className="text-red-600 text-sm">{error}</p>
               </div>
             </div>
             <button
@@ -673,49 +673,49 @@ const ScheduleManagement = React.memo(() => {
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-xl p-4 border border-blue-700/30">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-blue-300">Total Schedules</p>
-              <p className="text-2xl font-bold text-white">{filteredSchedules.length}</p>
+              <p className="text-sm text-blue-600">Total Schedules</p>
+              <p className="text-2xl font-bold text-gray-900">{filteredSchedules.length}</p>
             </div>
-            <Calendar className="w-8 h-8 text-blue-400" />
+            <Calendar className="w-8 h-8 text-blue-500" />
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-xl p-4 border border-blue-700/30">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-blue-300">Scheduled</p>
-              <p className="text-2xl font-bold text-blue-400">
+              <p className="text-sm text-blue-600">Scheduled</p>
+              <p className="text-2xl font-bold text-blue-600">
                 {filteredSchedules.filter(s => s.status === 'Scheduled').length}
               </p>
             </div>
-            <Clock className="w-8 h-8 text-blue-400" />
+            <Clock className="w-8 h-8 text-blue-500" />
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-orange-900/30 to-orange-800/20 rounded-xl p-4 border border-orange-700/30">
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-orange-300">In Progress</p>
-              <p className="text-2xl font-bold text-orange-400">
+              <p className="text-sm text-orange-600">In Progress</p>
+              <p className="text-2xl font-bold text-orange-600">
                 {filteredSchedules.filter(s => s.status === 'In Progress').length}
               </p>
             </div>
-            <User className="w-8 h-8 text-orange-400" />
+            <User className="w-8 h-8 text-orange-500" />
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 rounded-xl p-4 border border-green-700/30">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-green-300">Completed</p>
-              <p className="text-2xl font-bold text-green-400">
+              <p className="text-sm text-green-600">Completed</p>
+              <p className="text-2xl font-bold text-green-600">
                 {filteredSchedules.filter(s => s.status === 'Completed').length}
               </p>
             </div>
-            <CheckCircle className="w-8 h-8 text-green-400" />
+            <CheckCircle className="w-8 h-8 text-green-500" />
           </div>
         </div>
       </div>
@@ -737,7 +737,7 @@ const ScheduleManagement = React.memo(() => {
           </div>
         ) : (
           filteredSchedules.map((schedule) => (
-            <div key={schedule._id} className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 border border-slate-700 hover:border-slate-600 transition-colors">
+            <div key={schedule._id} className="bg-white rounded-xl p-6 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md transition-all">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-4">
@@ -745,7 +745,7 @@ const ScheduleManagement = React.memo(() => {
                       {schedule.status === 'In Progress' && <div className="w-2 h-2 rounded-full bg-orange-400 mr-2 animate-pulse"></div>}
                       {schedule.status}
                     </div>
-                    <div className="flex items-center space-x-4 text-sm text-slate-400">
+                    <div className="flex items-center space-x-4 text-sm text-gray-600">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-4 h-4" />
                         <span>{formatTimeFromString(schedule.departureTime)}</span>
@@ -758,67 +758,67 @@ const ScheduleManagement = React.memo(() => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div className="flex items-center text-slate-300">
-                      <User className="w-4 h-4 mr-3 text-blue-400" />
+                    <div className="flex items-center text-gray-700">
+                      <User className="w-4 h-4 mr-3 text-blue-500" />
                       <div>
                         <p className="font-medium">{schedule.driverId.firstName} {schedule.driverId.lastName}</p>
-                        <p className="text-slate-500 text-sm">License: {schedule.driverId.licenseNumber}</p>
+                        <p className="text-gray-500 text-sm">License: {schedule.driverId.licenseNumber}</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center text-slate-300">
-                      <Bus className="w-4 h-4 mr-3 text-green-400" />
+                    <div className="flex items-center text-gray-700">
+                      <Bus className="w-4 h-4 mr-3 text-green-500" />
                       <div>
                         <p className="font-medium">{schedule.busId.numberPlate}</p>
-                        <p className="text-slate-500 text-sm">{schedule.busId.busType}</p>
+                        <p className="text-gray-500 text-sm">{schedule.busId.busType}</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center text-slate-300">
-                      <MapPin className="w-4 h-4 mr-3 text-red-400" />
+                    <div className="flex items-center text-gray-700">
+                      <MapPin className="w-4 h-4 mr-3 text-red-500" />
                       <div>
                         <p className="font-medium">{schedule.startLocation} → {schedule.destination}</p>
-                        <p className="text-slate-500 text-sm">{schedule.bookingId.route}</p>
+                        <p className="text-gray-500 text-sm">{schedule.bookingId.route}</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-sm text-slate-400">
+                  <div className="flex items-center justify-between text-sm text-gray-600">
                     <span>Booking: {schedule.bookingId.bookingId}</span>
                     <span>Passengers: {schedule.bookingId.passengers}</span>
                     <span>Route: {schedule.startLocation} → {schedule.destination}</span>
                   </div>
 
                   {expandedSchedules[schedule._id] && (
-                    <div className="mt-4 p-4 bg-slate-700/50 rounded-lg space-y-3">
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="text-slate-400">Route:</span>
-                          <p className="text-white font-medium">
+                          <span className="text-gray-600">Route:</span>
+                          <p className="text-gray-900 font-medium">
                             {schedule.startLocation} → {schedule.destination}
                           </p>
                         </div>
                         <div>
-                          <span className="text-slate-400">Departure Time:</span>
-                          <p className="text-white font-medium">
+                          <span className="text-gray-600">Departure Time:</span>
+                          <p className="text-gray-900 font-medium">
                             {formatTimeFromString(schedule.departureTime)}
                           </p>
                         </div>
                         {schedule.actualStartTime && (
                           <div>
-                            <span className="text-slate-400">Actual Start Time:</span>
-                            <p className="text-white font-medium">{formatDateTime(schedule.actualStartTime)}</p>
+                            <span className="text-gray-600">Actual Start Time:</span>
+                            <p className="text-gray-900 font-medium">{formatDateTime(schedule.actualStartTime)}</p>
                           </div>
                         )}
                         {schedule.actualEndTime && (
                           <div>
-                            <span className="text-slate-400">Actual End Time:</span>
-                            <p className="text-white font-medium">{formatDateTime(schedule.actualEndTime)}</p>
+                            <span className="text-gray-600">Actual End Time:</span>
+                            <p className="text-gray-900 font-medium">{formatDateTime(schedule.actualEndTime)}</p>
                           </div>
                         )}
                         <div>
-                          <span className="text-slate-400">Bus Details:</span>
-                          <p className="text-white font-medium">
+                          <span className="text-gray-600">Bus Details:</span>
+                          <p className="text-gray-900 font-medium">
                             {schedule.busId.busId} - {schedule.busId.busType}
                           </p>
                         </div>
@@ -892,21 +892,21 @@ const ScheduleManagement = React.memo(() => {
 
       {/* Upcoming Schedule Highlight */}
       {filteredSchedules.filter(s => s.status === 'Scheduled').length > 0 && (
-        <div className="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 rounded-xl p-6 border border-cyan-700/30">
+        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">Next Schedule</h3>
-              <p className="text-cyan-300">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Next Schedule</h3>
+              <p className="text-blue-600">
                 Departure: {formatTimeFromString(filteredSchedules.filter(s => s.status === 'Scheduled')[0].departureTime)} - {formatDate(filteredSchedules.filter(s => s.status === 'Scheduled')[0].travelDate)}
               </p>
-              <p className="text-slate-300 mt-1">
+              <p className="text-gray-700 mt-1">
                 {filteredSchedules.filter(s => s.status === 'Scheduled')[0].startLocation} → {filteredSchedules.filter(s => s.status === 'Scheduled')[0].destination}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-slate-400 text-sm">Bus</p>
-              <p className="text-white font-medium">{filteredSchedules.filter(s => s.status === 'Scheduled')[0].busId.numberPlate}</p>
-              <p className="text-slate-300 text-sm">{filteredSchedules.filter(s => s.status === 'Scheduled')[0].busId.busType}</p>
+              <p className="text-gray-600 text-sm">Bus</p>
+              <p className="text-gray-900 font-medium">{filteredSchedules.filter(s => s.status === 'Scheduled')[0].busId.numberPlate}</p>
+              <p className="text-gray-700 text-sm">{filteredSchedules.filter(s => s.status === 'Scheduled')[0].busId.busType}</p>
             </div>
           </div>
         </div>
@@ -1002,7 +1002,7 @@ const DriverDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900">
       {/* Password Change Modal */}
       <PasswordChangeModal
         isOpen={showPasswordModal}
@@ -1011,25 +1011,25 @@ const DriverDashboard = () => {
       />
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-40 bg-slate-800/95 backdrop-blur-lg border-r border-slate-700 transition-transform duration-300 ease-in-out ${
+      <div className={`fixed inset-y-0 left-0 z-40 bg-white/95 backdrop-blur-lg border-r border-gray-200 shadow-lg transition-transform duration-300 ease-in-out ${
         isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full'
       }`}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between p-6 border-b border-slate-700">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
                 <Bus className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                 BusZone
               </span>
             </div>
             <button
               onClick={toggleSidebar}
-              className="p-1 hover:bg-slate-700 rounded-lg md:hidden"
+              className="p-1 hover:bg-gray-100 rounded-lg md:hidden"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 text-gray-600" />
             </button>
           </div>
 
@@ -1039,8 +1039,8 @@ const DriverDashboard = () => {
               onClick={() => setActiveTab('schedule')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                 activeTab === 'schedule'
-                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                  : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
               <Calendar className="w-5 h-5" />
@@ -1051,8 +1051,8 @@ const DriverDashboard = () => {
               onClick={() => setActiveTab('profile')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                 activeTab === 'profile'
-                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                  : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
               <User className="w-5 h-5" />
@@ -1063,8 +1063,8 @@ const DriverDashboard = () => {
               onClick={() => setActiveTab('settings')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                 activeTab === 'settings'
-                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                  : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
               <Settings className="w-5 h-5" />
@@ -1073,24 +1073,24 @@ const DriverDashboard = () => {
           </nav>
 
           {/* User Info & Logout */}
-          <div className="p-4 border-t border-slate-700">
-            <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-700/50">
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
                 <span className="font-semibold text-white">
                   {user.firstName?.[0]}{user.lastName?.[0]}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">
+                <p className="text-sm font-medium text-gray-900 truncate">
                   {user.firstName} {user.lastName}
                 </p>
-                <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                <p className="text-xs text-gray-500 truncate">{user.email}</p>
               </div>
             </div>
             
             <button
               onClick={handleLogout}
-              className="w-full flex items-center space-x-3 px-4 py-3 mt-3 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-xl transition-all duration-200"
+              className="w-full flex items-center space-x-3 px-4 py-3 mt-3 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-xl transition-all duration-200"
             >
               <LogOut className="w-5 h-5" />
               <span className="font-medium">Logout</span>
@@ -1102,18 +1102,18 @@ const DriverDashboard = () => {
       {/* Main Content */}
       <div className={`transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : 'ml-0'}`}>
         {/* Top Bar */}
-        <header className="bg-slate-800/50 backdrop-blur-lg border-b border-slate-700 sticky top-0 z-30">
+        <header className="bg-white/80 backdrop-blur-lg border-b border-gray-200 sticky top-0 z-30 shadow-sm">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center space-x-4">
               <button
                 onClick={toggleSidebar}
-                className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <Menu className="w-5 h-5" />
+                <Menu className="w-5 h-5 text-gray-600" />
               </button>
               
               <div className="hidden md:block">
-                <h1 className="text-xl font-semibold text-white capitalize">
+                <h1 className="text-xl font-semibold text-gray-900 capitalize">
                   {activeTab === 'schedule' ? 'Schedule Management' : 
                    activeTab === 'profile' ? 'Driver Profile' : 
                    activeTab === 'settings' ? 'Account Settings' : 'Dashboard'}
@@ -1125,9 +1125,9 @@ const DriverDashboard = () => {
               {/* Notifications */}
               <button 
                 onClick={() => navigate('/notifications')}
-                className="relative p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <Bell className="w-5 h-5 text-slate-300" />
+                <Bell className="w-5 h-5 text-gray-600" />
                 {notificationCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                     {notificationCount}
@@ -1138,10 +1138,10 @@ const DriverDashboard = () => {
               {/* User Menu */}
               <div className="flex items-center space-x-3">
                 <div className="hidden md:block text-right">
-                  <p className="text-sm font-medium text-white">
+                  <p className="text-sm font-medium text-gray-900">
                     {user.firstName} {user.lastName}
                   </p>
-                  <p className="text-xs text-slate-400">Driver</p>
+                  <p className="text-xs text-gray-500">Driver</p>
                 </div>
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
                   <span className="font-semibold text-white text-sm">
