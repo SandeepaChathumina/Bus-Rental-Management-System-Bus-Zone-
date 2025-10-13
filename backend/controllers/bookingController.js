@@ -1209,7 +1209,9 @@ export const getDriverSchedules = async (req, res) => {
         travelDate: booking.travelDate,
         departureTime: booking.departureTime,
         arrivalTime: booking.arrivalTime,
-        bookingStatus: booking.bookingStatus
+        bookingStatus: booking.bookingStatus,
+        departureTimeType: typeof booking.departureTime,
+        arrivalTimeType: typeof booking.arrivalTime
       });
 
       let status = 'Scheduled';

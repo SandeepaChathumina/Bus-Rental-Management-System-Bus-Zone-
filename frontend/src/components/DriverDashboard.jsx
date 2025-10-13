@@ -589,10 +589,35 @@ const ScheduleManagement = React.memo(() => {
       }
       return date.toLocaleTimeString('en-US', {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        hour12: false
       });
     } catch (error) {
       console.error('Error formatting time:', dateTimeString, error);
+      return 'Invalid Time';
+    }
+  };
+
+  const formatTimeFromString = (timeString) => {
+    try {
+      if (!timeString) return 'N/A';
+      
+      // Handle different time formats
+      let formattedTime = timeString;
+      
+      // If time is in HHMM format (4 digits), convert to HH:MM
+      if (timeString.length === 4 && !timeString.includes(':')) {
+        formattedTime = `${timeString.substring(0, 2)}:${timeString.substring(2, 4)}`;
+      }
+      
+      // If time is in HH:MM format, use it directly
+      if (timeString.includes(':')) {
+        return timeString;
+      }
+      
+      return formattedTime;
+    } catch (error) {
+      console.error('Error formatting time string:', timeString, error);
       return 'Invalid Time';
     }
   };
@@ -739,8 +764,15 @@ const ScheduleManagement = React.memo(() => {
                       {schedule.status === 'In Progress' && <div className="w-2 h-2 rounded-full bg-orange-400 mr-2 animate-pulse"></div>}
                       {schedule.status}
                     </div>
-                    <div className="text-sm text-slate-400">
-                      {formatDateTime(schedule.scheduledStartTime)}
+                    <div className="flex items-center space-x-4 text-sm text-slate-400">
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{formatTimeFromString(schedule.departureTime)}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>{formatDate(schedule.travelDate)}</span>
+                      </div>
                     </div>
                   </div>
 
@@ -773,12 +805,6 @@ const ScheduleManagement = React.memo(() => {
                   <div className="flex items-center justify-between text-sm text-slate-400">
                     <span>Booking: {schedule.bookingId.bookingId}</span>
                     <span>Passengers: {schedule.bookingId.passengers}</span>
-                    <span>Date: {formatDate(schedule.travelDate)}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-sm text-slate-400 mt-2">
-                    <span>Departure: {formatTime(schedule.scheduledStartTime)}</span>
-                    <span>Arrival: {formatTime(schedule.scheduledEndTime)}</span>
                     <span>Route: {schedule.startLocation} → {schedule.destination}</span>
                   </div>
 
@@ -786,21 +812,15 @@ const ScheduleManagement = React.memo(() => {
                     <div className="mt-4 p-4 bg-slate-700/50 rounded-lg space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="text-slate-400">Travel Date:</span>
+                          <span className="text-slate-400">Route:</span>
                           <p className="text-white font-medium">
-                            {formatDate(schedule.travelDate)}
+                            {schedule.startLocation} → {schedule.destination}
                           </p>
                         </div>
                         <div>
                           <span className="text-slate-400">Departure Time:</span>
                           <p className="text-white font-medium">
-                            {formatTime(schedule.scheduledStartTime)}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-slate-400">Arrival Time:</span>
-                          <p className="text-white font-medium">
-                            {formatTime(schedule.scheduledEndTime)}
+                            {formatTimeFromString(schedule.departureTime)}
                           </p>
                         </div>
                         {schedule.actualStartTime && (
