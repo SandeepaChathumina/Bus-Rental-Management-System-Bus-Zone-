@@ -238,7 +238,7 @@ const DriverProfile = () => {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 border border-slate-700/50 mb-6">
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 border border-gray-200 shadow-sm mb-6">
         <div className="flex flex-col md:flex-row items-center justify-between">
           <div className="flex items-center space-x-4 mb-4 md:mb-0">
             <div className="relative">
@@ -247,18 +247,18 @@ const DriverProfile = () => {
                 alt={fullName}
                 className="w-20 h-20 rounded-full border-4 border-blue-500/50"
               />
-              <div className="absolute bottom-0 right-0 bg-green-500 w-5 h-5 rounded-full border-2 border-slate-900"></div>
+              <div className="absolute bottom-0 right-0 bg-green-500 w-5 h-5 rounded-full border-2 border-white"></div>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">{fullName}</h1>
-              <p className="text-slate-400">Professional Bus Driver</p>
+              <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
+              <p className="text-gray-600">Professional Bus Driver</p>
               <div className="flex items-center space-x-2 mt-1">
-                <div className="flex items-center text-yellow-400">
+                <div className="flex items-center text-yellow-500">
                   <span className="text-sm">★★★★★</span>
-                  <span className="text-slate-400 ml-1 text-sm">4.8</span>
+                  <span className="text-gray-600 ml-1 text-sm">4.8</span>
                 </div>
-                <span className="text-slate-600">•</span>
-                <span className="text-green-400 text-sm font-medium">Active</span>
+                <span className="text-gray-400">•</span>
+                <span className="text-green-600 text-sm font-medium">Active</span>
               </div>
             </div>
           </div>
@@ -276,7 +276,7 @@ const DriverProfile = () => {
               <div className="flex space-x-2">
                 <button
                   onClick={handleCancel}
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-slate-500"
+                  className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
                   <X className="h-4 w-4" />
                   <span>Cancel</span>
@@ -284,7 +284,7 @@ const DriverProfile = () => {
                 <button
                   onClick={handleSave}
                   disabled={saving || !phoneValidation.isValid}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="bg-green-600 hover:bg-green-700 text-gray-900 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   {saving ? (
                     <Loader className="h-4 w-4 animate-spin" />
@@ -301,57 +301,57 @@ const DriverProfile = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Personal Information */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 border border-slate-700/50">
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 border border-gray-200 shadow-sm">
           <div className="flex items-center space-x-2 mb-4">
-            <User className="h-5 w-5 text-blue-400" />
-            <h2 className="text-lg font-semibold text-white">Personal Information</h2>
+            <User className="h-5 w-5 text-blue-500" />
+            <h2 className="text-lg font-semibold text-gray-900">Personal Information</h2>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Username</label>
+              <label className="block text-sm text-gray-600 mb-1">Username</label>
               <input
                 type="text"
                 value={formData.username}
                 onChange={(e) => handleInputChange('username', e.target.value)}
                 disabled={!isEditing}
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-400 mb-1">First Name</label>
+                <label className="block text-sm text-gray-600 mb-1">First Name</label>
                 <input
                   type="text"
                   value={formData.firstName}
                   onChange={(e) => handleInputChange('firstName', e.target.value)}
                   disabled={!isEditing}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Last Name</label>
+                <label className="block text-sm text-gray-600 mb-1">Last Name</label>
                 <input
                   type="text"
                   value={formData.lastName}
                   onChange={(e) => handleInputChange('lastName', e.target.value)}
                   disabled={!isEditing}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Phone Number</label>
+              <label className="block text-sm text-gray-600 mb-1">Phone Number</label>
               <div className="relative">
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   disabled={!isEditing}
-                  className={`w-full bg-slate-800 border rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-                    phoneValidation.isValid ? 'border-slate-600' : 'border-red-500'
+                  className={`w-full bg-white border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    phoneValidation.isValid ? 'border-gray-300' : 'border-red-500'
                   }`}
                   placeholder="07XXXXXXXX or +947XXXXXXXX"
                 />
@@ -366,87 +366,87 @@ const DriverProfile = () => {
                 )}
               </div>
               {!phoneValidation.isValid && (
-                <p className="text-red-400 text-xs mt-1">{phoneValidation.message}</p>
+                <p className="text-red-600 text-xs mt-1">{phoneValidation.message}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Email Address</label>
+              <label className="block text-sm text-gray-600 mb-1">Email Address</label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 disabled={true} // Email cannot be changed
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-slate-400 cursor-not-allowed"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-500 cursor-not-allowed"
                 title="Email address cannot be changed"
               />
-              <p className="text-slate-500 text-xs mt-1">Email address cannot be changed</p>
+              <p className="text-gray-500 text-xs mt-1">Email address cannot be changed</p>
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Address</label>
+              <label className="block text-sm text-gray-600 mb-1">Address</label>
               <textarea
                 value={formData.address}
                 onChange={(e) => handleInputChange('address', e.target.value)}
                 disabled={!isEditing}
                 rows={3}
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none"
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none"
               />
             </div>
           </div>
         </div>
 
         {/* Driver Information */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 border border-slate-700/50">
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 border border-gray-200 shadow-sm">
           <div className="flex items-center space-x-2 mb-4">
-            <Bus className="h-5 w-5 text-green-400" />
-            <h2 className="text-lg font-semibold text-white">Driver Information</h2>
+            <Bus className="h-5 w-5 text-green-500" />
+            <h2 className="text-lg font-semibold text-gray-900">Driver Information</h2>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">License Number</label>
+              <label className="block text-sm text-gray-600 mb-1">License Number</label>
               <input
                 type="text"
                 value={formData.licenseNumber}
                 onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
                 disabled={true} // License Number cannot be changed
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-slate-400 cursor-not-allowed"
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-600 cursor-not-allowed"
                 title="License number cannot be changed"
               />
-              <p className="text-slate-500 text-xs mt-1">License number cannot be changed</p>
+              <p className="text-gray-500 text-xs mt-1">License number cannot be changed</p>
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-1">License Expiry Date</label>
+              <label className="block text-sm text-gray-600 mb-1">License Expiry Date</label>
               <input
                 type="date"
                 value={formData.licenseExpiry}
                 onChange={(e) => handleInputChange('licenseExpiry', e.target.value)}
                 disabled={true} // License Expiry Date cannot be changed
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-slate-400 cursor-not-allowed"
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-600 cursor-not-allowed"
                 title="License expiry date cannot be changed"
               />
-              <p className="text-slate-500 text-xs mt-1">License expiry date cannot be changed</p>
+              <p className="text-gray-500 text-xs mt-1">License expiry date cannot be changed</p>
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Emergency Contact</label>
+              <label className="block text-sm text-gray-600 mb-1">Emergency Contact</label>
               <input
                 type="text"
                 value={formData.emergencyContact}
                 onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
                 disabled={true} // Emergency Contact cannot be changed
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-slate-400 cursor-not-allowed"
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-600 cursor-not-allowed"
                 placeholder="Name and phone number"
                 title="Emergency contact cannot be changed"
               />
-              <p className="text-slate-500 text-xs mt-1">Emergency contact cannot be changed</p>
+              <p className="text-gray-500 text-xs mt-1">Emergency contact cannot be changed</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Experience (years)</label>
+                <label className="block text-sm text-gray-600 mb-1">Experience (years)</label>
                 <input
                   type="number"
                   value={formData.experience}
@@ -454,13 +454,13 @@ const DriverProfile = () => {
                   disabled={true} // Experience cannot be changed
                   min="0"
                   max="50"
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-slate-400 cursor-not-allowed"
+                  className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-600 cursor-not-allowed"
                   title="Years of experience cannot be changed"
                 />
-                <p className="text-slate-500 text-xs mt-1">Years of experience cannot be changed</p>
+                <p className="text-gray-500 text-xs mt-1">Years of experience cannot be changed</p>
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Hourly Rate (LKR)</label>
+                <label className="block text-sm text-gray-600 mb-1">Hourly Rate (LKR)</label>
                 <input
                   type="number"
                   value={formData.hourlyRate}
@@ -468,53 +468,53 @@ const DriverProfile = () => {
                   disabled={true} // Hourly Rate cannot be changed
                   min="0"
                   step="50"
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-slate-400 cursor-not-allowed"
+                  className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-600 cursor-not-allowed"
                   title="Hourly rate cannot be changed"
                 />
-                <p className="text-slate-500 text-xs mt-1">Hourly rate cannot be changed</p>
+                <p className="text-gray-500 text-xs mt-1">Hourly rate cannot be changed</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Bank Account Information */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 border border-slate-700/50 lg:col-span-2">
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 border border-gray-200 shadow-sm lg:col-span-2">
           <div className="flex items-center space-x-2 mb-4">
-            <DollarSign className="h-5 w-5 text-yellow-400" />
-            <h2 className="text-lg font-semibold text-white">Bank Account Information</h2>
+            <DollarSign className="h-5 w-5 text-yellow-500" />
+            <h2 className="text-lg font-semibold text-gray-900">Bank Account Information</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Bank Name</label>
+              <label className="block text-sm text-gray-600 mb-1">Bank Name</label>
               <input
                 type="text"
                 value={formData.bankAccount.bankName}
                 onChange={(e) => handleInputChange('bankAccount.bankName', e.target.value)}
                 disabled={!isEditing}
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="e.g., Bank of Ceylon"
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Account Number</label>
+              <label className="block text-sm text-gray-600 mb-1">Account Number</label>
               <input
                 type="text"
                 value={formData.bankAccount.accountNumber}
                 onChange={(e) => handleInputChange('bankAccount.accountNumber', e.target.value)}
                 disabled={!isEditing}
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Account number"
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Routing Number</label>
+              <label className="block text-sm text-gray-600 mb-1">Routing Number</label>
               <input
                 type="text"
                 value={formData.bankAccount.routingNumber}
                 onChange={(e) => handleInputChange('bankAccount.routingNumber', e.target.value)}
                 disabled={!isEditing}
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Bank code or routing number"
               />
             </div>
