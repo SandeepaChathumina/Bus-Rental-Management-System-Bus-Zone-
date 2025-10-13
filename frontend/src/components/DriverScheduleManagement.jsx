@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Calendar,
-  Clock,
-  User,
+import { 
+  Calendar, 
+  Clock, 
+  User, 
   Bus,
   MapPin,
   Users,
-  CheckCircle,
+  CheckCircle, 
   AlertCircle,
   Search,
   Filter,
@@ -17,10 +17,14 @@ import {
   Eye,
   Save,
   X,
-  Plus
+  Plus,
+  Download,
+  FileText
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const DriverScheduleManagement = () => {
   
@@ -35,6 +39,9 @@ const DriverScheduleManagement = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedDriver, setSelectedDriver] = useState('');
   const [assigning, setAssigning] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFormat, setExportFormat] = useState('pdf');
   const [error, setError] = useState(null);
 
 
@@ -241,7 +248,7 @@ const DriverScheduleManagement = () => {
             isAvailable: true
           }));
         setDrivers(drivers);
-      } else {
+        } else {
         // Fallback to mock data
         const mockDrivers = [
           {
@@ -327,23 +334,23 @@ const DriverScheduleManagement = () => {
     try {
       let filtered = confirmedBookings || [];
 
-      // Filter by search term
-      if (searchTerm) {
+    // Filter by search term
+    if (searchTerm) {
         filtered = filtered.filter(booking => {
           if (!booking) return false;
-          return (
+        return (
             booking.bookingId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             booking.user?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             booking.user?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             booking.bus?.numberPlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             booking.route?.from?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             booking.route?.to?.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-        });
-      }
+        );
+      });
+    }
 
-      // Filter by date
-      if (filterDate) {
+    // Filter by date
+    if (filterDate) {
         const filterDateObj = new Date(filterDate);
         filtered = filtered.filter(booking => {
           if (!booking || !booking.travelDate) return false;
@@ -375,6 +382,406 @@ const DriverScheduleManagement = () => {
     if (pendingBookings.length > 0) {
       toast.info(`${pendingBookings.length} booking(s) awaiting driver response`);
     }
+  };
+
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error);
+      return 'Invalid Date';
+    }
+  };
+
+  const formatTime = (timeString) => {
+    try {
+      if (!timeString) return 'N/A';
+      
+      // Handle different time formats
+      let formattedTime = timeString;
+      
+      // If time is in HHMM format (4 digits), convert to HH:MM
+      if (timeString.length === 4 && !timeString.includes(':')) {
+        formattedTime = `${timeString.substring(0, 2)}:${timeString.substring(2, 4)}`;
+      }
+      
+      // If time is in HH:MM format, use it directly
+      if (timeString.includes(':')) {
+        return timeString;
+      }
+      
+      return formattedTime;
+    } catch (error) {
+      console.error('Error formatting time string:', timeString, error);
+      return 'Invalid Time';
+    }
+  };
+
+  const exportToPDF = (bookings) => {
+    if (!bookings || bookings.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+
+    const doc = new jsPDF('l', 'mm', 'a4');
+    
+    // Page dimensions
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
+
+    // Add BusZone+ Header
+    doc.setFontSize(18);
+    doc.setTextColor(59, 130, 246);
+    doc.setFont(undefined, 'bold');
+    doc.text('BusZone+', margin, margin + 10);
+    
+    // Subtitle
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont(undefined, 'normal');
+    doc.text('Premium Bus Rental Management System', margin, margin + 16);
+    
+    // Report title
+    doc.setFontSize(20);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Driver Schedule Management Report', pageWidth / 2, margin + 25, { align: 'center' });
+    
+    // Report metadata
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont(undefined, 'normal');
+    const currentDate = new Date();
+    doc.text(`Generated on: ${currentDate.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })} at ${currentDate.toLocaleTimeString()}`, pageWidth / 2, margin + 32, { align: 'center' });
+    
+    // Statistics section
+    const statsY = margin + 40;
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Report Summary', margin, statsY);
+    
+    // Calculate statistics
+    const totalBookings = bookings.length;
+    const assignedBookings = bookings.filter(b => b.assignedDriver).length;
+    const unassignedBookings = totalBookings - assignedBookings;
+    const acceptedBookings = bookings.filter(b => b.driverResponse === 'accepted').length;
+    const declinedBookings = bookings.filter(b => b.driverResponse === 'declined').length;
+    const pendingBookings = bookings.filter(b => b.driverResponse === 'pending').length;
+    
+    // Statistics boxes
+    const availableWidth = pageWidth - (margin * 2);
+    const boxCount = 5;
+    const boxSpacing = 8;
+    const boxWidth = Math.min(30, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
+    const boxHeight = 25;
+    let currentX = margin;
+    
+    // Total Bookings box
+    doc.setFillColor(59, 130, 246);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(totalBookings.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Total Bookings', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Assigned box
+    doc.setFillColor(37, 99, 235);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(assignedBookings.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Assigned', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Accepted box
+    doc.setFillColor(34, 197, 94);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(acceptedBookings.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Accepted', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Declined box
+    doc.setFillColor(239, 68, 68);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(declinedBookings.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Declined', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Pending box
+    doc.setFillColor(245, 158, 11);
+    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(pendingBookings.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Pending', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    
+    // Status distribution table
+    const statusTableY = statsY + 50;
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Assignment Status Distribution', margin, statusTableY);
+    
+    const statusData = [
+      ['Status', 'Count', 'Percentage'],
+      ['Assigned', assignedBookings.toString(), `${((assignedBookings/totalBookings)*100).toFixed(1)}%`],
+      ['Unassigned', unassignedBookings.toString(), `${((unassignedBookings/totalBookings)*100).toFixed(1)}%`],
+      ['Accepted', acceptedBookings.toString(), `${((acceptedBookings/totalBookings)*100).toFixed(1)}%`],
+      ['Declined', declinedBookings.toString(), `${((declinedBookings/totalBookings)*100).toFixed(1)}%`],
+      ['Pending', pendingBookings.toString(), `${((pendingBookings/totalBookings)*100).toFixed(1)}%`]
+    ];
+    
+    autoTable(doc, {
+      startY: statusTableY + 8,
+      head: [statusData[0]],
+      body: statusData.slice(1),
+      styles: { 
+        fontSize: 10, 
+        cellPadding: 4,
+        textColor: [30, 30, 30]
+      },
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: [255, 255, 255],
+        halign: 'center',
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: { 
+        fillColor: [248, 250, 252] 
+      },
+      columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'center' },
+        2: { halign: 'center' }
+      },
+      margin: { left: margin, right: margin }
+    });
+
+    // Add new page for booking details table
+    doc.addPage();
+    
+    // Add header to second page
+    doc.setFontSize(16);
+    doc.setTextColor(59, 130, 246);
+    doc.setFont(undefined, 'bold');
+    doc.text('BusZone+', margin, margin + 10);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont(undefined, 'normal');
+    doc.text('Premium Bus Rental Management System', margin, margin + 16);
+    
+    // Main booking data table
+    const tableStartY = margin + 30;
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text('Booking Details', margin, tableStartY);
+    
+    // Prepare table data
+    const tableColumns = [
+      { header: 'Booking ID', dataKey: 'bookingId', width: 25 },
+      { header: 'Passenger', dataKey: 'passenger', width: 35 },
+      { header: 'Route', dataKey: 'route', width: 40 },
+      { header: 'Date', dataKey: 'date', width: 25 },
+      { header: 'Time', dataKey: 'time', width: 20 },
+      { header: 'Driver', dataKey: 'driver', width: 35 },
+      { header: 'Status', dataKey: 'status', width: 25 },
+      { header: 'Response', dataKey: 'response', width: 20 }
+    ];
+    
+    const tableRows = bookings.map((booking, index) => ({
+      bookingId: booking.bookingId || 'N/A',
+      passenger: `${booking.user?.firstName || 'N/A'} ${booking.user?.lastName || 'N/A'}`.trim().substring(0, 20),
+      route: `${booking.route?.from || 'N/A'} → ${booking.route?.to || 'N/A'}`.substring(0, 25),
+      date: formatDate(booking.travelDate),
+      time: formatTime(booking.departureTime),
+      driver: getDriverName(booking.assignedDriver).substring(0, 20),
+      status: booking.bookingStatus || 'N/A',
+      response: booking.driverResponse || 'N/A'
+    }));
+
+    autoTable(doc, {
+      startY: tableStartY + 8,
+      columns: tableColumns,
+      body: tableRows,
+      styles: { 
+        fontSize: 8, 
+        cellPadding: 2,
+        textColor: [30, 30, 30],
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+        overflow: 'linebreak',
+        halign: 'left'
+      },
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: [255, 255, 255],
+        halign: 'center',
+        fontStyle: 'bold',
+        fontSize: 10
+      },
+      alternateRowStyles: { 
+        fillColor: [248, 250, 252] 
+      },
+      columnStyles: {
+        bookingId: { halign: 'center', fontSize: 8, cellWidth: 25 },
+        passenger: { halign: 'left', fontSize: 8, cellWidth: 35, overflow: 'linebreak' },
+        route: { halign: 'left', fontSize: 7, cellWidth: 40, overflow: 'linebreak' },
+        date: { halign: 'center', fontSize: 8, cellWidth: 25 },
+        time: { halign: 'center', fontSize: 8, cellWidth: 20 },
+        driver: { halign: 'left', fontSize: 8, cellWidth: 35, overflow: 'linebreak' },
+        status: { halign: 'center', fontSize: 8, cellWidth: 25 },
+        response: { halign: 'center', fontSize: 8, cellWidth: 20 }
+      },
+      margin: { left: margin, right: margin },
+      tableWidth: 'auto',
+      showHead: 'everyPage',
+      didDrawPage: function (data) {
+        // Add footer on each page
+        const pageNumber = doc.internal.getNumberOfPages();
+        const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+        
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Page ${currentPage} of ${pageNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+        doc.text('BusZone+ Driver Schedule Management Report', pageWidth / 2, pageHeight - 5, { align: 'center' });
+      }
+    });
+
+    // Add footer with company info
+    const finalY = doc.lastAutoTable.finalY || pageHeight - 30;
+    if (finalY < pageHeight - 40) {
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      doc.text('This report was generated by BusZone+ Management System', pageWidth / 2, finalY + 20, { align: 'center' });
+      doc.text('For support, contact: info@buszoneplus.com | +94 704 222 777', pageWidth / 2, finalY + 25, { align: 'center' });
+    }
+
+    // Save the PDF
+    const fileName = `BusZone_DriverScheduleReport_${currentDate.toISOString().split('T')[0]}_${Date.now()}.pdf`;
+    doc.save(fileName);
+  };
+
+  const exportToCSV = (bookings) => {
+    if (!bookings || bookings.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+
+    // CSV Headers
+    const headers = [
+      'Booking ID',
+      'Passenger Name',
+      'Email',
+      'Phone',
+      'Route',
+      'Travel Date',
+      'Departure Time',
+      'Arrival Time',
+      'Passengers',
+      'Total Amount',
+      'Booking Status',
+      'Assigned Driver',
+      'Driver Response',
+      'Driver Response Time',
+      'Created At'
+    ];
+
+    // Convert data to CSV format
+    const csvData = bookings.map(booking => [
+      booking.bookingId || 'N/A',
+      `${booking.user?.firstName || 'N/A'} ${booking.user?.lastName || 'N/A'}`.trim(),
+      booking.user?.email || 'N/A',
+      booking.user?.phone || 'N/A',
+      `${booking.route?.from || 'N/A'} → ${booking.route?.to || 'N/A'}`,
+      formatDate(booking.travelDate),
+      formatTime(booking.departureTime),
+      formatTime(booking.arrivalTime),
+      booking.passengers || 'N/A',
+      booking.totalAmount || 'N/A',
+      booking.bookingStatus || 'N/A',
+      getDriverName(booking.assignedDriver),
+      booking.driverResponse || 'N/A',
+      booking.driverResponseTime ? new Date(booking.driverResponseTime).toLocaleString() : 'N/A',
+      booking.createdAt ? new Date(booking.createdAt).toLocaleString() : 'N/A'
+    ]);
+
+    // Combine headers and data
+    const csvContent = [headers, ...csvData]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+
+    // Create and download CSV file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    
+    const currentDate = new Date();
+    const fileName = `BusZone_DriverScheduleReport_${currentDate.toISOString().split('T')[0]}_${Date.now()}.csv`;
+    link.setAttribute('download', fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExport = async () => {
+    setExportLoading(true);
+    try {
+      if (exportFormat === 'pdf') {
+        exportToPDF(confirmedBookings);
+      } else if (exportFormat === 'csv') {
+        exportToCSV(confirmedBookings);
+      }
+      toast.success('Report exported successfully');
+      setShowExportModal(false);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export report');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const openExportModal = () => {
+    setShowExportModal(true);
   };
 
   const handleAssignSubmit = async () => {
@@ -454,19 +861,6 @@ const DriverScheduleManagement = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const formatTime = (timeString) => {
-    if (!timeString) return 'N/A';
-    return timeString;
-  };
 
   const getDriverName = (driverId) => {
     const driver = drivers.find(d => d._id === driverId);
@@ -499,7 +893,7 @@ const DriverScheduleManagement = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+          </div>
     );
   }
 
@@ -509,18 +903,28 @@ const DriverScheduleManagement = () => {
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-        <div>
+              <div>
           <h2 className="text-2xl font-bold text-gray-800">Driver Schedule Management</h2>
           <p className="text-gray-600">Assign drivers to confirmed bookings</p>
+              </div>
+        <div className="flex space-x-3">
+          <button
+            onClick={openExportModal}
+            disabled={confirmedBookings.length === 0}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-5 h-5 mr-2" />
+            Export Report
+          </button>
+          <button
+            onClick={fetchConfirmedBookings}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <RefreshCw className="w-5 h-5 mr-2" />
+            Refresh
+          </button>
         </div>
-        <button
-          onClick={fetchConfirmedBookings}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <RefreshCw className="w-5 h-5 mr-2" />
-          Refresh
-        </button>
-      </div>
+            </div>
 
       {/* Error Display */}
       {error && (
@@ -533,7 +937,7 @@ const DriverScheduleManagement = () => {
           >
             Dismiss
           </button>
-        </div>
+              </div>
       )}
 
 
@@ -541,24 +945,24 @@ const DriverScheduleManagement = () => {
       <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
+                <input
+                  type="text"
             placeholder="Search by booking ID, passenger name, bus plate, or route..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-white border border-blue-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
+              </div>
         <div className="flex items-center space-x-2">
           <Filter className="text-gray-400 w-5 h-5" />
-          <input
-            type="date"
+                <input
+                  type="date"
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
             className="bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
-      </div>
+              </div>
+            </div>
 
       {/* Bookings List */}
       <div className="bg-white rounded-xl border border-blue-200 shadow-lg overflow-hidden">
@@ -585,7 +989,7 @@ const DriverScheduleManagement = () => {
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-800">
                       {booking.user?.firstName || 'N/A'} {booking.user?.lastName || 'N/A'}
-                    </div>
+            </div>
                     <div className="text-xs text-gray-500">{booking.user?.email || 'N/A'}</div>
                     <div className="text-xs text-gray-500">{booking.user?.phone || 'N/A'}</div>
                   </td>
@@ -597,28 +1001,28 @@ const DriverScheduleManagement = () => {
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-800">
                       {booking.route?.from || 'N/A'} → {booking.route?.to || 'N/A'}
-                    </div>
+        </div>
                     <div className="text-xs text-gray-500">
                       {booking.route?.distance || 'N/A'}km • {booking.route?.estimatedDuration || 'N/A'}
-                    </div>
+      </div>
                     <div className="text-xs text-gray-500">
                       Departure: {formatTime(booking.departureTime)}
-                    </div>
+          </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-700">{formatDate(booking.travelDate)}</div>
                     <div className="text-xs text-gray-500">
                       {booking.tripType === 'round-trip' ? 'Round Trip' : 'One Way'}
-                    </div>
+              </div>
                   </td>
                   <td className="px-6 py-4">
                     {booking.assignedDriver ? (
                       <div className="flex items-center">
                         <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
-                        <div>
+              <div>
                           <div className="text-sm font-medium text-gray-800">
                             {getDriverName(booking.assignedDriver)}
-                          </div>
+              </div>
                           <div className="text-xs text-gray-500">Assigned</div>
                           {booking.driverResponse && (
                             <div className="mt-1">
@@ -633,7 +1037,7 @@ const DriverScheduleManagement = () => {
                                  booking.driverResponse === 'declined' ? '✗ Declined' : 
                                  '⏳ Pending'}
                               </span>
-                            </div>
+              </div>
                           )}
                           
                           {/* Show Trip Status */}
@@ -642,7 +1046,7 @@ const DriverScheduleManagement = () => {
                               <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                                 🚌 Trip Started
                               </span>
-                            </div>
+              </div>
                           )}
 
                           {booking.bookingStatus === 'Ended' && (
@@ -650,31 +1054,31 @@ const DriverScheduleManagement = () => {
                               <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                                 ✅ Trip Ended
                               </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+              </div>
+                )}
+              </div>
+              </div>
                     ) : (
                       <div className="flex items-center">
                         <AlertCircle className="w-4 h-4 text-orange-600 mr-2" />
                         <div className="text-sm text-orange-600">Not Assigned</div>
-                      </div>
+            </div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
+              <button
                       onClick={() => handleAssignDriver(booking)}
                       className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-2 rounded transition-colors"
                       title="Assign Driver"
                     >
                       <UserCheck className="w-4 h-4" />
-                    </button>
+              </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+            </div>
         
             {(!filteredBookings || filteredBookings.length === 0) && (
               <div className="text-center py-12">
@@ -684,11 +1088,11 @@ const DriverScheduleManagement = () => {
                   {searchTerm || filterDate 
                     ? 'Try adjusting your search or filter criteria' 
                     : 'There are no confirmed bookings to assign drivers to'
-                  }
-                </p>
+              }
+            </p>
               </div>
             )}
-      </div>
+          </div>
 
       {/* Assign Driver Modal */}
       {showAssignModal && (
@@ -698,13 +1102,13 @@ const DriverScheduleManagement = () => {
             <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl border border-blue-200">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-800">Assign Driver</h3>
-                <button
+            <button
                   onClick={() => setShowAssignModal(false)}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-5 h-5" />
-                </button>
-              </div>
+            </button>
+          </div>
 
               {selectedBooking && (
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg">
@@ -715,8 +1119,8 @@ const DriverScheduleManagement = () => {
                     <div><strong>Bus:</strong> {selectedBooking.bus?.numberPlate || 'N/A'} ({selectedBooking.bus?.busType || 'N/A'})</div>
                     <div><strong>Route:</strong> {selectedBooking.route?.from || 'N/A'} → {selectedBooking.route?.to || 'N/A'}</div>
                     <div><strong>Date:</strong> {formatDate(selectedBooking.travelDate)} at {formatTime(selectedBooking.departureTime)}</div>
-                  </div>
-                </div>
+      </div>
+        </div>
               )}
 
               <div className="mb-4">
@@ -734,17 +1138,17 @@ const DriverScheduleManagement = () => {
                     </option>
                   ))}
                 </select>
-              </div>
+            </div>
 
               <div className="flex justify-end space-x-3 pt-4">
-                <button
+              <button
                   type="button"
                   onClick={() => setShowAssignModal(false)}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                >
+              >
                   Cancel
-                </button>
-                <button
+              </button>
+              <button
                   onClick={handleAssignSubmit}
                   disabled={assigning || !selectedDriver}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
@@ -760,13 +1164,93 @@ const DriverScheduleManagement = () => {
                       Assign Driver
                     </>
                   )}
+              </button>
+            </div>
+          </div>
+        </div>
+            </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Export Driver Schedule Report</h3>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Export Format</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setExportFormat('csv')}
+                  className={`p-4 border-2 rounded-lg text-center transition-colors ${
+                    exportFormat === 'csv'
+                      ? 'border-green-500 bg-green-50 text-green-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <FileText className="w-8 h-8 mx-auto mb-2" />
+                  <div className="font-medium">CSV (.csv)</div>
+                  <div className="text-xs text-gray-500">For spreadsheets</div>
+                </button>
+                <button
+                  onClick={() => setExportFormat('pdf')}
+                  className={`p-4 border-2 rounded-lg text-center transition-colors ${
+                    exportFormat === 'pdf'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <FileText className="w-8 h-8 mx-auto mb-2" />
+                  <div className="font-medium">PDF (.pdf)</div>
+                  <div className="text-xs text-gray-500">For printing</div>
                 </button>
               </div>
+            </div>
+
+            <div className="mb-6 p-3 bg-gray-50 rounded-lg">
+              <div className="text-sm text-gray-600">
+                <div className="mb-1">Report will include {confirmedBookings.length} records</div>
+                <div>Generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}</div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={exportLoading}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {exportLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export Now
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+                        </div>
     );
   } catch (error) {
     console.error('Component render error:', error);
@@ -776,15 +1260,15 @@ const DriverScheduleManagement = () => {
           <h1 className="text-xl font-bold text-red-800">❌ Component Error</h1>
           <p className="text-red-600">Something went wrong rendering the component.</p>
           <p className="text-red-500 text-sm mt-2">Error: {error.message}</p>
-          <button 
+                      <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
             Reload Page
-          </button>
-        </div>
-      </div>
-    );
+                            </button>
+                          </div>
+    </div>
+  );
   }
 };
 
