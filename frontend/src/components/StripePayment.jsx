@@ -212,3 +212,4 @@ const StripePayment = ({ booking, onPaymentSuccess, onPaymentError }) => {
 };
 
 export default StripePayment;
+

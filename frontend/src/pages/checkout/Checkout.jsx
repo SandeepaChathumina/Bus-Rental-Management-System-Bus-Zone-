@@ -23,8 +23,8 @@ import {
   Zap
 } from 'lucide-react';
 
-// Test Stripe publishable key (මෙය ඔබේ අවශ්‍ය key එකට replace කරන්න)
-const stripePromise = loadStripe('pk_test_51ABC123...' || import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+// Test Stripe publishable key - Use test key for development
+const stripePromise = loadStripe('pk_test_51ABC123...' || import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51ABC123...');
 
 // Stripe Card Form Component - Simplified for testing
 const StripeCardForm = ({ amount, onSuccess, onError }) => {

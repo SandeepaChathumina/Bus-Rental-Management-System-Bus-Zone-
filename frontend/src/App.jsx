@@ -38,6 +38,7 @@ import Chatbot from './components/Chatbot';
 import ProtectedRoute from './components/ProtectedRoute';
 import ViewMyBookings from './pages/ViewMyBookings';
 import AllBookings from './pages/allbookings';
+import PaymentTestPage from './pages/PaymentTestPage';
 
 function App() {
   return (
@@ -94,6 +95,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['passenger', 'admin']}>
                     <ViewMyBookings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment-test"
+                element={
+                  <ProtectedRoute allowedRoles={['passenger', 'admin']}>
+                    <PaymentTestPage />
                   </ProtectedRoute>
                 }
               />

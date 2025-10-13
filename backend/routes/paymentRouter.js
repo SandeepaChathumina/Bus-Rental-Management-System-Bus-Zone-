@@ -15,6 +15,7 @@ import {
   getUserPayments,
   getPaymentById,
   getAllPayments,
+  getAllPaymentsWithBookings,
   getAllBookingPayments,
   getAllMaintenancePayments,
   getPaymentStatistics,
@@ -62,6 +63,7 @@ router.get('/salary/invoices/my-invoices', protect, getDriverSalaryInvoices);
 
 // ADMIN PAYMENT ROUTES
 router.get('/admin/all', protect, admin, getAllPayments);
+router.get('/admin/all-with-bookings', protect, admin, getAllPaymentsWithBookings);
 router.get('/admin/bookings', protect, admin, getAllBookingPayments);
 router.get('/admin/maintenance', protect, admin, getAllMaintenancePayments);
 router.get('/admin/stats', protect, admin, getPaymentStatistics);

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { generateBookingInvoicePDF, generateSimpleBookingPDF } from '../utils/pdfGenerator';
+import { generateCompanyInvoice, generatePaymentReceipt } from '../utils/invoiceGenerator';
 import { 
   Calendar,
   Clock,
@@ -32,7 +33,7 @@ import {
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 // Booking Card Component
-const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoice }) => {
+const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoice, onUpdateBookingStatus }) => {
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
       case 'confirmed':
@@ -90,7 +91,21 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
   };
 
   return (
-    <div className="bg-white/90 rounded-2xl p-6 shadow-lg border border-sky-100 hover:shadow-xl transition-all duration-300 hover:border-sky-300">
+    <div className={`bg-white/90 rounded-2xl p-6 shadow-lg border hover:shadow-xl transition-all duration-300 ${
+      booking.paymentStatus === 'Paid' && booking.bookingStatus === 'Confirmed'
+        ? 'border-green-200 hover:border-green-300 bg-gradient-to-br from-white to-green-50'
+        : 'border-sky-100 hover:border-sky-300'
+    }`}>
+      {/* Success Banner for Paid Bookings */}
+      {booking.paymentStatus === 'Paid' && booking.bookingStatus === 'Confirmed' && (
+        <div className="bg-green-100 border border-green-200 rounded-lg p-3 mb-4 flex items-center">
+          <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+          <span className="text-green-800 font-medium text-sm">
+            ✅ Payment Successful - Booking Confirmed
+          </span>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
@@ -109,6 +124,12 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
           <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(booking.bookingStatus)}`}>
             {booking.bookingStatus}
           </span>
+          {booking.paymentStatus === 'Paid' && booking.bookingStatus === 'Confirmed' && (
+            <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200 flex items-center">
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Paid
+            </span>
+          )}
         </div>
       </div>
 
@@ -174,27 +195,123 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
       )}
 
       {/* Payment Information */}
-      <div className="flex items-center justify-between mb-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-        <div className="flex items-center">
-          <CreditCard className="h-4 w-4 mr-2 text-sky-500" />
-          <div>
-            <p className="text-sm text-slate-600 font-medium">Payment Status</p>
-            <div className="flex items-center">
-              <p className={`text-sm font-semibold ${getPaymentStatusColor(booking.paymentStatus)}`}>
-                {booking.paymentStatus}
-              </p>
-              {booking.paymentStatus === 'Paid' && (
-                <CheckCircle className="h-4 w-4 ml-1 text-green-600" />
-              )}
+      <div className={`mb-4 p-4 rounded-xl border ${
+        booking.paymentStatus === 'Paid' 
+          ? 'bg-green-50 border-green-200' 
+          : 'bg-slate-50 border-slate-200'
+      }`}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center">
+            <CreditCard className={`h-5 w-5 mr-2 ${
+              booking.paymentStatus === 'Paid' ? 'text-green-600' : 'text-sky-500'
+            }`} />
+            <div>
+              <p className={`text-sm font-medium ${
+                booking.paymentStatus === 'Paid' ? 'text-green-700' : 'text-slate-600'
+              }`}>Payment Status</p>
+              <div className="flex items-center">
+                <p className={`text-sm font-semibold ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                  {booking.paymentStatus}
+                </p>
+                {booking.paymentStatus === 'Paid' && (
+                  <CheckCircle className="h-4 w-4 ml-1 text-green-600" />
+                )}
+              </div>
             </div>
           </div>
+          <div className="text-right">
+            <p className={`text-sm font-medium ${
+              booking.paymentStatus === 'Paid' ? 'text-green-700' : 'text-slate-600'
+            }`}>Total Amount</p>
+            <p className={`text-lg font-bold ${
+              booking.paymentStatus === 'Paid' ? 'text-green-600' : 'text-slate-800'
+            }`}>
+              LKR {booking.totalAmount?.toLocaleString() || '0'}
+            </p>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-slate-600 font-medium">Total Amount</p>
-          <p className="text-lg font-bold text-slate-800">
-            LKR {booking.totalAmount?.toLocaleString() || '0'}
-          </p>
-        </div>
+
+        {/* Detailed Payment Information */}
+        {booking.paymentDetails && (
+          <div className="bg-white/80 rounded-lg p-3 border border-gray-200">
+            <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+              <Receipt className="h-4 w-4 mr-2" />
+              Payment Details
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div>
+                <span className="text-gray-600">Payment ID:</span>
+                <span className="ml-2 font-mono font-medium text-blue-600">
+                  {booking.paymentDetails.paymentId}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Transaction ID:</span>
+                <span className="ml-2 font-mono font-medium text-gray-800">
+                  {booking.paymentDetails.transactionId || 'N/A'}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Payment Method:</span>
+                <span className="ml-2 font-medium text-gray-800 capitalize">
+                  {booking.paymentDetails.paymentMethod?.replace('_', ' ') || 'N/A'}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Payment Gateway:</span>
+                <span className="ml-2 font-medium text-gray-800">
+                  {booking.paymentDetails.paymentGateway || 'N/A'}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Amount:</span>
+                <span className="ml-2 font-bold text-green-600">
+                  LKR {booking.paymentDetails.amount?.toLocaleString() || '0'}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Status:</span>
+                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                  booking.paymentDetails.status === 'success' 
+                    ? 'bg-green-100 text-green-800' 
+                    : booking.paymentDetails.status === 'pending'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {booking.paymentDetails.status?.toUpperCase() || 'N/A'}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Paid On:</span>
+                <span className="ml-2 font-medium text-gray-800">
+                  {booking.paymentDetails.createdAt ? 
+                    new Date(booking.paymentDetails.createdAt).toLocaleDateString() : 'N/A'}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Time:</span>
+                <span className="ml-2 font-medium text-gray-800">
+                  {booking.paymentDetails.createdAt ? 
+                    new Date(booking.paymentDetails.createdAt).toLocaleTimeString() : 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fallback for basic payment info */}
+        {!booking.paymentDetails && (
+          <div className="text-center py-2">
+            <p className="text-xs text-gray-500">
+              {booking.paymentId ? `Payment ID: ${booking.paymentId}` : 'Payment details not available'}
+            </p>
+            {booking.paymentMethod && (
+              <p className="text-xs text-gray-500 mt-1">
+                Paid via {booking.paymentMethod}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Actions */}
@@ -214,6 +331,17 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
           >
             <Download className="h-4 w-4 mr-2" />
             Invoice
+          </button>
+        )}
+
+        {/* Debug button for testing - only show if status is inconsistent */}
+        {booking.paymentStatus === 'Paid' && booking.bookingStatus === 'Pending' && (
+          <button
+            onClick={() => onUpdateBookingStatus(booking)}
+            className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-all duration-200 shadow-lg"
+          >
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Fix Status
           </button>
         )}
 
@@ -357,6 +485,76 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCa
               </div>
             </div>
           </div>
+
+          {/* Payment Information */}
+          {booking.paymentDetails && (
+            <div>
+              <h4 className="text-lg font-semibold text-slate-800 mb-3 flex items-center">
+                <CreditCard className="h-5 w-5 mr-2 text-green-600" />
+                Payment Information
+              </h4>
+              <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-green-700 font-medium">Payment ID</p>
+                    <p className="text-lg font-bold text-green-800 font-mono">
+                      {booking.paymentDetails.paymentId}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-green-700 font-medium">Status</p>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                      booking.paymentDetails.status === 'success' 
+                        ? 'bg-green-100 text-green-800' 
+                        : booking.paymentDetails.status === 'pending'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {booking.paymentDetails.status?.toUpperCase() || 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm text-green-700 font-medium">Amount</p>
+                    <p className="text-xl font-bold text-green-600">
+                      LKR {booking.paymentDetails.amount?.toLocaleString() || '0'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-green-700 font-medium">Payment Method</p>
+                    <p className="font-medium text-green-800 capitalize">
+                      {booking.paymentDetails.paymentMethod?.replace('_', ' ') || 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-green-700 font-medium">Gateway</p>
+                    <p className="font-medium text-green-800">
+                      {booking.paymentDetails.paymentGateway || 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-green-700 font-medium">Transaction ID</p>
+                    <p className="font-mono text-sm text-green-800">
+                      {booking.paymentDetails.transactionId || 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-green-700 font-medium">Paid On</p>
+                    <p className="font-medium text-green-800">
+                      {booking.paymentDetails.createdAt ? 
+                        new Date(booking.paymentDetails.createdAt).toLocaleDateString() : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-green-700 font-medium">Time</p>
+                    <p className="font-medium text-green-800">
+                      {booking.paymentDetails.createdAt ? 
+                        new Date(booking.paymentDetails.createdAt).toLocaleTimeString() : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Bus Information */}
           <div>
@@ -541,13 +739,67 @@ const ViewMyBookings = () => {
         return;
       }
 
+      console.log('🔍 Fetching bookings for user...');
       const response = await axios.get(`${BACKEND_URL}/api/bookings/my-bookings`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      console.log('📊 Raw booking response:', response.data);
+
+      // Fetch payment details for each booking
+      let bookingsWithPayments = response.data.bookings;
+      if (response.data.success && response.data.bookings.length > 0) {
+        try {
+          const paymentResponse = await axios.get(`${BACKEND_URL}/api/payments/my-payments`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (paymentResponse.data.success) {
+            console.log('📊 Fetched payment details:', paymentResponse.data.payments);
+            
+            // Merge payment details with bookings
+            bookingsWithPayments = response.data.bookings.map(booking => {
+              const payment = paymentResponse.data.payments.find(p => 
+                p.booking?._id === booking._id || p.booking?.bookingId === booking.bookingId
+              );
+              
+              if (payment) {
+                return {
+                  ...booking,
+                  paymentDetails: {
+                    paymentId: payment.paymentId,
+                    amount: payment.amount,
+                    status: payment.status,
+                    paymentMethod: payment.paymentMethod,
+                    paymentGateway: payment.paymentGateway,
+                    transactionId: payment.transactionId,
+                    createdAt: payment.createdAt,
+                    updatedAt: payment.updatedAt
+                  }
+                };
+              }
+              
+              return booking;
+            });
+          }
+        } catch (paymentError) {
+          console.warn('Could not fetch payment details:', paymentError);
+        }
+      }
 
       if (response.data.success) {
         // Process bookings to ensure payment status is correct
-        const processedBookings = response.data.bookings.map(booking => {
+        const processedBookings = bookingsWithPayments.map(booking => {
+          // If booking has a total amount > 0 and is not cancelled, it should be paid
+          if (booking.totalAmount > 0 && booking.bookingStatus !== 'Cancelled' && booking.paymentStatus === 'Pending') {
+            console.log('🔄 Updating payment status for paid booking:', booking._id);
+            return {
+              ...booking,
+              paymentStatus: 'Paid',
+              bookingStatus: 'Confirmed' // Also update booking status to confirmed
+            };
+          }
+          
           // If booking is confirmed but payment status is pending, update it to paid
           if (booking.bookingStatus === 'Confirmed' && (booking.paymentStatus === 'Pending' || !booking.paymentStatus)) {
             console.log('🔄 Updating payment status for confirmed booking:', booking._id);
@@ -557,12 +809,12 @@ const ViewMyBookings = () => {
             };
           }
           
-          // If booking has a total amount > 0 and is not cancelled, it should be paid
-          if (booking.totalAmount > 0 && booking.bookingStatus !== 'Cancelled' && booking.paymentStatus === 'Pending') {
-            console.log('🔄 Updating payment status for paid booking:', booking._id);
+          // If payment is paid but booking status is still pending, update booking status
+          if (booking.paymentStatus === 'Paid' && booking.bookingStatus === 'Pending') {
+            console.log('🔄 Updating booking status for paid booking:', booking._id);
             return {
               ...booking,
-              paymentStatus: 'Paid'
+              bookingStatus: 'Confirmed'
             };
           }
           
@@ -571,6 +823,14 @@ const ViewMyBookings = () => {
         
         setBookings(processedBookings);
         console.log('📊 Processed bookings with payment status:', processedBookings);
+        console.log('📊 Total bookings found:', processedBookings.length);
+        
+        // Show success message if bookings were found
+        if (processedBookings.length > 0) {
+          console.log('✅ Successfully loaded bookings');
+        } else {
+          console.log('⚠️ No bookings found for this user');
+        }
       } else {
         setError(response.data.message || 'Failed to fetch bookings');
       }
@@ -658,18 +918,72 @@ const ViewMyBookings = () => {
     }
   };
 
+  const handleUpdateBookingStatus = async (booking) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(
+        `${BACKEND_URL}/api/bookings/${booking._id}`,
+        {
+          paymentStatus: 'Paid',
+          bookingStatus: 'Confirmed'
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      if (response.data.success) {
+        alert('✅ Booking status updated successfully!');
+        fetchBookings(); // Refresh the bookings list
+      } else {
+        alert(`❌ ${response.data.message || 'Failed to update booking status'}`);
+      }
+    } catch (error) {
+      console.error('Error updating booking status:', error);
+      alert(`❌ Failed to update booking status: ${error.message}`);
+    }
+  };
+
   const handleDownloadInvoice = async (booking) => {
     try {
       console.log('Starting invoice download for booking:', booking.bookingId);
       
-      // Generate simple PDF first (more reliable)
-      const fileName = generateSimpleBookingPDF(booking);
-      console.log('PDF generated successfully:', fileName);
+      // Try to fetch payment details for the booking
+      let payment = null;
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${BACKEND_URL}/api/payments/my-payments`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.success) {
+          payment = response.data.payments.find(p => p.booking?._id === booking._id || p.booking?.bookingId === booking.bookingId);
+        }
+      } catch (paymentError) {
+        console.warn('Could not fetch payment details:', paymentError);
+      }
       
+      // Generate comprehensive invoice with payment details
+      const fileName = generateCompanyInvoice(booking, payment, {
+        name: 'BusZone Management System',
+        address: '123 Main Street, Colombo, Sri Lanka',
+        phone: '+94 11 234 5678',
+        email: 'info@buszone.com',
+        website: 'www.buszone.com'
+      });
+      
+      console.log('PDF generated successfully:', fileName);
       alert(`✅ Invoice downloaded successfully!\nFile: ${fileName}`);
     } catch (error) {
       console.error('Error downloading invoice:', error);
-      alert(`❌ Failed to download invoice: ${error.message}`);
+      // Fallback to simple PDF
+      try {
+        const fileName = generateSimpleBookingPDF(booking);
+        alert(`✅ Invoice downloaded successfully!\nFile: ${fileName}`);
+      } catch (fallbackError) {
+        console.error('Fallback PDF generation failed:', fallbackError);
+        alert(`❌ Failed to download invoice: ${fallbackError.message}`);
+      }
     }
   };
 
@@ -683,6 +997,14 @@ const ViewMyBookings = () => {
   };
 
   const stats = getStatsSummary();
+
+  // Debug logging
+  console.log('🔍 ViewMyBookings Debug Info:');
+  console.log('📊 Total bookings:', bookings.length);
+  console.log('📊 Filtered bookings:', filteredBookings.length);
+  console.log('📊 Stats:', stats);
+  console.log('📊 Is loading:', isLoading);
+  console.log('📊 Error:', error);
 
   if (isLoading) {
     return (
@@ -744,10 +1066,10 @@ const ViewMyBookings = () => {
           <div className="flex gap-3">
             <button
               onClick={fetchBookings}
-              className="bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-slate-700 transition-all duration-200 shadow-lg flex items-center"
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all duration-200 shadow-lg flex items-center"
             >
               <RefreshCw className="h-5 w-5 mr-2" />
-              Refresh
+              Refresh Bookings
             </button>
             <button
               onClick={() => navigate('/booking')}
@@ -863,11 +1185,20 @@ const ViewMyBookings = () => {
   </div>
 </div>
 
-{/* Results Count */}
+{/* Results Count and Debug Info */}
 <div className="flex items-center justify-between mb-6">
-  <p className="text-slate-600">
-    Showing {filteredBookings.length} of {bookings.length} bookings
-  </p>
+  <div>
+    <p className="text-slate-600">
+      Showing {filteredBookings.length} of {bookings.length} bookings
+    </p>
+    {bookings.length > 0 && (
+      <div className="text-xs text-slate-500 mt-1">
+        Paid: {bookings.filter(b => b.paymentStatus === 'Paid').length} | 
+        Confirmed: {bookings.filter(b => b.bookingStatus === 'Confirmed').length} | 
+        Pending: {bookings.filter(b => b.bookingStatus === 'Pending').length}
+      </div>
+    )}
+  </div>
   {searchTerm && (
     <button
       onClick={() => setSearchTerm('')}
@@ -921,6 +1252,7 @@ const ViewMyBookings = () => {
         onViewDetails={handleViewDetails}
         onCancelBooking={handleCancelBooking}
         onDownloadInvoice={handleDownloadInvoice}
+        onUpdateBookingStatus={handleUpdateBookingStatus}
       />
     ))}
   </div>
