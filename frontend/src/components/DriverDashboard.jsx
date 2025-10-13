@@ -496,27 +496,6 @@ const ScheduleManagement = React.memo(() => {
     }));
   };
 
-  const updateScheduleStatus = async (bookingId, action) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.patch(
-        `${BACKEND_URL}/api/bookings/${bookingId}/status`,
-        { action },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.data.success) {
-        toast.success(response.data.message);
-        // Refresh schedules
-        fetchSchedules();
-      } else {
-        toast.error('Failed to update schedule status');
-      }
-    } catch (error) {
-      console.error('Error updating schedule status:', error);
-      toast.error('Failed to update schedule status: ' + (error.response?.data?.message || error.message));
-    }
-  };
 
   const respondToBooking = async (bookingId, action) => {
     try {
@@ -556,7 +535,9 @@ const ScheduleManagement = React.memo(() => {
     switch (status.toLowerCase()) {
       case 'scheduled': return 'bg-blue-900/30 text-blue-400 border-blue-500/30';
       case 'in progress': return 'bg-orange-900/30 text-orange-400 border-orange-500/30';
+      case 'started': return 'bg-orange-900/30 text-orange-400 border-orange-500/30';
       case 'completed': return 'bg-green-900/30 text-green-400 border-green-500/30';
+      case 'ended': return 'bg-purple-900/30 text-purple-400 border-purple-500/30';
       case 'cancelled': return 'bg-red-900/30 text-red-400 border-red-500/30';
       default: return 'bg-gray-900/30 text-gray-400 border-gray-500/30';
     }
@@ -861,25 +842,6 @@ const ScheduleManagement = React.memo(() => {
                         </div>
                       )}
 
-                      {/* Trip Action Buttons for Accepted Assignments */}
-                      {schedule.driverResponse === 'accepted' && schedule.status === 'Scheduled' && (
-                        <div className="flex space-x-3 pt-2">
-                          <div className="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium">
-                            Ready to Start
-                          </div>
-                        </div>
-                      )}
-                      
-                      {schedule.status === 'In Progress' && (
-                        <div className="flex space-x-3 pt-2">
-                          <button 
-                            onClick={() => updateScheduleStatus(schedule._id, 'complete')}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
-                          >
-                            Complete Trip
-                          </button>
-                        </div>
-                      )}
 
                       {/* Show Response Status */}
                       {schedule.driverResponse && schedule.driverResponse !== 'pending' && (
@@ -890,6 +852,23 @@ const ScheduleManagement = React.memo(() => {
                               : 'bg-red-100 text-red-800'
                           }`}>
                             {schedule.driverResponse === 'accepted' ? '✓ Accepted' : '✗ Declined'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Show Trip Status */}
+                      {(schedule.status === 'In Progress' || schedule.status === 'Started') && (
+                        <div className="mt-2">
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                            🚌 Trip Started
+                          </span>
+                        </div>
+                      )}
+
+                      {schedule.status === 'Ended' && (
+                        <div className="mt-2">
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            ✅ Trip Ended
                           </span>
                         </div>
                       )}
@@ -918,7 +897,7 @@ const ScheduleManagement = React.memo(() => {
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">Next Schedule</h3>
               <p className="text-cyan-300">
-                {formatDateTime(filteredSchedules.filter(s => s.status === 'Scheduled')[0].scheduledStartTime)}
+                Departure: {formatTimeFromString(filteredSchedules.filter(s => s.status === 'Scheduled')[0].departureTime)} - {formatDate(filteredSchedules.filter(s => s.status === 'Scheduled')[0].travelDate)}
               </p>
               <p className="text-slate-300 mt-1">
                 {filteredSchedules.filter(s => s.status === 'Scheduled')[0].startLocation} → {filteredSchedules.filter(s => s.status === 'Scheduled')[0].destination}
@@ -927,6 +906,7 @@ const ScheduleManagement = React.memo(() => {
             <div className="text-right">
               <p className="text-slate-400 text-sm">Bus</p>
               <p className="text-white font-medium">{filteredSchedules.filter(s => s.status === 'Scheduled')[0].busId.numberPlate}</p>
+              <p className="text-slate-300 text-sm">{filteredSchedules.filter(s => s.status === 'Scheduled')[0].busId.busType}</p>
             </div>
           </div>
         </div>

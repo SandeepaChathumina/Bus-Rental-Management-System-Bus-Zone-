@@ -1353,6 +1353,10 @@ export const updateScheduleStatus = async (req, res) => {
         booking.actualEndTime = now;
         booking.bookingStatus = 'Completed';
         break;
+      case 'end':
+        booking.actualEndTime = now;
+        booking.bookingStatus = 'Ended';
+        break;
       case 'update':
         // For future use - could update progress, location, etc.
         break;

@@ -468,6 +468,14 @@ const DriverScheduleManagement = () => {
         return 'bg-yellow-100 text-yellow-800';
       case 'Cancelled':
         return 'bg-red-100 text-red-800';
+      case 'Completed':
+        return 'bg-blue-100 text-blue-800';
+      case 'Ended':
+        return 'bg-purple-100 text-purple-800';
+      case 'In Progress':
+        return 'bg-orange-100 text-orange-800';
+      case 'Started':
+        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -611,6 +619,23 @@ const DriverScheduleManagement = () => {
                                 {booking.driverResponse === 'accepted' ? '✓ Accepted' : 
                                  booking.driverResponse === 'declined' ? '✗ Declined' : 
                                  '⏳ Pending'}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Show Trip Status */}
+                          {(booking.bookingStatus === 'In Progress' || booking.bookingStatus === 'Started') && (
+                            <div className="mt-1">
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                🚌 Trip Started
+                              </span>
+                            </div>
+                          )}
+
+                          {booking.bookingStatus === 'Ended' && (
+                            <div className="mt-1">
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                ✅ Trip Ended
                               </span>
                             </div>
                           )}
