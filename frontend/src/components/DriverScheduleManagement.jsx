@@ -23,15 +23,7 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 
 const DriverScheduleManagement = () => {
-  console.log('DriverScheduleManagement component initialized');
   
-  // Ensure component always renders something
-  const [componentMounted, setComponentMounted] = useState(false);
-  
-  useEffect(() => {
-    setComponentMounted(true);
-    console.log('Component mounted successfully');
-  }, []);
   
   const [confirmedBookings, setConfirmedBookings] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -45,15 +37,12 @@ const DriverScheduleManagement = () => {
   const [assigning, setAssigning] = useState(false);
   const [error, setError] = useState(null);
 
-  // Simple test to ensure component renders
-  console.log('Component state:', { loading, confirmedBookings: confirmedBookings.length, drivers: drivers.length });
 
   // Backend URL
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
   useEffect(() => {
     try {
-      console.log('useEffect: Fetching data...');
       fetchConfirmedBookings();
       fetchDrivers();
     } catch (err) {
@@ -64,7 +53,6 @@ const DriverScheduleManagement = () => {
 
   useEffect(() => {
     try {
-      console.log('useEffect: Filtering bookings...');
       filterBookings();
     } catch (err) {
       console.error('Error filtering bookings:', err);
@@ -74,15 +62,11 @@ const DriverScheduleManagement = () => {
 
   const fetchConfirmedBookings = async () => {
     try {
-      console.log('Fetching confirmed bookings...');
       setLoading(true);
       setError(null);
       const token = localStorage.getItem('token');
-      console.log('Token exists:', !!token);
-      console.log('Backend URL:', BACKEND_URL);
       
       if (!token) {
-        console.log('No token found, using mock data');
         setConfirmedBookings([]);
         setLoading(false);
         return;
@@ -91,7 +75,6 @@ const DriverScheduleManagement = () => {
       const response = await axios.get(`${BACKEND_URL}/api/bookings/admin/all`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      console.log('API Response:', response.data);
 
       if (response.data.success) {
         // Filter for confirmed bookings only
@@ -226,11 +209,9 @@ const DriverScheduleManagement = () => {
 
   const fetchDrivers = async () => {
     try {
-      console.log('Fetching drivers...');
       const token = localStorage.getItem('token');
       
       if (!token) {
-        console.log('No token found for drivers, using mock data');
         setDrivers([]);
         return;
       }
@@ -238,7 +219,6 @@ const DriverScheduleManagement = () => {
       const response = await axios.get(`${BACKEND_URL}/api/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      console.log('Drivers API Response:', response.data);
 
       if (response.data && Array.isArray(response.data)) {
         // Filter users with driver role and include driver profiles
@@ -345,7 +325,6 @@ const DriverScheduleManagement = () => {
 
   const filterBookings = () => {
     try {
-      console.log('Filtering bookings...');
       let filtered = confirmedBookings || [];
 
       // Filter by search term
@@ -374,7 +353,6 @@ const DriverScheduleManagement = () => {
       }
 
       setFilteredBookings(filtered);
-      console.log('Filtered bookings:', filtered.length);
     } catch (err) {
       console.error('Error filtering bookings:', err);
       setError(`Failed to filter bookings: ${err.message}`);
@@ -483,43 +461,18 @@ const DriverScheduleManagement = () => {
     }
   };
 
-  console.log('DriverScheduleManagement rendering, loading:', loading, 'confirmedBookings:', confirmedBookings?.length || 0, 'drivers:', drivers?.length || 0);
 
-  // Fallback if component hasn't mounted yet
-  if (!componentMounted) {
-    return (
-      <div className="p-6">
-        <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4">
-          <h3 className="text-lg font-bold text-yellow-800">🔄 Initializing Component</h3>
-          <p className="text-yellow-600">Please wait while the component loads...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Always show something, even if there's an error
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-4">
-          <h3 className="text-lg font-bold text-blue-800">🔄 Loading Driver Schedule Management</h3>
-          <p className="text-blue-600">Please wait while we load the data...</p>
-        </div>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   try {
     return (
-      <div className="space-y-6 p-6">
-        {/* Test Header - Always Visible */}
-        <div className="bg-red-100 border border-red-300 rounded-lg p-4 mb-4">
-          <h1 className="text-xl font-bold text-red-800">🚨 DRIVER SCHEDULE MANAGEMENT - TEST MODE 🚨</h1>
-          <p className="text-red-600">If you can see this, the component is rendering!</p>
-        </div>
+      <div className="space-y-6">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
@@ -550,32 +503,6 @@ const DriverScheduleManagement = () => {
         </div>
       )}
 
-      {/* Debug Info */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-yellow-800 mb-2">Debug Information</h3>
-        <div className="text-xs text-yellow-700 space-y-1">
-          <p>Loading: {loading ? 'Yes' : 'No'}</p>
-          <p>Confirmed Bookings: {confirmedBookings?.length || 0}</p>
-          <p>Drivers: {drivers?.length || 0}</p>
-          <p>Filtered Bookings: {filteredBookings?.length || 0}</p>
-          <p>Backend URL: {BACKEND_URL}</p>
-          <p>Component Rendered: Yes</p>
-          <p>Error: {error || 'None'}</p>
-        </div>
-        <div className="mt-2">
-          <button 
-            onClick={() => {
-              console.log('Manual refresh clicked');
-              setError(null);
-              fetchConfirmedBookings();
-              fetchDrivers();
-            }}
-            className="px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
-          >
-            Manual Refresh
-          </button>
-        </div>
-      </div>
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
@@ -694,12 +621,6 @@ const DriverScheduleManagement = () => {
                     : 'There are no confirmed bookings to assign drivers to'
                   }
                 </p>
-                <div className="mt-4 text-sm text-gray-400">
-                  <p>Debug Info:</p>
-                  <p>Confirmed Bookings: {confirmedBookings?.length || 0}</p>
-                  <p>Drivers: {drivers?.length || 0}</p>
-                  <p>Loading: {loading ? 'Yes' : 'No'}</p>
-                </div>
               </div>
             )}
       </div>
