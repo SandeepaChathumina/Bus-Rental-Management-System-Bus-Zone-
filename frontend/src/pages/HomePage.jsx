@@ -615,7 +615,7 @@ const AdvancedBusRentalHomepage = () => {
                     For Support & Reservations
                   </p>
                   <p className="text-sm text-slate-700">
-                    123, Main Street, Anytown, USA
+                    123 Galle Road, Kalutara, Sri Lanka
                   </p>
                 </div>
               </div>
