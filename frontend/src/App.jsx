@@ -30,7 +30,7 @@ import AdminLostFound from './pages/AdminLostFound'; // ✅ Import Admin Lost & 
 import PassengerDetails from './components/PassengerDetails';
 import Checkout from './pages/checkout/Checkout';
 import BookingSuccess from './pages/booking-success/BookingSuccess';
-import GalleryPage from './pages/GalleryPage';
+import Gallery from './pages/Gallery';
 import PaymentManagement from './pages/PaymentManagement';
 import Chatbot from './components/Chatbot';
 
@@ -59,7 +59,7 @@ function App() {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/bus" element={<Bus />} />
               <Route path="/passenger-details" element={<PassengerDetails />} />
-              <Route path="/gallery" element={<GalleryPage />} />
+              <Route path="/gallery" element={<Gallery />} />
               <Route path="/paymnets" element={<PaymentManagement />} />
               
               {/* Protected routes */}

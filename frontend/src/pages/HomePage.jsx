@@ -72,6 +72,17 @@ const AdvancedBusRentalHomepage = () => {
   const sectionRef = useRef(null);
   const navigate = useNavigate();
 
+  // Smooth scroll function
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  };
+
   // Hero slider images and content
   const heroSlides = [
     {
@@ -604,7 +615,7 @@ const AdvancedBusRentalHomepage = () => {
                     For Support & Reservations
                   </p>
                   <p className="text-sm text-slate-700">
-                    123, Main Street, Anytown, USA
+                    123 Galle Road, Kalutara, Sri Lanka
                   </p>
                 </div>
               </div>
@@ -647,12 +658,12 @@ const AdvancedBusRentalHomepage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 overflow-x-hidden">
-      {/* Advanced Navigation */}
+      {/* Advanced Navigation - Yutong Style */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           isScrolled
-            ? "bg-white/95 backdrop-blur-xl border-b border-blue-200/50 shadow-2xl py-2"
-            : "bg-transparent py-4"
+            ? "bg-white/95 backdrop-blur-xl border-b border-gray-200/50 shadow-lg py-3"
+            : "bg-transparent py-6"
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -660,16 +671,30 @@ const AdvancedBusRentalHomepage = () => {
             {/* Logo */}
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-3 rounded-xl shadow-lg animate-pulse">
-                  <Bus className="h-8 w-8 text-white" />
+                <div className={`p-3 rounded-xl shadow-lg transition-all duration-500 ${
+                  isScrolled 
+                    ? "bg-gradient-to-r from-blue-600 to-cyan-600" 
+                    : "bg-white/20 backdrop-blur-sm"
+                }`}>
+                  <Bus className={`h-8 w-8 transition-colors duration-500 ${
+                    isScrolled ? "text-white" : "text-white"
+                  }`} />
                 </div>
-                <div className="absolute -top-1 -right-1 bg-cyan-500 w-4 h-4 rounded-full animate-pulse"></div>
+                <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full transition-all duration-500 ${
+                  isScrolled ? "bg-cyan-500" : "bg-white/60"
+                }`}></div>
               </div>
               <div>
-                <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                <div className={`text-2xl font-bold transition-all duration-500 ${
+                  isScrolled 
+                    ? "bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent" 
+                    : "text-white"
+                }`}>
                   BusZone+
                 </div>
-                <div className="text-xs text-blue-600/70">
+                <div className={`text-xs transition-colors duration-500 ${
+                  isScrolled ? "text-blue-600/70" : "text-white/80"
+                }`}>
                   Premium Bus Rentals
                 </div>
               </div>
@@ -679,25 +704,37 @@ const AdvancedBusRentalHomepage = () => {
             <div className="hidden lg:flex items-center space-x-8">
               {[
                 { name: "Home", active: true, link: "/" },
-                { name: "Fleet", active: false, link: "#" },
+                { name: "Fleet", active: false, link: "#fleet" },
                 { name: "Services", active: false, link: "/services" },
-                { name: "Corporate", active: false, link: "#" },
+                { name: "Gallery", active: false, link: "/gallery" },
                 { name: "About", active: false, link: "/about" },
                 { name: "Contact", active: false, link: "/contact" },
               ].map((item) => (
                 <a
                   key={item.name}
                   href={item.link}
-                  className={`relative px-4 py-2 text-sm font-medium transition-all duration-300 group ${
+                  onClick={(e) => {
+                    if (item.link.startsWith('#')) {
+                      e.preventDefault();
+                      scrollToSection(item.link.substring(1));
+                    }
+                  }}
+                  className={`relative px-4 py-2 text-sm font-medium transition-all duration-500 group ${
                     item.active
-                      ? "text-blue-600"
-                      : "text-slate-700 hover:text-blue-600"
+                      ? isScrolled ? "text-blue-600" : "text-white"
+                      : isScrolled 
+                        ? "text-slate-700 hover:text-blue-600" 
+                        : "text-white/90 hover:text-white"
                   }`}
                 >
                   {item.name}
                   <span
-                    className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-cyan-600 transition-all duration-300 group-hover:w-full ${
+                    className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-500 group-hover:w-full ${
                       item.active ? "w-full" : ""
+                    } ${
+                      isScrolled 
+                        ? "bg-gradient-to-r from-blue-600 to-cyan-600" 
+                        : "bg-white"
                     }`}
                   ></span>
                 </a>
@@ -706,18 +743,32 @@ const AdvancedBusRentalHomepage = () => {
 
             {/* Right side */}
             <div className="hidden lg:flex items-center space-x-6">
-              <div className="flex items-center space-x-2 text-slate-700 group">
+              <div className={`flex items-center space-x-2 group transition-colors duration-500 ${
+                isScrolled ? "text-slate-700" : "text-white/90"
+              }`}>
                 <div className="relative">
-                  <Phone className="h-4 w-4 text-blue-600 group-hover:animate-bounce" />
-                  <div className="absolute -top-1 -right-1 bg-blue-600 w-2 h-2 rounded-full animate-ping"></div>
+                  <Phone className={`h-4 w-4 group-hover:animate-bounce transition-colors duration-500 ${
+                    isScrolled ? "text-blue-600" : "text-white"
+                  }`} />
+                  <div className={`absolute -top-1 -right-1 w-2 h-2 rounded-full animate-ping transition-colors duration-500 ${
+                    isScrolled ? "bg-blue-600" : "bg-white/60"
+                  }`}></div>
                 </div>
-                <span className="text-sm group-hover:text-blue-600 transition-colors">
+                <span className={`text-sm transition-colors duration-500 ${
+                  isScrolled 
+                    ? "group-hover:text-blue-600" 
+                    : "group-hover:text-white"
+                }`}>
                   +94 704 222 777
                 </span>
               </div>
               <div className="flex items-center space-x-3">
                 <button
-                  className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-blue-200/50"
+                  className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-500 hover:scale-105 shadow-lg ${
+                    isScrolled
+                      ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-blue-200/50"
+                      : "bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30"
+                  }`}
                   onClick={() => navigate("/login")}
                 >
                   Login
@@ -728,7 +779,11 @@ const AdvancedBusRentalHomepage = () => {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden p-2 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-300"
+              className={`lg:hidden p-2 rounded-lg transition-all duration-500 ${
+                isScrolled
+                  ? "text-slate-700 hover:text-blue-600 hover:bg-blue-50"
+                  : "text-white hover:text-white hover:bg-white/20"
+              }`}
             >
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -736,27 +791,35 @@ const AdvancedBusRentalHomepage = () => {
 
           {/* Mobile Menu */}
           {isMenuOpen && (
-            <div className="lg:hidden absolute top-full left-0 right-0 bg-white/98 backdrop-blur-xl border-b border-blue-200/50 animate-fade-in shadow-lg">
+            <div className="lg:hidden absolute top-full left-0 right-0 bg-white/98 backdrop-blur-xl border-b border-gray-200/50 animate-fade-in shadow-lg">
               <div className="px-6 py-6 space-y-4">
                 {[
                   { name: 'Home', link: '/' },
-                  { name: 'Fleet', link: '#' },
+                  { name: 'Fleet', link: '#fleet' },
                   { name: 'Services', link: '/services' },
-                  { name: 'Corporate', link: '#' },
+                  { name: 'Gallery', link: '/gallery' },
                   { name: 'About', link: '/about' },
                   { name: 'Contact', link: '/contact' }
                 ].map((item) => (
                   <a
                     key={item.name}
                     href={item.link}
+                    onClick={(e) => {
+                      if (item.link.startsWith('#')) {
+                        e.preventDefault();
+                        scrollToSection(item.link.substring(1));
+                        setIsMenuOpen(false);
+                      } else {
+                        setIsMenuOpen(false);
+                      }
+                    }}
                     className="text-slate-700 hover:text-blue-600 py-2 text-lg font-medium transition-colors duration-300 flex items-center group"
-                    onClick={() => setIsMenuOpen(false)}
                   >
                     <ArrowRight className="h-4 w-4 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                     {item.name}
                   </a>
                 ))}
-                <div className="pt-6 border-t border-slate-700 space-y-4">
+                <div className="pt-6 border-t border-gray-200 space-y-4">
                   <div className="flex items-center space-x-2 text-slate-700">
                     <Phone className="h-4 w-4 text-blue-600" />
                     <span>+94 704 222 777</span>
@@ -1006,7 +1069,7 @@ const AdvancedBusRentalHomepage = () => {
       </div>
 
       {/* Fleet Section */}
-      <div className="bg-gradient-to-br from-sky-50 to-blue-50 py-24">
+      <div id="fleet" className="bg-gradient-to-br from-sky-50 to-blue-50 py-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 mb-6">
