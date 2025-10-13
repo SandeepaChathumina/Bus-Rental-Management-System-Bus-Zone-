@@ -24,7 +24,8 @@ import {
   Unlock,
   Shield,
   MessageSquare,
-  Save
+  Save,
+  Reply
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -49,10 +50,41 @@ const Lost = () => {
     busNumber: ''
   });
 
+  // Validation state
+  const [validationErrors, setValidationErrors] = useState({
+    busNumber: ''
+  });
+
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
   // Local storage key for persisting data
   const LOST_ITEMS_STORAGE_KEY = 'buszone_lost_items';
+
+  // Bus number validation function
+  const validateBusNumber = (busNumber) => {
+    const busNumberPattern = /^[A-Z]{2}-\d{4}$/;
+    return busNumberPattern.test(busNumber.trim());
+  };
+
+  // Get bus number validation error message
+  const getBusNumberError = (busNumber) => {
+    if (!busNumber.trim()) {
+      return 'Bus number is required';
+    }
+    if (!validateBusNumber(busNumber)) {
+      return 'Bus number must be in format AD-9876 (2 capital letters, dash, 4 digits)';
+    }
+    return null;
+  };
+
+  // Handle real-time validation
+  const handleBusNumberChange = (value) => {
+    setFormData(prev => ({ ...prev, busNumber: value }));
+    
+    // Real-time validation
+    const error = getBusNumberError(value);
+    setValidationErrors(prev => ({ ...prev, busNumber: error || '' }));
+  };
 
   // Load data from localStorage on component mount
   const loadFromLocalStorage = () => {
@@ -93,13 +125,28 @@ const Lost = () => {
               };
               
               // Show notification if admin replied to user's item
-              if (updates.adminNotes && updates.adminNotes.trim() !== '' && 
-                  item.user?._id === user?._id && 
-                  (!item.adminNotes || item.adminNotes.trim() === '')) {
-                toast.success('Admin has responded to your lost item report! Item is now locked.', {
-                  duration: 5000,
-                  icon: '🔒'
-                });
+              if ((updates.adminNotes && updates.adminNotes.trim() !== '') || (updates.adminReply && updates.adminReply.trim() !== '')) {
+                if (item.user?._id === user?._id && 
+                    ((!item.adminNotes || item.adminNotes.trim() === '') && (!item.adminReply || item.adminReply.trim() === ''))) {
+                  
+                  // Different notifications for different types of admin responses
+                  if (updates.adminReply && updates.adminReply.trim() !== '') {
+                    toast.success('🎉 Admin has replied to your lost item report! Check the green reply box below.', {
+                      duration: 6000,
+                      icon: '💬',
+                      style: {
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        color: 'white',
+                        fontWeight: 'bold'
+                      }
+                    });
+                  } else {
+                    toast.success('Admin has responded to your lost item report! Item is now locked.', {
+                      duration: 5000,
+                      icon: '🔒'
+                    });
+                  }
+                }
               }
               
               return updatedItem;
@@ -167,6 +214,15 @@ const Lost = () => {
     fetchLostItems();
   }, [user]);
 
+  // Debug: Log lost items when they change
+  useEffect(() => {
+    console.log('Lost items updated:', lostItems);
+    const itemsWithReplies = lostItems.filter(item => item.adminReply && item.adminReply.trim() !== '');
+    if (itemsWithReplies.length > 0) {
+      console.log('Items with admin replies:', itemsWithReplies);
+    }
+  }, [lostItems]);
+
   // Auto-refresh every 30 seconds for better sync
   useEffect(() => {
     const interval = setInterval(() => {
@@ -231,8 +287,11 @@ const Lost = () => {
               phone: '+94 771234567'
             },
             adminNotes: 'Located in Main Depot, Bin 5. Slightly wet but functional. Small tear on left side of canopy. Owner verified matching description of wooden duck-head handle. Awaiting pickup.',
+            adminReply: 'Hello! We found your umbrella at the main depot. It\'s in good condition with just a small tear. You can pick it up anytime between 9 AM to 5 PM. Please bring a valid ID.',
+            repliedBy: 'Sandeepa Admin',
+            repliedAt: new Date('2025-10-15T10:30:00').toISOString(),
             createdAt: new Date('2025-09-23').toISOString(),
-            updatedAt: new Date('2025-09-23T01:12:00').toISOString()
+            updatedAt: new Date('2025-10-15T10:30:00').toISOString()
           },
           {
             _id: '2',
@@ -262,8 +321,11 @@ const Lost = () => {
               phone: '+94 771234568'
             },
             adminNotes: '',
+            adminReply: 'Hi Jane! Your water bottle was found on bus AD-9876. It\'s currently at our lost & found office. Please contact us at +94 704 222 777 to arrange pickup. Thank you!',
+            repliedBy: 'Admin Team',
+            repliedAt: new Date('2025-10-14T14:20:00').toISOString(),
             createdAt: new Date('2025-09-21').toISOString(),
-            updatedAt: new Date('2025-09-21T10:30:00').toISOString()
+            updatedAt: new Date('2025-10-14T14:20:00').toISOString()
           }
         ];
 
@@ -276,6 +338,7 @@ const Lost = () => {
 
         setLostItems(filteredMockData);
         saveToLocalStorage(filteredMockData);
+        console.log('Loaded lost items with admin replies:', filteredMockData.filter(item => item.adminReply));
         return;
       }
 
@@ -315,8 +378,9 @@ const Lost = () => {
       return;
     }
     
-    if (!formData.busNumber.trim()) {
-      toast.error('Bus number is required');
+    const busNumberError = getBusNumberError(formData.busNumber);
+    if (busNumberError) {
+      toast.error(busNumberError);
       return;
     }
 
@@ -392,7 +456,7 @@ const Lost = () => {
     if (!canEditItem(item)) {
       if (item.reportedBy === 'Admin') {
         toast.error('This item was reported by admin and cannot be edited by users.');
-      } else if (item.adminNotes && item.adminNotes.trim() !== '') {
+      } else if ((item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '')) {
         toast.error('Cannot edit item after admin response');
       } else {
         toast.error('You do not have permission to edit this item.');
@@ -424,8 +488,9 @@ const Lost = () => {
       return;
     }
     
-    if (!formData.busNumber.trim()) {
-      toast.error('Bus number is required');
+    const busNumberError = getBusNumberError(formData.busNumber);
+    if (busNumberError) {
+      toast.error(busNumberError);
       return;
     }
 
@@ -507,6 +572,9 @@ const Lost = () => {
       dateLost: '',
       busNumber: ''
     });
+    setValidationErrors({
+      busNumber: ''
+    });
   };
 
   const deleteItem = async (itemId) => {
@@ -520,7 +588,7 @@ const Lost = () => {
     if (!canDeleteItem(item)) {
       if (item.reportedBy === 'Admin') {
         toast.error('This item was reported by admin and cannot be deleted by users.');
-      } else if (item.adminNotes && item.adminNotes.trim() !== '') {
+      } else if ((item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '')) {
         toast.error('Cannot delete item after admin response');
       } else {
         toast.error('You do not have permission to delete this item.');
@@ -591,7 +659,7 @@ const Lost = () => {
     
     // Users can only edit their own items that don't have admin responses
     const isOwnItem = item.user && item.user._id === user?._id;
-    const hasAdminReply = item.adminNotes && item.adminNotes.trim() !== '';
+    const hasAdminReply = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
     const isUserReported = item.reportedBy === 'User';
     
     return isUserReported && isOwnItem && !hasAdminReply;
@@ -605,7 +673,7 @@ const Lost = () => {
     
     // Users can only delete their own items that don't have admin responses
     const isOwnItem = item.user && item.user._id === user?._id;
-    const hasAdminReply = item.adminNotes && item.adminNotes.trim() !== '';
+    const hasAdminReply = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
     const isUserReported = item.reportedBy === 'User';
     
     return isUserReported && isOwnItem && !hasAdminReply;
@@ -626,7 +694,7 @@ const Lost = () => {
     }
     
     const userCanEdit = canEditItem(item);
-    const hasAdminReply = item.adminNotes && item.adminNotes.trim() !== '';
+    const hasAdminReply = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
     
     if (hasAdminReply && !userCanEdit) {
       return 'Locked - Admin Replied';
@@ -704,27 +772,27 @@ const Lost = () => {
 
   // Navigation component
   const Navbar = () => (
-    <div className="w-full h-[80px] bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 flex items-center px-6 lg:px-8 fixed top-0 z-50">
+    <div className="w-full h-[80px] bg-white/95 backdrop-blur-xl border-b border-blue-200/50 flex items-center px-6 lg:px-8 fixed top-0 z-50 shadow-lg">
       <div className="flex items-center">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-md hover:bg-slate-800 text-white mr-4 lg:hidden"
+          className="p-2 rounded-md hover:bg-blue-50 text-slate-700 mr-4 lg:hidden"
         >
           <Menu className="w-5 h-5" />
         </button>
         
         <Link to="/" className="mr-16 flex items-center space-x-3">
           <div className="relative">
-            <div className="bg-gradient-to-r from-blue-400 to-cyan-500 p-2 rounded-xl shadow-lg">
+            <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-2 rounded-xl shadow-lg">
               <Bus className="h-6 w-6 text-white" />
             </div>
             <div className="absolute -top-1 -right-1 bg-cyan-400 w-3 h-3 rounded-full"></div>
           </div>
           <div>
-            <div className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+            <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
               BusZone+
             </div>
-            <div className="text-xs text-slate-400">
+            <div className="text-xs text-blue-600/70">
               Lost & Found
             </div>
           </div>
@@ -732,7 +800,7 @@ const Lost = () => {
       </div>
 
       <div className="flex items-center space-x-6 ml-auto">
-        <div className="hidden md:flex items-center space-x-2 text-slate-300">
+        <div className="hidden md:flex items-center space-x-2 text-slate-700">
           <span className="text-sm">+94 704 222 777</span>
         </div>
         
@@ -757,10 +825,10 @@ const Lost = () => {
         />
       )}
       
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 shadow-lg transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:hidden border-r border-slate-800`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-slate-800">
-          <h1 className="text-xl font-bold text-white">Menu</h1>
-          <button onClick={() => setSidebarOpen(false)} className="p-1 rounded-md hover:bg-slate-800 text-white">
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:hidden border-r border-blue-200`}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-blue-200">
+          <h1 className="text-xl font-bold text-slate-800">Menu</h1>
+          <button onClick={() => setSidebarOpen(false)} className="p-1 rounded-md hover:bg-blue-50 text-slate-700">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -768,7 +836,7 @@ const Lost = () => {
         <nav className="mt-6 px-4">
           <Link
             to="/booking"
-            className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg mb-2"
+            className="flex items-center px-4 py-3 text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg mb-2"
             onClick={() => setSidebarOpen(false)}
           >
             <Home className="w-5 h-5 mr-3" />
@@ -782,7 +850,7 @@ const Lost = () => {
                 clearLocalStorage();
                 setSidebarOpen(false);
               }}
-              className="flex items-center w-full px-4 py-3 text-orange-400 hover:bg-orange-900/30 hover:text-orange-300 rounded-lg mb-2"
+              className="flex items-center w-full px-4 py-3 text-orange-600 hover:bg-orange-50 hover:text-orange-700 rounded-lg mb-2"
             >
               <RefreshCw className="w-5 h-5 mr-3" />
               <span>Clear Local Data</span>
@@ -794,7 +862,7 @@ const Lost = () => {
               navigate('/login');
               setSidebarOpen(false);
             }}
-            className="flex items-center w-full px-4 py-3 text-red-400 hover:bg-red-900/30 hover:text-red-300 rounded-lg"
+            className="flex items-center w-full px-4 py-3 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg"
           >
             <LogOut className="w-5 h-5 mr-3" />
             <span>Logout</span>
@@ -805,7 +873,7 @@ const Lost = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50">
       <Navbar />
       <Sidebar />
       
@@ -814,8 +882,8 @@ const Lost = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Lost & Found</h1>
-              <p className="text-slate-400">Report and track lost items from your bus journeys</p>
+              <h1 className="text-3xl font-bold text-slate-800 mb-2">Lost & Found</h1>
+              <p className="text-slate-600">Report and track lost items from your bus journeys</p>
               <div className="flex items-center mt-1 text-xs text-slate-500">
                 <span>Data persistence: Active</span>
                 <div className="w-2 h-2 bg-green-400 rounded-full ml-2"></div>
@@ -830,6 +898,31 @@ const Lost = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Report Lost Item
               </button>
+              
+              {/* Debug: Test admin reply button */}
+              <button
+                onClick={() => {
+                  if (lostItems.length > 0) {
+                    const testItem = lostItems[0];
+                    const updatedItems = lostItems.map(item => 
+                      item._id === testItem._id 
+                        ? { 
+                            ...item, 
+                            adminReply: 'This is a test admin reply to verify the display functionality!',
+                            repliedBy: 'Test Admin',
+                            repliedAt: new Date().toISOString()
+                          }
+                        : item
+                    );
+                    setLostItems(updatedItems);
+                    saveToLocalStorage(updatedItems);
+                    toast.success('Test admin reply added!');
+                  }
+                }}
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Test Admin Reply
+              </button>
             </div>
           </div>
 
@@ -842,7 +935,7 @@ const Lost = () => {
                 placeholder="Search items, descriptions, or bus numbers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 bg-white border border-blue-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
               />
             </div>
             
@@ -851,7 +944,7 @@ const Lost = () => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-4 py-3 bg-white border border-blue-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
               >
                 <option value="all">All Status</option>
                 <option value="reported">Reported</option>
@@ -863,7 +956,7 @@ const Lost = () => {
               <button
                 onClick={fetchLostItems}
                 disabled={loading}
-                className="p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-300 hover:text-white transition-colors disabled:opacity-50"
+                className="p-3 bg-white hover:bg-blue-50 border border-blue-200 rounded-xl text-slate-700 hover:text-blue-600 transition-colors disabled:opacity-50 shadow-sm"
                 title="Refresh data"
               >
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
@@ -873,7 +966,7 @@ const Lost = () => {
               {user?.role === 'admin' && (
                 <button
                   onClick={clearLocalStorage}
-                  className="p-3 bg-orange-800 hover:bg-orange-700 border border-orange-700 rounded-xl text-orange-300 hover:text-white transition-colors"
+                  className="p-3 bg-orange-100 hover:bg-orange-200 border border-orange-200 rounded-xl text-orange-700 hover:text-orange-800 transition-colors shadow-sm"
                   title="Clear local data"
                 >
                   <span className="text-xs">Clear Data</span>
@@ -891,24 +984,24 @@ const Lost = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredItems.length === 0 ? (
-              <div className="col-span-full bg-slate-800 rounded-2xl p-12 text-center border border-slate-700">
-                <Search className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">No Items Found</h3>
-                <p className="text-slate-400 mb-6">
+              <div className="col-span-full bg-gradient-to-br from-white to-blue-50 rounded-2xl p-12 text-center border border-blue-200 shadow-lg">
+                <Search className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-slate-800 mb-2">No Items Found</h3>
+                <p className="text-slate-600 mb-6">
                   {searchTerm || filterStatus !== 'all' 
                     ? "No items match your search criteria" 
                     : "No lost items have been reported yet"}
                 </p>
                 <button
                   onClick={() => setShowReportForm(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-400 hover:to-cyan-500 transition-all duration-300"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-400 hover:to-cyan-500 transition-all duration-300 shadow-lg"
                 >
                   Report First Item
                 </button>
               </div>
             ) : (
               filteredItems.map((item) => (
-                <div key={item._id} className="bg-slate-800 rounded-2xl p-6 border border-slate-700 hover:border-slate-600 transition-all duration-300 relative">
+                <div key={item._id} className="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 border border-blue-200 hover:border-blue-300 transition-all duration-300 relative shadow-lg hover:shadow-xl">
                   {/* Lock/Admin Indicator */}
                   {user?.role !== 'admin' && (
                     <div className="absolute top-4 right-4 flex items-center space-x-1">
@@ -921,8 +1014,15 @@ const Lost = () => {
 
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-1">{item.itemName}</h3>
-                      <p className="text-slate-400 text-sm line-clamp-2">{item.description}</p>
+                      <div className="flex items-center mb-1">
+                        <h3 className="text-lg font-semibold text-slate-800">{item.itemName}</h3>
+                        {item.adminReply && item.adminReply.trim() !== '' && (
+                          <span className="ml-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold animate-pulse">
+                            Admin Replied
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-slate-600 text-sm line-clamp-2">{item.description}</p>
                     </div>
                     
                     <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center ${getStatusColor(item.status)}`}>
@@ -932,60 +1032,101 @@ const Lost = () => {
                   </div>
 
                   <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-slate-300">
-                      <Bus className="w-4 h-4 mr-2 text-blue-400" />
+                    <div className="flex items-center text-sm text-slate-700">
+                      <Bus className="w-4 h-4 mr-2 text-blue-500" />
                       <span>Bus: {item.busNumber}</span>
                     </div>
                     
-                    <div className="flex items-center text-sm text-slate-300">
-                      <Calendar className="w-4 h-4 mr-2 text-blue-400" />
+                    <div className="flex items-center text-sm text-slate-700">
+                      <Calendar className="w-4 h-4 mr-2 text-blue-500" />
                       <span>Lost on: {formatDate(item.dateLost)}</span>
                     </div>
                     
-                    <div className="flex items-center text-sm text-slate-300">
-                      <Clock className="w-4 h-4 mr-2 text-blue-400" />
+                    <div className="flex items-center text-sm text-slate-700">
+                      <Clock className="w-4 h-4 mr-2 text-blue-500" />
                       <span>Reported: {formatDate(item.createdAt)}</span>
                     </div>
 
-                    <div className="flex items-center text-sm text-slate-300">
+                    <div className="flex items-center text-sm text-slate-700">
                       {getReportedByIcon(item.reportedBy)}
                       <span className="ml-2">By: User</span>
                     </div>
 
                     {item.user && (
-                      <div className="flex items-center text-sm text-slate-300">
-                        <User className="w-4 h-4 mr-2 text-blue-400" />
+                      <div className="flex items-center text-sm text-slate-700">
+                        <User className="w-4 h-4 mr-2 text-blue-500" />
                         <span>User: {item.user.firstName} {item.user.lastName}</span>
                       </div>
                     )}
                   </div>
 
                   {item.adminNotes && item.adminNotes.trim() !== '' && (
-                    <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-3 mb-4">
+                    <div className="bg-blue-100 border border-blue-200 rounded-lg p-3 mb-4">
                       <div className="flex items-start">
-                        <MessageSquare className="w-4 h-4 mr-2 text-blue-400 mt-0.5 flex-shrink-0" />
+                        <MessageSquare className="w-4 h-4 mr-2 text-blue-500 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-blue-300 mb-1">Admin Response:</p>
-                          <p className="text-slate-300 text-sm">{item.adminNotes}</p>
+                          <p className="text-sm font-medium text-blue-700 mb-1">Admin Notes:</p>
+                          <p className="text-slate-700 text-sm">{item.adminNotes}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {(() => {
+                    console.log('Checking admin reply for item:', item.itemName, 'adminReply:', item.adminReply);
+                    return item.adminReply && item.adminReply.trim() !== '';
+                  })() && (
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 mb-4 shadow-lg">
+                      <div className="flex items-start">
+                        <div className="bg-green-500 p-2 rounded-full mr-3 flex-shrink-0">
+                          <Reply className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-bold text-green-800 flex items-center">
+                              <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs mr-2">NEW</span>
+                              Admin Reply
+                            </p>
+                            {item.repliedBy && (
+                              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                                by {item.repliedBy}
+                              </span>
+                            )}
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-green-200">
+                            <p className="text-slate-800 text-sm leading-relaxed">{item.adminReply}</p>
+                          </div>
+                          {item.repliedAt && (
+                            <p className="text-xs text-slate-500 mt-2 flex items-center">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Replied on: {new Date(item.repliedAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
                   )}
 
                   {/* Action buttons */}
-                  <div className="pt-3 border-t border-slate-700">
+                  <div className="pt-3 border-t border-blue-200">
                     {user?.role === 'admin' ? (
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => handleEditItem(item)}
-                          className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm flex items-center justify-center"
+                          className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm flex items-center justify-center shadow-sm"
                         >
                           <Save className="w-4 h-4 mr-1" />
                           Update
                         </button>
                         <button
                           onClick={() => deleteItem(item._id)}
-                          className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm"
+                          className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm shadow-sm"
                         >
                           Delete
                         </button>
@@ -996,7 +1137,7 @@ const Lost = () => {
                           {canEditItem(item) && (
                             <button
                               onClick={() => handleEditItem(item)}
-                              className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                              className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm shadow-sm"
                             >
                               <Edit className="w-4 h-4 mr-1" />
                               Edit
@@ -1006,7 +1147,7 @@ const Lost = () => {
                           {canDeleteItem(item) && (
                             <button
                               onClick={() => deleteItem(item._id)}
-                              className="flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm"
+                              className="flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm shadow-sm"
                             >
                               <Trash2 className="w-4 h-4 mr-1" />
                               Delete
@@ -1015,13 +1156,13 @@ const Lost = () => {
                         </div>
                         
                         {!canEditItem(item) && (
-                          <div className={`text-xs flex items-center ${item.reportedBy === 'Admin' ? 'text-purple-400' : 'text-red-400'}`}>
+                          <div className={`text-xs flex items-center ${item.reportedBy === 'Admin' ? 'text-purple-600' : 'text-red-600'}`}>
                             {item.reportedBy === 'Admin' ? (
                               <>
                                 <Shield className="w-3 h-3 mr-1" />
                                 Admin Item
                               </>
-                            ) : item.adminNotes && item.adminNotes.trim() !== '' ? (
+                            ) : ((item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '')) ? (
                               <>
                                 <Lock className="w-3 h-3 mr-1" />
                                 Locked - Admin Replied
@@ -1046,15 +1187,15 @@ const Lost = () => {
         {/* Report Lost Item Modal */}
         {showReportForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md border border-blue-200 shadow-xl">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Report Lost Item</h2>
+                <h2 className="text-xl font-bold text-slate-800">Report Lost Item</h2>
                 <button
                   onClick={() => {
                     setShowReportForm(false);
                     resetForm();
                   }}
-                  className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+                  className="p-2 hover:bg-blue-50 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1062,7 +1203,7 @@ const Lost = () => {
 
               <form onSubmit={handleSubmitReport} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Item Name *
                   </label>
                   <input
@@ -1070,26 +1211,26 @@ const Lost = () => {
                     required
                     value={formData.itemName}
                     onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                     placeholder="e.g., Black backpack, Red umbrella"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Description
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-sm"
                     placeholder="Describe the item in detail..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Date Lost
                   </label>
                   <input
@@ -1097,22 +1238,29 @@ const Lost = () => {
                     value={formData.dateLost}
                     onChange={(e) => setFormData(prev => ({ ...prev, dateLost: e.target.value }))}
                     max={new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Bus Number *
                   </label>
                   <input
                     type="text"
                     required
                     value={formData.busNumber}
-                    onChange={(e) => setFormData(prev => ({ ...prev, busNumber: e.target.value }))}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., AD-8765"
+                    onChange={(e) => handleBusNumberChange(e.target.value)}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 shadow-sm ${
+                      validationErrors.busNumber 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-blue-200 focus:ring-blue-500'
+                    }`}
+                    placeholder="e.g., AD-9876"
                   />
+                  {validationErrors.busNumber && (
+                    <p className="mt-1 text-sm text-red-500">{validationErrors.busNumber}</p>
+                  )}
                 </div>
 
                 <div className="flex space-x-3 pt-4">
@@ -1122,14 +1270,14 @@ const Lost = () => {
                       setShowReportForm(false);
                       resetForm();
                     }}
-                    className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
+                    className="flex-1 px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors shadow-sm"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 text-white rounded-lg font-medium transition-all duration-300 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 disabled:from-slate-400 disabled:to-slate-500 text-white rounded-lg font-medium transition-all duration-300 disabled:cursor-not-allowed shadow-lg"
                   >
                     {submitting ? 'Reporting...' : 'Report Item'}
                   </button>
@@ -1142,16 +1290,16 @@ const Lost = () => {
         {/* Edit Lost Item Modal */}
         {showEditForm && editingItem && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md border border-blue-200 shadow-xl">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Edit Lost Item</h2>
+                <h2 className="text-xl font-bold text-slate-800">Edit Lost Item</h2>
                 <button
                   onClick={() => {
                     setShowEditForm(false);
                     setEditingItem(null);
                     resetForm();
                   }}
-                  className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+                  className="p-2 hover:bg-blue-50 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1161,35 +1309,44 @@ const Lost = () => {
               {user?.role !== 'admin' && !canEditItem(editingItem) && (
                 <div className={`border rounded-lg p-4 mb-4 ${
                   editingItem.reportedBy === 'Admin' 
-                    ? 'bg-purple-900/30 border-purple-700' 
-                    : 'bg-red-900/30 border-red-700'
+                    ? 'bg-purple-100 border-purple-300' 
+                    : 'bg-red-100 border-red-300'
                 }`}>
                   <div className="flex items-start">
                     {editingItem.reportedBy === 'Admin' ? (
-                      <Shield className="w-5 h-5 text-purple-400 mr-2 mt-0.5 flex-shrink-0" />
+                      <Shield className="w-5 h-5 text-purple-600 mr-2 mt-0.5 flex-shrink-0" />
                     ) : (
-                      <Lock className="w-5 h-5 text-red-400 mr-2 mt-0.5 flex-shrink-0" />
+                      <Lock className="w-5 h-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
                     )}
                     <div>
                       <h4 className={`font-medium text-sm ${
-                        editingItem.reportedBy === 'Admin' ? 'text-purple-400' : 'text-red-400'
+                        editingItem.reportedBy === 'Admin' ? 'text-purple-700' : 'text-red-700'
                       }`}>
                         {editingItem.reportedBy === 'Admin' ? 'Admin Item' : 'Item Locked'}
                       </h4>
                       <p className={`text-sm mt-1 ${
-                        editingItem.reportedBy === 'Admin' ? 'text-purple-300' : 'text-red-300'
+                        editingItem.reportedBy === 'Admin' ? 'text-purple-600' : 'text-red-600'
                       }`}>
                         {editingItem.reportedBy === 'Admin' 
                           ? 'This item was reported by admin and cannot be edited by users.'
-                          : editingItem.adminNotes && editingItem.adminNotes.trim() !== ''
+                          : ((editingItem.adminNotes && editingItem.adminNotes.trim() !== '') || (editingItem.adminReply && editingItem.adminReply.trim() !== ''))
                             ? 'This item cannot be edited because an admin has responded to it.'
                             : 'You do not have permission to edit this item.'
                         }
                       </p>
                       {editingItem.adminNotes && editingItem.adminNotes.trim() !== '' && (
-                        <div className="mt-2 p-2 bg-slate-800/50 rounded">
-                          <p className="text-xs text-slate-400 mb-1">Admin Response:</p>
-                          <p className="text-xs text-slate-300">{editingItem.adminNotes}</p>
+                        <div className="mt-2 p-2 bg-slate-100 rounded">
+                          <p className="text-xs text-slate-600 mb-1">Admin Notes:</p>
+                          <p className="text-xs text-slate-700">{editingItem.adminNotes}</p>
+                        </div>
+                      )}
+                      {editingItem.adminReply && editingItem.adminReply.trim() !== '' && (
+                        <div className="mt-2 p-2 bg-slate-100 rounded">
+                          <p className="text-xs text-slate-600 mb-1">Admin Reply:</p>
+                          <p className="text-xs text-slate-700">{editingItem.adminReply}</p>
+                          {editingItem.repliedBy && (
+                            <p className="text-xs text-slate-500 mt-1">by {editingItem.repliedBy}</p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1199,7 +1356,7 @@ const Lost = () => {
 
               <form onSubmit={handleSubmitEdit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Item Name *
                   </label>
                   <input
@@ -1208,13 +1365,13 @@ const Lost = () => {
                     value={formData.itemName}
                     onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))}
                     disabled={user?.role !== 'admin' && !canEditItem(editingItem)}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     placeholder="e.g., Black backpack, Red umbrella"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Description
                   </label>
                   <textarea
@@ -1222,13 +1379,13 @@ const Lost = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
                     disabled={user?.role !== 'admin' && !canEditItem(editingItem)}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     placeholder="Describe the item in detail..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Date Lost
                   </label>
                   <input
@@ -1237,23 +1394,30 @@ const Lost = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, dateLost: e.target.value }))}
                     max={new Date().toISOString().split('T')[0]}
                     disabled={user?.role !== 'admin' && !canEditItem(editingItem)}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Bus Number *
                   </label>
                   <input
                     type="text"
                     required
                     value={formData.busNumber}
-                    onChange={(e) => setFormData(prev => ({ ...prev, busNumber: e.target.value }))}
+                    onChange={(e) => handleBusNumberChange(e.target.value)}
                     disabled={user?.role !== 'admin' && !canEditItem(editingItem)}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    placeholder="e.g., AD-8765"
+                    className={`w-full px-4 py-3 bg-white border rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ${
+                      validationErrors.busNumber 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-blue-200 focus:ring-blue-500'
+                    }`}
+                    placeholder="e.g., AD-9876"
                   />
+                  {validationErrors.busNumber && (
+                    <p className="mt-1 text-sm text-red-500">{validationErrors.busNumber}</p>
+                  )}
                 </div>
 
                 <div className="flex space-x-3 pt-4">
@@ -1264,14 +1428,14 @@ const Lost = () => {
                       setEditingItem(null);
                       resetForm();
                     }}
-                    className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
+                    className="flex-1 px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors shadow-sm"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting || (user?.role !== 'admin' && !canEditItem(editingItem))}
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 text-white rounded-lg font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:from-slate-600 disabled:to-slate-600"
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 text-white rounded-lg font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-500 shadow-lg"
                   >
                     {submitting ? 'Updating...' : 'Update Item'}
                   </button>
