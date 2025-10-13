@@ -1,3 +1,107 @@
+import mongoose from "mongoose";
+
+const paymentSchema = new mongoose.Schema(
+  {
+    paymentId: {
+      type: String,
+      unique: true,
+      required: true,
+    },
+    booking: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Booking",
+      default: null,
+    },
+    maintenance: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Maintenance",
+      default: null,
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    amount: {
+      type: Number,
+      required: true,
+    },
+    currency: {
+      type: String,
+      default: "LKR",
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["card", "bank_transfer", "cash", "wallet"],
+      required: true,
+    },
+    paymentGateway: {
+      type: String,
+      enum: ["stripe", "paypal", "razorpay", "none"],
+      default: "stripe",
+    },
+    cardDetails: {
+      cardNumber: String,
+      cardHolder: String,
+      expiryDate: String,
+    },
+    gatewayResponse: {
+      gatewayId: String,
+      status: String,
+      responseCode: String,
+      responseMessage: String,
+      rawResponse: Object,
+    },
+    status: {
+      type: String,
+      enum: [
+        "pending",
+        "processing",
+        "success",
+        "failed",
+        "refunded",
+        "cancelled",
+      ],
+      default: "pending",
+    },
+    transactionId: {
+      type: String,
+      unique: true,
+    },
+    description: String,
+    paymentType: {
+      type: String,
+      enum: ["booking", "maintenance", "salary", "other"],
+      default: "booking",
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    refunds: [
+      {
+        amount: Number,
+        reason: String,
+        processedAt: Date,
+        refundId: String,
+        status: {
+          type: String,
+          enum: ["pending", "processed", "failed"],
+        },
+      },
+    ],
+  },
+  { timestamps: true }
+);
+
+paymentSchema.index({ user: 1, createdAt: -1 });
+paymentSchema.index({ status: 1 });
+paymentSchema.index({ paymentGateway: 1 });
+
+const Payment = mongoose.model("Payment", paymentSchema);
+export default Payment;
+
+/*
 // models/payment.js
 import mongoose from 'mongoose';
 
@@ -11,23 +115,32 @@ const paymentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Booking'
   },
+
+  
   maintenance: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Maintenance'
   },
+  
+
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
+
+  /*
   driver: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'DriverProfile'
   },
+  
   schedule: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Schedule'
   },
+  */
+ /*
   amount: {
     type: Number,
     required: true
@@ -50,12 +163,12 @@ const paymentSchema = new mongoose.Schema({
     cardNumber: String,
     cardHolder: String,
     expiryDate: String,
-    cvv: String
+    // cvv: String
   },
   gatewayResponse: {
     gatewayId: String,
     status: String,
-    clientSecret: String, // Added for Stripe
+    // clientSecret: String, // Added for Stripe
     responseCode: String,
     responseMessage: String,
     rawResponse: Object
@@ -70,16 +183,6 @@ const paymentSchema = new mongoose.Schema({
     unique: true
   },
   description: String,
-  refunds: [{
-    amount: Number,
-    reason: String,
-    processedAt: Date,
-    refundId: String,
-    status: {
-      type: String,
-      enum: ['pending', 'processed', 'failed']
-    }
-  }],
   paymentType: {
     type: String,
     enum: ['booking', 'maintenance', 'salary'],
@@ -89,6 +192,17 @@ const paymentSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+    refunds: [{
+    amount: Number,
+    reason: String,
+    processedAt: Date,
+    refundId: String,
+    status: {
+      type: String,
+      enum: ['pending', 'processed', 'failed']
+    }
+  }],
+  /*
   deletedAt: {
     type: Date
   },
@@ -96,16 +210,21 @@ const paymentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }
+
+  */
+ /*
 }, {
   timestamps: true
 });
 
 // Index for better query performance
 paymentSchema.index({ user: 1, createdAt: -1 });
-// paymentId and transactionId already have unique indexes from schema definition
+paymentSchema.index({ paymentId: 1 });
+paymentSchema.index({ transactionId: 1 });
 paymentSchema.index({ status: 1 });
 paymentSchema.index({ paymentGateway: 1 });
 
 const Payment = mongoose.model('Payment', paymentSchema);
 
 export default Payment;
+*/
