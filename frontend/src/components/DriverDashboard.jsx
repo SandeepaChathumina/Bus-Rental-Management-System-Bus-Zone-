@@ -563,20 +563,55 @@ const ScheduleManagement = React.memo(() => {
   };
 
   const formatDateTime = (dateTimeString) => {
-    return new Date(dateTimeString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const date = new Date(dateTimeString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', dateTimeString, error);
+      return 'Invalid Date';
+    }
   };
 
   const formatTime = (dateTimeString) => {
-    return new Date(dateTimeString).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const date = new Date(dateTimeString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid Time';
+      }
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formatting time:', dateTimeString, error);
+      return 'Invalid Time';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error);
+      return 'Invalid Date';
+    }
   };
 
   if (loading) {
@@ -738,16 +773,34 @@ const ScheduleManagement = React.memo(() => {
                   <div className="flex items-center justify-between text-sm text-slate-400">
                     <span>Booking: {schedule.bookingId.bookingId}</span>
                     <span>Passengers: {schedule.bookingId.passengers}</span>
-                    <span>Duration: {formatTime(schedule.scheduledStartTime)} - {formatTime(schedule.scheduledEndTime)}</span>
+                    <span>Date: {formatDate(schedule.travelDate)}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm text-slate-400 mt-2">
+                    <span>Departure: {formatTime(schedule.scheduledStartTime)}</span>
+                    <span>Arrival: {formatTime(schedule.scheduledEndTime)}</span>
+                    <span>Route: {schedule.startLocation} → {schedule.destination}</span>
                   </div>
 
                   {expandedSchedules[schedule._id] && (
                     <div className="mt-4 p-4 bg-slate-700/50 rounded-lg space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="text-slate-400">Scheduled Time:</span>
+                          <span className="text-slate-400">Travel Date:</span>
                           <p className="text-white font-medium">
-                            {formatDateTime(schedule.scheduledStartTime)} - {formatTime(schedule.scheduledEndTime)}
+                            {formatDate(schedule.travelDate)}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Departure Time:</span>
+                          <p className="text-white font-medium">
+                            {formatTime(schedule.scheduledStartTime)}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Arrival Time:</span>
+                          <p className="text-white font-medium">
+                            {formatTime(schedule.scheduledEndTime)}
                           </p>
                         </div>
                         {schedule.actualStartTime && (
@@ -791,12 +844,9 @@ const ScheduleManagement = React.memo(() => {
                       {/* Trip Action Buttons for Accepted Assignments */}
                       {schedule.driverResponse === 'accepted' && schedule.status === 'Scheduled' && (
                         <div className="flex space-x-3 pt-2">
-                          <button 
-                            onClick={() => updateScheduleStatus(schedule._id, 'start')}
-                            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"
-                          >
-                            Start Trip
-                          </button>
+                          <div className="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium">
+                            Ready to Start
+                          </div>
                         </div>
                       )}
                       

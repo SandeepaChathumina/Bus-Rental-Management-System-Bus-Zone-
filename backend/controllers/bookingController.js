@@ -1203,6 +1203,15 @@ export const getDriverSchedules = async (req, res) => {
 
     // Transform data to match driver dashboard format
     const schedules = bookings.map(booking => {
+      // Debug logging
+      console.log('Processing booking:', {
+        id: booking._id,
+        travelDate: booking.travelDate,
+        departureTime: booking.departureTime,
+        arrivalTime: booking.arrivalTime,
+        bookingStatus: booking.bookingStatus
+      });
+
       let status = 'Scheduled';
       
       // Determine status based on booking status and times
@@ -1240,11 +1249,17 @@ export const getDriverSchedules = async (req, res) => {
             }
           }
           
+          // Ensure we have a valid time format
+          if (!formattedTime || formattedTime === 'undefined') {
+            formattedTime = '00:00';
+          }
+          
           const dateTimeStr = `${dateStr}T${formattedTime}:00`;
           const date = new Date(dateTimeStr);
           
           // Check if date is valid
           if (isNaN(date.getTime())) {
+            console.error('Invalid date created from:', dateStr, timeStr, '->', dateTimeStr);
             throw new Error('Invalid date');
           }
           
