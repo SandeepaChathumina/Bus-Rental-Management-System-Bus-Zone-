@@ -13,7 +13,6 @@ import {
   Shield,
   Bus,
   Clock,
-  DollarSign,
   Edit,
   Save,
   X,
@@ -61,12 +60,7 @@ const DriverProfile = () => {
     licenseExpiry: '',
     emergencyContact: '',
     experience: '',
-    hourlyRate: '',
-    bankAccount: {
-      bankName: '',
-      accountNumber: '',
-      routingNumber: ''
-    }
+    hourlyRate: ''
   });
   const [phoneValidation, setPhoneValidation] = useState({ isValid: true, message: '' });
 
@@ -111,12 +105,7 @@ const DriverProfile = () => {
       licenseExpiry: driverProfileData?.licenseExpiry || '',
       emergencyContact: driverProfileData?.emergencyContact || '',
       experience: driverProfileData?.experience || '',
-      hourlyRate: driverProfileData?.hourlyRate || '',
-      bankAccount: {
-        bankName: driverProfileData?.bankAccount?.bankName || '',
-        accountNumber: driverProfileData?.bankAccount?.accountNumber || '',
-        routingNumber: driverProfileData?.bankAccount?.routingNumber || ''
-      }
+      hourlyRate: driverProfileData?.hourlyRate || ''
     };
 
     console.log('Initializing form data:', baseData);
@@ -190,8 +179,7 @@ const DriverProfile = () => {
           licenseExpiry: formData.licenseExpiry,
           emergencyContact: formData.emergencyContact,
           experience: formData.experience,
-          hourlyRate: formData.hourlyRate,
-          bankAccount: formData.bankAccount
+          hourlyRate: formData.hourlyRate
         },
         {
           headers: {
@@ -477,49 +465,6 @@ const DriverProfile = () => {
           </div>
         </div>
 
-        {/* Bank Account Information */}
-        <div className="bg-gradient-to-br from-yellow-50 to-white rounded-2xl p-6 border border-yellow-200 shadow-sm lg:col-span-2">
-          <div className="flex items-center space-x-2 mb-4">
-            <DollarSign className="h-5 w-5 text-yellow-500" />
-            <h2 className="text-lg font-semibold text-gray-900">Bank Account Information</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Bank Name</label>
-              <input
-                type="text"
-                value={formData.bankAccount.bankName}
-                onChange={(e) => handleInputChange('bankAccount.bankName', e.target.value)}
-                disabled={!isEditing}
-                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="e.g., Bank of Ceylon"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Account Number</label>
-              <input
-                type="text"
-                value={formData.bankAccount.accountNumber}
-                onChange={(e) => handleInputChange('bankAccount.accountNumber', e.target.value)}
-                disabled={!isEditing}
-                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="Account number"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Routing Number</label>
-              <input
-                type="text"
-                value={formData.bankAccount.routingNumber}
-                onChange={(e) => handleInputChange('bankAccount.routingNumber', e.target.value)}
-                disabled={!isEditing}
-                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="Bank code or routing number"
-              />
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
