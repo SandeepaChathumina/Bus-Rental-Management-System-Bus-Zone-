@@ -140,9 +140,9 @@ const validationUtils = {
     };
   },
 
-  // Check if license number is valid (capital letter + 7 digits)
+  // Check if license number is valid (B + 7 digits)
   validateLicenseNumber: (licenseNumber) => {
-    const licenseRegex = /^[A-Z]\d{7}$/;
+    const licenseRegex = /^B\d{7}$/;
     return licenseRegex.test(licenseNumber.toUpperCase());
   },
 
@@ -527,7 +527,7 @@ const ValidationMessages = ({ validation, field }) => {
           <p className="text-green-600">✓ Valid license format</p>
         ) : (
           <p className="text-red-600">
-            ✗ Must be capital letter followed by 7 digits (e.g., B1234567)
+            ✗ Must be B followed by 7 digits (e.g., B1234567)
           </p>
         );
 
@@ -1754,15 +1754,20 @@ const UserManagement = () => {
             <FormField
               field="licenseNumber"
               label="License Number"
-              placeholder="Enter license number"
+              placeholder="Enter license number (B + 7 digits)"
               value={form.licenseNumber}
               onChange={(e) => {
                 // Auto-uppercase and limit to 8 characters
-                // Allow only letters and digits, but ensure first character is a letter
                 let value = e.target.value.toUpperCase();
                 // Remove any non-alphanumeric characters
                 value = value.replace(/[^A-Z0-9]/g, '');
-                // Limit to 8 characters
+                
+                // Enforce B prefix - if empty or doesn't start with B, start with B
+                if (value.length === 0 || !value.startsWith('B')) {
+                  value = 'B' + value.replace(/^B?/, '');
+                }
+                
+                // Limit to 8 characters (B + 7 digits)
                 value = value.slice(0, 8);
                 setForm({ ...form, licenseNumber: value });
               }}
