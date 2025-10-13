@@ -730,7 +730,6 @@ export const calculateFare = async (req, res) => {
     });
   }
 };
-
 // Calculate pricing based on trip type and duration
 const calculatePricing = (basePrice, travelDate, returnDate, tripType) => {
   const basePriceNum = parseFloat(basePrice) || 0;
@@ -1117,63 +1116,6 @@ export const getBookingById = async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: 'Server error: ' + error.message 
-    });
-  }
-};
-
-// Assign driver to booking
-export const assignDriverToBooking = async (req, res) => {
-  try {
-    const { id: bookingId } = req.params;
-    const { driverId } = req.body;
-
-    if (!driverId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Driver ID is required'
-      });
-    }
-
-    // Check if booking exists
-    const booking = await Booking.findById(bookingId)
-      .populate('bus')
-      .populate('user');
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found'
-      });
-    }
-
-    // Check if driver exists and has driver role
-    const driver = await User.findById(driverId);
-    if (!driver || driver.role !== 'driver') {
-      return res.status(404).json({
-        success: false,
-        message: 'Driver not found or invalid driver'
-      });
-    }
-
-    // Update booking with assigned driver
-    booking.assignedDriver = driverId;
-    await booking.save();
-
-    res.json({
-      success: true,
-      message: 'Driver assigned successfully',
-      booking: {
-        _id: booking._id,
-        bookingId: booking.bookingId,
-        assignedDriver: booking.assignedDriver
-      }
-    });
-
-  } catch (error) {
-    console.error('Assign driver error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error: ' + error.message
     });
   }
 };

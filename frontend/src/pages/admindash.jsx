@@ -58,6 +58,10 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import MaintenanceManagement from './MaintenanceManagement';
 import AllBookings from './allbookings';
+import DriverScheduleManagement from '../components/DriverScheduleManagement';
+
+// Test import
+console.log('DriverScheduleManagement imported:', DriverScheduleManagement);
 
 const AdminDashboard = () => {
   const { user: authUser, logout } = useAuth();
@@ -908,6 +912,8 @@ const AdminDashboard = () => {
 
   // Update renderContent to include AdminLostFound
   const renderContent = () => {
+    console.log('AdminDashboard renderContent called with activeTab:', activeTab);
+    
     switch (activeTab) {
       case 'dashboard':
         return <DashboardContent />;
@@ -924,7 +930,16 @@ const AdminDashboard = () => {
       case 'maintenance':
         return <MaintenanceManagement />;
       case 'drivers':
-        return <div className="text-white p-6">Driver Assign (placeholder)</div>;
+        console.log('Rendering DriverScheduleManagement component');
+        return (
+          <div>
+            <div className="bg-green-100 border border-green-300 rounded-lg p-4 mb-4">
+              <h3 className="text-lg font-bold text-green-800">✅ Driver Tab Selected</h3>
+              <p className="text-green-600">This confirms the drivers tab is working!</p>
+            </div>
+            <DriverScheduleManagement />
+          </div>
+        );
       case 'attendance':
         return <AttendanceManagement />;
       case 'feedback':

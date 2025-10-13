@@ -94,6 +94,10 @@ const bookingSchema = new mongoose.Schema({
   specialRequests: {
     type: String,
     trim: true
+  },
+  assignedDriver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true
