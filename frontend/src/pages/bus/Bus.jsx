@@ -271,23 +271,24 @@ const Bus = () => {
               {/* Bus Image */}
               <div className="mb-4 relative">
                 {bus.vehiclePhoto && !imageErrors[bus._id] ? (
-                  <img
-                    src={bus.vehiclePhoto}
-                    alt={`${bus.busType} Coach - ${bus.numberPlate}`}
-                    className="w-full h-48 object-cover rounded-xl"
-                    onError={() => handleImageError(bus._id)}
-                  />
+                  <div className="relative">
+                    <img
+                      src={bus.vehiclePhoto}
+                      alt={`${bus.busType} Coach - ${bus.numberPlate}`}
+                      className="w-full h-48 object-cover rounded-xl"
+                      onError={() => handleImageError(bus._id)}
+                    />
+                    {/* Image type indicator */}
+                    {bus.vehiclePhoto && (isDataURL(bus.vehiclePhoto) || bus.vehiclePhoto.includes('supabase')) && (
+                      <div className="absolute top-2 right-2 bg-blue-500/80 text-white px-2 py-1 rounded text-xs">
+                        {isDataURL(bus.vehiclePhoto) ? 'Uploaded Image' : 'Cloud Image'}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="w-full h-48 bg-slate-700 rounded-xl flex flex-col items-center justify-center">
                     <ImageIcon className="h-12 w-12 text-slate-500 mb-2" />
                     <span className="text-slate-400 text-sm">No Image Available</span>
-                  </div>
-                )}
-                
-                {/* Image type indicator */}
-                {bus.vehiclePhoto && isDataURL(bus.vehiclePhoto) && (
-                  <div className="absolute top-2 right-2 bg-blue-500/80 text-white px-2 py-1 rounded text-xs">
-                    Uploaded Image
                   </div>
                 )}
               </div>

@@ -16,10 +16,12 @@ import {
   Wrench,
   Clock,
   FileText,
-  Calendar
+  Calendar,
+  Image as ImageIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
+import DragDropImageUpload from '../components/DragDropImageUpload';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
@@ -44,6 +46,9 @@ const BusManagement = () => {
     vehiclePhoto: '',
     status: 'Available'
   });
+
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const [formErrors, setFormErrors] = useState({});
 
@@ -135,9 +140,25 @@ const BusManagement = () => {
       errors.pricePerDay = 'Price cannot exceed LKR 100,000 per day';
     }
 
-    // Vehicle Photo URL validation (optional)
-    if (formData.vehiclePhoto && !/^https?:\/\/.+\..+/.test(formData.vehiclePhoto)) {
-      errors.vehiclePhoto = 'Please enter a valid URL';
+    // Vehicle Photo validation - now supports both URL and uploaded images
+    if (formData.vehiclePhoto) {
+      const isUrl = /^https?:\/\/.+\..+/.test(formData.vehiclePhoto);
+      const isDataUrl = formData.vehiclePhoto.startsWith('data:image');
+      const isSupabaseUrl = formData.vehiclePhoto.includes('supabase');
+      
+      if (!isUrl && !isDataUrl && !isSupabaseUrl) {
+        errors.vehiclePhoto = 'Please provide a valid image URL or upload an image';
+      }
+    }
+
+    // Bus Type validation
+    if (!formData.busType) {
+      errors.busType = 'Bus type is required';
+    }
+
+    // Status validation
+    if (!formData.status) {
+      errors.status = 'Status is required';
     }
 
     setFormErrors(errors);
@@ -194,6 +215,7 @@ const BusManagement = () => {
         vehiclePhoto: '',
         status: 'Available'
       });
+      setImagePreview(null);
       setFormErrors({});
       fetchBuses();
     } catch (error) {
@@ -213,6 +235,7 @@ const BusManagement = () => {
       vehiclePhoto: bus.vehiclePhoto || '',
       status: bus.status
     });
+    setImagePreview(bus.vehiclePhoto || null);
     setFormErrors({});
     setShowModal(true);
   };
@@ -238,6 +261,27 @@ const BusManagement = () => {
       ...formData,
       [name]: processedValue
     });
+  };
+
+  const handleImageUpload = (imageUrl) => {
+    setFormData({
+      ...formData,
+      vehiclePhoto: imageUrl
+    });
+    setImagePreview(imageUrl);
+    setIsUploadingImage(false);
+  };
+
+  const handleRemoveImage = () => {
+    setFormData({
+      ...formData,
+      vehiclePhoto: ''
+    });
+    setImagePreview(null);
+  };
+
+  const handleImageUploadStart = () => {
+    setIsUploadingImage(true);
   };
 
   const getStatusIcon = (status) => {
@@ -752,6 +796,7 @@ const BusManagement = () => {
                 <table className="w-full">
                   <thead className="bg-gradient-to-r from-blue-50 to-blue-100">
                     <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Image</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Bus ID</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Number Plate</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Type</th>
@@ -765,6 +810,26 @@ const BusManagement = () => {
                   <tbody className="divide-y divide-blue-100">
                     {filteredBuses.map((bus) => (
                       <tr key={bus._id} className="hover:bg-blue-50 transition-colors duration-200">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="w-16 h-12 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                            {bus.vehiclePhoto ? (
+                              <img
+                                src={bus.vehiclePhoto}
+                                alt={`${bus.busType} - ${bus.numberPlate}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div 
+                              className={`w-full h-full flex items-center justify-center ${bus.vehiclePhoto ? 'hidden' : 'flex'}`}
+                            >
+                              <ImageIcon className="w-6 h-6 text-gray-400" />
+                            </div>
+                          </div>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{bus.busId || 'N/A'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">{bus.numberPlate}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{bus.busType}</td>
@@ -917,6 +982,7 @@ const BusManagement = () => {
                     vehiclePhoto: '',
                     status: 'Available'
                   });
+                  setImagePreview(null);
                   setFormErrors({});
                 }}
                 className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
@@ -1065,20 +1131,27 @@ const BusManagement = () => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Photo URL (Optional)</label>
-                  <input
-                    type="url"
-                    name="vehiclePhoto"
-                    value={formData.vehiclePhoto}
-                    onChange={handleInputChange}
-                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
-                      formErrors.vehiclePhoto ? 'border-red-500 focus:ring-red-500' : 'border-blue-300 focus:ring-blue-500'
-                    }`}
-                    placeholder="https://example.com/photo.jpg"
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Vehicle Photo
+                    <span className="text-gray-500 text-xs ml-1">(Optional - Drag & drop or click to upload)</span>
+                  </label>
+                  <DragDropImageUpload
+                    onImageUpload={handleImageUpload}
+                    currentImage={imagePreview}
+                    onRemoveImage={handleRemoveImage}
+                    disabled={isUploadingImage}
+                    className="w-full"
+                    maxSize={5 * 1024 * 1024} // 5MB
+                    acceptedTypes={['image/jpeg', 'image/jpg', 'image/png', 'image/webp']}
                   />
                   {formErrors.vehiclePhoto && (
                     <p className="text-red-600 text-xs mt-1">{formErrors.vehiclePhoto}</p>
                   )}
+                  <div className="mt-2 text-xs text-gray-500">
+                    <p>• Supported formats: JPEG, PNG, WebP</p>
+                    <p>• Maximum file size: 5MB</p>
+                    <p>• Images will be automatically optimized and stored securely</p>
+                  </div>
                 </div>
                 </div>
 
@@ -1097,6 +1170,7 @@ const BusManagement = () => {
                       vehiclePhoto: '',
                       status: 'Available'
                     });
+                    setImagePreview(null);
                     setFormErrors({});
                   }}
                   className="px-4 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 transition-colors"
