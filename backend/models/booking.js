@@ -94,6 +94,27 @@ const bookingSchema = new mongoose.Schema({
   specialRequests: {
     type: String,
     trim: true
+  },
+  assignedDriver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  actualStartTime: {
+    type: Date,
+    default: null
+  },
+  actualEndTime: {
+    type: Date,
+    default: null
+  },
+  driverResponse: {
+    type: String,
+    enum: ['pending', 'accepted', 'declined'],
+    default: 'pending'
+  },
+  driverResponseTime: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true
