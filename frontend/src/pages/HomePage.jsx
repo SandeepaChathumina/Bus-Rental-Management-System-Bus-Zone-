@@ -695,7 +695,7 @@ const AdvancedBusRentalHomepage = () => {
                 { name: "Home", active: true, link: "/" },
                 { name: "Fleet", active: false, link: "#" },
                 { name: "Services", active: false, link: "/services" },
-                { name: "Corporate", active: false, link: "#" },
+                { name: "Gallery", active: false, link: "/gallery" },
                 { name: "About", active: false, link: "/about" },
                 { name: "Contact", active: false, link: "/contact" },
               ].map((item) => (
@@ -780,7 +780,7 @@ const AdvancedBusRentalHomepage = () => {
                   { name: 'Home', link: '/' },
                   { name: 'Fleet', link: '#' },
                   { name: 'Services', link: '/services' },
-                  { name: 'Corporate', link: '#' },
+                  { name: 'Gallery', link: '/gallery' },
                   { name: 'About', link: '/about' },
                   { name: 'Contact', link: '/contact' }
                 ].map((item) => (
