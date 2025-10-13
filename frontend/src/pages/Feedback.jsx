@@ -1,6 +1,7 @@
 // src/pages/Feedback.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { 
   MessageSquare, 
   AlertTriangle, 
@@ -23,6 +24,7 @@ import {
 import { toast } from 'react-hot-toast';
 
 const Feedback = () => {
+  const { user: authUser } = useAuth();
   const [feedbacks, setFeedbacks] = useState([]);
   const [filteredFeedbacks, setFilteredFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,96 @@ const Feedback = () => {
   const [submitting, setSubmitting] = useState(false);
   const [userId, setUserId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [formErrors, setFormErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const navigate = useNavigate();
+
+  // Validation functions
+  const validateField = (name, value) => {
+    let error = '';
+    
+    switch (name) {
+      case 'title':
+        if (!value || value.trim().length === 0) {
+          error = 'Title is required';
+        } else if (value.trim().length < 3) {
+          error = 'Title must be at least 3 characters long';
+        } else if (value.trim().length > 100) {
+          error = 'Title must be less than 100 characters';
+        }
+        break;
+      case 'description':
+        if (!value || value.trim().length === 0) {
+          error = 'Description is required';
+        } else if (value.trim().length < 10) {
+          error = 'Description must be at least 10 characters long';
+        } else if (value.trim().length > 1000) {
+          error = 'Description must be less than 1000 characters';
+        }
+        break;
+      case 'rating':
+        if (formData.type === 'feedback' && (!value || value < 1 || value > 5)) {
+          error = 'Please select a valid rating (1-5)';
+        }
+        break;
+      default:
+        break;
+    }
+    
+    return error;
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    // Only validate required fields for basic submission
+    if (!formData.title.trim()) {
+      errors.title = 'Title is required';
+    } else if (formData.title.trim().length < 3) {
+      errors.title = 'Title must be at least 3 characters long';
+    }
+    
+    if (!formData.description.trim()) {
+      errors.description = 'Description is required';
+    } else if (formData.description.trim().length < 10) {
+      errors.description = 'Description must be at least 10 characters long';
+    }
+    
+    // Only validate rating if it's feedback type and user has interacted with it
+    if (formData.type === 'feedback' && touched.rating && (!formData.rating || formData.rating < 1 || formData.rating > 5)) {
+      errors.rating = 'Please select a valid rating (1-5)';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleFieldBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+    
+    const error = validateField(name, value);
+    setFormErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
+  };
+
+  const handleFieldChange = (e) => {
+    const { name, value } = e.target;
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear error when user starts typing and validate the field
+    const error = validateField(name, value);
+    setFormErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
+  };
 
   // Stats for the header
   const stats = [
@@ -72,21 +163,23 @@ const Feedback = () => {
   // Fetch feedbacks from backend and get user ID
   useEffect(() => {
     fetchFeedbacks();
-    // Get user ID from localStorage
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      try {
-        const user = JSON.parse(userData);
-        setUserId(user.id || user._id || user.userId || '68b5240faf8b3f2810a46257');
-      } catch (err) {
-        console.error('Error parsing user data:', err);
-        setUserId('68b5240faf8b3f2810a46257');
-      }
+    // Get user ID from authenticated user context
+    if (authUser) {
+      setUserId(authUser.id || authUser._id || authUser.userId);
     } else {
-      // Set the specific user ID 
-      setUserId('68b5240faf8b3f2810a46257');
+      // Fallback to localStorage if authUser is not available yet
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          setUserId(user.id || user._id || user.userId);
+        } catch (err) {
+          console.error('Error parsing user data:', err);
+          setUserId(null);
+        }
+      }
     }
-  }, []);
+  }, [authUser]);
 
   // Filter feedbacks based on search term
   useEffect(() => {
@@ -142,19 +235,23 @@ const Feedback = () => {
       setFeedbacks(sortedData);
     } catch (err) {
       setError(err.message);
-      // Use mock data for demo purposes
+      // Use mock data for demo purposes with real user info
+      const currentUserId = userId || '68b5240faf8b3f2810a46257';
+      const currentUserName = authUser ? `${authUser.firstName || ''} ${authUser.lastName || ''}`.trim() : 'Unknown User';
+      
       const mockFeedbacks = [
         {
           _id: '1',
           title: 'Bad bus',
           description: 'bus is uncomfortable',
           type: 'complaint',
-          userId: { 
-            _id: '68b5240faf8b3f2810a46257',
-            firstName: 'Unknown', 
-            lastName: 'User' 
+          client_id: { 
+            _id: currentUserId,
+            firstName: authUser?.firstName || 'Unknown', 
+            lastName: authUser?.lastName || 'User' 
           },
-          user_id: '68b5240faf8b3f2810a46257',
+          user_id: currentUserId,
+          user_name: currentUserName,
           send_date: new Date('2025-09-20T01:58:00').toISOString(),
           status: 'replied',
           admin_reply: 'I fixed it',
@@ -165,12 +262,13 @@ const Feedback = () => {
           title: 'Great service',
           description: 'The bus was clean and arrived on time',
           type: 'feedback',
-          userId: { 
-            _id: '68b5240faf8b3f2810a46257',
-            firstName: 'Unknown', 
-            lastName: 'User' 
+          client_id: { 
+            _id: currentUserId,
+            firstName: authUser?.firstName || 'Unknown', 
+            lastName: authUser?.lastName || 'User' 
           },
-          user_id: '68b5240faf8b3f2810a46257',
+          user_id: currentUserId,
+          user_name: currentUserName,
           send_date: new Date('2025-09-19T10:30:00').toISOString(),
           status: 'pending',
           admin_reply: null,
@@ -197,17 +295,20 @@ const Feedback = () => {
       }
 
       // Validate form data
-      if (!formData.title.trim() || !formData.description.trim()) {
-        toast.error('Please fill in all required fields');
+      if (!validateForm()) {
+        setSubmitting(false);
+        toast.error('Please fix the errors before submitting');
         return;
       }
 
-      // Prepare payload
+      // Prepare payload with user information
       const payload = {
         type: formData.type,
         title: formData.title.trim(),
         description: formData.description.trim(),
-        rating: formData.type === 'feedback' ? formData.rating : undefined
+        rating: formData.type === 'feedback' ? formData.rating : undefined,
+        user_id: userId,
+        user_name: authUser ? `${authUser.firstName || ''} ${authUser.lastName || ''}`.trim() : 'Unknown User'
       };
 
       const url = isEditing 
@@ -232,7 +333,13 @@ const Feedback = () => {
 
       const result = await response.json();
       
-      toast.success(isEditing ? 'Feedback updated successfully!' : 'Thank you for your feedback!');
+      const successMessage = isEditing 
+        ? `${formData.type === 'complaint' ? 'Complaint' : 'Feedback'} updated successfully!`
+        : formData.type === 'complaint' 
+          ? 'Thank you for your complaint!'
+          : 'Thank you for your feedback!';
+      
+      toast.success(successMessage);
       
       // Reset form
       setFormData({
@@ -241,9 +348,18 @@ const Feedback = () => {
         description: '',
         rating: 5
       });
+      setFormErrors({});
+      setTouched({});
       
       // Refresh feedback list
       await fetchFeedbacks();
+      
+      // Dispatch event to notify admin dashboard of feedback update
+      if (isEditing) {
+        window.dispatchEvent(new CustomEvent('feedbackUpdated'));
+      } else {
+        window.dispatchEvent(new CustomEvent('feedbackCreated'));
+      }
       
       setTimeout(() => {
         setIsFormOpen(false);
@@ -271,6 +387,8 @@ const Feedback = () => {
       description: feedback.description,
       rating: feedback.rating || 5
     });
+    setFormErrors({});
+    setTouched({});
     setIsEditing(true);
     setIsFormOpen(true);
   };
@@ -301,16 +419,16 @@ const Feedback = () => {
 
       toast.success('Feedback deleted successfully!');
       await fetchFeedbacks();
+      
+      // Dispatch event to notify admin dashboard of feedback deletion
+      window.dispatchEvent(new CustomEvent('feedbackUpdated'));
     } catch (err) {
       toast.error(err.message || 'Error deleting feedback. Please try again.');
     }
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    handleFieldChange(e);
   };
 
   const handleRatingChange = (rating) => {
@@ -318,6 +436,13 @@ const Feedback = () => {
       ...formData,
       rating: rating
     });
+    
+    // Mark rating as touched and clear any errors
+    setTouched(prev => ({ ...prev, rating: true }));
+    setFormErrors(prev => ({
+      ...prev,
+      rating: ''
+    }));
   };
 
   const getTypeIcon = (type) => {
@@ -374,23 +499,23 @@ const Feedback = () => {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 flex items-center justify-center">
       <div className="flex flex-col items-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-        <p className="text-slate-600 dark:text-slate-400">Loading your feedback...</p>
+        <p className="text-slate-600">Loading your feedback...</p>
       </div>
     </div>
   );
 
   if (error) return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
-      <div className="text-center max-w-md p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 flex items-center justify-center">
+      <div className="text-center max-w-md p-6 bg-white/80 rounded-xl shadow-lg border border-blue-200/50">
         <XCircle className="h-16 w-16 text-rose-500 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">Error</h2>
-        <p className="text-slate-600 dark:text-slate-400 mb-6">{error}</p>
+        <h2 className="text-xl font-semibold text-slate-900 mb-2">Error</h2>
+        <p className="text-slate-600 mb-6">{error}</p>
         <button
           onClick={() => navigate('/login')}
-          className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-lg"
         >
           Login
         </button>
@@ -399,9 +524,9 @@ const Feedback = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-700 text-white">
+      <div className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white">
         <div className="container mx-auto px-4 py-12">
           <div className="flex items-center justify-between mb-8">
             <button
@@ -422,7 +547,7 @@ const Feedback = () => {
               className="flex items-center space-x-2 px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all shadow-md hover:shadow-lg backdrop-blur-sm"
             >
               <Plus className="h-4 w-4" />
-              <span>New Feedback or complaint</span>
+              <span>New Feedback or Complaint</span>
             </button>
           </div>
 
@@ -451,19 +576,19 @@ const Feedback = () => {
       <div className="container mx-auto px-4 py-8 -mt-16 relative z-10">
         {/* Feedback List */}
         {feedbacks.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700">
-            <MessageSquare className="h-20 w-20 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-slate-600 dark:text-slate-300 mb-2">
+          <div className="text-center py-16 bg-white/80 rounded-2xl shadow-lg border border-blue-200/50">
+            <MessageSquare className="h-20 w-20 text-slate-300 mx-auto mb-4" />
+            <h2 className="text-2xl font-semibold text-slate-600 mb-2">
               No feedback yet
             </h2>
-            <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
+            <p className="text-slate-500 mb-6 max-w-md mx-auto">
               Share your experience with us to help us improve our services.
             </p>
             <button
               onClick={() => setIsFormOpen(true)}
-              className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white rounded-xl transition-all shadow-md hover:shadow-lg"
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all shadow-lg hover:shadow-xl"
             >
-              Share Your First Feedback
+              Share Your First Feedback or Complaint
             </button>
           </div>
         ) : (
@@ -471,22 +596,22 @@ const Feedback = () => {
             {feedbacks.map((feedback) => (
               <div
                 key={feedback._id}
-                className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-md border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300"
+                className="bg-white/80 rounded-2xl p-6 shadow-lg border border-blue-200/50 hover:shadow-xl hover:border-blue-300 transition-all duration-300"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-start space-x-4">
-                    <div className={`p-3 rounded-xl ${feedback.type === 'complaint' ? 'bg-rose-100 dark:bg-rose-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
+                    <div className={`p-3 rounded-xl ${feedback.type === 'complaint' ? 'bg-rose-100' : 'bg-blue-100'}`}>
                       {getTypeIcon(feedback.type)}
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-900 dark:text-white text-lg">
+                      <h3 className="font-semibold text-slate-900 text-lg">
                         {feedback.title}
                       </h3>
                       <div className="flex items-center flex-wrap gap-2 mt-1">
-                        <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${feedback.type === 'complaint' ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'}`}>
+                        <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${feedback.type === 'complaint' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800'}`}>
                           {feedback.type}
                         </span>
-                        <span className="text-sm text-slate-500 dark:text-slate-400">
+                        <span className="text-sm text-slate-500">
                           {formatDate(feedback.send_date || feedback.createdAt)}
                         </span>
                         {feedback.rating && (
@@ -535,44 +660,55 @@ const Feedback = () => {
                   </div>
                 </div>
 
-                <p className="text-slate-700 dark:text-slate-300 mb-4 whitespace-pre-wrap leading-relaxed">
+                <p className="text-slate-700 mb-4 whitespace-pre-wrap leading-relaxed">
                   {feedback.description}
                 </p>
 
                 {/* Booking Reference Section - Only show if exists */}
                 {(feedback.booking_reference || feedback.booking_id) && (
                   <div className="mb-4">
-                    <span className="inline-flex items-center bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm px-3 py-1.5 rounded-full">
+                    <span className="inline-flex items-center bg-blue-50 text-slate-700 text-sm px-3 py-1.5 rounded-full">
                       <Calendar className="h-3.5 w-3.5 mr-1.5" />
                       Booking: {feedback.booking_reference || feedback.booking_id}
                     </span>
                   </div>
                 )}
 
-                <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-slate-500 dark:text-slate-400 mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-slate-500 mt-6 pt-4 border-t border-slate-200">
                   <div className="flex items-center space-x-1">
                     <User className="h-4 w-4" />
-                    <span>You (ID: {feedback.user_id || userId || 'Unknown'})</span>
+                    <span>
+                      {feedback.client_id?.firstName && feedback.client_id?.lastName 
+                        ? `${feedback.client_id.firstName} ${feedback.client_id.lastName}`
+                        : feedback.client_id?.username 
+                        ? feedback.client_id.username
+                        : authUser?.firstName && authUser?.lastName
+                        ? `${authUser.firstName} ${authUser.lastName}`
+                        : authUser?.username
+                        ? authUser.username
+                        : 'You'
+                      } (ID: {feedback.client_id?._id || feedback.user_id || userId || 'Unknown'})
+                    </span>
                   </div>
                   
                   <div className={`flex items-center space-x-1.5 font-medium ${feedback.status === 'replied' 
-                      ? 'text-emerald-600 dark:text-emerald-400' 
+                      ? 'text-emerald-600' 
                       : feedback.status === 'closed'
-                      ? 'text-slate-500 dark:text-slate-400'
-                      : 'text-amber-600 dark:text-amber-400'}`}>
+                      ? 'text-slate-500'
+                      : 'text-amber-600'}`}>
                     {getStatusIcon(feedback.status)}
                     <span className="capitalize">{feedback.status}</span>
                   </div>
                 </div>
 
                 {feedback.admin_reply && (
-                  <div className="mt-6 p-5 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700/30">
-                    <div className="flex items-center space-x-2 text-sm font-medium text-blue-900 dark:text-blue-200 mb-3">
+                  <div className="mt-6 p-5 bg-blue-50 rounded-xl border border-blue-200">
+                    <div className="flex items-center space-x-2 text-sm font-medium text-blue-900 mb-3">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                       <span>Admin Response</span>
-                      <span className="text-blue-600 dark:text-blue-400">• {formatDate(feedback.reply_date)}</span>
+                      <span className="text-blue-600">• {formatDate(feedback.reply_date)}</span>
                     </div>
-                    <p className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap leading-relaxed">
+                    <p className="text-sm text-blue-800 whitespace-pre-wrap leading-relaxed">
                       {feedback.admin_reply}
                     </p>
                     
@@ -583,7 +719,7 @@ const Feedback = () => {
                             // Handle reopen functionality if needed
                             toast.success('Feedback reopened');
                           }}
-                          className="flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-800 dark:hover:text-blue-400 font-medium"
+                          className="flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
                         >
                           <span>Reopen Feedback</span>
                         </button>
@@ -600,10 +736,15 @@ const Feedback = () => {
       {/* Feedback Form Modal */}
       {isFormOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
-                {isEditing ? 'Edit Feedback' : 'Share Your Feedback'}
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto border border-blue-200/50">
+            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-200">
+              <h3 className="text-xl font-semibold text-slate-900">
+                {isEditing 
+                  ? `Edit ${formData.type === 'complaint' ? 'Complaint' : 'Feedback'}`
+                  : formData.type === 'complaint' 
+                    ? 'Share Your Complaint' 
+                    : 'Share Your Feedback'
+                }
               </h3>
               <button
                 onClick={() => {
@@ -616,8 +757,10 @@ const Feedback = () => {
                     description: '',
                     rating: 5
                   });
+                  setFormErrors({});
+                  setTouched({});
                 }}
-                className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
+                className="text-slate-500 hover:text-slate-700 p-1 rounded-full hover:bg-slate-100"
               >
                 <XCircle className="h-5 w-5" />
               </button>
@@ -625,7 +768,7 @@ const Feedback = () => {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Feedback Type *
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -633,8 +776,8 @@ const Feedback = () => {
                     type="button"
                     onClick={() => setFormData({...formData, type: 'feedback'})}
                     className={`p-3 rounded-xl border transition-all ${formData.type === 'feedback' 
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 shadow-sm' 
-                      : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-400'}`}
+                      ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm' 
+                      : 'border-slate-300 bg-white text-slate-700 hover:border-blue-400'}`}
                   >
                     <div className="flex items-center justify-center space-x-2">
                       <ThumbsUp className="h-4 w-4" />
@@ -645,8 +788,8 @@ const Feedback = () => {
                     type="button"
                     onClick={() => setFormData({...formData, type: 'complaint'})}
                     className={`p-3 rounded-xl border transition-all ${formData.type === 'complaint' 
-                      ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 shadow-sm' 
-                      : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:border-rose-400'}`}
+                      ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-sm' 
+                      : 'border-slate-300 bg-white text-slate-700 hover:border-rose-400'}`}
                   >
                     <div className="flex items-center justify-center space-x-2">
                       <ThumbsDown className="h-4 w-4" />
@@ -658,7 +801,7 @@ const Feedback = () => {
 
               {formData.type === 'feedback' && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Rating *
                   </label>
                   <div className="flex space-x-1 justify-center p-2">
@@ -672,23 +815,28 @@ const Feedback = () => {
                         <Star
                           className={`h-8 w-8 ${star <= formData.rating 
                             ? 'text-amber-500 fill-amber-500' 
-                            : 'text-slate-300 dark:text-slate-600 hover:text-amber-300'}`}
+                            : 'text-slate-300 hover:text-amber-300'}`}
                         />
                       </button>
                     ))}
                   </div>
-                  <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-                    {formData.rating === 1 && "Very Poor"}
-                    {formData.rating === 2 && "Poor"}
-                    {formData.rating === 3 && "Average"}
-                    {formData.rating === 4 && "Good"}
-                    {formData.rating === 5 && "Excellent"}
-                  </p>
+                  <div className="text-center">
+                    <p className="text-sm text-slate-500">
+                      {formData.rating === 1 && "Very Poor"}
+                      {formData.rating === 2 && "Poor"}
+                      {formData.rating === 3 && "Average"}
+                      {formData.rating === 4 && "Good"}
+                      {formData.rating === 5 && "Excellent"}
+                    </p>
+                    {touched.rating && formErrors.rating && (
+                      <p className="text-xs text-red-500 mt-1">{formErrors.rating}</p>
+                    )}
+                  </div>
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Title *
                 </label>
                 <input
@@ -696,36 +844,56 @@ const Feedback = () => {
                   name="title"
                   value={formData.title}
                   onChange={handleChange}
+                  onBlur={handleFieldBlur}
                   required
                   maxLength={100}
-                  className="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-3 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full border rounded-xl px-4 py-3 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:border-transparent ${
+                    touched.title && formErrors.title
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-slate-300 focus:ring-blue-500'
+                  }`}
                   placeholder="Brief title of your feedback"
                 />
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  {formData.title.length}/100 characters
-                </p>
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-xs text-slate-500">
+                    {formData.title.length}/100 characters
+                  </p>
+                  {touched.title && formErrors.title && (
+                    <p className="text-xs text-red-500">{formErrors.title}</p>
+                  )}
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Description *
                 </label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
+                  onBlur={handleFieldBlur}
                   required
                   rows={4}
                   maxLength={1000}
-                  className="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-3 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className={`w-full border rounded-xl px-4 py-3 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:border-transparent resize-none ${
+                    touched.description && formErrors.description
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-slate-300 focus:ring-blue-500'
+                  }`}
                   placeholder="Please share your experience in detail..."
                 />
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  {formData.description.length}/1000 characters
-                </p>
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-xs text-slate-500">
+                    {formData.description.length}/1000 characters
+                  </p>
+                  {touched.description && formErrors.description && (
+                    <p className="text-xs text-red-500">{formErrors.description}</p>
+                  )}
+                </div>
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => {
@@ -738,8 +906,10 @@ const Feedback = () => {
                       description: '',
                       rating: 5
                     });
+                    setFormErrors({});
+                    setTouched({});
                   }}
-                  className="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                  className="px-5 py-2.5 text-slate-600 hover:text-slate-800 transition-colors"
                   disabled={submitting}
                 >
                   Cancel
@@ -747,7 +917,7 @@ const Feedback = () => {
                 <button
                   type="submit"
                   disabled={submitting || !formData.title.trim() || !formData.description.trim()}
-                  className="flex items-center space-x-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 disabled:from-blue-400 disabled:to-cyan-500 text-white rounded-xl transition-all shadow-md hover:shadow-lg disabled:shadow disabled:cursor-not-allowed"
+                  className="flex items-center space-x-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl transition-all shadow-lg hover:shadow-xl disabled:shadow disabled:cursor-not-allowed"
                 >
                   {submitting ? (
                     <>
@@ -757,7 +927,7 @@ const Feedback = () => {
                   ) : (
                     <>
                       <Send className="h-4 w-4" />
-                      <span>{isEditing ? 'Update Feedback' : 'Submit Feedback'}</span>
+                      <span>{isEditing ? `Update ${formData.type === 'complaint' ? 'Complaint' : 'Feedback'}` : `Submit ${formData.type === 'complaint' ? 'Complaint' : 'Feedback'}`}</span>
                     </>
                   )}
                 </button>

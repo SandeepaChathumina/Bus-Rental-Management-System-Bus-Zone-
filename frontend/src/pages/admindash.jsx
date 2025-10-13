@@ -942,11 +942,29 @@ const AdminDashboard = () => {
     }
   };
 
-  // Feedback functions (unchanged)
+  // Feedback functions
   useEffect(() => {
     if (activeTab === 'feedback') {
       fetchFeedbacks();
     }
+  }, [activeTab]);
+
+  // Listen for feedback updates from other components
+  useEffect(() => {
+    const handleFeedbackUpdate = () => {
+      if (activeTab === 'feedback') {
+        fetchFeedbacks();
+      }
+    };
+
+    // Listen for custom events that indicate feedback updates
+    window.addEventListener('feedbackUpdated', handleFeedbackUpdate);
+    window.addEventListener('feedbackCreated', handleFeedbackUpdate);
+
+    return () => {
+      window.removeEventListener('feedbackUpdated', handleFeedbackUpdate);
+      window.removeEventListener('feedbackCreated', handleFeedbackUpdate);
+    };
   }, [activeTab]);
 
   const fetchFeedbacks = async () => {
@@ -960,6 +978,13 @@ const AdminDashboard = () => {
       
       if (!response.ok) {
         if (response.status === 404) {
+          // Get current user info for mock data
+          const currentUser = authUser || JSON.parse(localStorage.getItem('user') || '{}');
+          const currentUserId = currentUser.id || currentUser._id || '68b5240faf8b3f2810a46257';
+          const currentUserName = currentUser.firstName && currentUser.lastName 
+            ? `${currentUser.firstName} ${currentUser.lastName}` 
+            : 'John Doe';
+          
           const mockFeedbacks = [
             {
               _id: '1',
@@ -967,11 +992,12 @@ const AdminDashboard = () => {
               description: 'Bus has serious safety concerns and needs immediate attention',
               type: 'complaint',
               userId: { 
-                _id: '68b5240faf8b3f2810a46257',
-                firstName: 'John', 
-                lastName: 'Doe' 
+                _id: currentUserId,
+                firstName: currentUser.firstName || 'John', 
+                lastName: currentUser.lastName || 'Doe' 
               },
-              user_id: '68b5240faf8b3f2810a46257',
+              user_id: currentUserId,
+              user_name: currentUserName,
               send_date: new Date('2025-09-21T20:50:57').toISOString(),
               status: 'replied',
               admin_reply: 'Thank you for bringing this to our attention. We have scheduled the bus for immediate safety inspection and maintenance.',
@@ -984,11 +1010,12 @@ const AdminDashboard = () => {
               description: '247BC Bus have good sheets and it\'s very comfortable',
               type: 'feedback',
               userId: { 
-                _id: 'user_hgpwcldsy',
-                firstName: 'Jane', 
-                lastName: 'Smith' 
+                _id: currentUserId,
+                firstName: currentUser.firstName || 'John', 
+                lastName: currentUser.lastName || 'Doe' 
               },
-              user_id: 'user_hgpwcldsy',
+              user_id: currentUserId,
+              user_name: currentUserName,
               send_date: new Date('2025-09-20T02:42:00').toISOString(),
               status: 'pending',
               admin_reply: null,
@@ -1009,10 +1036,11 @@ const AdminDashboard = () => {
         ...feedback,
         userId: feedback.userId || { 
           _id: feedback.user_id || `user_${Math.random().toString(36).substr(2, 9)}`,
-          firstName: 'Unknown',
-          lastName: 'User'
+          firstName: feedback.user_name ? feedback.user_name.split(' ')[0] : 'Unknown',
+          lastName: feedback.user_name ? feedback.user_name.split(' ').slice(1).join(' ') : 'User'
         },
-        user_id: feedback.user_id || (feedback.userId ? feedback.userId._id : null)
+        user_id: feedback.user_id || (feedback.userId ? feedback.userId._id : null),
+        user_name: feedback.user_name || `${feedback.userId?.firstName || 'Unknown'} ${feedback.userId?.lastName || 'User'}`
       }));
       
       setFeedbacks(processedData);
@@ -1020,6 +1048,13 @@ const AdminDashboard = () => {
       setError('');
     } catch (err) {
       console.error('Failed to fetch feedbacks', err);
+      // Get current user info for mock data
+      const currentUser = authUser || JSON.parse(localStorage.getItem('user') || '{}');
+      const currentUserId = currentUser.id || currentUser._id || '68b5240faf8b3f2810a46257';
+      const currentUserName = currentUser.firstName && currentUser.lastName 
+        ? `${currentUser.firstName} ${currentUser.lastName}` 
+        : 'John Doe';
+      
       const mockFeedbacks = [
         {
           _id: '1',
@@ -1027,11 +1062,12 @@ const AdminDashboard = () => {
           description: 'Bus has serious safety concerns and needs immediate attention',
           type: 'complaint',
           userId: { 
-            _id: '68b5240faf8b3f2810a46257',
-            firstName: 'John', 
-            lastName: 'Doe' 
+            _id: currentUserId,
+            firstName: currentUser.firstName || 'John', 
+            lastName: currentUser.lastName || 'Doe' 
           },
-          user_id: '68b5240faf8b3f2810a46257',
+          user_id: currentUserId,
+          user_name: currentUserName,
           send_date: new Date('2025-09-21T20:50:57').toISOString(),
           status: 'replied',
           admin_reply: 'Thank you for bringing this to our attention. We have scheduled the bus for immediate safety inspection and maintenance.',
@@ -1044,11 +1080,12 @@ const AdminDashboard = () => {
           description: '247BC Bus have good sheets and it\'s very comfortable',
           type: 'feedback',
           userId: { 
-            _id: 'user_hgpwcldsy',
-            firstName: 'Jane', 
-            lastName: 'Smith' 
+            _id: currentUserId,
+            firstName: currentUser.firstName || 'John', 
+            lastName: currentUser.lastName || 'Doe' 
           },
-          user_id: 'user_hgpwcldsy',
+          user_id: currentUserId,
+          user_name: currentUserName,
           send_date: new Date('2025-09-20T02:42:00').toISOString(),
           status: 'pending',
           admin_reply: null,
@@ -1138,7 +1175,7 @@ const AdminDashboard = () => {
       const token = localStorage.getItem('token');
       const newStatus = currentStatus === 'closed' ? 'replied' : 'closed';
       
-      const response = await fetch(`${BACKEND_URL}/api/feedbacks/${feedbackId}`, {
+      const response = await fetch(`${BACKEND_URL}/api/feedbacks/${feedbackId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1150,18 +1187,23 @@ const AdminDashboard = () => {
       });
 
       if (!response.ok) {
+        // If backend is not available, update locally for demo
         setFeedbacks(prev => prev.map(f => 
           f._id === feedbackId ? { ...f, status: newStatus } : f
         ));
         setError('Status updated successfully (demo mode)');
+        toast.success(`Feedback ${newStatus === 'closed' ? 'resolved' : 'reopened'} successfully!`);
         return;
       }
 
+      const updatedFeedback = await response.json();
+      
       setFeedbacks(prev => prev.map(f => 
-        f._id === feedbackId ? { ...f, status: newStatus } : f
+        f._id === feedbackId ? updatedFeedback : f
       ));
       
       setError('');
+      toast.success(`Feedback ${newStatus === 'closed' ? 'resolved' : 'reopened'} successfully!`);
     } catch (err) {
       console.error('Failed to update feedback status', err);
       const newStatus = currentStatus === 'closed' ? 'replied' : 'closed';
@@ -1169,6 +1211,7 @@ const AdminDashboard = () => {
         f._id === feedbackId ? { ...f, status: newStatus } : f
       ));
       setError('Status updated successfully (demo mode - backend offline)');
+      toast.success(`Feedback ${newStatus === 'closed' ? 'resolved' : 'reopened'} successfully!`);
     }
   };
 
@@ -1318,7 +1361,7 @@ const AdminDashboard = () => {
               
               <div className="mt-2 flex items-center text-sm text-gray-500">
                 <User className="h-3.5 w-3.5 mr-1.5" />
-                <span>User ID: {feedback.user_id || feedback.userId?._id || 'Unknown'}</span>
+                <span>User: {feedback.user_name || `${feedback.userId?.firstName || 'Unknown'} ${feedback.userId?.lastName || 'User'}`} (ID: {feedback.user_id || feedback.userId?._id || 'Unknown'})</span>
               </div>
             </div>
           </div>

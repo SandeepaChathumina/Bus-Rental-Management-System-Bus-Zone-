@@ -1,29 +1,16 @@
 import LostItem from '../models/lostItem.js';
-import Booking from '../models/booking.js';
+import User from '../models/user.js';
 
 // @desc    Report a lost item (User or Admin)
 // @route   POST /api/lost-items
 // @access  Private
 export const reportLostItem = async (req, res) => {
     try {
-        const { itemName, description, dateLost, busNumber, bookingId } = req.body;
+        const { itemName, description, dateLost, busNumber } = req.body;
 
         // Basic validation
         if (!itemName || !busNumber) {
             return res.status(400).json({ message: 'Item name and bus number are required' });
-        }
-
-        let booking;
-        // If a user is reporting, they must provide a booking ID to prove they were on the trip
-        if (req.user.role === 'passenger') {
-            if (!bookingId) {
-                return res.status(400).json({ message: 'Booking ID is required for user reports' });
-            }
-            // Check if the booking belongs to the logged-in user
-            booking = await Booking.findOne({ _id: bookingId, user: req.user._id });
-            if (!booking) {
-                return res.status(404).json({ message: 'Booking not found or does not belong to you' });
-            }
         }
 
         // Create the lost item record
@@ -33,13 +20,11 @@ export const reportLostItem = async (req, res) => {
             dateLost: dateLost || new Date(),
             busNumber,
             reportedBy: req.user.role === 'admin' ? 'Admin' : 'User',
-            user: req.user.role === 'passenger' ? req.user._id : undefined, // Link user only if it's a passenger report
-            booking: req.user.role === 'passenger' ? bookingId : undefined // Link booking only if it's a passenger report
+            user: req.user.role === 'passenger' ? req.user._id : undefined,
         });
 
-        // Populate the user and booking details for the response
-        await lostItem.populate('user', 'firstName lastName email');
-        await lostItem.populate('booking');
+        // Populate the user details for the response
+        await lostItem.populate('user', 'firstName lastName email phone');
 
         res.status(201).json({
             message: 'Lost item reported successfully',
@@ -64,8 +49,7 @@ export const getLostItems = async (req, res) => {
         }
 
         const lostItems = await LostItem.find(query)
-            .populate('user', 'firstName lastName email')
-            .populate('booking')
+            .populate('user', 'firstName lastName email phone')
             .sort({ createdAt: -1 }); // Newest first
 
         res.json({
@@ -95,7 +79,7 @@ export const updateLostItem = async (req, res) => {
             req.params.id,
             allowedUpdates,
             { new: true, runValidators: true } // Return the updated document and run validation
-        ).populate('user', 'firstName lastName email').populate('booking');
+        ).populate('user', 'firstName lastName email phone');
 
         if (!lostItem) {
             return res.status(404).json({ message: 'Lost item report not found' });
@@ -108,6 +92,42 @@ export const updateLostItem = async (req, res) => {
 
     } catch (error) {
         console.error('Update lost item error:', error);
+        res.status(500).json({ message: 'Server error: ' + error.message });
+    }
+};
+
+// @desc    Add admin reply to lost item
+// @route   POST /api/lost-items/:id/reply
+// @access  Private/Admin
+export const addAdminReply = async (req, res) => {
+    try {
+        const { adminReply, repliedBy } = req.body;
+
+        if (!adminReply) {
+            return res.status(400).json({ message: 'Reply message is required' });
+        }
+
+        const lostItem = await LostItem.findByIdAndUpdate(
+            req.params.id,
+            { 
+                adminReply,
+                repliedBy: repliedBy || 'Admin',
+                repliedAt: new Date()
+            },
+            { new: true, runValidators: true }
+        ).populate('user', 'firstName lastName email phone');
+
+        if (!lostItem) {
+            return res.status(404).json({ message: 'Lost item report not found' });
+        }
+
+        res.json({
+            message: 'Admin reply added successfully',
+            lostItem
+        });
+
+    } catch (error) {
+        console.error('Add admin reply error:', error);
         res.status(500).json({ message: 'Server error: ' + error.message });
     }
 };

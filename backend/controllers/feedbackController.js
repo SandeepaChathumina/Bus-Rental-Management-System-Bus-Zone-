@@ -84,6 +84,7 @@ const getPublicTestimonials = async (req, res) => {
 const getUserFeedbacks = async (req, res) => {
   try {
     const feedbacks = await Feedback.find({ client_id: req.user._id })
+      .populate('client_id', 'firstName lastName username')
       .populate('admin_id', 'firstName lastName username')
       .sort({ send_date: -1 });
 
@@ -176,6 +177,33 @@ const adminReply = async (req, res) => {
   }
 };
 
+const updateFeedbackStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    if (!status || !['pending', 'replied', 'closed'].includes(status)) {
+      return res.status(400).json({ message: 'Valid status is required (pending, replied, closed)' });
+    }
+
+    const feedback = await Feedback.findById(req.params.id);
+
+    if (!feedback) {
+      return res.status(404).json({ message: 'Feedback not found' });
+    }
+
+    feedback.status = status;
+    await feedback.save();
+
+    const updatedFeedback = await Feedback.findById(feedback._id)
+      .populate('client_id', 'firstName lastName username')
+      .populate('admin_id', 'firstName lastName username');
+
+    res.json(updatedFeedback);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const deleteFeedback = async (req, res) => {
   try {
     const feedback = await Feedback.findById(req.params.id);
@@ -203,5 +231,6 @@ export {
   getFeedbackById,
   updateFeedback,
   adminReply,
+  updateFeedbackStatus,
   deleteFeedback
 };
