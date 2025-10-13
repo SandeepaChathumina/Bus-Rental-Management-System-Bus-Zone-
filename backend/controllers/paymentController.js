@@ -1586,8 +1586,21 @@ export const getUserPayments = async (req, res) => {
   try {
     const userId = req.user._id;
     const payments = await Payment.find({ user: userId })
-      .populate('booking', 'bookingId travelDate')
-      .populate('maintenance', 'maintenanceId description')
+      .populate({
+        path: 'booking',
+        select: 'bookingId bookingReference totalAmount numberOfPassengers travelDate departureTime returnDate returnTime seats contactInfo bookingStatus paymentStatus createdAt',
+        populate: [
+          {
+            path: 'route',
+            select: 'from to distance duration'
+          },
+          {
+            path: 'bus',
+            select: 'busType numberPlate capacity amenities'
+          }
+        ]
+      })
+      .populate('maintenance', 'maintenanceId description vehicleId status priority createdAt')
       .sort({ createdAt: -1 });
 
     res.json({
@@ -1605,9 +1618,21 @@ export const getUserPayments = async (req, res) => {
 export const getPaymentById = async (req, res) => {
   try {
     const payment = await Payment.findOne({ paymentId: req.params.id })
-      .populate('booking')
+      .populate({
+        path: 'booking',
+        populate: [
+          {
+            path: 'route',
+            select: 'from to distance duration'
+          },
+          {
+            path: 'bus',
+            select: 'busType numberPlate capacity amenities'
+          }
+        ]
+      })
       .populate('maintenance')
-      .populate('user', 'firstName lastName email');
+      .populate('user', 'firstName lastName email phone');
 
     if (!payment) {
       return res.status(404).json({ message: 'Payment not found' });
@@ -1619,6 +1644,65 @@ export const getPaymentById = async (req, res) => {
     });
   } catch (error) {
     console.error('Get payment error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// Get all payments with complete booking details (admin)
+export const getAllPaymentsWithBookings = async (req, res) => {
+  try {
+    const { type, status, paymentMethod, startDate, endDate } = req.query;
+    
+    let filter = {};
+    if (type) filter.paymentType = type;
+    if (status) filter.status = status;
+    if (paymentMethod) filter.paymentMethod = paymentMethod;
+    
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate) filter.createdAt.$lte = new Date(endDate);
+    }
+
+    const payments = await Payment.find(filter)
+      .populate({
+        path: 'booking',
+        select: 'bookingId bookingReference totalAmount numberOfPassengers travelDate departureTime returnDate returnTime seats contactInfo bookingStatus paymentStatus createdAt',
+        populate: [
+          {
+            path: 'route',
+            select: 'from to distance duration'
+          },
+          {
+            path: 'bus',
+            select: 'busType numberPlate capacity amenities'
+          }
+        ]
+      })
+      .populate('maintenance', 'maintenanceId description vehicleId status priority createdAt')
+      .populate('user', 'firstName lastName email phone')
+      .sort({ createdAt: -1 });
+
+    // Get payment statistics
+    const stats = {
+      totalPayments: payments.length,
+      totalAmount: payments.reduce((sum, payment) => sum + payment.amount, 0),
+      successPayments: payments.filter(p => p.status === 'success').length,
+      pendingPayments: payments.filter(p => p.status === 'pending').length,
+      failedPayments: payments.filter(p => p.status === 'failed').length,
+      bookingPayments: payments.filter(p => p.paymentType === 'booking').length,
+      maintenancePayments: payments.filter(p => p.paymentType === 'maintenance').length,
+      salaryPayments: payments.filter(p => p.paymentType === 'salary').length
+    };
+
+    res.json({
+      success: true,
+      payments: payments,
+      stats: stats,
+      count: payments.length
+    });
+  } catch (error) {
+    console.error('Get all payments with bookings error:', error);
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
@@ -1640,9 +1724,22 @@ export const getAllPayments = async (req, res) => {
     }
 
     const payments = await Payment.find(filter)
-      .populate('booking', 'bookingId')
-      .populate('maintenance', 'maintenanceId description')
-      .populate('user', 'firstName lastName')
+      .populate({
+        path: 'booking',
+        select: 'bookingId bookingReference totalAmount numberOfPassengers travelDate departureTime returnDate returnTime seats contactInfo bookingStatus paymentStatus createdAt',
+        populate: [
+          {
+            path: 'route',
+            select: 'from to distance duration'
+          },
+          {
+            path: 'bus',
+            select: 'busType numberPlate capacity amenities'
+          }
+        ]
+      })
+      .populate('maintenance', 'maintenanceId description vehicleId status priority createdAt')
+      .populate('user', 'firstName lastName email phone')
       .sort({ createdAt: -1 });
 
     res.json({

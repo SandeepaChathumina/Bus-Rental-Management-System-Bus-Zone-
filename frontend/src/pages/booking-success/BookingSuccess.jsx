@@ -18,6 +18,7 @@ import {
   Loader
 } from 'lucide-react';
 import axios from 'axios';
+import { generateCompanyInvoice, generatePaymentReceipt } from '../../utils/invoiceGenerator';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
@@ -92,13 +93,24 @@ const BookingSuccess = () => {
   };
 
   const downloadInvoice = async () => {
-    if (!invoice) {
-      await fetchInvoice();
+    try {
+      console.log('Generating invoice for booking:', displayBooking.bookingId);
+      
+      // Generate comprehensive invoice with payment details
+      const fileName = generateCompanyInvoice(displayBooking, payment, {
+        name: 'BusZone Management System',
+        address: '123 Main Street, Colombo, Sri Lanka',
+        phone: '+94 11 234 5678',
+        email: 'info@buszone.com',
+        website: 'www.buszone.com'
+      });
+      
+      console.log('Invoice generated successfully:', fileName);
+      alert(`✅ Invoice downloaded successfully!\nFile: ${fileName}`);
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      alert(`❌ Failed to generate invoice: ${error.message}`);
     }
-    
-    // Generate PDF invoice (you'll need a PDF generation service)
-    // This is a placeholder implementation
-    window.print();
   };
 
   const sendEmail = async () => {
