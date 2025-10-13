@@ -899,7 +899,7 @@ const AllBookings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-100 pt-32 pb-16 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-100 pt-8 pb-16 px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
