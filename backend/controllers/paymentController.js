@@ -288,7 +288,13 @@ export const confirmStripePayment = async (req, res) => {
         { transactionId: paymentIntentId }
       ],
       user: userId 
-    }).populate('booking').populate('maintenance');
+    }).populate({
+      path: 'booking',
+      populate: {
+        path: 'user',
+        select: 'email firstName lastName'
+      }
+    }).populate('maintenance');
 
     if (!payment) {
       return res.status(404).json({
@@ -357,7 +363,14 @@ export const confirmStripePayment = async (req, res) => {
               
               console.log('📧 PAYMENT CONTROLLER: Using email address:', emailAddress);
               
-              const emailResult = await sendBookingConfirmation(payment.booking);
+              // Ensure the booking has all necessary data for email
+              const bookingForEmail = {
+                ...payment.booking.toObject(),
+                contactInfo: payment.booking.contactInfo || {},
+                user: payment.booking.user || {}
+              };
+              
+              const emailResult = await sendBookingConfirmation(bookingForEmail);
               if (emailResult.success) {
                 console.log('✅ PAYMENT CONTROLLER: Booking confirmation email sent successfully');
               } else {
