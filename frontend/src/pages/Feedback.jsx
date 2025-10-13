@@ -233,6 +233,9 @@ const Feedback = () => {
       }) : [];
       
       setFeedbacks(sortedData);
+      
+      // Save to localStorage for HomePage.jsx to access
+      localStorage.setItem('buszone_feedbacks', JSON.stringify(sortedData));
     } catch (err) {
       setError(err.message);
       // Use mock data for demo purposes with real user info
@@ -277,6 +280,10 @@ const Feedback = () => {
         }
       ];
       setFeedbacks(mockFeedbacks);
+      
+      // Save mock data to localStorage for HomePage.jsx to access
+      localStorage.setItem('buszone_feedbacks', JSON.stringify(mockFeedbacks));
+      
       toast.error('Using demo data - Failed to load feedbacks');
     } finally {
       setLoading(false);
@@ -353,6 +360,10 @@ const Feedback = () => {
       
       // Refresh feedback list
       await fetchFeedbacks();
+      
+      // Also save to localStorage for HomePage.jsx
+      const updatedFeedbacks = [...feedbacks, result];
+      localStorage.setItem('buszone_feedbacks', JSON.stringify(updatedFeedbacks));
       
       // Dispatch event to notify admin dashboard of feedback update
       if (isEditing) {

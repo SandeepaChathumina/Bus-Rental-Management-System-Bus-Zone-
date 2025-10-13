@@ -1210,14 +1210,6 @@ const AdminLostFound = () => {
                       </button>
                       
                       <button
-                        onClick={() => setEditingItem({...item})}
-                        className="px-3 py-1 text-blue-600 hover:text-blue-700 transition-colors flex items-center text-sm hover:bg-blue-50 rounded"
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
-                      </button>
-                      
-                      <button
                         onClick={() => deleteItem(item._id)}
                         className="px-3 py-1 text-red-600 hover:text-red-700 transition-colors flex items-center text-sm hover:bg-red-50 rounded"
                       >
@@ -1244,9 +1236,177 @@ const AdminLostFound = () => {
         loading={exporting}
       />
 
-      {/* Rest of the modals remain the same... */}
-      {/* Admin Reply Modal, Report Lost Item Modal, Edit Item Modal, Item Details Modal */}
-      {/* ... (previous modal code remains unchanged) ... */}
+      {/* Item Details Modal */}
+      {selectedItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-slate-800">Item Details</h2>
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Item Information */}
+              <div className="bg-slate-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-slate-800 mb-4">Item Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">Item Name</label>
+                    <p className="text-slate-800">{selectedItem.itemName}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">Bus Number</label>
+                    <p className="text-slate-800">{selectedItem.busNumber}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">Date Lost</label>
+                    <p className="text-slate-800">{formatDate(selectedItem.dateLost)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">Status</label>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      selectedItem.status === 'reported' ? 'bg-yellow-100 text-yellow-800' :
+                      selectedItem.status === 'found' ? 'bg-green-100 text-green-800' :
+                      selectedItem.status === 'claimed' ? 'bg-blue-100 text-blue-800' :
+                      'bg-purple-100 text-purple-800'
+                    }`}>
+                      {selectedItem.status}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="text-sm font-medium text-slate-600">Description</label>
+                  <p className="text-slate-800 mt-1">{selectedItem.description || 'No description provided'}</p>
+                </div>
+              </div>
+
+              {/* User Information */}
+              {selectedItem.user && (
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4">User Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-slate-600">Name</label>
+                      <p className="text-slate-800">{selectedItem.user.firstName} {selectedItem.user.lastName}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-600">Email</label>
+                      <p className="text-slate-800">{selectedItem.user.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-600">Phone</label>
+                      <p className="text-slate-800">{selectedItem.user.phone || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-600">Reported Date</label>
+                      <p className="text-slate-800">{formatDate(selectedItem.createdAt)}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Admin Notes */}
+              {selectedItem.adminNotes && (
+                <div className="bg-yellow-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-2">Admin Notes</h3>
+                  <p className="text-slate-800">{selectedItem.adminNotes}</p>
+                </div>
+              )}
+
+              {/* Admin Reply */}
+              {selectedItem.adminReply && (
+                <div className="bg-green-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-2">Admin Reply</h3>
+                  <p className="text-slate-800">{selectedItem.adminReply}</p>
+                  {selectedItem.repliedBy && (
+                    <p className="text-sm text-slate-600 mt-2">Replied by: {selectedItem.repliedBy}</p>
+                  )}
+                  {selectedItem.repliedAt && (
+                    <p className="text-sm text-slate-600">Replied on: {formatDateTime(selectedItem.repliedAt)}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reply Modal */}
+      {showReplyForm && replyingItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-slate-800">Reply to User</h2>
+              <button
+                onClick={() => {
+                  setShowReplyForm(false);
+                  setReplyingItem(null);
+                  setReplyMessage('');
+                }}
+                className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <h3 className="text-lg font-medium text-slate-800 mb-2">Item: {replyingItem.itemName}</h3>
+              <p className="text-sm text-slate-600">Replying to: {replyingItem.user?.firstName} {replyingItem.user?.lastName}</p>
+            </div>
+
+            <form onSubmit={handleAdminReply} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Reply Message *
+                </label>
+                <textarea
+                  value={replyMessage}
+                  onChange={(e) => setReplyMessage(e.target.value)}
+                  rows={4}
+                  className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-sm"
+                  placeholder="Enter your reply to the user..."
+                  required
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReplyForm(false);
+                    setReplyingItem(null);
+                    setReplyMessage('');
+                  }}
+                  className="flex-1 px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors shadow-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 disabled:from-slate-400 disabled:to-slate-500 text-white rounded-lg font-medium transition-all duration-300 disabled:cursor-not-allowed shadow-lg"
+                >
+                  {submitting ? 'Sending...' : 'Send Reply'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       
     </div>
   );
