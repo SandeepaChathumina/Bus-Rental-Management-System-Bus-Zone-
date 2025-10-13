@@ -25,7 +25,9 @@ import {
   CheckCircle,
   XCircle,
   MoreVertical,
-  ChevronUp
+  ChevronUp,
+  Mail,
+  Phone
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -165,12 +167,12 @@ const PasswordChangeModal = React.memo(({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-md border border-gray-200 shadow-lg">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-white">Change Password</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Change Password</h3>
           <button
             onClick={handleClose}
-            className="text-slate-400 hover:text-white"
+            className="text-gray-400 hover:text-gray-600"
             type="button"
           >
             <X className="h-5 w-5" />
@@ -179,20 +181,20 @@ const PasswordChangeModal = React.memo(({
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-slate-400 mb-2">Current Password</label>
+            <label className="block text-sm text-gray-600 mb-2">Current Password</label>
             <div className="relative">
               <input
                 type={showPasswords.current ? "text" : "password"}
                 value={passwordData.currentPassword}
                 onChange={(e) => handleInputChange('currentPassword', e.target.value)}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
                 autoComplete="current-password"
               />
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility('current')}
-                className="absolute right-3 top-2 text-slate-400 hover:text-white"
+                className="absolute right-3 top-2 text-gray-400 hover:text-gray-600"
                 tabIndex={-1}
               >
                 {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -201,13 +203,13 @@ const PasswordChangeModal = React.memo(({
           </div>
 
           <div>
-            <label className="block text-sm text-slate-400 mb-2">New Password</label>
+            <label className="block text-sm text-gray-600 mb-2">New Password</label>
             <div className="relative">
               <input
                 type={showPasswords.new ? "text" : "password"}
                 value={passwordData.newPassword}
                 onChange={(e) => handleInputChange('newPassword', e.target.value)}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
                 minLength={8}
                 autoComplete="new-password"
@@ -215,7 +217,7 @@ const PasswordChangeModal = React.memo(({
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility('new')}
-                className="absolute right-3 top-2 text-slate-400 hover:text-white"
+                className="absolute right-3 top-2 text-gray-400 hover:text-gray-600"
                 tabIndex={-1}
               >
                 {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -224,26 +226,26 @@ const PasswordChangeModal = React.memo(({
             
             {/* Password Requirements */}
             {passwordData.newPassword && (
-              <div className="mt-2 p-3 bg-slate-900/50 rounded-lg">
-                <p className="text-sm text-slate-300 mb-2">Password must contain:</p>
+              <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-700 mb-2">Password must contain:</p>
                 <div className="space-y-1 text-xs">
-                  <div className={`flex items-center ${passwordValidation.requirements.minLength ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className={`flex items-center ${passwordValidation.requirements.minLength ? 'text-green-600' : 'text-red-600'}`}>
                     <span className="w-2 h-2 rounded-full bg-current mr-2"></span>
                     At least 8 characters
                   </div>
-                  <div className={`flex items-center ${passwordValidation.requirements.hasUpperCase ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className={`flex items-center ${passwordValidation.requirements.hasUpperCase ? 'text-green-600' : 'text-red-600'}`}>
                     <span className="w-2 h-2 rounded-full bg-current mr-2"></span>
                     One uppercase letter (A-Z)
                   </div>
-                  <div className={`flex items-center ${passwordValidation.requirements.hasLowerCase ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className={`flex items-center ${passwordValidation.requirements.hasLowerCase ? 'text-green-600' : 'text-red-600'}`}>
                     <span className="w-2 h-2 rounded-full bg-current mr-2"></span>
                     One lowercase letter (a-z)
                   </div>
-                  <div className={`flex items-center ${passwordValidation.requirements.hasNumbers ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className={`flex items-center ${passwordValidation.requirements.hasNumbers ? 'text-green-600' : 'text-red-600'}`}>
                     <span className="w-2 h-2 rounded-full bg-current mr-2"></span>
                     One number (0-9)
                   </div>
-                  <div className={`flex items-center ${passwordValidation.requirements.hasSpecialChar ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className={`flex items-center ${passwordValidation.requirements.hasSpecialChar ? 'text-green-600' : 'text-red-600'}`}>
                     <span className="w-2 h-2 rounded-full bg-current mr-2"></span>
                     One special character (!@#$%^&* etc.)
                   </div>
@@ -253,16 +255,16 @@ const PasswordChangeModal = React.memo(({
           </div>
 
           <div>
-            <label className="block text-sm text-slate-400 mb-2">Confirm New Password</label>
+            <label className="block text-sm text-gray-600 mb-2">Confirm New Password</label>
             <div className="relative">
               <input
                 type={showPasswords.confirm ? "text" : "password"}
                 value={passwordData.confirmPassword}
                 onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                className={`w-full bg-slate-700 border rounded-lg px-3 py-2 text-white pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full bg-white border rounded-lg px-3 py-2 text-gray-900 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                   passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword 
                     ? 'border-red-500' 
-                    : 'border-slate-600'
+                    : 'border-gray-300'
                 }`}
                 required
                 minLength={8}
@@ -271,7 +273,7 @@ const PasswordChangeModal = React.memo(({
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility('confirm')}
-                className="absolute right-3 top-2 text-slate-400 hover:text-white"
+                className="absolute right-3 top-2 text-gray-400 hover:text-gray-600"
                 tabIndex={-1}
               >
                 {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -286,7 +288,7 @@ const PasswordChangeModal = React.memo(({
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500"
+              className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
             >
               Cancel
             </button>
@@ -313,128 +315,105 @@ const PasswordChangeModal = React.memo(({
 
 // Separate Settings Content Component
 const SettingsContent = React.memo(({ onPasswordChangeClick }) => (
-  <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-5 border border-gray-200 shadow-sm">
-    <h2 className="text-xl font-bold text-gray-900 mb-6">Account Settings</h2>
-    <div className="space-y-6">
-      {/* Password Change Card */}
-      <div className="bg-gradient-to-br from-blue-50 to-white p-6 rounded-xl border border-blue-200 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Lock className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Password & Security</h3>
-              <p className="text-gray-600 text-sm">Update your password to keep your account secure</p>
-            </div>
-          </div>
-          <button
-            onClick={onPasswordChangeClick}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <Lock className="h-4 w-4" />
-            <span>Change Password</span>
-          </button>
+  <div className="max-w-6xl mx-auto">
+    {/* Header Section */}
+    <div className="mb-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Account Settings</h1>
+          <p className="text-gray-600 text-lg">Manage your account preferences and security settings</p>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div className="text-center p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div className="text-green-600 text-sm font-semibold">Last Changed</div>
-            <div className="text-gray-600 text-xs mt-1">2 months ago</div>
+        <div className="hidden md:flex items-center space-x-2 text-sm text-gray-500">
+          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <span>Account Active</span>
+        </div>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      {/* Password & Security Card */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300">
+        <div className="p-8">
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-blue-100 rounded-xl shadow-sm">
+                <Lock className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-1">Password & Security</h3>
+                <p className="text-gray-600">Keep your account secure with strong authentication</p>
+              </div>
+            </div>
+            <button
+              onClick={onPasswordChangeClick}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all duration-200 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
+            >
+              <Lock className="h-4 w-4" />
+              <span className="font-medium">Change Password</span>
+            </button>
           </div>
-          <div className="text-center p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div className="text-blue-600 text-sm font-semibold">Password Strength</div>
-            <div className="text-gray-600 text-xs mt-1">Strong</div>
-          </div>
-          <div className="text-center p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div className="text-purple-600 text-sm font-semibold">Two-Factor</div>
-            <div className="text-gray-600 text-xs mt-1">Disabled</div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-blue-700 text-sm font-semibold">Password Strength</div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              </div>
+              <div className="text-blue-800 text-lg font-bold">Strong</div>
+              <div className="text-blue-600 text-xs mt-1">Excellent security</div>
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-purple-700 text-sm font-semibold">Two-Factor</div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+              </div>
+              <div className="text-purple-800 text-lg font-bold">Disabled</div>
+              <div className="text-purple-600 text-xs mt-1">Consider enabling</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Notification Settings Card */}
-      <div className="bg-gradient-to-br from-green-50 to-white p-6 rounded-xl border border-green-200 shadow-sm">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="p-2 bg-green-100 rounded-lg">
-            <Bell className="h-5 w-5 text-green-600" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Notification Preferences</h3>
-            <p className="text-gray-600 text-sm">Manage how you receive notifications</p>
-          </div>
-        </div>
-        
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div>
-              <div className="text-gray-900 font-medium">Email Notifications</div>
-              <div className="text-gray-600 text-sm">Receive updates via email</div>
+      {/* Account Information Card */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300">
+        <div className="p-8">
+          <div className="flex items-center space-x-4 mb-6">
+            <div className="p-3 bg-indigo-100 rounded-xl shadow-sm">
+              <User className="h-6 w-6 text-indigo-600" />
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 mb-1">Account Information</h3>
+              <p className="text-gray-600">View your account details and status</p>
+            </div>
           </div>
           
-          <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div>
-              <div className="text-gray-900 font-medium">SMS Notifications</div>
-              <div className="text-gray-600 text-sm">Receive text message alerts</div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div>
+                <div className="text-gray-900 font-semibold">Account Status</div>
+                <div className="text-gray-600 text-sm">Your current account status</div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-green-700 font-medium">Active</span>
+              </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" />
-              <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-          
-          <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div>
-              <div className="text-gray-900 font-medium">Push Notifications</div>
-              <div className="text-gray-600 text-sm">Browser and app notifications</div>
+            
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div>
+                <div className="text-gray-900 font-semibold">Member Since</div>
+                <div className="text-gray-600 text-sm">When you joined our platform</div>
+              </div>
+              <span className="text-gray-700 font-medium">January 2024</span>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {/* Privacy Settings Card */}
-      <div className="bg-gradient-to-br from-purple-50 to-white p-6 rounded-xl border border-purple-200 shadow-sm">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="p-2 bg-purple-100 rounded-lg">
-            <Shield className="h-5 w-5 text-purple-600" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Privacy Settings</h3>
-            <p className="text-gray-600 text-sm">Control your privacy preferences</p>
-          </div>
-        </div>
-        
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div>
-              <div className="text-gray-900 font-medium">Profile Visibility</div>
-              <div className="text-gray-600 text-sm">Who can see your profile</div>
+            
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div>
+                <div className="text-gray-900 font-semibold">Last Login</div>
+                <div className="text-gray-600 text-sm">Your most recent login time</div>
+              </div>
+              <span className="text-gray-700 font-medium">2 hours ago</span>
             </div>
-            <select className="bg-white border border-gray-300 text-gray-900 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              <option>Only Me</option>
-              <option>Administrators</option>
-              <option>All Staff</option>
-            </select>
-          </div>
-          
-          <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div>
-              <div className="text-gray-900 font-medium">Activity Tracking</div>
-              <div className="text-gray-600 text-sm">Track your driving activity</div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
           </div>
         </div>
       </div>
@@ -723,12 +702,12 @@ const ScheduleManagement = React.memo(() => {
       {/* Schedules List */}
       <div className="space-y-4">
         {filteredSchedules.length === 0 ? (
-          <div className="bg-slate-800 rounded-xl p-12 text-center border border-slate-700">
-            <Calendar className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">
+          <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-12 text-center border border-gray-200 shadow-sm">
+            <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
               {schedules.length === 0 ? 'No Schedules Found' : 'No Matching Schedules'}
             </h3>
-            <p className="text-slate-400">
+            <p className="text-gray-600">
               {schedules.length === 0 
                 ? "You don't have any schedules assigned yet." 
                 : "Try adjusting your search criteria."
@@ -879,7 +858,7 @@ const ScheduleManagement = React.memo(() => {
                 <div className="flex items-center space-x-2 ml-4">
                   <button
                     onClick={() => toggleExpand(schedule._id)}
-                    className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+                    className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
                   >
                     {expandedSchedules[schedule._id] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </button>
