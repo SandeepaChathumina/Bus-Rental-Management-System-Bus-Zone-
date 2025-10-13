@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, CardElement, useStripe, useElements,CardNumberElement,CardExpiryElement,CardCvcElement} from '@stripe/react-stripe-js';
 import axios from 'axios';
 import { 
   ArrowLeft,
@@ -77,7 +77,7 @@ const StripeCardForm = ({ amount, onSuccess, onError }) => {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Card Details (Test Mode)
         </label>
-        
+{/* test         */}
         {/* Test Card Information */}
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
           <h4 className="font-semibold text-yellow-800 mb-2">💳 Test Card Details:</h4>
@@ -90,21 +90,29 @@ const StripeCardForm = ({ amount, onSuccess, onError }) => {
         </div>
 
         {/* Stripe Card Element */}
-        <div className="border border-gray-300 rounded-lg p-4 bg-white">
-          <CardElement
-            options={{
-              style: {
-                base: {
-                  fontSize: '16px',
-                  color: '#424770',
-                  '::placeholder': {
-                    color: '#aab7c4',
-                  },
-                },
-              },
-            }}
-          />
+        <div className="bg-gray-50 p-6 rounded-2xl w-full shadow-inner">
+          <div className="space-y-4">
+            {/* Card Number */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
+              <CardNumberElement className="w-full p-4 border border-gray-300 rounded-xl bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-gray-700" />
+            </div>
+
+            {/* Expiry + CVC */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+                <CardExpiryElement className="w-full p-4 border border-gray-300 rounded-xl bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-gray-700" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">CVC</label>
+                <CardCvcElement className="w-full p-4 border border-gray-300 rounded-xl bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-gray-700" />
+              </div>
+            </div>
+          </div>
         </div>
+      
+
         
         {error && (
           <div className="flex items-center mt-2 text-red-600 text-sm">
@@ -294,6 +302,23 @@ const Checkout = () => {
       setIsProcessing(false);
     }
   };
+
+  const ELEMENT_OPTIONS = {
+    style: {
+      base: {
+        fontSize: '16px',
+        color: '#424770',
+        '::placeholder': { color: '#aab7c4' },
+        fontFamily: 'sans-serif',
+      },
+      invalid: {
+        color: '#9e2146',
+      },
+    },
+  };
+
+  const STRIPE_INPUT_CLASSES = "w-full p-4 border border-gray-300 rounded-xl bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-gray-700";
+
 
   const handleDirectPayment = async () => {
     setIsProcessing(true);
@@ -730,7 +755,7 @@ const Checkout = () => {
                     
                     <button
                       onClick={handleDirectPayment}
-                      disabled={isProcessing}
+                      disabled={isProcessing || !stripe}
                       className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 flex items-center justify-center"
                     >
                       {isProcessing ? (

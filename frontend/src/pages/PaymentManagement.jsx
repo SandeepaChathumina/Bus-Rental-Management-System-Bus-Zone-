@@ -86,23 +86,15 @@ const PaymentTypeIcon = ({ type }) => {
 };
 
 // Payment Card Component
-const PaymentCard = ({ payment, onViewDetails, onProcessRefund, onSoftDelete, onViewBooking }) => {
+const PaymentCard = ({ payment, onViewDetails, onProcessRefund, onSoftDelete }) => {
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'Invalid Date';
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      console.error('Date formatting error:', error);
-      return 'Invalid Date';
-    }
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const getPaymentMethodDisplay = (method) => {
@@ -163,7 +155,7 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund, onSoftDelete, on
             </span>
           </div>
           <p className="text-xs text-blue-600 mt-1">
-            Travel Date: {payment.booking.travelDate ? new Date(payment.booking.travelDate).toLocaleDateString() : 'N/A'}
+            Travel Date: {new Date(payment.booking.travelDate).toLocaleDateString()}
           </p>
         </div>
       )}
@@ -209,16 +201,6 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund, onSoftDelete, on
           <Eye className="h-4 w-4 mr-2" />
           Details
         </button>
-
-        {payment.booking && (
-          <button
-            onClick={() => onViewBooking(payment.booking)}
-            className="flex items-center px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
-          >
-            <Bus className="h-4 w-4 mr-2" />
-            View Booking
-          </button>
-        )}
 
         {payment.status === 'success' && (
           <button
@@ -317,80 +299,6 @@ const PaymentDetailsModal = ({ payment, isOpen, onClose, onProcessRefund }) => {
               </div>
             </div>
           </div>
-
-          {/* Booking Information */}
-          {payment.booking && (
-            <div className="bg-green-50 rounded-xl p-6 border border-green-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Bus className="h-5 w-5 mr-2 text-green-600" />
-                Booking Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Booking ID</p>
-                  <p className="font-medium text-gray-900 font-mono">
-                    {payment.booking.bookingId}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Route</p>
-                  <p className="font-medium text-gray-900">
-                    {payment.booking.route?.from} → {payment.booking.route?.to}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Travel Date</p>
-                  <p className="font-medium text-gray-900">
-                    {payment.booking.travelDate ? new Date(payment.booking.travelDate).toLocaleDateString() : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Departure Time</p>
-                  <p className="font-medium text-gray-900">
-                    {payment.booking.departureTime}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Passengers</p>
-                  <p className="font-medium text-gray-900">
-                    {payment.booking.numberOfPassengers} people
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Booking Status</p>
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    payment.booking.bookingStatus === 'Confirmed' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {payment.booking.bookingStatus}
-                  </span>
-                </div>
-              </div>
-              
-              {/* Passenger Details */}
-              {payment.booking.seats && payment.booking.seats.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Passenger Details</h4>
-                  <div className="space-y-2">
-                    {payment.booking.seats.map((seat, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
-                        <div>
-                          <span className="font-medium">{seat.passengerName}</span>
-                          <span className="text-sm text-gray-600 ml-2">
-                            ({seat.passengerAge} years, {seat.passengerGender})
-                          </span>
-                        </div>
-                        <span className="text-sm text-blue-600 font-medium">
-                          Seat {seat.seatNumber}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Payment Method Details */}
           <div className="bg-gray-50 rounded-xl p-6">
@@ -491,7 +399,7 @@ const PaymentDetailsModal = ({ payment, isOpen, onClose, onProcessRefund }) => {
                 <div>
                   <p className="text-sm text-blue-600">Travel Date</p>
                   <p className="font-medium text-blue-900">
-                    {payment.booking.travelDate ? new Date(payment.booking.travelDate).toLocaleDateString() : 'N/A'}
+                    {new Date(payment.booking.travelDate).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -561,14 +469,6 @@ const PaymentManagement = () => {
   useEffect(() => {
     fetchAllPayments();
     fetchPaymentStats();
-    
-    // Auto-refresh every 30 seconds to get new payments
-    const interval = setInterval(() => {
-      fetchAllPayments();
-      fetchPaymentStats();
-    }, 30000);
-    
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -587,29 +487,12 @@ const PaymentManagement = () => {
         return;
       }
 
-      const response = await axios.get(`${BACKEND_URL}/api/payments/admin/all-with-bookings`, {
+      const response = await axios.get(`${BACKEND_URL}/api/payments/admin/all`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.data.success) {
         setPayments(response.data.payments);
-        console.log('📊 Fetched payments with complete booking details:', response.data.payments);
-        console.log('📊 Payment statistics:', response.data.stats);
-        
-        // Update stats if available
-        if (response.data.stats) {
-          setDashboardStats({
-            totalIncome: response.data.stats.totalAmount,
-            totalExpense: 0, // This would need to be calculated separately
-            netRevenue: response.data.stats.totalAmount,
-            totalBookings: response.data.stats.bookingPayments,
-            totalMaintenance: response.data.stats.maintenancePayments,
-            totalSalaries: response.data.stats.salaryPayments,
-            successPayments: response.data.stats.successPayments,
-            pendingPayments: response.data.stats.pendingPayments,
-            failedPayments: response.data.stats.failedPayments
-          });
-        }
       } else {
         setError('Failed to fetch payments');
       }
@@ -696,15 +579,6 @@ const PaymentManagement = () => {
   const handleViewDetails = (payment) => {
     setSelectedPayment(payment);
     setShowDetailsModal(true);
-  };
-
-  const handleViewBooking = (booking) => {
-    // Navigate to booking details or open booking modal
-    if (booking && booking._id) {
-      // You can either navigate to a booking details page or open a modal
-      console.log('Viewing booking:', booking);
-      alert(`Viewing booking: ${booking.bookingId || booking._id}\nRoute: ${booking.route?.from} → ${booking.route?.to}\nDate: ${booking.travelDate}`);
-    }
   };
 
   const handleProcessRefund = async (payment) => {
@@ -1160,9 +1034,6 @@ const PaymentManagement = () => {
           <div>
             <h1 className="text-4xl font-bold text-gray-800 mb-2">Payment Management</h1>
             <p className="text-gray-600">Monitor and manage all payment transactions</p>
-            <div className="text-sm text-gray-500 mt-1">
-              Last updated: {new Date().toLocaleTimeString()}
-            </div>
           </div>
           <div className="flex space-x-3">
             <button
@@ -1180,24 +1051,11 @@ const PaymentManagement = () => {
               Export CSV
             </button>
             <button
-              onClick={() => {
-                fetchAllPayments();
-                fetchPaymentStats();
-              }}
+              onClick={fetchAllPayments}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center"
             >
               <RefreshCw className="h-5 w-5 mr-2" />
               Refresh
-            </button>
-            <button
-              onClick={() => {
-                setStatusFilter('success');
-                setTypeFilter('booking');
-              }}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center"
-            >
-              <CheckCircle className="h-5 w-5 mr-2" />
-              View Success
             </button>
           </div>
         </div>
@@ -1504,7 +1362,6 @@ const PaymentManagement = () => {
                 onViewDetails={handleViewDetails}
                 onProcessRefund={handleProcessRefund}
                 onSoftDelete={handleSoftDelete}
-                onViewBooking={handleViewBooking}
               />
             ))}
           </div>

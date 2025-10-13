@@ -7,7 +7,7 @@ import Maintenance from '../models/maintenance.js';
 import Schedule from '../models/schedule.js';
 import User from '../models/user.js';
 import DriverProfile from '../models/driverProfile.js';
-import stripe from '../config/stripe.js';
+import  stripe  from '../config/stripe.js';
 import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
 import { sendBookingConfirmation } from '../utils/emailService.js';
@@ -146,7 +146,7 @@ const generateSalaryInvoice = async (payment, schedule, driver, driverProfile) =
 
 // Create Stripe payment intent
 // Fix for createStripePaymentIntent function in paymentController.js
-
+/*
 export const createStripePaymentIntent = async (req, res) => {
   try {
     // Add debugging and validation
@@ -271,6 +271,132 @@ export const createStripePaymentIntent = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error: ' + error.message
+    });
+  }
+};
+*/
+
+export const createStripePaymentIntent = async (req, res) => {
+  try {
+    console.log("Request user:", req.user);
+    console.log("Request body:", req.body);
+
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    const { bookingId, amount, currency = "lkr", description } = req.body;
+    const userId = req.user._id;
+
+    // 🔹 Validate user existence
+    const user = await User.findById(userId);
+    if (!user)
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+
+    // 🔹 Optional booking validation
+    let booking = null;
+    if (bookingId) {
+      booking = await findBooking(bookingId);
+      if (!booking)
+        return res.status(404).json({
+          success: false,
+          message: "Booking not found",
+        });
+
+      if (booking.user.toString() !== userId.toString())
+        return res.status(403).json({
+          success: false,
+          message: "Not authorized to pay for this booking",
+        });
+
+      if (booking.paymentStatus === "Paid")
+        return res.status(400).json({
+          success: false,
+          message: "Booking is already paid",
+        });
+    }
+
+    // 🔹 Payment amount validation
+    const paymentAmount = amount || (booking ? booking.totalAmount : 0);
+    if (!paymentAmount || paymentAmount <= 0)
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment amount",
+      });
+
+    const paymentDescription =
+      description ||
+      (booking
+        ? `Bus booking payment for ${booking.bookingId}`
+        : "Stripe Payment");
+
+    // 🔹 Create Stripe Payment Intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(paymentAmount * 100), // cents
+      currency: currency.toLowerCase(),
+      description: paymentDescription,
+      metadata: {
+        userId: userId.toString(),
+        bookingId: bookingId || "none",
+        type: bookingId ? "booking" : "other",
+      },
+      receipt_email: user.email,
+      automatic_payment_methods: { enabled: true },
+    });
+
+    // 🔹 Save Payment Record
+    const payment = new Payment({
+      paymentId: `PAY${uuidv4().slice(0, 8).toUpperCase()}`,
+      booking: booking?._id || null,
+      user: userId,
+      amount: paymentAmount,
+      currency: currency.toUpperCase(),
+      paymentMethod: "card",
+      paymentGateway: "stripe",
+      transactionId: paymentIntent.id,
+      description: paymentDescription,
+      paymentType: booking ? "booking" : "other",
+      status: "pending",
+      gatewayResponse: {
+        gatewayId: paymentIntent.id,
+        status: paymentIntent.status || "requires_payment_method",
+        responseCode: "200",
+        responseMessage: "Payment intent created",
+        rawResponse: paymentIntent,
+      },
+    });
+
+    await payment.save();
+
+    if (booking) {
+      const qrData = { bookingId: booking.bookingId, paymentId: payment.paymentId };
+      const qrCodeUrl = await QRCode.toDataURL(JSON.stringify(qrData));
+      await sendBookingConfirmation(user.email, booking, qrCodeUrl);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Stripe payment intent created successfully",
+      data: {
+        paymentIntentId: paymentIntent.id,
+        clientSecret: paymentIntent.client_secret,
+        amount: paymentAmount,
+        currency: currency.toUpperCase(),
+        paymentId: payment.paymentId,
+        status: payment.status,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Stripe Payment Intent Error:", error);
+    res.status(500).json({
+      success: false,
+      message: `Server error: ${error.message}`,
     });
   }
 };
