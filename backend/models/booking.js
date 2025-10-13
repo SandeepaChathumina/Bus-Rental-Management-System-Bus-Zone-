@@ -106,6 +106,15 @@ const bookingSchema = new mongoose.Schema({
   actualEndTime: {
     type: Date,
     default: null
+  },
+  driverResponse: {
+    type: String,
+    enum: ['pending', 'accepted', 'declined'],
+    default: 'pending'
+  },
+  driverResponseTime: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

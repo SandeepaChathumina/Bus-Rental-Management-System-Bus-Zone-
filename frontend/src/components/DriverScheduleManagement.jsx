@@ -365,6 +365,18 @@ const DriverScheduleManagement = () => {
     setShowAssignModal(true);
   };
 
+  const checkDriverResponses = () => {
+    // This function can be called periodically to check for driver responses
+    // and show notifications to admin
+    const pendingBookings = confirmedBookings.filter(booking => 
+      booking.assignedDriver && booking.driverResponse === 'pending'
+    );
+    
+    if (pendingBookings.length > 0) {
+      toast.info(`${pendingBookings.length} booking(s) awaiting driver response`);
+    }
+  };
+
   const handleAssignSubmit = async () => {
     if (!selectedDriver) {
       toast.error('Please select a driver');
@@ -587,6 +599,21 @@ const DriverScheduleManagement = () => {
                             {getDriverName(booking.assignedDriver)}
                           </div>
                           <div className="text-xs text-gray-500">Assigned</div>
+                          {booking.driverResponse && (
+                            <div className="mt-1">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                booking.driverResponse === 'accepted' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : booking.driverResponse === 'declined'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {booking.driverResponse === 'accepted' ? '✓ Accepted' : 
+                                 booking.driverResponse === 'declined' ? '✗ Declined' : 
+                                 '⏳ Pending'}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ) : (

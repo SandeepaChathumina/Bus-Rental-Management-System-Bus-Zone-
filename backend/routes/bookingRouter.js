@@ -17,7 +17,8 @@ import {
   getBookingInvoice,
   assignDriverToBooking,
   getDriverSchedules,
-  updateScheduleStatus
+  updateScheduleStatus,
+  driverRespondToBooking
 } from '../controllers/bookingController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -46,5 +47,6 @@ router.patch('/:id/assign-driver', protect, admin, assignDriverToBooking);
 // Driver routes
 router.get('/driver/schedules', protect, getDriverSchedules);
 router.patch('/:bookingId/status', protect, updateScheduleStatus);
+router.patch('/:bookingId/driver-response', protect, driverRespondToBooking);
 
 export default router;

@@ -518,6 +518,28 @@ const ScheduleManagement = React.memo(() => {
     }
   };
 
+  const respondToBooking = async (bookingId, action) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.patch(
+        `${BACKEND_URL}/api/bookings/${bookingId}/driver-response`,
+        { action },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        // Refresh schedules
+        fetchSchedules();
+      } else {
+        toast.error('Failed to respond to booking');
+      }
+    } catch (error) {
+      console.error('Error responding to booking:', error);
+      toast.error('Failed to respond to booking: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
   const filteredSchedules = schedules.filter(schedule => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
@@ -748,7 +770,26 @@ const ScheduleManagement = React.memo(() => {
                         </div>
                       </div>
                       
-                      {schedule.status === 'Scheduled' && (
+                      {/* Driver Response Buttons for New Assignments */}
+                      {schedule.driverResponse === 'pending' && (
+                        <div className="flex space-x-3 pt-2">
+                          <button 
+                            onClick={() => respondToBooking(schedule._id, 'accept')}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+                          >
+                            Accept Assignment
+                          </button>
+                          <button 
+                            onClick={() => respondToBooking(schedule._id, 'decline')}
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+                          >
+                            Decline Assignment
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Trip Action Buttons for Accepted Assignments */}
+                      {schedule.driverResponse === 'accepted' && schedule.status === 'Scheduled' && (
                         <div className="flex space-x-3 pt-2">
                           <button 
                             onClick={() => updateScheduleStatus(schedule._id, 'start')}
@@ -767,6 +808,19 @@ const ScheduleManagement = React.memo(() => {
                           >
                             Complete Trip
                           </button>
+                        </div>
+                      )}
+
+                      {/* Show Response Status */}
+                      {schedule.driverResponse && schedule.driverResponse !== 'pending' && (
+                        <div className="mt-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            schedule.driverResponse === 'accepted' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {schedule.driverResponse === 'accepted' ? '✓ Accepted' : '✗ Declined'}
+                          </span>
                         </div>
                       )}
                     </div>

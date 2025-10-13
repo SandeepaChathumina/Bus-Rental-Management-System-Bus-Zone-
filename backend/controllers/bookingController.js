@@ -1227,19 +1227,36 @@ export const getDriverSchedules = async (req, res) => {
 
       // Safely create date strings with error handling
       let scheduledStartTime, scheduledEndTime;
-      try {
-        scheduledStartTime = new Date(`${booking.travelDate}T${booking.departureTime}`).toISOString();
-      } catch (error) {
-        console.error('Error creating scheduledStartTime for booking:', booking._id, error);
-        scheduledStartTime = new Date().toISOString(); // Fallback to current time
-      }
+      
+      // Helper function to create valid date
+      const createValidDate = (dateStr, timeStr) => {
+        try {
+          // Handle different time formats
+          let formattedTime = timeStr;
+          if (timeStr && !timeStr.includes(':')) {
+            // If time is in HHMM format, convert to HH:MM
+            if (timeStr.length === 4) {
+              formattedTime = `${timeStr.substring(0, 2)}:${timeStr.substring(2, 4)}`;
+            }
+          }
+          
+          const dateTimeStr = `${dateStr}T${formattedTime}:00`;
+          const date = new Date(dateTimeStr);
+          
+          // Check if date is valid
+          if (isNaN(date.getTime())) {
+            throw new Error('Invalid date');
+          }
+          
+          return date.toISOString();
+        } catch (error) {
+          console.error('Error creating date from:', dateStr, timeStr, error);
+          return new Date().toISOString();
+        }
+      };
 
-      try {
-        scheduledEndTime = new Date(`${booking.travelDate}T${booking.arrivalTime}`).toISOString();
-      } catch (error) {
-        console.error('Error creating scheduledEndTime for booking:', booking._id, error);
-        scheduledEndTime = new Date().toISOString(); // Fallback to current time
-      }
+      scheduledStartTime = createValidDate(booking.travelDate, booking.departureTime);
+      scheduledEndTime = createValidDate(booking.travelDate, booking.arrivalTime);
 
       return {
         _id: booking._id,
@@ -1268,7 +1285,9 @@ export const getDriverSchedules = async (req, res) => {
         travelDate: booking.travelDate,
         departureTime: booking.departureTime,
         arrivalTime: booking.arrivalTime,
-        route: booking.route
+        route: booking.route,
+        driverResponse: booking.driverResponse || 'pending',
+        driverResponseTime: booking.driverResponseTime || null
       };
     });
 
@@ -1343,6 +1362,62 @@ export const updateScheduleStatus = async (req, res) => {
 
   } catch (error) {
     console.error('Update schedule status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error: ' + error.message
+    });
+  }
+};
+
+// Driver accept/decline booking assignment
+export const driverRespondToBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { action } = req.body; // 'accept' or 'decline'
+    const driverId = req.user.id;
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      assignedDriver: driverId
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or not assigned to you'
+      });
+    }
+
+    if (action === 'accept') {
+      booking.driverResponse = 'accepted';
+      booking.driverResponseTime = new Date();
+    } else if (action === 'decline') {
+      booking.driverResponse = 'declined';
+      booking.driverResponseTime = new Date();
+      // Optionally unassign the driver
+      booking.assignedDriver = null;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid action. Use "accept" or "decline"'
+      });
+    }
+
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: `Booking ${action}ed successfully`,
+      booking: {
+        _id: booking._id,
+        bookingId: booking.bookingId,
+        driverResponse: booking.driverResponse,
+        driverResponseTime: booking.driverResponseTime
+      }
+    });
+
+  } catch (error) {
+    console.error('Driver respond to booking error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error: ' + error.message
