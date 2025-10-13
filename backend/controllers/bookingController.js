@@ -1177,3 +1177,175 @@ export const assignDriverToBooking = async (req, res) => {
     });
   }
 };
+
+// Get driver schedules
+export const getDriverSchedules = async (req, res) => {
+  try {
+    const driverId = req.user.id; // Get driver ID from authenticated user
+
+    if (!driverId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Driver ID not found'
+      });
+    }
+
+    // Find all bookings assigned to this driver
+    const bookings = await Booking.find({ 
+      assignedDriver: driverId,
+      bookingStatus: { $in: ['Confirmed', 'In Progress', 'Completed'] }
+    })
+    .populate('user', 'firstName lastName email phone')
+    .populate('bus', 'numberPlate busType capacity')
+    .sort({ travelDate: 1, departureTime: 1 });
+
+    console.log(`Found ${bookings.length} bookings for driver ${driverId}`);
+
+    // Transform data to match driver dashboard format
+    const schedules = bookings.map(booking => {
+      let status = 'Scheduled';
+      
+      // Determine status based on booking status and times
+      if (booking.bookingStatus === 'Completed') {
+        status = 'Completed';
+      } else if (booking.bookingStatus === 'In Progress') {
+        status = 'In Progress';
+      } else {
+        try {
+          const now = new Date();
+          const travelDate = new Date(booking.travelDate);
+          const departureTime = new Date(`${booking.travelDate}T${booking.departureTime}`);
+          
+          if (now > departureTime) {
+            status = 'In Progress';
+          }
+        } catch (error) {
+          console.error('Error parsing dates for booking:', booking._id, error);
+          // Keep status as 'Scheduled' if date parsing fails
+        }
+      }
+
+      // Safely create date strings with error handling
+      let scheduledStartTime, scheduledEndTime;
+      try {
+        scheduledStartTime = new Date(`${booking.travelDate}T${booking.departureTime}`).toISOString();
+      } catch (error) {
+        console.error('Error creating scheduledStartTime for booking:', booking._id, error);
+        scheduledStartTime = new Date().toISOString(); // Fallback to current time
+      }
+
+      try {
+        scheduledEndTime = new Date(`${booking.travelDate}T${booking.arrivalTime}`).toISOString();
+      } catch (error) {
+        console.error('Error creating scheduledEndTime for booking:', booking._id, error);
+        scheduledEndTime = new Date().toISOString(); // Fallback to current time
+      }
+
+      return {
+        _id: booking._id,
+        bookingId: {
+          bookingId: booking.bookingId,
+          route: `${booking.route?.from || 'N/A'} - ${booking.route?.to || 'N/A'}`,
+          passengers: booking.numberOfPassengers || 0
+        },
+        busId: {
+          busId: booking.bus?._id || 'N/A',
+          numberPlate: booking.bus?.numberPlate || 'N/A',
+          busType: booking.bus?.busType || 'N/A'
+        },
+        driverId: {
+          firstName: req.user?.firstName || 'N/A',
+          lastName: req.user?.lastName || 'N/A',
+          licenseNumber: req.user?.driverProfile?.licenseNumber || 'N/A'
+        },
+        startLocation: booking.route?.from || 'N/A',
+        destination: booking.route?.to || 'N/A',
+        scheduledStartTime: scheduledStartTime,
+        scheduledEndTime: scheduledEndTime,
+        status: status,
+        actualStartTime: booking.actualStartTime || null,
+        actualEndTime: booking.actualEndTime || null,
+        travelDate: booking.travelDate,
+        departureTime: booking.departureTime,
+        arrivalTime: booking.arrivalTime,
+        route: booking.route
+      };
+    });
+
+    res.json({
+      success: true,
+      schedules: schedules,
+      message: schedules.length === 0 ? 'No schedules found for this driver' : `Found ${schedules.length} schedules`
+    });
+
+  } catch (error) {
+    console.error('Get driver schedules error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error: ' + error.message
+    });
+  }
+};
+
+// Update schedule status (start trip, complete trip, etc.)
+export const updateScheduleStatus = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { action } = req.body; // 'start', 'complete', 'update'
+    const driverId = req.user.id;
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      assignedDriver: driverId
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or not assigned to you'
+      });
+    }
+
+    const now = new Date();
+
+    switch (action) {
+      case 'start':
+        booking.actualStartTime = now;
+        booking.bookingStatus = 'In Progress';
+        break;
+      case 'complete':
+        booking.actualEndTime = now;
+        booking.bookingStatus = 'Completed';
+        break;
+      case 'update':
+        // For future use - could update progress, location, etc.
+        break;
+      default:
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid action'
+        });
+    }
+
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: `Trip ${action}ed successfully`,
+      booking: {
+        _id: booking._id,
+        bookingId: booking.bookingId,
+        status: booking.bookingStatus,
+        actualStartTime: booking.actualStartTime,
+        actualEndTime: booking.actualEndTime
+      }
+    });
+
+  } catch (error) {
+    console.error('Update schedule status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error: ' + error.message
+    });
+  }
+};

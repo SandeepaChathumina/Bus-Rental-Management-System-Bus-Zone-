@@ -447,56 +447,46 @@ const ScheduleManagement = React.memo(() => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedSchedules, setExpandedSchedules] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState(null);
 
-  // Sample data for driver schedules
-  const sampleSchedules = [
-    {
-      _id: 'schedule1',
-      bookingId: { bookingId: 'BZ-2024-1001', route: 'Colombo - Kandy', passengers: 32 },
-      busId: { busId: 'BZ-001', numberPlate: 'CAB-1234', busType: 'Luxury Coach' },
-      driverId: { firstName: 'Sandeepa', lastName: 'Karunanayake', licenseNumber: 'DL12345' },
-      startLocation: 'Colombo Fort',
-      destination: 'Kandy City Center',
-      scheduledStartTime: '2024-01-15T06:00:00',
-      scheduledEndTime: '2024-01-15T09:30:00',
-      status: 'Scheduled',
-      actualStartTime: null,
-      actualEndTime: null
-    },
-    {
-      _id: 'schedule2',
-      bookingId: { bookingId: 'BZ-2024-1002', route: 'Galle - Colombo', passengers: 28 },
-      busId: { busId: 'BZ-002', numberPlate: 'CAB-5678', busType: 'Standard' },
-      driverId: { firstName: 'Malith', lastName: 'Johnson', licenseNumber: 'DL67890' },
-      startLocation: 'Galle Bus Stand',
-      destination: 'Colombo Fort',
-      scheduledStartTime: '2024-01-15T08:00:00',
-      scheduledEndTime: '2024-01-15T11:30:00',
-      status: 'In Progress',
-      actualStartTime: '2024-01-15T08:15:00',
-      actualEndTime: null
-    },
-    {
-      _id: 'schedule3',
-      bookingId: { bookingId: 'BZ-2024-1003', route: 'Negombo - Colombo', passengers: 40 },
-      busId: { busId: 'BZ-003', numberPlate: 'CAB-9012', busType: 'Mini Bus' },
-      driverId: { firstName: 'Shamal', lastName: 'Ashinsana', licenseNumber: 'DL11223' },
-      startLocation: 'Negombo Bus Station',
-      destination: 'Colombo Pettah',
-      scheduledStartTime: '2024-01-16T07:30:00',
-      scheduledEndTime: '2024-01-16T09:00:00',
-      status: 'Completed',
-      actualStartTime: '2024-01-16T07:25:00',
-      actualEndTime: '2024-01-16T09:10:00'
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+
+  const fetchSchedules = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        setError('No authentication token found');
+        setLoading(false);
+        return;
+      }
+
+      const response = await axios.get(`${BACKEND_URL}/api/bookings/driver/schedules`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        setSchedules(response.data.schedules || []);
+        if (response.data.schedules?.length === 0) {
+          console.log('No schedules found for this driver');
+        }
+      } else {
+        setError(response.data.message || 'Failed to fetch schedules');
+      }
+    } catch (error) {
+      console.error('Error fetching schedules:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch schedules';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   useEffect(() => {
-    // Simulate API call to fetch driver schedules
-    setTimeout(() => {
-      setSchedules(sampleSchedules);
-      setLoading(false);
-    }, 1000);
+    fetchSchedules();
   }, []);
 
   const toggleExpand = (scheduleId) => {
@@ -505,6 +495,40 @@ const ScheduleManagement = React.memo(() => {
       [scheduleId]: !prev[scheduleId]
     }));
   };
+
+  const updateScheduleStatus = async (bookingId, action) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.patch(
+        `${BACKEND_URL}/api/bookings/${bookingId}/status`,
+        { action },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        // Refresh schedules
+        fetchSchedules();
+      } else {
+        toast.error('Failed to update schedule status');
+      }
+    } catch (error) {
+      console.error('Error updating schedule status:', error);
+      toast.error('Failed to update schedule status: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const filteredSchedules = schedules.filter(schedule => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      schedule.bookingId.bookingId.toLowerCase().includes(searchLower) ||
+      schedule.startLocation.toLowerCase().includes(searchLower) ||
+      schedule.destination.toLowerCase().includes(searchLower) ||
+      schedule.busId.numberPlate.toLowerCase().includes(searchLower) ||
+      schedule.status.toLowerCase().includes(searchLower)
+    );
+  });
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
@@ -555,11 +579,34 @@ const ScheduleManagement = React.memo(() => {
             <input
               type="text"
               placeholder="Search schedules..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-900/30 border border-red-700/30 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <XCircle className="w-5 h-5 text-red-400" />
+              <div>
+                <h3 className="text-red-400 font-medium">Error Loading Schedules</h3>
+                <p className="text-red-300 text-sm">{error}</p>
+              </div>
+            </div>
+            <button
+              onClick={fetchSchedules}
+              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -567,7 +614,7 @@ const ScheduleManagement = React.memo(() => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-blue-300">Total Schedules</p>
-              <p className="text-2xl font-bold text-white">{schedules.length}</p>
+              <p className="text-2xl font-bold text-white">{filteredSchedules.length}</p>
             </div>
             <Calendar className="w-8 h-8 text-blue-400" />
           </div>
@@ -578,7 +625,7 @@ const ScheduleManagement = React.memo(() => {
             <div>
               <p className="text-sm text-blue-300">Scheduled</p>
               <p className="text-2xl font-bold text-blue-400">
-                {schedules.filter(s => s.status === 'Scheduled').length}
+                {filteredSchedules.filter(s => s.status === 'Scheduled').length}
               </p>
             </div>
             <Clock className="w-8 h-8 text-blue-400" />
@@ -590,7 +637,7 @@ const ScheduleManagement = React.memo(() => {
             <div>
               <p className="text-sm text-orange-300">In Progress</p>
               <p className="text-2xl font-bold text-orange-400">
-                {schedules.filter(s => s.status === 'In Progress').length}
+                {filteredSchedules.filter(s => s.status === 'In Progress').length}
               </p>
             </div>
             <User className="w-8 h-8 text-orange-400" />
@@ -602,7 +649,7 @@ const ScheduleManagement = React.memo(() => {
             <div>
               <p className="text-sm text-green-300">Completed</p>
               <p className="text-2xl font-bold text-green-400">
-                {schedules.filter(s => s.status === 'Completed').length}
+                {filteredSchedules.filter(s => s.status === 'Completed').length}
               </p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-400" />
@@ -612,14 +659,21 @@ const ScheduleManagement = React.memo(() => {
 
       {/* Schedules List */}
       <div className="space-y-4">
-        {schedules.length === 0 ? (
+        {filteredSchedules.length === 0 ? (
           <div className="bg-slate-800 rounded-xl p-12 text-center border border-slate-700">
             <Calendar className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No Schedules Found</h3>
-            <p className="text-slate-400">You don't have any schedules assigned yet.</p>
+            <h3 className="text-xl font-semibold text-white mb-2">
+              {schedules.length === 0 ? 'No Schedules Found' : 'No Matching Schedules'}
+            </h3>
+            <p className="text-slate-400">
+              {schedules.length === 0 
+                ? "You don't have any schedules assigned yet." 
+                : "Try adjusting your search criteria."
+              }
+            </p>
           </div>
         ) : (
-          schedules.map((schedule) => (
+          filteredSchedules.map((schedule) => (
             <div key={schedule._id} className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 border border-slate-700 hover:border-slate-600 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -694,13 +748,24 @@ const ScheduleManagement = React.memo(() => {
                         </div>
                       </div>
                       
+                      {schedule.status === 'Scheduled' && (
+                        <div className="flex space-x-3 pt-2">
+                          <button 
+                            onClick={() => updateScheduleStatus(schedule._id, 'start')}
+                            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"
+                          >
+                            Start Trip
+                          </button>
+                        </div>
+                      )}
+                      
                       {schedule.status === 'In Progress' && (
                         <div className="flex space-x-3 pt-2">
-                          <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">
-                            Mark as Completed
-                          </button>
-                          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">
-                            Update Progress
+                          <button 
+                            onClick={() => updateScheduleStatus(schedule._id, 'complete')}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+                          >
+                            Complete Trip
                           </button>
                         </div>
                       )}
@@ -723,21 +788,21 @@ const ScheduleManagement = React.memo(() => {
       </div>
 
       {/* Upcoming Schedule Highlight */}
-      {schedules.filter(s => s.status === 'Scheduled').length > 0 && (
+      {filteredSchedules.filter(s => s.status === 'Scheduled').length > 0 && (
         <div className="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 rounded-xl p-6 border border-cyan-700/30">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">Next Schedule</h3>
               <p className="text-cyan-300">
-                {formatDateTime(schedules.filter(s => s.status === 'Scheduled')[0].scheduledStartTime)}
+                {formatDateTime(filteredSchedules.filter(s => s.status === 'Scheduled')[0].scheduledStartTime)}
               </p>
               <p className="text-slate-300 mt-1">
-                {schedules.filter(s => s.status === 'Scheduled')[0].startLocation} → {schedules.filter(s => s.status === 'Scheduled')[0].destination}
+                {filteredSchedules.filter(s => s.status === 'Scheduled')[0].startLocation} → {filteredSchedules.filter(s => s.status === 'Scheduled')[0].destination}
               </p>
             </div>
             <div className="text-right">
               <p className="text-slate-400 text-sm">Bus</p>
-              <p className="text-white font-medium">{schedules.filter(s => s.status === 'Scheduled')[0].busId.numberPlate}</p>
+              <p className="text-white font-medium">{filteredSchedules.filter(s => s.status === 'Scheduled')[0].busId.numberPlate}</p>
             </div>
           </div>
         </div>

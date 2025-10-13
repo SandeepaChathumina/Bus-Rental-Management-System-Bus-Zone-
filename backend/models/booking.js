@@ -98,6 +98,14 @@ const bookingSchema = new mongoose.Schema({
   assignedDriver: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+  actualStartTime: {
+    type: Date,
+    default: null
+  },
+  actualEndTime: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true
