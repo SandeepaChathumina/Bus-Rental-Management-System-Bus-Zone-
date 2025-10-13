@@ -1125,7 +1125,7 @@ export const getBookingById = async (req, res) => {
 export const assignDriverToBooking = async (req, res) => {
   try {
     const { id: bookingId } = req.params;
-    const { driverId } = req.body;
+    const { driverId, resetDriverResponse } = req.body;
 
     if (!driverId) {
       return res.status(400).json({
@@ -1157,6 +1157,13 @@ export const assignDriverToBooking = async (req, res) => {
 
     // Update booking with assigned driver
     booking.assignedDriver = driverId;
+    
+    // Reset driver response if flag is set
+    if (resetDriverResponse) {
+      booking.driverResponse = 'pending';
+      booking.driverResponseTime = null;
+    }
+    
     await booking.save();
 
     res.json({
@@ -1165,7 +1172,9 @@ export const assignDriverToBooking = async (req, res) => {
       booking: {
         _id: booking._id,
         bookingId: booking.bookingId,
-        assignedDriver: booking.assignedDriver
+        assignedDriver: booking.assignedDriver,
+        driverResponse: booking.driverResponse,
+        driverResponseTime: booking.driverResponseTime
       }
     });
 

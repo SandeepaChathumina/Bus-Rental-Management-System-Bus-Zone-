@@ -390,7 +390,10 @@ const DriverScheduleManagement = () => {
       // Update booking with assigned driver
       const response = await axios.patch(
         `${BACKEND_URL}/api/bookings/${selectedBooking._id}/assign-driver`,
-        { driverId: selectedDriver },
+        { 
+          driverId: selectedDriver,
+          resetDriverResponse: true // Flag to reset driver response
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -399,7 +402,12 @@ const DriverScheduleManagement = () => {
         setConfirmedBookings(prev =>
           prev.map(booking =>
             booking._id === selectedBooking._id
-              ? { ...booking, assignedDriver: selectedDriver }
+              ? { 
+                  ...booking, 
+                  assignedDriver: selectedDriver,
+                  driverResponse: 'pending', // Reset driver response
+                  driverResponseTime: null
+                }
               : booking
           )
         );
@@ -413,7 +421,12 @@ const DriverScheduleManagement = () => {
         setConfirmedBookings(prev =>
           prev.map(booking =>
             booking._id === selectedBooking._id
-              ? { ...booking, assignedDriver: selectedDriver }
+              ? { 
+                  ...booking, 
+                  assignedDriver: selectedDriver,
+                  driverResponse: 'pending', // Reset driver response
+                  driverResponseTime: null
+                }
               : booking
           )
         );
