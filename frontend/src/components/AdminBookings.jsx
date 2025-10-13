@@ -7,7 +7,8 @@ import {
   Filter, 
   Search,
   Download,
-  Calendar
+  Calendar,
+  RefreshCw
 } from 'lucide-react';
 
 const AdminBookings = () => {
@@ -26,12 +27,12 @@ const AdminBookings = () => {
     filterBookings();
   }, [bookings, searchTerm, statusFilter, paymentStatusFilter]);
 
-  // Auto-refresh every 30 seconds to show updated payment status
+  // Auto-refresh every 10 seconds to show updated payment status
   useEffect(() => {
     const interval = setInterval(() => {
       console.log('🔄 Auto-refreshing admin bookings...');
       fetchBookings();
-    }, 30000); // 30 seconds
+    }, 10000); // 10 seconds
 
     return () => clearInterval(interval);
   }, []);
@@ -48,7 +49,19 @@ const AdminBookings = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setBookings(data);
+        console.log('🔍 Admin bookings API response:', data);
+        if (data.success) {
+          console.log('📊 Admin bookings data:', data.bookings);
+          console.log('📊 First booking details:', data.bookings[0]);
+          if (data.bookings[0]) {
+            console.log('📊 First booking status:', data.bookings[0].bookingStatus);
+            console.log('📊 First booking payment status:', data.bookings[0].paymentStatus);
+          }
+          setBookings(data.bookings || []);
+        } else {
+          console.error('Failed to fetch bookings:', data.message);
+          setBookings([]);
+        }
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);
@@ -167,10 +180,13 @@ const AdminBookings = () => {
             <option value="Refunded">Refunded</option>
           </select>
           
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-300">Date Range</span>
-          </div>
+          <button
+            onClick={fetchBookings}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Refresh</span>
+          </button>
         </div>
 
         <div className="overflow-x-auto">

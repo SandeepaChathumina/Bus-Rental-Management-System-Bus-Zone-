@@ -495,6 +495,12 @@ export const getAllBookings = async (req, res) => {
       .populate('bus', 'busType numberPlate')
       .sort({ createdAt: -1 });
 
+    console.log('🔍 Admin getAllBookings - Found bookings:', bookings.length);
+    if (bookings.length > 0) {
+      console.log('📊 First booking status:', bookings[0].bookingStatus);
+      console.log('📊 First booking payment status:', bookings[0].paymentStatus);
+    }
+
     res.json({
       success: true,
       bookings: bookings,
@@ -828,8 +834,10 @@ export const processBookingPayment = async (req, res) => {
     console.log('Payment saved:', payment);
 
     // Update booking status
+    console.log('📊 ProcessBookingPayment: Before update - Booking status:', booking.bookingStatus, 'Payment status:', booking.paymentStatus);
     booking.paymentStatus = 'Paid';
     booking.bookingStatus = 'Confirmed';
+    console.log('📊 ProcessBookingPayment: After update - Booking status:', booking.bookingStatus, 'Payment status:', booking.paymentStatus);
     
     // Generate QR code
     const qrData = {
@@ -863,7 +871,7 @@ export const processBookingPayment = async (req, res) => {
     }
 
     await booking.save();
-    console.log('Booking updated with payment status:', booking);
+    console.log('💾 ProcessBookingPayment: Booking saved to database with status:', booking.bookingStatus, 'Payment status:', booking.paymentStatus);
 
     // Generate invoice
     const invoice = await generateInvoice(payment, booking);
