@@ -233,7 +233,6 @@ const DriverProfile = () => {
     );
   }
 
-  const profileImage = user?.profileImage || user?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face';
   const fullName = formData.firstName && formData.lastName 
     ? `${formData.firstName} ${formData.lastName}`
     : user?.username || 'Driver';
@@ -246,11 +245,9 @@ const DriverProfile = () => {
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center space-x-6 mb-6 md:mb-0">
               <div className="relative">
-                <img
-                  src={profileImage}
-                  alt={fullName}
-                  className="w-24 h-24 rounded-full border-4 border-blue-500/20 shadow-lg"
-                />
+                <div className="w-24 h-24 rounded-full border-4 border-blue-500/20 shadow-lg bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+                  <User className="h-12 w-12 text-blue-600" />
+                </div>
                 <div className="absolute bottom-1 right-1 bg-green-500 w-6 h-6 rounded-full border-3 border-white shadow-sm"></div>
               </div>
               <div>
@@ -492,7 +489,7 @@ const DriverProfile = () => {
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <div className="flex items-center space-x-2 mb-2">
-                    <DollarSign className="h-4 w-4 text-gray-500" />
+                    <Clock className="h-4 w-4 text-gray-500" />
                     <span className="text-sm font-medium text-gray-600">Hourly Rate</span>
                   </div>
                   <p className="text-lg font-semibold text-gray-900">

@@ -353,15 +353,7 @@ const SettingsContent = React.memo(({ onPasswordChangeClick }) => (
             </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-green-700 text-sm font-semibold">Last Changed</div>
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              </div>
-              <div className="text-green-800 text-lg font-bold">2 months ago</div>
-              <div className="text-green-600 text-xs mt-1">Recently updated</div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-blue-700 text-sm font-semibold">Password Strength</div>
