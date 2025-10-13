@@ -43,104 +43,104 @@ const ContactUs = () => {
     setFormData({ name: '', email: '', subject: '', message: '' });
   };
 
-  // Footer Component from AboutUs Page
+  // Footer Component from HomePage
   const Footer = () => {
     return (
-      <footer className="w-full px-6 lg:px-8 py-12 bg-slate-900">
+      <footer className="w-full px-6 lg:px-8 py-12 bg-gradient-to-br from-blue-100 to-cyan-100">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-8">
           <div className="space-y-5 col-span-2">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-3 rounded-xl shadow-lg">
+                <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-3 rounded-xl shadow-lg">
                   <Bus className="h-8 w-8 text-white" />
                 </div>
                 <div className="absolute -top-1 -right-1 bg-cyan-400 w-4 h-4 rounded-full"></div>
               </div>
               <div>
-                <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+                <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                   BusZone+
                 </div>
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-blue-600/70">
                   Premium Bus Rentals
                 </div>
               </div>
             </div>
-            <p className="text-neutral-400 text-base font-normal pr-10">
+            <p className="text-slate-600 text-base font-normal pr-10">
               Experience luxury, reliability, and comfort with our premium bus rental services. 
               We provide exceptional transportation solutions for all your needs.
             </p>
           </div>
 
           <div className="space-y-5">
-            <h1 className="text-lg font-medium text-white">About Us</h1>
-            <ul className="space-y-3 text-neutral-400 text-base font-normal">
+            <h1 className="text-lg font-medium text-slate-800">About Us</h1>
+            <ul className="space-y-3 text-slate-600 text-base font-normal">
               <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>About Us</a>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>About Us</a>
               </li>
               <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Contact Us</a>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Contact Us</a>
               </li>
               <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Privacy Policy</a>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Privacy Policy</a>
               </li>
               <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Terms and Conditions</a>
-              </li>
-            </ul>
-          </div>
-
-          <div className="space-y-5">
-            <h1 className="text-lg font-medium text-white">Services</h1>
-            <ul className="space-y-3 text-neutral-400 text-base font-normal">
-              <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Safety Guarantee</a>
-              </li>
-              <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>FAQ & Support</a>
-              </li>
-              <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Luxury Buses</a>
-              </li>
-              <li>
-                <a href="#" className='hover:text-blue-400 ease-in-out duration-300'>Enough Facilities</a>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Terms and Conditions</a>
               </li>
             </ul>
           </div>
 
           <div className="space-y-5">
-            <h1 className="text-lg font-medium text-white">Get In Touch</h1>
+            <h1 className="text-lg font-medium text-slate-800">Services</h1>
+            <ul className="space-y-3 text-slate-600 text-base font-normal">
+              <li>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Safety Guarantee</a>
+              </li>
+              <li>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>FAQ & Support</a>
+              </li>
+              <li>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Luxury Buses</a>
+              </li>
+              <li>
+                <a href="#" className='hover:text-blue-600 ease-in-out duration-300'>Enough Facilities</a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="space-y-5">
+            <h1 className="text-lg font-medium text-slate-800">Get In Touch</h1>
             <div className="space-y-4">
               <div className="flex gap-x-3">
-                <MapPin className='text-lg text-blue-400 mt-1 flex-shrink-0' />
+                <MapPin className='text-lg text-blue-600 mt-1 flex-shrink-0' />
                 <div className="flex flex-col">
-                  <p className="text-sm text-neutral-400">
+                  <p className="text-sm text-slate-600">
                     For Support & Reservations
                   </p>
-                  <p className="text-sm text-neutral-300">
+                  <p className="text-sm text-slate-700">
                     123, Main Street, Anytown, USA
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-x-3">
-                <Phone className='text-lg text-blue-400 mt-1 flex-shrink-0' />
+                <Phone className='text-lg text-blue-600 mt-1 flex-shrink-0' />
                 <div className="flex flex-col">
-                  <p className="text-sm text-neutral-400">
+                  <p className="text-sm text-slate-600">
                     Call Us Anytime
                   </p>
-                  <p className="text-sm text-neutral-300">
+                  <p className="text-sm text-slate-700">
                     +94 704 222 777
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-x-3">
-                <Mail className='text-lg text-blue-400 mt-1 flex-shrink-0' />
+                <Mail className='text-lg text-blue-600 mt-1 flex-shrink-0' />
                 <div className="flex flex-col">
-                  <p className="text-sm text-neutral-400">
+                  <p className="text-sm text-slate-600">
                     Email Us
                   </p>
-                  <p className="text-sm text-neutral-300">
+                  <p className="text-sm text-slate-700">
                     info@buszoneplus.com
                   </p>
                 </div>
@@ -149,8 +149,8 @@ const ContactUs = () => {
           </div>
         </div>
         
-        <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-slate-700 text-center">
-          <p className="text-neutral-500 text-sm">
+        <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-blue-200 text-center">
+          <p className="text-slate-500 text-sm">
             © {new Date().getFullYear()} BusZone+. All rights reserved.
           </p>
         </div>
@@ -159,26 +159,26 @@ const ContactUs = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 text-slate-800">
       {/* Navigation */}
-      <nav className="bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 py-4">
+      <nav className="bg-white/95 backdrop-blur-xl border-b border-blue-200/50 py-4 shadow-lg">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
-              <div className="bg-gradient-to-r from-blue-400 to-cyan-500 p-3 rounded-xl">
+              <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-3 rounded-xl shadow-lg">
                 <MapPin className="h-8 w-8 text-white" />
               </div>
               <div>
-                <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+                <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                   BusZone+
                 </div>
-                <div className="text-xs text-slate-400">Premium Bus Rentals</div>
+                <div className="text-xs text-blue-600/70">Premium Bus Rentals</div>
               </div>
             </div>
             
             <button 
               onClick={() => navigate('/')}
-              className="flex items-center space-x-2 text-blue-400 hover:text-cyan-400 transition-colors"
+              className="flex items-center space-x-2 text-blue-600 hover:text-cyan-600 transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
               <span>Back to Home</span>
@@ -197,10 +197,10 @@ const ContactUs = () => {
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-white">
               Contact <span className="bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">Us</span>
             </h1>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+            <p className="text-xl text-white/90 max-w-3xl mx-auto">
               Get in touch with us for any inquiries, quotes, or assistance. Our team is ready to help you with your transportation needs.
             </p>
           </div>
@@ -213,70 +213,70 @@ const ContactUs = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
             {/* Contact Information */}
             <div>
-              <h2 className="text-3xl font-bold mb-8">Get In Touch</h2>
+              <h2 className="text-3xl font-bold mb-8 text-slate-800">Get In Touch</h2>
               
               <div className="space-y-8">
                 <div className="flex items-start space-x-4">
-                  <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-3 rounded-xl">
+                  <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-3 rounded-xl shadow-lg">
                     <Phone className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">Phone</h3>
-                    <p className="text-slate-300">+94 704 222 777</p>
-                    <p className="text-slate-400 text-sm">Mon-Sun, 24/7 support</p>
+                    <h3 className="text-xl font-semibold mb-2 text-slate-800">Phone</h3>
+                    <p className="text-slate-600">+94 704 222 777</p>
+                    <p className="text-slate-500 text-sm">Mon-Sun, 24/7 support</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start space-x-4">
-                  <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-3 rounded-xl">
+                  <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-3 rounded-xl shadow-lg">
                     <Mail className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">Email</h3>
-                    <p className="text-slate-300">info@buszoneplus.com</p>
-                    <p className="text-slate-400 text-sm">We respond within 24 hours</p>
+                    <h3 className="text-xl font-semibold mb-2 text-slate-800">Email</h3>
+                    <p className="text-slate-600">info@buszoneplus.com</p>
+                    <p className="text-slate-500 text-sm">We respond within 24 hours</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start space-x-4">
-                  <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-3 rounded-xl">
+                  <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-3 rounded-xl shadow-lg">
                     <MapPin className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">Address</h3>
-                    <p className="text-slate-300">123 Galle Road, Kalutara</p>
-                    <p className="text-slate-300">Western Province, Sri Lanka</p>
+                    <h3 className="text-xl font-semibold mb-2 text-slate-800">Address</h3>
+                    <p className="text-slate-600">123 Galle Road, Kalutara</p>
+                    <p className="text-slate-600">Western Province, Sri Lanka</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start space-x-4">
-                  <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-3 rounded-xl">
+                  <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-3 rounded-xl shadow-lg">
                     <Clock className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">Business Hours</h3>
-                    <p className="text-slate-300">Monday - Friday: 8:00 AM - 8:00 PM</p>
-                    <p className="text-slate-300">Saturday: 9:00 AM - 5:00 PM</p>
-                    <p className="text-slate-300">Sunday: 10:00 AM - 4:00 PM</p>
+                    <h3 className="text-xl font-semibold mb-2 text-slate-800">Business Hours</h3>
+                    <p className="text-slate-600">Monday - Friday: 8:00 AM - 8:00 PM</p>
+                    <p className="text-slate-600">Saturday: 9:00 AM - 5:00 PM</p>
+                    <p className="text-slate-600">Sunday: 10:00 AM - 4:00 PM</p>
                   </div>
                 </div>
               </div>
               
               {/* Social Media Links */}
               <div className="mt-12">
-                <h3 className="text-xl font-semibold mb-4">Follow Us</h3>
+                <h3 className="text-xl font-semibold mb-4 text-slate-800">Follow Us</h3>
                 <div className="flex space-x-4">
-                  <a href="#" className="bg-slate-800 hover:bg-blue-500 p-3 rounded-xl transition-colors flex items-center justify-center">
-                    <Facebook className="h-5 w-5 text-white" />
+                  <a href="#" className="bg-white/80 backdrop-blur-sm hover:bg-blue-500 p-3 rounded-xl transition-colors flex items-center justify-center shadow-lg border border-blue-200/50">
+                    <Facebook className="h-5 w-5 text-blue-600 hover:text-white" />
                   </a>
-                  <a href="#" className="bg-slate-800 hover:bg-pink-500 p-3 rounded-xl transition-colors flex items-center justify-center">
-                    <Instagram className="h-5 w-5 text-white" />
+                  <a href="#" className="bg-white/80 backdrop-blur-sm hover:bg-pink-500 p-3 rounded-xl transition-colors flex items-center justify-center shadow-lg border border-blue-200/50">
+                    <Instagram className="h-5 w-5 text-pink-600 hover:text-white" />
                   </a>
-                  <a href="#" className="bg-slate-800 hover:bg-blue-400 p-3 rounded-xl transition-colors flex items-center justify-center">
-                    <Twitter className="h-5 w-5 text-white" />
+                  <a href="#" className="bg-white/80 backdrop-blur-sm hover:bg-blue-400 p-3 rounded-xl transition-colors flex items-center justify-center shadow-lg border border-blue-200/50">
+                    <Twitter className="h-5 w-5 text-blue-500 hover:text-white" />
                   </a>
-                  <a href="#" className="bg-slate-800 hover:bg-blue-600 p-3 rounded-xl transition-colors flex items-center justify-center">
-                    <Linkedin className="h-5 w-5 text-white" />
+                  <a href="#" className="bg-white/80 backdrop-blur-sm hover:bg-blue-600 p-3 rounded-xl transition-colors flex items-center justify-center shadow-lg border border-blue-200/50">
+                    <Linkedin className="h-5 w-5 text-blue-700 hover:text-white" />
                   </a>
                 </div>
               </div>
@@ -284,16 +284,16 @@ const ContactUs = () => {
             
             {/* Contact Form */}
             <div>
-              <div className="bg-slate-800/30 p-8 rounded-3xl border border-slate-700/50">
-                <h2 className="text-3xl font-bold mb-6">Send Us a Message</h2>
+              <div className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl border border-blue-200/50 shadow-lg">
+                <h2 className="text-3xl font-bold mb-6 text-slate-800">Send Us a Message</h2>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-2">
+                    <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">
                       Your Name
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <User className="h-5 w-5 text-slate-400" />
+                        <User className="h-5 w-5 text-slate-500" />
                       </div>
                       <input
                         type="text"
@@ -301,7 +301,7 @@ const ContactUs = () => {
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
-                        className="bg-slate-900 border border-slate-700 text-white text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-3"
+                        className="bg-white border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-3 shadow-sm"
                         placeholder="John Doe"
                         required
                       />
@@ -309,12 +309,12 @@ const ContactUs = () => {
                   </div>
                   
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
+                    <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
                       Your Email
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-5 w-5 text-slate-400" />
+                        <Mail className="h-5 w-5 text-slate-500" />
                       </div>
                       <input
                         type="email"
@@ -322,7 +322,7 @@ const ContactUs = () => {
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className="bg-slate-900 border border-slate-700 text-white text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-3"
+                        className="bg-white border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-3 shadow-sm"
                         placeholder="john@example.com"
                         required
                       />
@@ -330,12 +330,12 @@ const ContactUs = () => {
                   </div>
                   
                   <div>
-                    <label htmlFor="subject" className="block text-sm font-medium text-slate-300 mb-2">
+                    <label htmlFor="subject" className="block text-sm font-medium text-slate-700 mb-2">
                       Subject
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <MessageCircle className="h-5 w-5 text-slate-400" />
+                        <MessageCircle className="h-5 w-5 text-slate-500" />
                       </div>
                       <input
                         type="text"
@@ -343,7 +343,7 @@ const ContactUs = () => {
                         name="subject"
                         value={formData.subject}
                         onChange={handleChange}
-                        className="bg-slate-900 border border-slate-700 text-white text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-3"
+                        className="bg-white border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-3 shadow-sm"
                         placeholder="Query about bus rental"
                         required
                       />
@@ -351,7 +351,7 @@ const ContactUs = () => {
                   </div>
                   
                   <div>
-                    <label htmlFor="message" className="block text-sm font-medium text-slate-300 mb-2">
+                    <label htmlFor="message" className="block text-sm font-medium text-slate-700 mb-2">
                       Your Message
                     </label>
                     <textarea
@@ -360,7 +360,7 @@ const ContactUs = () => {
                       rows="5"
                       value={formData.message}
                       onChange={handleChange}
-                      className="bg-slate-900 border border-slate-700 text-white text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full p-3"
+                      className="bg-white border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full p-3 shadow-sm"
                       placeholder="Please describe your requirements in detail..."
                       required
                     ></textarea>
@@ -381,9 +381,9 @@ const ContactUs = () => {
       </div>
 
       {/* Map Section */}
-      <div className="py-16 bg-gradient-to-r from-slate-900 to-slate-800">
+      <div className="py-16 bg-gradient-to-r from-blue-50 to-cyan-50">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12">Find Us Here</h2>
+          <h2 className="text-3xl font-bold text-center mb-12 text-slate-800">Find Us Here</h2>
           
           <div className="rounded-3xl overflow-hidden shadow-2xl">
             {/* Google Map Embed */}
@@ -400,9 +400,9 @@ const ContactUs = () => {
               ></iframe>
             </div>
             
-            <div className="bg-slate-800 p-6 flex items-center justify-center">
-              <Map className="h-6 w-6 text-blue-400 mr-2" />
-              <span className="text-slate-300">123 Galle Road, Kalutara, Sri Lanka</span>
+            <div className="bg-white/80 backdrop-blur-sm p-6 flex items-center justify-center border-t border-blue-200/50">
+              <Map className="h-6 w-6 text-blue-600 mr-2" />
+              <span className="text-slate-700">123 Galle Road, Kalutara, Sri Lanka</span>
             </div>
           </div>
         </div>
