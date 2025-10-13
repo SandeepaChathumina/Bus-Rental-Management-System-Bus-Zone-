@@ -173,7 +173,7 @@ const SimpleTravelSuggestions = ({ destination, onClose }) => {
                       {place.price_level && (
                         <div className="bg-emerald-50 px-2 py-1 rounded-full">
                           <span className="text-emerald-700 font-semibold text-sm">
-                            {Array(place.price_level).fill('$').join('')}
+                            {Array(place.price_level).fill('LKR').join(' ')}
                           </span>
                         </div>
                       )}

@@ -34,7 +34,8 @@ import {
   UserCheck,
   MessageSquare,
   FileText,
-  Sheet
+  Sheet,
+  Eye
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
@@ -107,8 +108,10 @@ const StaffDashboard = () => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-    { id: 'buses', label: 'Bus View', icon: Bus },
+    { id: 'buses', label: 'Bus Management', icon: Bus },
     { id: 'schedule', label: 'Schedule', icon: Calendar },
+    { id: 'attendance', label: 'Attendance', icon: UserCheck },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
@@ -693,23 +696,1155 @@ const StaffDashboard = () => {
     }
   };
 
-  const StatCard = ({ title, value, icon: Icon, trend, onClick }) => (
-    <div
-      onClick={onClick}
-      className="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-300">{title}</p>
-          <h3 className="text-2xl font-bold text-white mt-1">{value}</h3>
-          {trend && <p className="text-xs text-slate-400 mt-1">{trend}</p>}
+  const StatCard = ({ title, value, icon: Icon, trend, onClick, isCurrency = false }) => {
+    let displayValue = value;
+    
+    if (isCurrency) {
+      displayValue = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+      }).format(value || 0);
+    }
+
+    return (
+      <div
+        onClick={onClick}
+        className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-600">{title}</p>
+            <h3 className="text-2xl font-bold text-gray-800 mt-1">{displayValue}</h3>
+            {trend && <p className="text-xs text-gray-500 mt-1">{trend}</p>}
+          </div>
+          <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-100">
+            <Icon className="w-6 h-6 text-blue-600" />
+          </div>
         </div>
-        <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-slate-900/30">
-          <Icon className="w-6 h-6 text-slate-300" />
+      </div>
+    );
+  };
+
+  // Bus Management Content Component (removed duplicate)
+  // const BusManagementContent = () => (
+    /* <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Bus Management</h2>
+          <p className="text-gray-600">View and manage bus fleet information</p>
+        </div>
+        <button
+          onClick={() => setActiveTab('maintenance')}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Wrench className="w-5 h-5 mr-2" />
+          Maintenance
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Buses</p>
+              <h3 className="text-2xl font-bold text-gray-800 mt-1">48</h3>
+              <p className="text-xs text-gray-500 mt-1">Active fleet</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-100">
+              <Bus className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Available</p>
+              <h3 className="text-2xl font-bold text-green-600 mt-1">32</h3>
+              <p className="text-xs text-gray-500 mt-1">Ready for service</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-100">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">In Service</p>
+              <h3 className="text-2xl font-bold text-blue-600 mt-1">12</h3>
+              <p className="text-xs text-gray-500 mt-1">Currently running</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-100">
+              <Clock className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-blue-200 shadow-lg overflow-hidden">
+        <div className="px-6 py-4 border-b border-blue-200">
+          <h3 className="text-lg font-semibold text-gray-800">Bus Fleet Overview</h3>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((bus) => (
+              <div key={bus} className="border border-blue-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium text-gray-800">Bus {bus.toString().padStart(3, '0')}</h4>
+                  <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Available</span>
+                </div>
+                <p className="text-sm text-gray-600">Standard Bus</p>
+                <p className="text-sm text-gray-500">Capacity: 50 passengers</p>
+                <div className="mt-3 flex space-x-2">
+                  <button className="flex-1 px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors">
+                    View Details
+                  </button>
+                  <button className="flex-1 px-3 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors">
+                    Maintenance
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  ); */
+
+  // Schedule Content Component (removed duplicate)
+  // const ScheduleContent = () => (
+    /* <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Schedule Management</h2>
+          <p className="text-gray-600">View and manage bus schedules and routes</p>
+        </div>
+        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <Plus className="w-5 h-5 mr-2" />
+          Add Schedule
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Today's Routes</p>
+              <h3 className="text-2xl font-bold text-gray-800 mt-1">24</h3>
+              <p className="text-xs text-gray-500 mt-1">Active routes</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-100">
+              <Calendar className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Completed</p>
+              <h3 className="text-2xl font-bold text-green-600 mt-1">18</h3>
+              <p className="text-xs text-gray-500 mt-1">Routes completed</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-100">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">In Progress</p>
+              <h3 className="text-2xl font-bold text-blue-600 mt-1">4</h3>
+              <p className="text-xs text-gray-500 mt-1">Currently running</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-100">
+              <Clock className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Delayed</p>
+              <h3 className="text-2xl font-bold text-orange-600 mt-1">2</h3>
+              <p className="text-xs text-gray-500 mt-1">Running late</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-orange-100">
+              <AlertCircle className="w-6 h-6 text-orange-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-blue-200 shadow-lg overflow-hidden">
+        <div className="px-6 py-4 border-b border-blue-200">
+          <h3 className="text-lg font-semibold text-gray-800">Today's Schedule</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gradient-to-r from-blue-50 to-blue-100">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Route</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Bus</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Departure</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Arrival</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-blue-100">
+              {[
+                { route: 'Colombo - Kandy', bus: 'BUS-001', departure: '08:00', arrival: '10:30', status: 'Completed' },
+                { route: 'Colombo - Galle', bus: 'BUS-002', departure: '09:15', arrival: '11:45', status: 'In Progress' },
+                { route: 'Kandy - Nuwara Eliya', bus: 'BUS-003', departure: '10:30', arrival: '12:30', status: 'Delayed' },
+                { route: 'Colombo - Negombo', bus: 'BUS-004', departure: '11:00', arrival: '12:00', status: 'Scheduled' }
+              ].map((schedule, index) => (
+                <tr key={index} className="hover:bg-blue-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{schedule.route}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{schedule.bus}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{schedule.departure}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{schedule.arrival}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      schedule.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                      schedule.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                      schedule.status === 'Delayed' ? 'bg-orange-100 text-orange-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {schedule.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-1 rounded transition-colors">
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  ); */
+
+  // Attendance Content Component (removed duplicate)
+  // const AttendanceContent = () => (
+    /* <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Driver Attendance</h2>
+          <p className="text-gray-600">Manage driver attendance and schedules</p>
+        </div>
+        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <Plus className="w-5 h-5 mr-2" />
+          Mark Attendance
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Present Today</p>
+              <h3 className="text-2xl font-bold text-green-600 mt-1">24</h3>
+              <p className="text-xs text-gray-500 mt-1">Drivers present</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-100">
+              <UserCheck className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Absent</p>
+              <h3 className="text-2xl font-bold text-red-600 mt-1">3</h3>
+              <p className="text-xs text-gray-500 mt-1">Drivers absent</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-red-100">
+              <XCircle className="w-6 h-6 text-red-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Late Arrivals</p>
+              <h3 className="text-2xl font-bold text-orange-600 mt-1">2</h3>
+              <p className="text-xs text-gray-500 mt-1">Late today</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-orange-100">
+              <Clock className="w-6 h-6 text-orange-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Attendance Rate</p>
+              <h3 className="text-2xl font-bold text-blue-600 mt-1">89%</h3>
+              <p className="text-xs text-gray-500 mt-1">This month</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-100">
+              <BarChart3 className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-blue-200 shadow-lg overflow-hidden">
+        <div className="px-6 py-4 border-b border-blue-200">
+          <h3 className="text-lg font-semibold text-gray-800">Today's Attendance</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gradient-to-r from-blue-50 to-blue-100">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Driver</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Bus Assigned</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Check In</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-blue-100">
+              {[
+                { name: 'John Smith', bus: 'BUS-001', checkIn: '07:45', status: 'Present' },
+                { name: 'Jane Doe', bus: 'BUS-002', checkIn: '08:00', status: 'Present' },
+                { name: 'Mike Johnson', bus: 'BUS-003', checkIn: '08:15', status: 'Late' },
+                { name: 'Sarah Wilson', bus: 'BUS-004', checkIn: '-', status: 'Absent' }
+              ].map((driver, index) => (
+                <tr key={index} className="hover:bg-blue-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{driver.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{driver.bus}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{driver.checkIn}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      driver.status === 'Present' ? 'bg-green-100 text-green-800' :
+                      driver.status === 'Late' ? 'bg-orange-100 text-orange-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {driver.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-1 rounded transition-colors">
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   );
+
+  // Notifications Content Component (removed duplicate)
+  // const NotificationsContent = () => (
+    /* <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Notifications</h2>
+          <p className="text-gray-600">View and manage system notifications</p>
+        </div>
+        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <Bell className="w-5 h-5 mr-2" />
+          Mark All Read
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {[
+          { id: 1, title: 'Maintenance Request Created', message: 'New maintenance request for BUS-001 has been created', time: '2 minutes ago', type: 'info', unread: true },
+          { id: 2, title: 'Driver Check-in', message: 'John Smith has checked in for his shift', time: '15 minutes ago', type: 'success', unread: true },
+          { id: 3, title: 'Schedule Update', message: 'Route Colombo-Kandy has been updated', time: '1 hour ago', type: 'warning', unread: false },
+          { id: 4, title: 'System Maintenance', message: 'Scheduled maintenance will occur tonight at 2 AM', time: '3 hours ago', type: 'info', unread: false }
+        ].map((notification) => (
+          <div key={notification.id} className={`bg-white rounded-xl p-6 border border-blue-200 shadow-lg ${notification.unread ? 'ring-2 ring-blue-200' : ''}`}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-start space-x-3">
+                <div className={`p-2 rounded-full ${
+                  notification.type === 'success' ? 'bg-green-100 text-green-600' :
+                  notification.type === 'warning' ? 'bg-orange-100 text-orange-600' :
+                  'bg-blue-100 text-blue-600'
+                }`}>
+                  <Bell className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-medium text-gray-800">{notification.title}</h3>
+                  <p className="text-gray-600 mt-1">{notification.message}</p>
+                  <p className="text-sm text-gray-500 mt-2">{notification.time}</p>
+                </div>
+              </div>
+              {notification.unread && (
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Reports Content Component (removed duplicate)
+  // const ReportsContent = () => (
+    /* <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Reports & Analytics</h2>
+          <p className="text-gray-600">View operational reports and analytics</p>
+        </div>
+        <div className="flex space-x-2">
+          <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+            <Download className="w-5 h-5 mr-2" />
+            Export PDF
+          </button>
+          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <Download className="w-5 h-5 mr-2" />
+            Export Excel
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
+              <h3 className="text-2xl font-bold text-green-600 mt-1">$125,600</h3>
+              <p className="text-xs text-gray-500 mt-1">+12% from last month</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-100">
+              <DollarSign className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Bookings</p>
+              <h3 className="text-2xl font-bold text-blue-600 mt-1">1,456</h3>
+              <p className="text-xs text-gray-500 mt-1">This month</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-100">
+              <BookOpen className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Occupancy Rate</p>
+              <h3 className="text-2xl font-bold text-purple-600 mt-1">78%</h3>
+              <p className="text-xs text-gray-500 mt-1">Average occupancy</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-purple-100">
+              <BarChart3 className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center">
+                <Bus className="w-4 h-4 text-blue-600 mr-3" />
+                <span className="text-sm text-gray-700">New bus added to fleet</span>
+              </div>
+              <span className="text-xs text-gray-500">2 hours ago</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <div className="flex items-center">
+                <CheckCircle className="w-4 h-4 text-green-600 mr-3" />
+                <span className="text-sm text-gray-700">Maintenance completed</span>
+              </div>
+              <span className="text-xs text-gray-500">4 hours ago</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+              <div className="flex items-center">
+                <AlertCircle className="w-4 h-4 text-orange-600 mr-3" />
+                <span className="text-sm text-gray-700">Schedule delay reported</span>
+              </div>
+              <span className="text-xs text-gray-500">6 hours ago</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button className="flex flex-col items-center justify-center p-4 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors">
+              <BarChart3 className="w-6 h-6 text-blue-600 mb-2" />
+              <span className="text-sm font-medium text-blue-700">Generate Report</span>
+            </button>
+            <button className="flex flex-col items-center justify-center p-4 bg-green-100 rounded-lg hover:bg-green-200 transition-colors">
+              <Download className="w-6 h-6 text-green-600 mb-2" />
+              <span className="text-sm font-medium text-green-700">Export Data</span>
+            </button>
+            <button className="flex flex-col items-center justify-center p-4 bg-purple-100 rounded-lg hover:bg-purple-200 transition-colors">
+              <Calendar className="w-6 h-6 text-purple-600 mb-2" />
+              <span className="text-sm font-medium text-purple-700">Schedule Report</span>
+            </button>
+            <button className="flex flex-col items-center justify-center p-4 bg-orange-100 rounded-lg hover:bg-orange-200 transition-colors">
+              <Wrench className="w-6 h-6 text-orange-600 mb-2" />
+              <span className="text-sm font-medium text-orange-700">Maintenance Report</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Settings Content Component (removed duplicate)
+  // const SettingsContent = () => (
+    /* <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800">Settings</h2>
+        <p className="text-gray-600">Manage your account and system preferences</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Profile Settings</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+              <input
+                type="text"
+                value={`${authUser?.firstName || ''} ${authUser?.lastName || ''}`}
+                className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                readOnly
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <input
+                type="email"
+                value={authUser?.email || ''}
+                className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                readOnly
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+              <input
+                type="text"
+                value={authUser?.role || 'Staff'}
+                className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                readOnly
+              />
+            </div>
+            <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              Update Profile
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Notification Preferences</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-medium text-gray-800">Email Notifications</h4>
+                <p className="text-xs text-gray-600">Receive notifications via email</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-medium text-gray-800">Push Notifications</h4>
+                <p className="text-xs text-gray-600">Receive push notifications</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-medium text-gray-800">Maintenance Alerts</h4>
+                <p className="text-xs text-gray-600">Get notified about maintenance issues</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">System Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <h4 className="text-sm font-medium text-gray-800">Version</h4>
+            <p className="text-2xl font-bold text-blue-600 mt-1">v2.1.0</p>
+          </div>
+          <div className="text-center p-4 bg-green-50 rounded-lg">
+            <h4 className="text-sm font-medium text-gray-800">Status</h4>
+            <p className="text-2xl font-bold text-green-600 mt-1">Online</p>
+          </div>
+          <div className="text-center p-4 bg-purple-50 rounded-lg">
+            <h4 className="text-sm font-medium text-gray-800">Last Update</h4>
+            <p className="text-2xl font-bold text-purple-600 mt-1">2 days ago</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Dashboard Content Component (removed duplicate)
+  // const DashboardContent = () => (
+    /* <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Buses"
+          value={dashboardStats.totalBuses}
+          icon={Bus}
+          onClick={() => setActiveTab('buses')}
+        />
+        <StatCard
+          title="Drivers Present"
+          value={dashboardStats.driversPresent}
+          icon={UserCheck}
+          onClick={() => setActiveTab('attendance')}
+        />
+        <StatCard
+          title="Routes Today"
+          value={dashboardStats.routesToday}
+          icon={Calendar}
+          onClick={() => setActiveTab('schedule')}
+        />
+        <StatCard
+          title="Maintenance Requests"
+          value={dashboardStats.maintenanceRequests}
+          icon={Wrench}
+          onClick={() => setActiveTab('maintenance')}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard
+          title="Completed Routes"
+          value={dashboardStats.completedRoutes}
+          icon={CheckCircle}
+          onClick={() => setActiveTab('schedule')}
+        />
+        <StatCard
+          title="Delayed Routes"
+          value={dashboardStats.delayedRoutes}
+          icon={AlertCircle}
+          onClick={() => setActiveTab('schedule')}
+        />
+        <StatCard
+          title="Active Bookings"
+          value={dashboardStats.activeBookings}
+          icon={BookOpen}
+          onClick={() => setActiveTab('schedule')}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Quick Actions</h3>
+            <button className="text-gray-400 hover:text-gray-600">
+              <MoreVertical className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button 
+              className="flex flex-col items-center justify-center p-4 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
+              onClick={() => setActiveTab('maintenance')}
+            >
+              <Wrench className="w-6 h-6 text-blue-600 mb-2" />
+              <span className="text-sm font-medium text-blue-700">Maintenance</span>
+            </button>
+            <button
+              className="flex flex-col items-center justify-center p-4 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+              onClick={() => setActiveTab('buses')}
+            >
+              <Bus className="w-6 h-6 text-green-600 mb-2" />
+              <span className="text-sm font-medium text-green-700">Bus Fleet</span>
+            </button>
+            <button
+              className="flex flex-col items-center justify-center p-4 bg-purple-100 rounded-lg hover:bg-purple-200 transition-colors"
+              onClick={() => setActiveTab('attendance')}
+            >
+              <UserCheck className="w-6 h-6 text-purple-600 mb-2" />
+              <span className="text-sm font-medium text-purple-700">Attendance</span>
+            </button>
+            <button
+              className="flex flex-col items-center justify-center p-4 bg-orange-100 rounded-lg hover:bg-orange-200 transition-colors"
+              onClick={() => setActiveTab('schedule')}
+            >
+              <Calendar className="w-6 h-6 text-orange-600 mb-2" />
+              <span className="text-sm font-medium text-orange-700">Schedule</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center">
+                <Wrench className="w-4 h-4 text-orange-600 mr-3" />
+                <span className="text-sm text-gray-700">New maintenance request created</span>
+              </div>
+              <span className="text-xs text-gray-500">2 min ago</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <div className="flex items-center">
+                <CheckCircle className="w-4 h-4 text-green-600 mr-3" />
+                <span className="text-sm text-gray-700">Route completed successfully</span>
+              </div>
+              <span className="text-xs text-gray-500">1 hour ago</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+              <div className="flex items-center">
+                <AlertCircle className="w-4 h-4 text-orange-600 mr-3" />
+                <span className="text-sm text-gray-700">Schedule delay reported</span>
+              </div>
+              <span className="text-xs text-gray-500">3 hours ago</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Add dashboard stats state
+  const [dashboardStats, setDashboardStats] = useState({
+    totalBuses: 48,
+    activeBookings: 156,
+    maintenanceRequests: 12,
+    driversPresent: 24,
+    routesToday: 24,
+    completedRoutes: 18,
+    delayedRoutes: 2
+  });
+
+  // Render content function (removed duplicate)
+  // const renderContent = () => {
+    return (
+      <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Bus Management</h2>
+          <p className="text-gray-600">Monitor and manage bus fleet</p>
+        </div>
+        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <Plus className="w-5 h-5 mr-2" />
+          Add Bus
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3, 4, 5, 6].map((bus) => (
+          <div key={bus} className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Bus {bus.toString().padStart(3, '0')}</h3>
+              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Active</span>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Plate Number:</span>
+                <span className="text-sm font-medium text-gray-800">ABC-{bus.toString().padStart(3, '0')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Type:</span>
+                <span className="text-sm font-medium text-gray-800">Standard</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Capacity:</span>
+                <span className="text-sm font-medium text-gray-800">50 seats</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Status:</span>
+                <span className="text-sm font-medium text-green-600">In Service</span>
+              </div>
+            </div>
+            <div className="mt-4 flex space-x-2">
+              <button className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm">
+                View Details
+              </button>
+              <button className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                Edit
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+    );
+  }; */
+
+  // Schedule Content
+  const ScheduleContent = () => (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Schedule Management</h2>
+          <p className="text-gray-600">View and manage bus schedules</p>
+        </div>
+        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <Plus className="w-5 h-5 mr-2" />
+          Add Schedule
+        </button>
+      </div>
+
+      <div className="bg-white rounded-xl border border-blue-200 shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gradient-to-r from-blue-50 to-blue-100">
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Route</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Bus</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Departure</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Arrival</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-blue-100">
+              {[1, 2, 3, 4, 5].map((schedule) => (
+                <tr key={schedule} className="hover:bg-blue-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-800">Colombo - Kandy</div>
+                    <div className="text-xs text-gray-500">Route {schedule}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                    Bus {schedule.toString().padStart(3, '0')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                    08:00 AM
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                    12:00 PM
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      On Time
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center space-x-2">
+                      <button className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-1 rounded transition-colors">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button className="text-red-600 hover:text-red-800 hover:bg-red-100 p-1 rounded transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Attendance Content
+  const AttendanceContent = () => (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Attendance Management</h2>
+          <p className="text-gray-600">Track driver and staff attendance</p>
+        </div>
+        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <Plus className="w-5 h-5 mr-2" />
+          Mark Attendance
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Today's Attendance</h3>
+            <Clock className="w-5 h-5 text-blue-600" />
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Present:</span>
+              <span className="text-sm font-medium text-green-600">24</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Absent:</span>
+              <span className="text-sm font-medium text-red-600">2</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Late:</span>
+              <span className="text-sm font-medium text-orange-600">1</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">This Week</h3>
+            <Calendar className="w-5 h-5 text-blue-600" />
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Total Days:</span>
+              <span className="text-sm font-medium text-gray-800">5</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Present Days:</span>
+              <span className="text-sm font-medium text-green-600">4.8</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-600">Attendance Rate:</span>
+              <span className="text-sm font-medium text-blue-600">96%</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Quick Actions</h3>
+            <MoreVertical className="w-5 h-5 text-gray-400" />
+          </div>
+          <div className="space-y-2">
+            <button className="w-full px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm">
+              Mark All Present
+            </button>
+            <button className="w-full px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm">
+              Generate Report
+            </button>
+            <button className="w-full px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm">
+              View History
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Notifications Content
+  const NotificationsContent = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Notifications</h2>
+          <p className="text-gray-600">Stay updated with system alerts</p>
+        </div>
+        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <Bell className="w-5 h-5 mr-2" />
+          Mark All Read
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {[1, 2, 3, 4, 5].map((notification) => (
+          <div key={notification} className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+            <div className="flex items-start space-x-4">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-blue-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-800">
+                  {notification === 1 ? 'Maintenance Alert' : 
+                   notification === 2 ? 'New Booking' : 
+                   notification === 3 ? 'Schedule Update' : 
+                   notification === 4 ? 'System Update' : 'Reminder'}
+                </h3>
+                <p className="text-gray-600 mt-1">
+                  {notification === 1 ? 'Bus #001 requires immediate maintenance attention.' :
+                   notification === 2 ? 'New booking received for Route A - Colombo to Kandy.' :
+                   notification === 3 ? 'Schedule has been updated for tomorrow\'s routes.' :
+                   notification === 4 ? 'System maintenance scheduled for tonight at 2 AM.' :
+                   'Don\'t forget to check attendance for today.'}
+                </p>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-sm text-gray-500">2 hours ago</span>
+                  <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    Mark as Read
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Reports Content
+  const ReportsContent = () => (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Reports & Analytics</h2>
+          <p className="text-gray-600">Generate and view detailed reports</p>
+        </div>
+        <div className="flex space-x-2">
+          <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+            <Download className="w-5 h-5 mr-2" />
+            Export PDF
+          </button>
+          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <FileText className="w-5 h-5 mr-2" />
+            Generate Report
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Maintenance Report</h3>
+            <Wrench className="w-5 h-5 text-blue-600" />
+          </div>
+          <p className="text-gray-600 text-sm mb-4">Monthly maintenance summary and costs</p>
+          <button className="w-full px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm">
+            Generate Report
+          </button>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Attendance Report</h3>
+            <UserCheck className="w-5 h-5 text-green-600" />
+          </div>
+          <p className="text-gray-600 text-sm mb-4">Staff attendance and performance metrics</p>
+          <button className="w-full px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm">
+            Generate Report
+          </button>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Revenue Report</h3>
+            <DollarSign className="w-5 h-5 text-purple-600" />
+          </div>
+          <p className="text-gray-600 text-sm mb-4">Financial performance and revenue analysis</p>
+          <button className="w-full px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm">
+            Generate Report
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Settings Content
+  const SettingsContent = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800">Settings</h2>
+        <p className="text-gray-600">Manage your account and preferences</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Profile Settings</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+              <input
+                type="text"
+                value={`${authUser?.firstName} ${authUser?.lastName}`}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                readOnly
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <input
+                type="email"
+                value={authUser?.email}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                readOnly
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+              <input
+                type="text"
+                value={authUser?.role}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                readOnly
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Preferences</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">Email Notifications</span>
+              <input type="checkbox" className="rounded" defaultChecked />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">SMS Notifications</span>
+              <input type="checkbox" className="rounded" />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">Maintenance Alerts</span>
+              <input type="checkbox" className="rounded" defaultChecked />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">Schedule Updates</span>
+              <input type="checkbox" className="rounded" defaultChecked />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render content function
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <DashboardContent />;
+      case 'maintenance':
+        return <MaintenanceContent />;
+      case 'buses':
+        return <BusManagementContent />;
+      case 'schedule':
+        return <ScheduleContent />;
+      case 'attendance':
+        return <AttendanceContent />;
+      case 'notifications':
+        return <NotificationsContent />;
+      case 'reports':
+        return <ReportsContent />;
+      case 'settings':
+        return <SettingsContent />;
+      case 'profile':
+        return <StaffProfile />;
+      default:
+        return <DashboardContent />;
+    }
+  };
 
   // UserProfileDropdown component moved to top
   const UserProfileDropdown = () => {
@@ -997,81 +2132,108 @@ const StaffDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
       {/* Sidebar */}
-      <div className={`bg-slate-800 border-r border-slate-700 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'} flex flex-col`}>
-        {/* Logo */}
-        <div className="p-6 border-b border-slate-700 flex items-center space-x-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Bus className="w-5 h-5 text-white" />
-          </div>
-          {sidebarOpen && (
-            <div>
-              <h1 className="text-xl font-bold text-white">FleetPro</h1>
-              <p className="text-xs text-slate-400">Staff Portal</p>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} border-r border-blue-200 overflow-y-auto`}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-blue-200">
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-3 rounded-xl shadow-lg">
+                <Bus className="h-8 w-8 text-white" />
+              </div>
+              <div className="absolute -top-1 -right-1 bg-blue-500 w-4 h-4 rounded-full"></div>
             </div>
-          )}
+            <div>
+              <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                BusZone+
+              </div>
+              <div className="text-xs text-gray-600">
+                Staff Portal
+              </div>
+            </div>
+          </div>
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded-md hover:bg-blue-100 text-gray-600">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === item.id
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              {sidebarOpen && <span className="ml-3 font-medium">{item.label}</span>}
-            </button>
-          ))}
+        <nav className="mt-6 px-4">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center px-4 py-3 text-left rounded-lg mb-2 transition-colors ${
+                  activeTab === item.id 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                }`}
+              >
+                <Icon className="w-5 h-5 mr-3" />
+                <span className="font-medium">{item.label}</span>
+              </button>
+            );
+          })}
         </nav>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="bg-slate-800 border-b border-slate-700 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-slate-300" />
+      <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+        <header className="border-b border-blue-200 bg-white">
+          <div className="flex items-center justify-between h-16 px-6">
+            <div className="flex items-center">
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-md hover:bg-blue-100 text-gray-600 mr-4">
+                <Menu className="w-5 h-5" />
               </button>
-              <h1 className="text-xl font-semibold text-white capitalize">
-                {activeTab.replace('-', ' ')}
-              </h1>
+              <h2 className="text-xl font-semibold text-gray-800 capitalize">{menuItems.find(i => i.id === activeTab)?.label || 'Dashboard'}</h2>
             </div>
+
             <div className="flex items-center space-x-4">
-              <button 
-                onClick={() => navigate('/notifications')}
-                className="p-2 rounded-lg hover:bg-slate-700 transition-colors relative"
-              >
-                <Bell className="w-5 h-5 text-slate-300" />
+              <div className="relative">
+                <button 
+                  onClick={() => navigate('/notifications')}
+                  className="p-1 rounded-full hover:bg-blue-100"
+                >
+                  <Bell className="w-6 h-6 text-gray-600" />
+                </button>
                 {notificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center animate-pulse">
                     {notificationCount}
                   </span>
                 )}
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <div className="hidden md:block">
+                  <p className="text-sm font-medium text-gray-800">
+                    {authUser?.firstName} {authUser?.lastName}
+                  </p>
+                  <p className="text-xs text-gray-600 capitalize">{authUser?.role?.toLowerCase()}</p>
+                </div>
+                <ChevronDown className="w-4 h-4 text-gray-600" />
+              </div>
+
+              <button
+                onClick={handleLogout}
+                className="flex items-center px-3 py-2 rounded-lg text-red-600 hover:bg-red-100 hover:text-red-700 text-sm transition-colors"
+              >
+                <LogOut className="w-4 h-4 mr-2" /> Logout
               </button>
-              <UserProfileDropdown />
             </div>
           </div>
         </header>
 
-        {/* Content Area */}
-        <main className="flex-1 p-6 overflow-auto">
-          {activeTab === 'maintenance' && <MaintenanceContent />}
-          {activeTab === 'profile' && <StaffProfile />}
-          {/* Add other tab contents here */}
+        <main className="p-6">
+          {isLoading ? <div className="text-gray-600">Loading dashboard...</div> : renderContent()}
         </main>
       </div>
+
+      {sidebarOpen && <div className="fixed inset-0 z-40 bg-blue-100 bg-opacity-80 lg:hidden" onClick={() => setSidebarOpen(false)}></div>}
 
       {/* Maintenance Modal */}
       {showModal && (

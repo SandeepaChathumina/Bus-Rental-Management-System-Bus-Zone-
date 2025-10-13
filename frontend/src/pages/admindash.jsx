@@ -397,7 +397,7 @@ const AdminDashboard = () => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'LKR'
     }).format(amount || 0);
   };
 
@@ -746,7 +746,7 @@ const AdminDashboard = () => {
     if (isCurrency) {
       displayValue = new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'USD'
+        currency: 'LKR'
       }).format(value || 0);
     }
     
