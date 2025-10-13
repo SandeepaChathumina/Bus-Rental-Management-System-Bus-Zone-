@@ -1,9 +1,8 @@
-// backend/models/user.js
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
-  // ... your existing schema fields ...
+  
   firstName: {
     type: String,
     required: true,
