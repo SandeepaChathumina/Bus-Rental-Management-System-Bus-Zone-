@@ -72,6 +72,17 @@ const AdvancedBusRentalHomepage = () => {
   const sectionRef = useRef(null);
   const navigate = useNavigate();
 
+  // Smooth scroll function
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  };
+
   // Hero slider images and content
   const heroSlides = [
     {
@@ -693,7 +704,7 @@ const AdvancedBusRentalHomepage = () => {
             <div className="hidden lg:flex items-center space-x-8">
               {[
                 { name: "Home", active: true, link: "/" },
-                { name: "Fleet", active: false, link: "#" },
+                { name: "Fleet", active: false, link: "#fleet" },
                 { name: "Services", active: false, link: "/services" },
                 { name: "Gallery", active: false, link: "/gallery" },
                 { name: "About", active: false, link: "/about" },
@@ -702,6 +713,12 @@ const AdvancedBusRentalHomepage = () => {
                 <a
                   key={item.name}
                   href={item.link}
+                  onClick={(e) => {
+                    if (item.link.startsWith('#')) {
+                      e.preventDefault();
+                      scrollToSection(item.link.substring(1));
+                    }
+                  }}
                   className={`relative px-4 py-2 text-sm font-medium transition-all duration-500 group ${
                     item.active
                       ? isScrolled ? "text-blue-600" : "text-white"
@@ -778,7 +795,7 @@ const AdvancedBusRentalHomepage = () => {
               <div className="px-6 py-6 space-y-4">
                 {[
                   { name: 'Home', link: '/' },
-                  { name: 'Fleet', link: '#' },
+                  { name: 'Fleet', link: '#fleet' },
                   { name: 'Services', link: '/services' },
                   { name: 'Gallery', link: '/gallery' },
                   { name: 'About', link: '/about' },
@@ -787,8 +804,16 @@ const AdvancedBusRentalHomepage = () => {
                   <a
                     key={item.name}
                     href={item.link}
+                    onClick={(e) => {
+                      if (item.link.startsWith('#')) {
+                        e.preventDefault();
+                        scrollToSection(item.link.substring(1));
+                        setIsMenuOpen(false);
+                      } else {
+                        setIsMenuOpen(false);
+                      }
+                    }}
                     className="text-slate-700 hover:text-blue-600 py-2 text-lg font-medium transition-colors duration-300 flex items-center group"
-                    onClick={() => setIsMenuOpen(false)}
                   >
                     <ArrowRight className="h-4 w-4 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                     {item.name}
@@ -1044,7 +1069,7 @@ const AdvancedBusRentalHomepage = () => {
       </div>
 
       {/* Fleet Section */}
-      <div className="bg-gradient-to-br from-sky-50 to-blue-50 py-24">
+      <div id="fleet" className="bg-gradient-to-br from-sky-50 to-blue-50 py-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 mb-6">
