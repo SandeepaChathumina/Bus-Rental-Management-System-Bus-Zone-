@@ -25,8 +25,11 @@ const StripeCheckoutForm = ({ booking, amount, onSuccess, onError }) => {
 
     try {
       // Create payment intent
-      const { data } = await axios.post('/api/payments/stripe/create-intent', {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/payments/stripe/create-intent`, {
         bookingId: booking._id
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (!data.success) {
@@ -108,9 +111,12 @@ const StripePayment = ({ booking, onPaymentSuccess, onPaymentError }) => {
 
   const handleDirectPayment = async () => {
     try {
-      const { data } = await axios.post('/api/payments/stripe/direct-payment', {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/payments/stripe/direct-payment`, {
         bookingId: booking._id,
         cardDetails: cardDetails
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (data.success) {

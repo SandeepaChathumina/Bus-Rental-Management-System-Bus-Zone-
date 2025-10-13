@@ -145,18 +145,76 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund, onSoftDelete }) 
         </div>
       </div>
 
-      {/* Related Entity Info */}
+      {/* Related Entity Info - Enhanced for Successful Payments */}
       {payment.booking && (
-        <div className="bg-blue-50 rounded-lg p-3 mb-4">
-          <div className="flex items-center text-blue-800">
-            <Bus className="h-4 w-4 mr-2" />
-            <span className="text-sm font-medium">
-              Booking: {payment.booking.bookingId}
-            </span>
+        <div className={`rounded-lg p-4 mb-4 ${
+          payment.status === 'success' 
+            ? 'bg-gradient-to-r from-green-50 to-blue-50 border border-green-200' 
+            : 'bg-blue-50'
+        }`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center text-blue-800">
+              <Bus className="h-4 w-4 mr-2" />
+              <span className="text-sm font-medium">
+                Booking: {payment.booking.bookingId}
+              </span>
+            </div>
+            {payment.status === 'success' && (
+              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                Confirmed
+              </span>
+            )}
           </div>
-          <p className="text-xs text-blue-600 mt-1">
-            Travel Date: {new Date(payment.booking.travelDate).toLocaleDateString()}
-          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs text-blue-600">Travel Date</p>
+              <p className="text-sm font-medium text-blue-900">
+                {new Date(payment.booking.travelDate).toLocaleDateString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-blue-600">Route</p>
+              <p className="text-sm font-medium text-blue-900">
+                {payment.booking.route?.from} → {payment.booking.route?.to || 'N/A'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-blue-600">Passengers</p>
+              <p className="text-sm font-medium text-blue-900">
+                {payment.booking.passengers?.length || 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-blue-600">Total Amount</p>
+              <p className="text-sm font-medium text-blue-900">
+                LKR {payment.booking.totalAmount?.toLocaleString() || '0'}
+              </p>
+            </div>
+          </div>
+
+          {/* Enhanced Details for Successful Payments */}
+          {payment.status === 'success' && payment.booking.passengers && payment.booking.passengers.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-green-200">
+              <h5 className="text-sm font-medium text-green-800 mb-2">Passenger Details</h5>
+              <div className="space-y-2">
+                {payment.booking.passengers.map((passenger, index) => (
+                  <div key={index} className="bg-white/60 rounded-lg p-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-slate-800">
+                          {passenger.firstName} {passenger.lastName}
+                        </p>
+                        <p className="text-xs text-slate-600">
+                          Seat: {passenger.seatNumber || 'N/A'} | Age: {passenger.age || 'N/A'} | {passenger.gender || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1207,6 +1265,58 @@ const PaymentManagement = () => {
             </div>
           </div>
         </div>
+
+        {/* Recent Successful Payments - Highlighted Section */}
+        {payments.filter(p => p.status === 'success').length > 0 && (
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 shadow-lg border border-green-200 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-green-800 flex items-center">
+                <CheckCircle className="h-6 w-6 mr-2" />
+                Recent Successful Payments
+              </h3>
+              <button
+                onClick={() => setStatusFilter('success')}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+              >
+                View All Success
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {payments
+                .filter(p => p.status === 'success')
+                .slice(0, 6)
+                .map((payment) => (
+                  <div key={payment._id} className="bg-white/80 rounded-lg p-4 border border-green-200 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <Bus className="h-4 w-4 mr-2 text-green-600" />
+                        <span className="text-sm font-medium text-slate-800">
+                          {payment.paymentId}
+                        </span>
+                      </div>
+                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                        Success
+                      </span>
+                    </div>
+                    <div className="text-lg font-bold text-green-600 mb-1">
+                      LKR {payment.amount?.toLocaleString() || '0'}
+                    </div>
+                    <div className="text-sm text-slate-600 mb-2">
+                      {payment.user?.firstName} {payment.user?.lastName}
+                    </div>
+                    {payment.booking && (
+                      <div className="text-xs text-slate-500">
+                        Booking: {payment.booking.bookingId}
+                      </div>
+                    )}
+                    <div className="text-xs text-slate-500 mt-1">
+                      {formatDate(payment.createdAt)}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
 
         {/* Advanced Filters */}
         <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 mb-8">
