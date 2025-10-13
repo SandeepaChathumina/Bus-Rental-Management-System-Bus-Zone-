@@ -92,6 +92,41 @@ router.put('/update-password', protect, async (req, res) => {
   }
 });
 
+// Add profile update route
+router.put('/profile', protect, async (req, res) => {
+  try {
+    const { firstName, lastName, phone, address } = req.body;
+    const userId = req.user._id;
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Update only the allowed fields
+    const updateData = {};
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (phone !== undefined) updateData.phone = phone;
+    if (address !== undefined) updateData.address = address;
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 router.post('/register', registerUser);
 router.get('/check-username', checkUsernameAvailability);
 router.get('/check-email', checkEmailAvailability);

@@ -13,6 +13,7 @@ import {
   Shield,
   Bus,
   Clock,
+  DollarSign,
   Edit,
   Save,
   X,
@@ -154,11 +155,10 @@ const DriverProfile = () => {
       setSaving(true);
       console.log('Saving profile data:', formData);
 
-      // Update user profile
+      // Update user profile (only editable fields)
       const userResponse = await axios.put(
         `${import.meta.env.VITE_BACKEND_URL}/api/users/profile`,
         {
-          username: formData.username,
           firstName: formData.firstName,
           lastName: formData.lastName,
           phone: formData.phone,
@@ -171,24 +171,7 @@ const DriverProfile = () => {
         }
       );
 
-      // Update driver profile
-      const driverResponse = await axios.put(
-        `${import.meta.env.VITE_BACKEND_URL}/api/drivers/profile`,
-        {
-          licenseNumber: formData.licenseNumber,
-          licenseExpiry: formData.licenseExpiry,
-          emergencyContact: formData.emergencyContact,
-          experience: formData.experience,
-          hourlyRate: formData.hourlyRate
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-
-      console.log('Update responses:', { user: userResponse.data, driver: driverResponse.data });
+      console.log('Update response:', userResponse.data);
 
       // Refresh auth status to get updated user data
       await checkAuthStatus();
@@ -226,240 +209,265 @@ const DriverProfile = () => {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-6 border border-blue-200 shadow-sm mb-6">
-        <div className="flex flex-col md:flex-row items-center justify-between">
-          <div className="flex items-center space-x-4 mb-4 md:mb-0">
-            <div className="relative">
-              <img
-                src={profileImage}
-                alt={fullName}
-                className="w-20 h-20 rounded-full border-4 border-blue-500/50"
-              />
-              <div className="absolute bottom-0 right-0 bg-green-500 w-5 h-5 rounded-full border-2 border-white"></div>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
-              <p className="text-gray-600">Professional Bus Driver</p>
-              <div className="flex items-center space-x-2 mt-1">
-                <div className="flex items-center text-yellow-500">
-                  <span className="text-sm">★★★★★</span>
-                  <span className="text-gray-600 ml-1 text-sm">4.8</span>
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-lg mb-8">
+        <div className="p-8">
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div className="flex items-center space-x-6 mb-6 md:mb-0">
+              <div className="relative">
+                <img
+                  src={profileImage}
+                  alt={fullName}
+                  className="w-24 h-24 rounded-full border-4 border-blue-500/20 shadow-lg"
+                />
+                <div className="absolute bottom-1 right-1 bg-green-500 w-6 h-6 rounded-full border-3 border-white shadow-sm"></div>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">{fullName}</h1>
+                <p className="text-lg text-gray-600 mb-3">Professional Bus Driver</p>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center bg-yellow-50 px-3 py-1 rounded-full">
+                    <span className="text-yellow-600 text-sm font-semibold">★★★★★</span>
+                    <span className="text-gray-700 ml-2 text-sm font-medium">4.8 Rating</span>
+                  </div>
+                  <div className="flex items-center bg-green-50 px-3 py-1 rounded-full">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    <span className="text-green-700 text-sm font-medium">Active</span>
+                  </div>
                 </div>
-                <span className="text-gray-400">•</span>
-                <span className="text-green-600 text-sm font-medium">Active</span>
               </div>
             </div>
-          </div>
 
-          <div className="flex space-x-3">
-            {!isEditing ? (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <Edit className="h-4 w-4" />
-                <span>Edit Profile</span>
-              </button>
-            ) : (
-              <div className="flex space-x-2">
+            <div className="flex space-x-3">
+              {!isEditing ? (
                 <button
-                  onClick={handleCancel}
-                  className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  onClick={() => setIsEditing(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all duration-200 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
                 >
-                  <X className="h-4 w-4" />
-                  <span>Cancel</span>
+                  <Edit className="h-5 w-5" />
+                  <span className="font-medium">Edit Profile</span>
                 </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving || !phoneValidation.isValid}
-                  className="bg-green-600 hover:bg-green-700 text-gray-900 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                  {saving ? (
-                    <Loader className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
-                  <span>{saving ? 'Saving...' : 'Save Changes'}</span>
-                </button>
-              </div>
-            )}
+              ) : (
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleCancel}
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-xl transition-all duration-200 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
+                  >
+                    <X className="h-5 w-5" />
+                    <span className="font-medium">Cancel</span>
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving || !phoneValidation.isValid}
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl transition-all duration-200 disabled:opacity-50 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
+                  >
+                    {saving ? (
+                      <Loader className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Save className="h-5 w-5" />
+                    )}
+                    <span className="font-medium">{saving ? 'Saving...' : 'Save Changes'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Personal Information */}
-        <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-6 border border-blue-200 shadow-sm">
-          <div className="flex items-center space-x-2 mb-4">
-            <User className="h-5 w-5 text-blue-500" />
-            <h2 className="text-lg font-semibold text-gray-900">Personal Information</h2>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Username</label>
-              <input
-                type="text"
-                value={formData.username}
-                onChange={(e) => handleInputChange('username', e.target.value)}
-                disabled={!isEditing}
-                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">First Name</label>
-                <input
-                  type="text"
-                  value={formData.firstName}
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  disabled={!isEditing}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300">
+          <div className="p-8">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="p-3 bg-blue-100 rounded-xl shadow-sm">
+                <User className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Last Name</label>
-                <input
-                  type="text"
-                  value={formData.lastName}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  disabled={!isEditing}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
+                <h2 className="text-xl font-bold text-gray-900">Personal Information</h2>
+                <p className="text-gray-600 text-sm">Your personal details and contact information</p>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Phone Number</label>
-              <div className="relative">
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  disabled={!isEditing}
-                  className={`w-full bg-white border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-                    phoneValidation.isValid ? 'border-gray-300' : 'border-red-500'
-                  }`}
-                  placeholder="07XXXXXXXX or +947XXXXXXXX"
-                />
-                {formData.phone && (
-                  <div className="absolute right-3 top-2">
-                    {phoneValidation.isValid ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <AlertCircle className="h-4 w-4 text-red-500" />
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">First Name</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={formData.firstName}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  ) : (
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                      <p className="text-lg font-semibold text-gray-900">{formData.firstName || 'Not provided'}</p>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">Last Name</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={formData.lastName}
+                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  ) : (
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                      <p className="text-lg font-semibold text-gray-900">{formData.lastName || 'Not provided'}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Username</label>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <p className="text-lg font-semibold text-gray-900">{formData.username || 'Not provided'}</p>
+                  <p className="text-gray-500 text-xs mt-1">Username cannot be changed</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Phone Number</label>
+                {isEditing ? (
+                  <div className="relative">
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      className={`w-full bg-white border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        phoneValidation.isValid ? 'border-gray-300' : 'border-red-500'
+                      }`}
+                      placeholder="07XXXXXXXX or +947XXXXXXXX"
+                    />
+                    {formData.phone && (
+                      <div className="absolute right-3 top-2">
+                        {phoneValidation.isValid ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-red-500" />
+                        )}
+                      </div>
+                    )}
+                    {!phoneValidation.isValid && (
+                      <p className="text-red-600 text-xs mt-1">{phoneValidation.message}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <p className="text-lg font-semibold text-gray-900">{formData.phone || 'Not provided'}</p>
+                      {formData.phone && (
+                        <div>
+                          {phoneValidation.isValid ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {!phoneValidation.isValid && formData.phone && (
+                      <p className="text-red-600 text-xs mt-1">{phoneValidation.message}</p>
                     )}
                   </div>
                 )}
               </div>
-              {!phoneValidation.isValid && (
-                <p className="text-red-600 text-xs mt-1">{phoneValidation.message}</p>
-              )}
-            </div>
 
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Email Address</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                disabled={true} // Email cannot be changed
-                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-500 cursor-not-allowed"
-                title="Email address cannot be changed"
-              />
-              <p className="text-gray-500 text-xs mt-1">Email address cannot be changed</p>
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Email Address</label>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <p className="text-lg font-semibold text-gray-900">{formData.email || 'Not provided'}</p>
+                  <p className="text-gray-500 text-xs mt-1">Email address cannot be changed</p>
+                </div>
+              </div>
 
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Address</label>
-              <textarea
-                value={formData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                disabled={!isEditing}
-                rows={3}
-                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Address</label>
+                {isEditing ? (
+                  <textarea
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    rows={3}
+                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  />
+                ) : (
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                    <p className="text-lg font-semibold text-gray-900">{formData.address || 'Not provided'}</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Driver Information */}
-        <div className="bg-gradient-to-br from-green-50 to-white rounded-2xl p-6 border border-green-200 shadow-sm">
-          <div className="flex items-center space-x-2 mb-4">
-            <Bus className="h-5 w-5 text-green-500" />
-            <h2 className="text-lg font-semibold text-gray-900">Driver Information</h2>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">License Number</label>
-              <input
-                type="text"
-                value={formData.licenseNumber}
-                onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
-                disabled={true} // License Number cannot be changed
-                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-600 cursor-not-allowed"
-                title="License number cannot be changed"
-              />
-              <p className="text-gray-500 text-xs mt-1">License number cannot be changed</p>
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">License Expiry Date</label>
-              <input
-                type="date"
-                value={formData.licenseExpiry}
-                onChange={(e) => handleInputChange('licenseExpiry', e.target.value)}
-                disabled={true} // License Expiry Date cannot be changed
-                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-600 cursor-not-allowed"
-                title="License expiry date cannot be changed"
-              />
-              <p className="text-gray-500 text-xs mt-1">License expiry date cannot be changed</p>
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Emergency Contact</label>
-              <input
-                type="text"
-                value={formData.emergencyContact}
-                onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                disabled={true} // Emergency Contact cannot be changed
-                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-600 cursor-not-allowed"
-                placeholder="Name and phone number"
-                title="Emergency contact cannot be changed"
-              />
-              <p className="text-gray-500 text-xs mt-1">Emergency contact cannot be changed</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Experience (years)</label>
-                <input
-                  type="number"
-                  value={formData.experience}
-                  onChange={(e) => handleInputChange('experience', e.target.value)}
-                  disabled={true} // Experience cannot be changed
-                  min="0"
-                  max="50"
-                  className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-600 cursor-not-allowed"
-                  title="Years of experience cannot be changed"
-                />
-                <p className="text-gray-500 text-xs mt-1">Years of experience cannot be changed</p>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300">
+          <div className="p-8">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="p-3 bg-green-100 rounded-xl shadow-sm">
+                <Bus className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Hourly Rate (LKR)</label>
-                <input
-                  type="number"
-                  value={formData.hourlyRate}
-                  onChange={(e) => handleInputChange('hourlyRate', e.target.value)}
-                  disabled={true} // Hourly Rate cannot be changed
-                  min="0"
-                  step="50"
-                  className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-600 cursor-not-allowed"
-                  title="Hourly rate cannot be changed"
-                />
-                <p className="text-gray-500 text-xs mt-1">Hourly rate cannot be changed</p>
+                <h2 className="text-xl font-bold text-gray-900">Driver Information</h2>
+                <p className="text-gray-600 text-sm">Your professional driving credentials and details</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <div className="flex items-center space-x-2 mb-2">
+                  <IdCard className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-600">License Number</span>
+                </div>
+                <p className="text-lg font-semibold text-gray-900">{formData.licenseNumber || 'Not provided'}</p>
+                <p className="text-gray-500 text-xs mt-1">License number cannot be changed</p>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-600">License Expiry Date</span>
+                </div>
+                <p className="text-lg font-semibold text-gray-900">
+                  {formData.licenseExpiry ? new Date(formData.licenseExpiry).toLocaleDateString() : 'Not provided'}
+                </p>
+                <p className="text-gray-500 text-xs mt-1">License expiry date cannot be changed</p>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Phone className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-600">Emergency Contact</span>
+                </div>
+                <p className="text-lg font-semibold text-gray-900">{formData.emergencyContact || 'Not provided'}</p>
+                <p className="text-gray-500 text-xs mt-1">Emergency contact cannot be changed</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Clock className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-600">Experience</span>
+                  </div>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {formData.experience ? `${formData.experience} years` : 'Not provided'}
+                  </p>
+                  <p className="text-gray-500 text-xs mt-1">Years of experience cannot be changed</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <DollarSign className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-600">Hourly Rate</span>
+                  </div>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {formData.hourlyRate ? `LKR ${formData.hourlyRate}` : 'Not provided'}
+                  </p>
+                  <p className="text-gray-500 text-xs mt-1">Hourly rate cannot be changed</p>
+                </div>
               </div>
             </div>
           </div>
