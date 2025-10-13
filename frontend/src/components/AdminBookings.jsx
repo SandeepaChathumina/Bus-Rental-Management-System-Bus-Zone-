@@ -15,6 +15,7 @@ const AdminBookings = () => {
   const [filteredBookings, setFilteredBookings] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -23,7 +24,17 @@ const AdminBookings = () => {
 
   useEffect(() => {
     filterBookings();
-  }, [bookings, searchTerm, statusFilter]);
+  }, [bookings, searchTerm, statusFilter, paymentStatusFilter]);
+
+  // Auto-refresh every 30 seconds to show updated payment status
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing admin bookings...');
+      fetchBookings();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchBookings = async () => {
     setIsLoading(true);
@@ -59,9 +70,14 @@ const AdminBookings = () => {
       );
     }
     
-    // Apply status filter
+    // Apply booking status filter
     if (statusFilter !== 'all') {
       results = results.filter(booking => booking.bookingStatus === statusFilter);
+    }
+    
+    // Apply payment status filter
+    if (paymentStatusFilter !== 'all') {
+      results = results.filter(booking => booking.paymentStatus === paymentStatusFilter);
     }
     
     setFilteredBookings(results);
@@ -73,6 +89,16 @@ const AdminBookings = () => {
       case 'Pending': return 'bg-yellow-100 text-yellow-800';
       case 'Cancelled': return 'bg-red-100 text-red-800';
       case 'Completed': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPaymentStatusColor = (status) => {
+    switch (status) {
+      case 'Paid': return 'bg-green-100 text-green-800';
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'Failed': return 'bg-red-100 text-red-800';
+      case 'Refunded': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -90,6 +116,13 @@ const AdminBookings = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <h2 className="text-2xl font-bold text-white">Bookings Management</h2>
         <div className="flex space-x-2 mt-4 md:mt-0">
+          <button 
+            onClick={fetchBookings}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            <Search className="w-4 h-4 mr-2" />
+            Refresh
+          </button>
           <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg">
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -98,7 +131,7 @@ const AdminBookings = () => {
       </div>
 
       <div className="bg-slate-800 rounded-xl p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
@@ -115,11 +148,23 @@ const AdminBookings = () => {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
           >
-            <option value="all">All Status</option>
+            <option value="all">All Booking Status</option>
             <option value="Confirmed">Confirmed</option>
             <option value="Pending">Pending</option>
             <option value="Cancelled">Cancelled</option>
             <option value="Completed">Completed</option>
+          </select>
+          
+          <select
+            value={paymentStatusFilter}
+            onChange={(e) => setPaymentStatusFilter(e.target.value)}
+            className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
+          >
+            <option value="all">All Payment Status</option>
+            <option value="Paid">Paid</option>
+            <option value="Pending">Pending</option>
+            <option value="Failed">Failed</option>
+            <option value="Refunded">Refunded</option>
           </select>
           
           <div className="flex items-center space-x-2">
@@ -139,7 +184,8 @@ const AdminBookings = () => {
                 <th className="px-4 py-3 text-slate-300">Date</th>
                 <th className="px-4 py-3 text-slate-300">Seats</th>
                 <th className="px-4 py-3 text-slate-300">Amount</th>
-                <th className="px-4 py-3 text-slate-300">Status</th>
+                <th className="px-4 py-3 text-slate-300">Booking Status</th>
+                <th className="px-4 py-3 text-slate-300">Payment Status</th>
                 <th className="px-4 py-3 text-slate-300">Actions</th>
               </tr>
             </thead>
@@ -171,7 +217,12 @@ const AdminBookings = () => {
                   </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.bookingStatus)}`}>
-                      {booking.bookingStatus}
+                      {booking.bookingStatus || 'Pending'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                      {booking.paymentStatus || 'Pending'}
                     </span>
                   </td>
                   <td className="px-4 py-3">

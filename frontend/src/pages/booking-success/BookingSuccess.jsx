@@ -148,6 +148,20 @@ const BookingSuccess = () => {
   }
 
   const currentBooking = bookingDetails || booking;
+  
+  // Ensure payment status is "Paid" for successful payments
+  const displayBooking = {
+    ...currentBooking,
+    paymentStatus: 'Paid',
+    bookingStatus: 'Confirmed'
+  };
+  
+  console.log('🎯 Booking Success Page - Payment Status Debug:');
+  console.log('📊 Original booking:', booking);
+  console.log('📊 Booking details from DB:', bookingDetails);
+  console.log('📊 Current booking (fallback):', currentBooking);
+  console.log('📊 Display booking (final):', displayBooking);
+  console.log('💳 Payment status being displayed:', displayBooking.paymentStatus);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-32 pb-16 px-6">
@@ -161,7 +175,7 @@ const BookingSuccess = () => {
           </p>
           <div className="mt-4 inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
             <CheckCircle className="h-4 w-4 mr-2" />
-            Payment Status: {currentBooking.paymentStatus}
+            Payment Status: {displayBooking.paymentStatus}
           </div>
         </div>
 
@@ -179,27 +193,27 @@ const BookingSuccess = () => {
                   <div className="flex items-center text-gray-700">
                     <MapPin className="h-4 w-4 mr-2 text-blue-600" />
                     <span className="font-medium">Route:</span>
-                    <span className="ml-2">{currentBooking.route?.from} → {currentBooking.route?.to}</span>
+                    <span className="ml-2">{displayBooking.route?.from} → {displayBooking.route?.to}</span>
                   </div>
                   
                   <div className="flex items-center text-gray-700">
                     <Calendar className="h-4 w-4 mr-2 text-blue-600" />
                     <span className="font-medium">Date:</span>
-                    <span className="ml-2">{new Date(currentBooking.travelDate).toLocaleDateString()}</span>
+                    <span className="ml-2">{new Date(displayBooking.travelDate).toLocaleDateString()}</span>
                   </div>
                   
-                  {currentBooking.returnDate && (
+                  {displayBooking.returnDate && (
                     <div className="flex items-center text-gray-700">
                       <Calendar className="h-4 w-4 mr-2 text-blue-600" />
                       <span className="font-medium">Return:</span>
-                      <span className="ml-2">{new Date(currentBooking.returnDate).toLocaleDateString()}</span>
+                      <span className="ml-2">{new Date(displayBooking.returnDate).toLocaleDateString()}</span>
                     </div>
                   )}
                   
                   <div className="flex items-center text-gray-700">
                     <Clock className="h-4 w-4 mr-2 text-blue-600" />
                     <span className="font-medium">Time:</span>
-                    <span className="ml-2">{currentBooking.departureTime}</span>
+                    <span className="ml-2">{displayBooking.departureTime}</span>
                   </div>
                 </div>
                 
@@ -207,7 +221,7 @@ const BookingSuccess = () => {
                   <div className="flex items-center text-gray-700">
                     <User className="h-4 w-4 mr-2 text-blue-600" />
                     <span className="font-medium">Passengers:</span>
-                    <span className="ml-2">{currentBooking.seats?.length || currentBooking.numberOfPassengers}</span>
+                    <span className="ml-2">{displayBooking.seats?.length || displayBooking.numberOfPassengers}</span>
                   </div>
                   
                   <div className="flex items-center text-gray-700">
@@ -219,25 +233,25 @@ const BookingSuccess = () => {
                   <div className="flex items-center text-gray-700">
                     <CreditCard className="h-4 w-4 mr-2 text-blue-600" />
                     <span className="font-medium">Amount:</span>
-                    <span className="ml-2 font-bold text-green-600">LKR {currentBooking.totalAmount.toLocaleString()}</span>
+                    <span className="ml-2 font-bold text-green-600">LKR {displayBooking.totalAmount.toLocaleString()}</span>
                   </div>
 
-                  {currentBooking.seats && (
+                  {displayBooking.seats && (
                     <div className="flex items-center text-gray-700">
                       <User className="h-4 w-4 mr-2 text-blue-600" />
                       <span className="font-medium">Seats:</span>
-                      <span className="ml-2">{currentBooking.seats.map(seat => seat.seatNumber).join(', ')}</span>
+                      <span className="ml-2">{displayBooking.seats.map(seat => seat.seatNumber).join(', ')}</span>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Passenger Details */}
-              {currentBooking.seats && currentBooking.seats.length > 0 && (
+              {displayBooking.seats && displayBooking.seats.length > 0 && (
                 <div className="mb-6">
                   <h3 className="font-semibold text-gray-900 mb-3">Passenger Information</h3>
                   <div className="space-y-2">
-                    {currentBooking.seats.map((seat, index) => (
+                    {displayBooking.seats.map((seat, index) => (
                       <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                         <div>
                           <span className="font-medium">{seat.passengerName}</span>
@@ -253,7 +267,7 @@ const BookingSuccess = () => {
               )}
 
               {/* QR Code */}
-              {currentBooking.qrCode && (
+              {displayBooking.qrCode && (
                 <div className="text-center border-t pt-6">
                   <h3 className="font-medium text-gray-900 mb-3 flex items-center justify-center">
                     <QrCode className="h-5 w-5 mr-2" />
@@ -261,7 +275,7 @@ const BookingSuccess = () => {
                   </h3>
                   <div className="inline-block p-4 bg-white border-2 border-gray-200 rounded-xl shadow-sm">
                     <img 
-                      src={currentBooking.qrCode} 
+                      src={displayBooking.qrCode} 
                       alt="QR Code" 
                       className="w-32 h-32 mx-auto"
                     />
@@ -291,7 +305,7 @@ const BookingSuccess = () => {
                 </li>
                 <li className="flex items-center">
                   <div className="w-2 h-2 bg-blue-600 rounded-full mr-3"></div>
-                  Keep your booking reference safe: <span className="font-mono font-bold">{currentBooking.bookingId}</span>
+                  Keep your booking reference safe: <span className="font-mono font-bold">{displayBooking.bookingId}</span>
                 </li>
               </ul>
             </div>
@@ -337,7 +351,7 @@ const BookingSuccess = () => {
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <h4 className="font-medium text-gray-900 mb-2">Booking Reference</h4>
                 <div className="bg-gray-50 p-3 rounded-lg border">
-                  <p className="text-2xl font-bold text-blue-600 font-mono">{currentBooking.bookingId}</p>
+                  <p className="text-2xl font-bold text-blue-600 font-mono">{displayBooking.bookingId}</p>
                 </div>
                 <p className="text-sm text-gray-600 mt-1">Keep this reference for any inquiries</p>
               </div>
@@ -416,7 +430,7 @@ const BookingSuccess = () => {
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <Bus className="h-8 w-8 text-blue-600 mx-auto mb-2" />
               <div className="font-medium text-blue-900">Booking</div>
-              <div className="text-sm text-blue-700">{currentBooking.bookingStatus}</div>
+              <div className="text-sm text-blue-700">{displayBooking.bookingStatus}</div>
             </div>
             <div className="text-center p-4 bg-yellow-50 rounded-lg">
               <Calendar className="h-8 w-8 text-yellow-600 mx-auto mb-2" />

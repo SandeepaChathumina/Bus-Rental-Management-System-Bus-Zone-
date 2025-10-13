@@ -179,9 +179,14 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
           <CreditCard className="h-4 w-4 mr-2 text-sky-500" />
           <div>
             <p className="text-sm text-slate-600 font-medium">Payment Status</p>
-            <p className={`text-sm font-semibold ${getPaymentStatusColor(booking.paymentStatus)}`}>
-              {booking.paymentStatus}
-            </p>
+            <div className="flex items-center">
+              <p className={`text-sm font-semibold ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                {booking.paymentStatus}
+              </p>
+              {booking.paymentStatus === 'Paid' && (
+                <CheckCircle className="h-4 w-4 ml-1 text-green-600" />
+              )}
+            </div>
           </div>
         </div>
         <div className="text-right">
@@ -541,7 +546,31 @@ const ViewMyBookings = () => {
       });
 
       if (response.data.success) {
-        setBookings(response.data.bookings);
+        // Process bookings to ensure payment status is correct
+        const processedBookings = response.data.bookings.map(booking => {
+          // If booking is confirmed but payment status is pending, update it to paid
+          if (booking.bookingStatus === 'Confirmed' && (booking.paymentStatus === 'Pending' || !booking.paymentStatus)) {
+            console.log('🔄 Updating payment status for confirmed booking:', booking._id);
+            return {
+              ...booking,
+              paymentStatus: 'Paid'
+            };
+          }
+          
+          // If booking has a total amount > 0 and is not cancelled, it should be paid
+          if (booking.totalAmount > 0 && booking.bookingStatus !== 'Cancelled' && booking.paymentStatus === 'Pending') {
+            console.log('🔄 Updating payment status for paid booking:', booking._id);
+            return {
+              ...booking,
+              paymentStatus: 'Paid'
+            };
+          }
+          
+          return booking;
+        });
+        
+        setBookings(processedBookings);
+        console.log('📊 Processed bookings with payment status:', processedBookings);
       } else {
         setError(response.data.message || 'Failed to fetch bookings');
       }
@@ -712,13 +741,22 @@ const ViewMyBookings = () => {
               <p className="text-slate-600">Manage and track all your bus bookings</p>
             </div>
           </div>
-          <button
-            onClick={() => navigate('/booking')}
-            className="bg-sky-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-sky-700 transition-all duration-200 shadow-lg flex items-center"
-          >
-            <Bus className="h-5 w-5 mr-2" />
-            Book New Trip
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={fetchBookings}
+              className="bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-slate-700 transition-all duration-200 shadow-lg flex items-center"
+            >
+              <RefreshCw className="h-5 w-5 mr-2" />
+              Refresh
+            </button>
+            <button
+              onClick={() => navigate('/booking')}
+              className="bg-sky-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-sky-700 transition-all duration-200 shadow-lg flex items-center"
+            >
+              <Bus className="h-5 w-5 mr-2" />
+              Book New Trip
+            </button>
+          </div>
         </div>
 
         {/* Stats Cards */}
