@@ -36,36 +36,28 @@ const lostItemSchema = new mongoose.Schema({
         ref: 'User',
         required: function () {
             return this.reportedBy === 'User';
-        } // Required only if user reports
-    },
-    booking: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Booking',
-        required: function () {
-            return this.reportedBy === 'User';
-        } // Required only if user reports
+        }
     },
     adminNotes: {
         type: String,
         trim: true
+    },
+    adminReply: {
+        type: String,
+        trim: true
+    },
+    repliedBy: {
+        type: String,
+        trim: true
+    },
+    repliedAt: {
+        type: Date
     }
 }, {
-    timestamps: true // Adds `createdAt` and `updatedAt` automatically
+    timestamps: true
 });
 
 // Create model
 const LostItem = mongoose.model('LostItem', lostItemSchema);
-
-// 🛠️ Drop old `item_id` index if it exists (fix for E11000 duplicate key error)
-LostItem.collection.dropIndex('item_id_1')
-    .then(() => console.log('Old item_id index dropped successfully'))
-    .catch(err => {
-        if (err.code === 27) {
-            // Code 27 = "Index not found"
-            console.log('No old item_id index to drop, safe to continue.');
-        } else {
-            console.error('Error dropping index:', err.message);
-        }
-    });
 
 export default LostItem;

@@ -7,6 +7,7 @@ import {
   getFeedbackById,
   updateFeedback,
   adminReply,
+  updateFeedbackStatus,
   deleteFeedback
 } from '../controllers/feedbackController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
@@ -27,6 +28,7 @@ router.get('/:id', getFeedbackById);
 // Admin only routes
 router.get('/', admin, getAllFeedbacks);
 router.post('/:id/reply', admin, adminReply);
+router.patch('/:id/status', admin, updateFeedbackStatus);
 router.delete('/:id', deleteFeedback);
 
 export default router;

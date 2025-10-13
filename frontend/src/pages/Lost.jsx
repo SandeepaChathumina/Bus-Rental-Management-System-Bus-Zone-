@@ -1,4 +1,3 @@
-// src/pages/Lost.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -39,7 +38,6 @@ const Lost = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [userBookings, setUserBookings] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -48,8 +46,7 @@ const Lost = () => {
     itemName: '',
     description: '',
     dateLost: '',
-    busNumber: '',
-    bookingId: ''
+    busNumber: ''
   });
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
@@ -168,9 +165,6 @@ const Lost = () => {
 
   useEffect(() => {
     fetchLostItems();
-    if (user?.role === 'passenger') {
-      fetchUserBookings();
-    }
   }, [user]);
 
   // Auto-refresh every 30 seconds for better sync
@@ -236,11 +230,6 @@ const Lost = () => {
               email: user?.email || 'john@example.com',
               phone: '+94 771234567'
             },
-            booking: { 
-              _id: 'booking1', 
-              bookingReference: 'BZ-2025-001',
-              route: 'Colombo - Kandy'
-            },
             adminNotes: 'Located in Main Depot, Bin 5. Slightly wet but functional. Small tear on left side of canopy. Owner verified matching description of wooden duck-head handle. Awaiting pickup.',
             createdAt: new Date('2025-09-23').toISOString(),
             updatedAt: new Date('2025-09-23T01:12:00').toISOString()
@@ -271,11 +260,6 @@ const Lost = () => {
               lastName: user?.lastName || 'Smith', 
               email: user?.email || 'jane@example.com',
               phone: '+94 771234568'
-            },
-            booking: { 
-              _id: 'booking2', 
-              bookingReference: 'BZ-2025-002',
-              route: 'Kandy - Galle'
             },
             adminNotes: '',
             createdAt: new Date('2025-09-21').toISOString(),
@@ -322,35 +306,6 @@ const Lost = () => {
     }
   };
 
-  const fetchUserBookings = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      const response = await fetch(`${BACKEND_URL}/api/bookings/user`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUserBookings(data.bookings || []);
-      } else {
-        // Mock booking data
-        setUserBookings([
-          { _id: 'booking1', bookingReference: 'BZ-2025-001', busNumber: 'AD-8765' },
-          { _id: 'booking2', bookingReference: 'BZ-2025-002', busNumber: 'BC-1234' }
-        ]);
-      }
-    } catch (error) {
-      console.error('Error fetching bookings:', error);
-      setUserBookings([]);
-    }
-  };
-
   const handleSubmitReport = async (e) => {
     e.preventDefault(); // Prevent default form submission behavior
     
@@ -374,8 +329,7 @@ const Lost = () => {
         itemName: formData.itemName.trim(),
         description: formData.description.trim(),
         dateLost: formData.dateLost,
-        busNumber: formData.busNumber.trim(),
-        bookingId: formData.bookingId || null
+        busNumber: formData.busNumber.trim()
       };
 
       const response = await fetch(`${BACKEND_URL}/api/lost-items`, {
@@ -396,7 +350,6 @@ const Lost = () => {
           status: 'Reported',
           reportedBy: user?.role === 'admin' ? 'Admin' : 'User',
           user: user?.role === 'passenger' ? user : null,
-          booking: submitData.bookingId ? userBookings.find(b => b._id === submitData.bookingId) : null,
           adminNotes: '',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
@@ -452,8 +405,7 @@ const Lost = () => {
       itemName: item.itemName || '',
       description: item.description || '',
       dateLost: item.dateLost ? new Date(item.dateLost).toISOString().split('T')[0] : '',
-      busNumber: item.busNumber || '',
-      bookingId: item.booking?._id || ''
+      busNumber: item.busNumber || ''
     });
     setShowEditForm(true);
   };
@@ -494,8 +446,7 @@ const Lost = () => {
         itemName: formData.itemName.trim(),
         description: formData.description.trim(),
         dateLost: formData.dateLost,
-        busNumber: formData.busNumber.trim(),
-        bookingId: formData.bookingId || null
+        busNumber: formData.busNumber.trim()
       };
 
       const response = await fetch(`${BACKEND_URL}/api/lost-items/${editingItem._id}`, {
@@ -509,7 +460,6 @@ const Lost = () => {
 
       const updates = {
         ...updateData,
-        booking: updateData.bookingId ? userBookings.find(b => b._id === updateData.bookingId) : editingItem.booking,
         updatedAt: new Date().toISOString()
       };
 
@@ -555,8 +505,7 @@ const Lost = () => {
       itemName: '',
       description: '',
       dateLost: '',
-      busNumber: '',
-      bookingId: ''
+      busNumber: ''
     });
   };
 
@@ -1009,13 +958,6 @@ const Lost = () => {
                         <span>User: {item.user.firstName} {item.user.lastName}</span>
                       </div>
                     )}
-
-                    {item.booking?.bookingReference && (
-                      <div className="flex items-center text-sm text-slate-300">
-                        <FileText className="w-4 h-4 mr-2 text-blue-400" />
-                        <span>Ref: {item.booking.bookingReference}</span>
-                      </div>
-                    )}
                   </div>
 
                   {item.adminNotes && item.adminNotes.trim() !== '' && (
@@ -1173,26 +1115,6 @@ const Lost = () => {
                   />
                 </div>
 
-                {user?.role === 'passenger' && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Booking Reference
-                    </label>
-                    <select
-                      value={formData.bookingId}
-                      onChange={(e) => setFormData(prev => ({ ...prev, bookingId: e.target.value }))}
-                      className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select your booking</option>
-                      {userBookings.map((booking) => (
-                        <option key={booking._id} value={booking._id}>
-                          {booking.bookingReference} - {booking.busNumber}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
                 <div className="flex space-x-3 pt-4">
                   <button
                     type="button"
@@ -1333,27 +1255,6 @@ const Lost = () => {
                     placeholder="e.g., AD-8765"
                   />
                 </div>
-
-                {user?.role === 'passenger' && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Booking Reference
-                    </label>
-                    <select
-                      value={formData.bookingId}
-                      onChange={(e) => setFormData(prev => ({ ...prev, bookingId: e.target.value }))}
-                      disabled={user?.role !== 'admin' && !canEditItem(editingItem)}
-                      className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">Select your booking</option>
-                      {userBookings.map((booking) => (
-                        <option key={booking._id} value={booking._id}>
-                          {booking.bookingReference} - {booking.busNumber}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
 
                 <div className="flex space-x-3 pt-4">
                   <button

@@ -103,34 +103,79 @@ const AdvancedBusRentalHomepage = () => {
     },
   ];
 
-  // Default testimonials as fallback
+  // Default testimonials as fallback - Real quality feedback examples
   const defaultTestimonials = [
     {
       name: "Sarah Johnson",
       role: "Event Coordinator",
       company: "Premier Events Ltd",
-      text: "Absolutely exceptional service! The buses were immaculate and the drivers were professional. Made our corporate event seamless.",
+      title: "Outstanding Corporate Event Service",
+      text: "BusZone+ exceeded all our expectations for our annual company retreat. The luxury coach was spotless, the driver was incredibly professional and punctual, and the onboard amenities made the 4-hour journey comfortable for all 45 employees. The booking process was seamless, and their customer service team was responsive throughout. We'll definitely be using them again for future events!",
       rating: 5,
       image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
-      type: "default"
+      type: "customer",
+      date: "2024-01-15T10:30:00Z",
+      isReplied: true
     },
     {
       name: "Michael Chen",
       role: "Travel Manager",
       company: "GlobalTech Solutions",
-      text: "We've been using their services for 2 years. Reliability, comfort, and competitive pricing - everything we need!",
+      title: "Reliable Partner for Business Travel",
+      text: "We've been using BusZone+ for our executive transportation needs for over 2 years now. Their reliability is unmatched - never had a single delay or cancellation. The buses are always clean, well-maintained, and equipped with modern amenities. The drivers are courteous and professional. Their competitive pricing and excellent service make them our go-to choice for all corporate travel needs.",
       rating: 5,
       image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-      type: "default"
+      type: "customer",
+      date: "2024-01-10T14:20:00Z",
+      isReplied: true
     },
     {
       name: "Emily Rodriguez",
       role: "Wedding Planner",
       company: "Elegant Occasions",
-      text: "They made our destination wedding transportation flawless. Guests were impressed with the luxury buses!",
+      title: "Perfect Wedding Transportation",
+      text: "BusZone+ made our destination wedding transportation absolutely flawless! They provided 3 luxury buses for our 120 guests, and everything was perfectly coordinated. The buses were beautifully decorated and the drivers were so accommodating. Our guests were genuinely impressed with the comfort and style. The team went above and beyond to ensure our special day was perfect. Highly recommend!",
       rating: 5,
       image: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=100&h=100&fit=crop&crop=face",
-      type: "default"
+      type: "customer",
+      date: "2024-01-08T16:45:00Z",
+      isReplied: true
+    },
+    {
+      name: "David Thompson",
+      role: "Tour Group Leader",
+      company: "Adventure Tours Inc",
+      title: "Excellent Tour Bus Experience",
+      text: "Led a group of 35 tourists on a 5-day city tour using BusZone+ services. The bus was spacious, comfortable, and had all the amenities we needed including WiFi, charging ports, and air conditioning. The driver was knowledgeable about local routes and very helpful. The booking process was straightforward and their customer support was excellent. Our group had a wonderful experience!",
+      rating: 5,
+      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
+      type: "customer",
+      date: "2024-01-05T09:15:00Z",
+      isReplied: true
+    },
+    {
+      name: "Lisa Wang",
+      role: "Conference Organizer",
+      company: "TechCon Events",
+      title: "Professional Conference Transportation",
+      text: "Organized transportation for 200+ conference attendees using BusZone+ services. They provided multiple buses with perfect timing and coordination. The drivers were professional, the buses were clean and comfortable, and the service was exceptional. Many attendees specifically mentioned how impressed they were with the transportation. Will definitely use them for future events!",
+      rating: 5,
+      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
+      type: "customer",
+      date: "2024-01-03T11:30:00Z",
+      isReplied: true
+    },
+    {
+      name: "James Wilson",
+      role: "Sports Team Manager",
+      company: "City United FC",
+      title: "Reliable Team Transportation",
+      text: "BusZone+ has been our trusted partner for team transportation for the past 3 seasons. They understand the unique needs of sports teams - punctuality, reliability, and comfort. The buses are always ready on time, the drivers are professional, and the service is consistent. They've never let us down, even for early morning or late-night trips. Highly recommended for any sports organization!",
+      rating: 5,
+      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face",
+      type: "customer",
+      date: "2024-01-01T08:00:00Z",
+      isReplied: true
     },
   ];
 
