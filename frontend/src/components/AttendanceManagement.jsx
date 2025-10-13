@@ -143,7 +143,7 @@ const QRScanner = ({ onScan, onError }) => {
 
   return (
     <div className="text-center">
-      <div className="relative bg-black rounded-lg overflow-hidden mb-4 mx-auto max-w-md">
+      <div className="relative bg-gray-100 rounded-lg overflow-hidden mb-4 mx-auto max-w-md border border-gray-300 shadow-lg">
         <video
           ref={videoRef}
           className="w-full h-64 object-cover"
@@ -153,18 +153,18 @@ const QRScanner = ({ onScan, onError }) => {
         {isScanning && (
           <>
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="border-4 border-blue-400 border-dashed rounded-lg w-48 h-48 animate-pulse"></div>
+              <div className="border-4 border-blue-500 border-dashed rounded-lg w-48 h-48 animate-pulse"></div>
             </div>
             <div className="absolute bottom-4 left-0 right-0 text-center">
-              <p className="text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm inline-block">
+              <p className="text-gray-800 bg-white bg-opacity-90 px-3 py-1 rounded-full text-sm inline-block shadow-sm">
                 Point camera at QR code
               </p>
             </div>
           </>
         )}
         {!isScanning && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
-            <div className="text-center text-slate-500">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+            <div className="text-center text-gray-500">
               <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
               <p>Camera not active</p>
             </div>
@@ -1193,7 +1193,7 @@ const AttendanceManagement = () => {
               </div>
             )}
             
-            <div className="bg-gray-50 rounded-xl p-6 mb-6 border border-blue-200 shadow-lg">
+            <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-6 mb-6 border border-gray-200 shadow-lg">
               {/* Working QR Scanner */}
               <QRScanner 
                 onScan={handleQrDetected}
@@ -1201,13 +1201,13 @@ const AttendanceManagement = () => {
               />
               
               {/* Manual Input Section */}
-              <div className="mt-6 pt-6 border-t border-blue-200">
+              <div className="mt-6 pt-6 border-t border-gray-200">
                 <h4 className="text-md font-semibold text-gray-800 mb-3 text-center">Manual QR Input</h4>
                 <div className="flex space-x-2">
                   <input
                     type="text"
                     placeholder="Paste QR code data here..."
-                    className="flex-1 bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={manualQrInput}
                     onChange={(e) => setManualQrInput(e.target.value)}
                     onKeyPress={(e) => {
