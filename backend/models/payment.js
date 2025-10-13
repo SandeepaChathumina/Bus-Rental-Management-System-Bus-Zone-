@@ -102,8 +102,7 @@ const paymentSchema = new mongoose.Schema({
 
 // Index for better query performance
 paymentSchema.index({ user: 1, createdAt: -1 });
-paymentSchema.index({ paymentId: 1 });
-paymentSchema.index({ transactionId: 1 });
+// paymentId and transactionId already have unique indexes from schema definition
 paymentSchema.index({ status: 1 });
 paymentSchema.index({ paymentGateway: 1 });
 
