@@ -26,21 +26,53 @@ import {
 const validateSriLankaPhone = (phone) => {
   if (!phone) return { isValid: true, message: '' }; // Allow empty
   
-  // Remove any non-digit characters
-  const cleaned = phone.replace(/\D/g, '');
+  // Remove all non-digit characters except +
+  const cleanPhone = phone.replace(/[^\d+]/g, '');
   
-  // Sri Lanka phone number patterns
-  const patterns = [
-    /^0[1-9][0-9]{8}$/, // 0XXXXXXXXX (10 digits starting with 0)
-    /^\+94[1-9][0-9]{8}$/, // +94XXXXXXXXX (11 digits starting with +94)
-    /^94[1-9][0-9]{8}$/, // 94XXXXXXXXX (10 digits starting with 94)
-  ];
+  // Valid Sri Lankan mobile prefixes
+  const validPrefixes = ['077', '071', '070', '072', '074', '075', '076', '078'];
+  const validInternationalPrefixes = ['+9477', '+9470', '+9471', '+9472', '+9474', '+9475', '+9476', '+9478'];
   
-  const isValid = patterns.some(pattern => pattern.test(cleaned));
+  // Check if it starts with +94 (international format)
+  if (cleanPhone.startsWith('+94')) {
+    const number = cleanPhone.substring(3); // Remove +94
+    if (number.length === 9 && number.startsWith('7')) {
+      const prefix = '+94' + number.substring(0, 2);
+      if (validInternationalPrefixes.includes(prefix)) {
+        return { isValid: true, message: '' };
+      }
+      return { 
+        isValid: false, 
+        message: 'Invalid mobile operator. Use +9470, +9471, +9472, +9474, +9475, +9476, +9477, or +9478' 
+      };
+    }
+    return { 
+      isValid: false, 
+      message: 'Invalid Sri Lankan mobile number. Use +947XXXXXXXX format' 
+    };
+  }
   
-  return {
-    isValid,
-    message: isValid ? '' : 'Please enter a valid Sri Lanka phone number (0XXXXXXXXX or +94XXXXXXXXX)'
+  // Check if it starts with 0 (local format)
+  if (cleanPhone.startsWith('0')) {
+    if (cleanPhone.length === 10 && cleanPhone.startsWith('07')) {
+      const prefix = cleanPhone.substring(0, 3);
+      if (validPrefixes.includes(prefix)) {
+        return { isValid: true, message: '' };
+      }
+      return { 
+        isValid: false, 
+        message: 'Invalid mobile operator. Use 070, 071, 072, 074, 075, 076, 077, or 078' 
+      };
+    }
+    return { 
+      isValid: false, 
+      message: 'Invalid Sri Lankan mobile number. Use 07XXXXXXXX format' 
+    };
+  }
+  
+  return { 
+    isValid: false, 
+    message: 'Please enter a valid Sri Lankan mobile number (07XXXXXXXX or +947XXXXXXXX)' 
   };
 };
 
