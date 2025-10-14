@@ -764,7 +764,7 @@ const calculatePricing = (basePrice, travelDate, returnDate, tripType) => {
   };
 };
 
-// Process booking payment - FIXED VERSION
+// Process booking payment 
 export const processBookingPayment = async (req, res) => {
   try {
     const { id: bookingId } = req.params; // Use id from params, not bookingId

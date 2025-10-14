@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Ollama API configuration
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2'; // You can change this to any model you prefer
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2'; 
 
 // Chatbot system prompt for bus rental management
 const SYSTEM_PROMPT = `You are a helpful assistant for a Bus Rental Management System called "Bus Zone". 

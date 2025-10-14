@@ -4,7 +4,7 @@ export const emailConfig = {
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER || 'sandeepachathuminaonline@gmail.com',
-    pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s/g, '') : 'nnvk apjf lqcf jzyz' // Fallback to working credentials
+    pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s/g, '') : 'nnvk apjf lqcf jzyz' 
   },
   
   // Alternative configurations for other email services
