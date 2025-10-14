@@ -45,7 +45,9 @@ export const generateBookingInvoicePDF = (booking, invoice) => {
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Name: ${booking.user?.name || 'N/A'}`, 20, 65);
+    const customerName = booking?.user ? 
+      `${booking.user.firstName || ''} ${booking.user.lastName || ''}`.trim() || 'N/A' : 'N/A';
+    doc.text(`Name: ${customerName}`, 20, 65);
     doc.text(`Email: ${booking.user?.email || 'N/A'}`, 20, 70);
     doc.text(`Phone: ${booking.user?.phone || 'N/A'}`, 20, 75);
     

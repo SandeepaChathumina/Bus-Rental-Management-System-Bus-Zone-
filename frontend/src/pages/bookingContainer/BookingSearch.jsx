@@ -1,4 +1,4 @@
-// src/pages/bookingContainer/BookingSearch.jsx - UPDATED
+// src/pages/bookingContainer/BookingSearch.jsx 
 import React, { useState } from 'react';
 import { 
   MapPin, 

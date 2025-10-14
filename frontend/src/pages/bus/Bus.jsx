@@ -160,13 +160,13 @@ const Bus = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 pt-32 pb-16 px-6">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-sky-100 pt-32 pb-16 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="animate-pulse">
-            <div className="h-8 bg-slate-800 rounded w-1/4 mb-8"></div>
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map(i => (
-                <div key={i} className="bg-slate-800 rounded-2xl p-6 h-96"></div>
+                <div key={i} className="bg-white rounded-2xl p-6 h-96 border border-gray-200"></div>
               ))}
             </div>
           </div>
@@ -176,15 +176,15 @@ const Bus = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 pt-32 pb-16 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-sky-100 pt-32 pb-16 px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">
             Available Buses
           </h1>
           {searchParams.from && searchParams.to && (
-            <div className="flex items-center space-x-6 text-slate-400">
+            <div className="flex items-center space-x-6 text-gray-600">
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2" />
                 {searchParams.travelDate}
@@ -211,7 +211,7 @@ const Bus = () => {
         <div className="mb-6">
           <button
             onClick={() => navigate('/booking')}
-            className="inline-flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors duration-200 border border-slate-600 hover:border-slate-500"
+            className="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg transition-colors duration-200 border border-gray-300 hover:border-gray-400 shadow-md"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -221,7 +221,7 @@ const Bus = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-slate-800/50 rounded-2xl p-6 mb-8">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-gray-200 shadow-lg">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2">
               <input
@@ -229,14 +229,14 @@ const Bus = () => {
                 placeholder="Search buses by plate, type, or bus ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             
             <select
               value={busTypeFilter}
               onChange={(e) => setBusTypeFilter(e.target.value)}
-              className="px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">All Bus Types</option>
               <option value="standard">Standard</option>
@@ -249,7 +249,7 @@ const Bus = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="price">Sort by Price</option>
               <option value="capacity">Sort by Capacity</option>
@@ -262,10 +262,10 @@ const Bus = () => {
           {filteredBuses.map((bus) => (
             <div 
               key={bus._id} 
-              className={`bg-slate-800/50 rounded-2xl p-6 border transition-all duration-300 ${
+              className={`bg-white rounded-2xl p-6 border transition-all duration-300 shadow-lg ${
                 selectedBus?._id === bus._id 
                   ? 'border-blue-500 ring-2 ring-blue-500/20' 
-                  : 'border-slate-700/50 hover:border-blue-500/30'
+                  : 'border-gray-200 hover:border-blue-300 hover:shadow-xl'
               }`}
             >
               {/* Bus Image */}
@@ -286,9 +286,9 @@ const Bus = () => {
                     )}
                   </div>
                 ) : (
-                  <div className="w-full h-48 bg-slate-700 rounded-xl flex flex-col items-center justify-center">
-                    <ImageIcon className="h-12 w-12 text-slate-500 mb-2" />
-                    <span className="text-slate-400 text-sm">No Image Available</span>
+                  <div className="w-full h-48 bg-gray-100 rounded-xl flex flex-col items-center justify-center">
+                    <ImageIcon className="h-12 w-12 text-gray-400 mb-2" />
+                    <span className="text-gray-500 text-sm">No Image Available</span>
                   </div>
                 )}
               </div>
@@ -296,45 +296,45 @@ const Bus = () => {
               {/* Bus Info */}
               <div className="mb-4">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-bold text-white">{bus.busType} Coach</h3>
-                  <span className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-sm">
+                  <h3 className="text-xl font-bold text-gray-800">{bus.busType} Coach</h3>
+                  <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
                     {bus.busType}
                   </span>
                 </div>
                 
                 <div className="flex items-center mb-3">
                   <div className="flex items-center">
-                    <span className="text-slate-400 text-sm">
+                    <span className="text-gray-600 text-sm">
                       Bus ID: {bus.busId || 'N/A'}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center text-slate-400 text-sm">
+                  <div className="flex items-center text-gray-600 text-sm">
                     <Users className="h-4 w-4 mr-1" />
                     {bus.capacity} seats
                   </div>
-                  <div className="flex items-center text-slate-400 text-sm">
+                  <div className="flex items-center text-gray-600 text-sm">
                     <MapPin className="h-4 w-4 mr-1" />
                     Plate: {bus.numberPlate}
                   </div>
                 </div>
 
-                <div className="flex items-center text-slate-400 text-sm mb-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                <div className="flex items-center text-gray-600 text-sm mb-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                   Available
                 </div>
               </div>
 
               {/* Amenities */}
               <div className="mb-4">
-                <h4 className="text-slate-300 text-sm font-medium mb-2">Amenities</h4>
+                <h4 className="text-gray-700 text-sm font-medium mb-2">Amenities</h4>
                 <div className="flex flex-wrap gap-2">
                   {getAmenities(bus.busType).map((amenity, index) => (
                     <div
                       key={index}
-                      className="flex items-center px-3 py-1 bg-slate-700 rounded-lg text-slate-300 text-sm"
+                      className="flex items-center px-3 py-1 bg-gray-100 rounded-lg text-gray-700 text-sm"
                       title={amenity.charAt(0).toUpperCase() + amenity.slice(1)}
                     >
                       {getAmenityIcon(amenity)}
@@ -347,8 +347,8 @@ const Bus = () => {
               {/* Price and Action */}
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-2xl font-bold text-white">Rs. {bus.pricePerDay || 0}</div>
-                  <div className="text-slate-400 text-sm">per day</div>
+                  <div className="text-2xl font-bold text-gray-800">Rs. {bus.pricePerDay || 0}</div>
+                  <div className="text-gray-600 text-sm">per day</div>
                 </div>
                 
                 {/* Select Button */}
@@ -379,15 +379,15 @@ const Bus = () => {
 
         {/* Selected Bus Action */}
         {selectedBus && (
-          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800 rounded-xl p-4 shadow-2xl border border-slate-700 z-50">
+          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white rounded-xl p-4 shadow-2xl border border-gray-200 z-50">
             <div className="flex items-center justify-between space-x-4">
-              <div className="text-white">
-                <span className="text-slate-400">Selected: </span>
+              <div className="text-gray-800">
+                <span className="text-gray-600">Selected: </span>
                 {selectedBus.busType} Coach - Rs. {selectedBus.pricePerDay}/day
               </div>
               <button
                 onClick={handleProceedToBooking}
-                className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors flex items-center space-x-2"
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-2 rounded-xl font-semibold transition-colors flex items-center space-x-2"
               >
                 <span>Proceed to Booking</span>
                 <ArrowRight className="h-4 w-4" />
@@ -398,14 +398,14 @@ const Bus = () => {
 
         {filteredBuses.length === 0 && (
           <div className="text-center py-12">
-            <div className="text-slate-400 text-lg mb-4">No buses found matching your criteria</div>
+            <div className="text-gray-600 text-lg mb-4">No buses found matching your criteria</div>
             <button
               onClick={() => {
                 setSearchTerm('');
                 setBusTypeFilter('');
                 setSortBy('price');
               }}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors"
+              className="bg-gradient-to-r from-blue-500 to-sky-500 hover:from-blue-600 hover:to-sky-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors"
             >
               Clear Filters
             </button>

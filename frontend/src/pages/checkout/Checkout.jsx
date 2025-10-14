@@ -215,10 +215,12 @@ const Checkout = () => {
       
       try {
         // Try the payment endpoint first
+        console.log('🔄 Calling payment API for booking:', booking._id);
         response = await axios.post(
           `${import.meta.env.VITE_BACKEND_URL}/api/bookings/${booking._id}/payment`,
           {
-            paymentMethod: 'stripe',
+            paymentMethod: 'card',
+            paymentGateway: 'stripe',
             amount: pricing.totalAmount,
             cardDetails: {
               cardNumber: '4242****4242',
@@ -234,7 +236,11 @@ const Checkout = () => {
           }
         );
         console.log('✅ Booking updated successfully via payment API:', response.data);
+        console.log('📊 Response booking status:', response.data.booking?.status);
+        console.log('📊 Response payment status:', response.data.booking?.paymentStatus);
       } catch (apiError) {
+        console.error('❌ Payment API failed:', apiError);
+        console.error('❌ Error details:', apiError.response?.data);
         console.warn('⚠️ Payment API failed, trying direct update:', apiError.message);
         
         try {
@@ -336,10 +342,12 @@ const Checkout = () => {
       
       try {
         // Try the payment endpoint first
+        console.log('🔄 Calling payment API for booking (direct):', booking._id);
         response = await axios.post(
           `${import.meta.env.VITE_BACKEND_URL}/api/bookings/${booking._id}/payment`,
           {
-            paymentMethod: 'direct',
+            paymentMethod: 'card',
+            paymentGateway: 'none',
             amount: pricing.totalAmount,
             cardDetails: {
               cardNumber: '4242****4242',
@@ -355,7 +363,11 @@ const Checkout = () => {
           }
         );
         console.log('✅ Booking updated successfully via payment API:', response.data);
+        console.log('📊 Response booking status:', response.data.booking?.status);
+        console.log('📊 Response payment status:', response.data.booking?.paymentStatus);
       } catch (apiError) {
+        console.error('❌ Payment API failed (direct):', apiError);
+        console.error('❌ Error details:', apiError.response?.data);
         console.warn('⚠️ Payment API failed, trying direct update:', apiError.message);
         
         try {

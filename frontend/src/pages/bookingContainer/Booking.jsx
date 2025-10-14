@@ -1,4 +1,4 @@
-// src/pages/bookingContainer/Booking.jsx - UPDATED
+// src/pages/bookingContainer/Booking.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import BookingSearch from './BookingSearch';

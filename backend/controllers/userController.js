@@ -29,12 +29,12 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // 🚨 Prevent self-registering as admin
+    // Prevent self-registering as admin
     if (role === 'admin') {
       return res.status(403).json({ message: 'Admins cannot be self-registered' });
     }
 
-    // 🚨 Staff & drivers require admin
+    // Staff & drivers require admin
     if ((role === 'staff' || role === 'driver') && (!req.user || req.user.role !== 'admin')) {
       return res.status(403).json({ message: 'Only admins can create staff and drivers' });
     }
@@ -535,7 +535,7 @@ export {
   getUserById,
   updateUser,
   deleteUser,
-  activateUser, // Add this line
+  activateUser, 
   getUserReport,
   checkUsernameAvailability,
   checkEmailAvailability,

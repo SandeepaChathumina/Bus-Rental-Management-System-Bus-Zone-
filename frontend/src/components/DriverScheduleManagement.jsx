@@ -491,7 +491,7 @@ const DriverScheduleManagement = () => {
     const boxHeight = 25;
     let currentX = margin;
     
-    // Total Bookings box
+    // Total Bookings box - Primary Blue
     doc.setFillColor(59, 130, 246);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
       doc.setTextColor(255, 255, 255);
@@ -503,8 +503,8 @@ const DriverScheduleManagement = () => {
     
     currentX += boxWidth + boxSpacing;
     
-    // Assigned box
-    doc.setFillColor(37, 99, 235);
+    // Assigned box - Dark Blue
+    doc.setFillColor(30, 64, 175);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
@@ -515,8 +515,8 @@ const DriverScheduleManagement = () => {
     
     currentX += boxWidth + boxSpacing;
     
-    // Accepted box
-    doc.setFillColor(34, 197, 94);
+    // Accepted box - Sky Blue
+    doc.setFillColor(14, 165, 233);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
@@ -527,8 +527,8 @@ const DriverScheduleManagement = () => {
     
     currentX += boxWidth + boxSpacing;
     
-    // Declined box
-    doc.setFillColor(239, 68, 68);
+    // Declined box - Navy Blue
+    doc.setFillColor(30, 41, 59);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
           doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
@@ -539,8 +539,8 @@ const DriverScheduleManagement = () => {
     
     currentX += boxWidth + boxSpacing;
     
-    // Pending box
-    doc.setFillColor(245, 158, 11);
+    // Pending box - Light Blue
+    doc.setFillColor(96, 165, 250);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);

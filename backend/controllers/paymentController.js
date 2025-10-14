@@ -441,12 +441,15 @@ export const confirmStripePayment = async (req, res) => {
     payment.gatewayResponse.rawResponse = paymentIntent;
 
     if (paymentIntent.status === 'succeeded') {
+      console.log('✅ Payment succeeded, updating booking status...');
       // Handle successful payment based on payment type
       switch (payment.paymentType) {
         case 'booking':
           if (payment.booking) {
+            console.log('📊 Before update - Booking status:', payment.booking.bookingStatus, 'Payment status:', payment.booking.paymentStatus);
             payment.booking.paymentStatus = 'Paid';
             payment.booking.bookingStatus = 'Confirmed';
+            console.log('📊 After update - Booking status:', payment.booking.bookingStatus, 'Payment status:', payment.booking.paymentStatus);
             
             // Generate QR code for booking
             try {
@@ -465,6 +468,7 @@ export const confirmStripePayment = async (req, res) => {
             }
             
             await payment.booking.save();
+            console.log('💾 Booking saved to database with status:', payment.booking.bookingStatus, 'Payment status:', payment.booking.paymentStatus);
             await generateInvoice(payment, payment.booking);
             
             // Send booking confirmation email with QR code
@@ -655,11 +659,14 @@ export const processDirectCardPayment = async (req, res) => {
 
     // Handle successful payment
     if (paymentIntent.status === 'succeeded') {
+      console.log('✅ Direct payment succeeded, updating booking status...');
       if (paymentType === 'booking' && paymentData.booking) {
         const booking = await Booking.findById(paymentData.booking);
+        console.log('📊 Direct payment: Before update - Booking status:', booking.bookingStatus, 'Payment status:', booking.paymentStatus);
         booking.paymentStatus = 'Paid';
         booking.bookingStatus = 'Confirmed';
         await booking.save();
+        console.log('📊 Direct payment: After update - Booking status:', booking.bookingStatus, 'Payment status:', booking.paymentStatus);
         await generateInvoice(payment, booking);
       } else if (paymentType === 'maintenance' && paymentData.maintenance) {
         const maintenance = await Maintenance.findById(paymentData.maintenance);
@@ -1916,19 +1923,23 @@ export const handleStripeWebhook = async (req, res) => {
 // Webhook handlers
 const handlePaymentSucceeded = async (paymentIntent) => {
   try {
+    console.log('🔔 Webhook: Payment succeeded for transaction:', paymentIntent.id);
     const payment = await Payment.findOne({ transactionId: paymentIntent.id })
       .populate('booking')
       .populate('maintenance');
 
     if (payment && payment.status === 'pending') {
+      console.log('📊 Webhook: Found pending payment, updating status...');
       payment.status = 'success';
       payment.gatewayResponse.status = 'succeeded';
       await payment.save();
 
       if (payment.booking) {
+        console.log('📊 Webhook: Before update - Booking status:', payment.booking.bookingStatus, 'Payment status:', payment.booking.paymentStatus);
         payment.booking.paymentStatus = 'Paid';
         payment.booking.bookingStatus = 'Confirmed';
         await payment.booking.save();
+        console.log('📊 Webhook: After update - Booking status:', payment.booking.bookingStatus, 'Payment status:', payment.booking.paymentStatus);
         await generateInvoice(payment, payment.booking);
       }
 
@@ -1937,6 +1948,8 @@ const handlePaymentSucceeded = async (paymentIntent) => {
         await payment.maintenance.save();
         await generateMaintenanceInvoice(payment, payment.maintenance);
       }
+    } else {
+      console.log('📊 Webhook: No pending payment found or payment already processed');
     }
   } catch (error) {
     console.error('Error handling payment succeeded:', error);

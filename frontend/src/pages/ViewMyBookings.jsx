@@ -93,14 +93,14 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
   return (
     <div className={`bg-white/90 rounded-2xl p-6 shadow-lg border hover:shadow-xl transition-all duration-300 ${
       booking.paymentStatus === 'Paid' && booking.bookingStatus === 'Confirmed'
-        ? 'border-green-200 hover:border-green-300 bg-gradient-to-br from-white to-green-50'
+        ? 'border-gray-200 hover:border-gray-300 bg-white'
         : 'border-sky-100 hover:border-sky-300'
     }`}>
       {/* Success Banner for Paid Bookings */}
       {booking.paymentStatus === 'Paid' && booking.bookingStatus === 'Confirmed' && (
-        <div className="bg-green-100 border border-green-200 rounded-lg p-3 mb-4 flex items-center">
+        <div className="bg-white border border-gray-200 rounded-lg p-3 mb-4 flex items-center shadow-sm">
           <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-          <span className="text-green-800 font-medium text-sm">
+          <span className="text-gray-800 font-medium text-sm">
             ✅ Payment Successful - Booking Confirmed
           </span>
         </div>
@@ -125,7 +125,7 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
             {booking.bookingStatus}
           </span>
           {booking.paymentStatus === 'Paid' && booking.bookingStatus === 'Confirmed' && (
-            <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200 flex items-center">
+            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium border border-gray-200 flex items-center">
               <CheckCircle className="h-3 w-3 mr-1" />
               Paid
             </span>
@@ -197,7 +197,7 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
       {/* Payment Information */}
       <div className={`mb-4 p-4 rounded-xl border ${
         booking.paymentStatus === 'Paid' 
-          ? 'bg-green-50 border-green-200' 
+          ? 'bg-white border-gray-200' 
           : 'bg-slate-50 border-slate-200'
       }`}>
         <div className="flex items-center justify-between mb-3">
@@ -207,7 +207,7 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
             }`} />
             <div>
               <p className={`text-sm font-medium ${
-                booking.paymentStatus === 'Paid' ? 'text-green-700' : 'text-slate-600'
+                booking.paymentStatus === 'Paid' ? 'text-gray-700' : 'text-slate-600'
               }`}>Payment Status</p>
               <div className="flex items-center">
                 <p className={`text-sm font-semibold ${getPaymentStatusColor(booking.paymentStatus)}`}>
@@ -221,10 +221,10 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
           </div>
           <div className="text-right">
             <p className={`text-sm font-medium ${
-              booking.paymentStatus === 'Paid' ? 'text-green-700' : 'text-slate-600'
+              booking.paymentStatus === 'Paid' ? 'text-gray-700' : 'text-slate-600'
             }`}>Total Amount</p>
             <p className={`text-lg font-bold ${
-              booking.paymentStatus === 'Paid' ? 'text-green-600' : 'text-slate-800'
+              booking.paymentStatus === 'Paid' ? 'text-gray-800' : 'text-slate-800'
             }`}>
               LKR {booking.totalAmount?.toLocaleString() || '0'}
             </p>
