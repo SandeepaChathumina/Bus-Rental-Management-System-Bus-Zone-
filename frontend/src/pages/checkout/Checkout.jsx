@@ -75,19 +75,10 @@ const StripeCardForm = ({ amount, onSuccess, onError }) => {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Card Details (Test Mode)
+          Card Details ( Mode)
         </label>
 {/* test         */}
-        {/* Test Card Information */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-          <h4 className="font-semibold text-yellow-800 mb-2">💳 Test Card Details:</h4>
-          <div className="text-sm text-yellow-700 space-y-1">
-            <div><strong>Card Number:</strong> 4242 4242 4242 4242</div>
-            <div><strong>Expiry:</strong> Any future date (e.g., 12/34)</div>
-            <div><strong>CVC:</strong> Any 3 digits (e.g., 123)</div>
-            <div><strong>ZIP:</strong> Any 5 digits</div>
-          </div>
-        </div>
+       
 
         {/* Stripe Card Element */}
         <div className="bg-gray-50 p-6 rounded-2xl w-full shadow-inner">
@@ -130,12 +121,12 @@ const StripeCardForm = ({ amount, onSuccess, onError }) => {
         {isProcessing ? (
           <>
             <Loader className="h-5 w-5 mr-2 animate-spin" />
-            Processing Test Payment...
+            Processing  Payment...
           </>
         ) : (
           <>
             <CreditCard className="h-5 w-5 mr-2" />
-            Pay LKR {amount.toLocaleString()} (Test Mode)
+            Pay LKR {amount.toLocaleString()} 
           </>
         )}
       </button>
@@ -461,7 +452,7 @@ const Checkout = () => {
                 }}
                 className="bg-yellow-500 text-white px-4 py-2 rounded text-sm hover:bg-yellow-600"
               >
-                Skip Authentication (Testing)
+                Skip Authentication 
               </button>
             </div>
           </div>
@@ -496,7 +487,7 @@ const Checkout = () => {
                 }}
                 className="bg-yellow-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 mr-2"
               >
-                Skip Authentication (Testing)
+                Skip Authentication
               </button>
               <button
                 onClick={() => navigate('/login')}
@@ -519,7 +510,7 @@ const Checkout = () => {
             <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-6" />
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Payment Successful! 🎉</h2>
             <p className="text-gray-600 mb-6">
-              Test payment completed successfully. Redirecting to booking details...
+               payment completed successfully. Redirecting to booking details...
             </p>
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
           </div>
@@ -542,8 +533,8 @@ const Checkout = () => {
           </button>
           
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900">Test Payment</h1>
-            <p className="text-gray-600 mt-2">Stripe Test Mode - No real charges</p>
+            <h1 className="text-4xl font-bold text-gray-900">Payment</h1>
+            <p className="text-gray-600 mt-2">Stripe  Mode - No real charges</p>
           </div>
           
           <div className="w-20"></div>
@@ -603,18 +594,7 @@ const Checkout = () => {
               </div>
             </div>
 
-              {/* Test Mode Notice */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6">
-                <div className="flex items-center mb-4">
-                  <Shield className="h-6 w-6 text-yellow-600 mr-2" />
-                  <h3 className="text-lg font-semibold text-yellow-800">Test Mode Active</h3>
-                </div>
-                <ul className="text-yellow-700 text-sm space-y-2">
-                  <li>• No real payment will be processed</li>
-                  <li>• Use test card: 4242 4242 4242 4242</li>
-                  <li>• This is for development testing only</li>
-                </ul>
-              </div>
+             
 
               {/* Authentication Status Debug */}
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mt-4">
@@ -669,7 +649,7 @@ const Checkout = () => {
             <div className="bg-white rounded-2xl p-8 shadow-lg">
               <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
                 <CreditCard className="h-7 w-7 mr-3 text-blue-600" />
-                Payment Details (Test Mode)
+                Payment Details
               </h2>
               <p className="text-gray-600 mb-8">Choose payment method for testing</p>
 
@@ -787,16 +767,7 @@ const Checkout = () => {
               </div>
 
               {/* Test Instructions */}
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <h4 className="font-semibold text-gray-900 mb-2">Testing Instructions:</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Select "Credit/Debit Card" for Stripe test</li>
-                  <li>• Use card number: <strong>4242 4242 4242 4242</strong></li>
-                  <li>• Any future expiry date and CVC will work</li>
-                  <li>• Select "Quick Payment" for simulation test</li>
-                  <li>• No real money will be charged</li>
-                </ul>
-              </div>
+              
             </div>
           </div>
         </div>
