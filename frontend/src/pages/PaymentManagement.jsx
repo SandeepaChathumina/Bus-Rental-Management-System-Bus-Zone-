@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { 
   CreditCard,
   DollarSign,
@@ -34,10 +36,75 @@ import {
   MapPin,
   Bus,
   Wrench,
-  Car
+  Car,
+  X
 } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+
+// Export Modal Component
+const ExportModal = ({ 
+  show, 
+  onClose, 
+  format, 
+  setFormat, 
+  itemCount, 
+  onExport, 
+  loading 
+}) => {
+  if (!show) return null;
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
+      <div className="relative bg-white border border-blue-200 rounded-xl p-6 z-60 w-full max-w-md shadow-2xl">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">Export Payment Report</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <button
+            onClick={() => setFormat("csv")}
+            className={`p-3 border-2 rounded-lg ${
+              format === "csv"
+                ? "border-green-500 bg-green-50 text-green-700"
+                : "border-blue-300 text-gray-600 hover:bg-blue-50"
+            }`}
+          >
+            <FileText className="w-6 h-6 mx-auto mb-1" /> CSV
+          </button>
+          <button
+            onClick={() => setFormat("pdf")}
+            className={`p-3 border-2 rounded-lg ${
+              format === "pdf"
+                ? "border-red-500 bg-red-50 text-red-700"
+                : "border-blue-300 text-gray-600 hover:bg-blue-50"
+            }`}
+          >
+            <FileText className="w-6 h-6 mx-auto mb-1" /> PDF
+          </button>
+        </div>
+        <div className="bg-blue-50 rounded p-2 text-sm text-gray-700 mb-4">
+          <Calendar className="inline w-4 h-4 mr-1" /> Report will include {itemCount} payments
+        </div>
+        <div className="flex justify-end space-x-2">
+          <button onClick={onClose} className="px-3 py-1 text-gray-600 hover:text-gray-800">
+            Cancel
+          </button>
+          <button
+            onClick={onExport}
+            disabled={loading}
+            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md"
+          >
+            {loading ? "Generating..." : "Export Now"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Payment Status Badge Component
 const PaymentStatusBadge = ({ status }) => {
@@ -102,7 +169,7 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund, onSoftDelete }) 
   };
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+    <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-200 hover:shadow-xl transition-all duration-300">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
@@ -466,6 +533,11 @@ const PaymentManagement = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
+  // Export states
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFormat, setExportFormat] = useState('pdf');
+  const [exporting, setExporting] = useState(false);
+
   useEffect(() => {
     fetchAllPayments();
     fetchPaymentStats();
@@ -643,305 +715,338 @@ const PaymentManagement = () => {
     }
   };
 
+  // Enhanced PDF Report Generation
   const generatePDFReport = () => {
-    // Create comprehensive PDF report using HTML content that can be printed as PDF
-    const reportData = {
-      title: 'Payment Management Report',
-      generatedAt: new Date().toLocaleString(),
-      totalPayments: filteredPayments.length,
-      totalAmount: filteredPayments.reduce((sum, payment) => sum + payment.amount, 0),
-      statusBreakdown: {
-        success: filteredPayments.filter(p => p.status === 'success').length,
-        pending: filteredPayments.filter(p => p.status === 'pending').length,
-        failed: filteredPayments.filter(p => p.status === 'failed').length,
-        refunded: filteredPayments.filter(p => p.status === 'refunded').length,
-      },
-      typeBreakdown: {
-        booking: filteredPayments.filter(p => p.paymentType === 'booking').length,
-        maintenance: filteredPayments.filter(p => p.paymentType === 'maintenance').length,
-        salary: filteredPayments.filter(p => p.paymentType === 'salary').length,
-      },
-      payments: filteredPayments.map(payment => ({
-        paymentId: payment.paymentId,
-        customerName: `${payment.user?.firstName || ''} ${payment.user?.lastName || ''}`.trim(),
-        email: payment.user?.email || 'N/A',
-        amount: payment.amount,
-        status: payment.status,
-        paymentType: payment.paymentType,
-        paymentMethod: payment.paymentMethod,
-        gateway: payment.paymentGateway,
-        transactionId: payment.transactionId,
-        createdAt: new Date(payment.createdAt).toLocaleDateString(),
-        relatedEntity: payment.booking ? `Booking: ${payment.booking.bookingId}` :
-                     payment.maintenance ? `Maintenance: ${payment.maintenance.maintenanceId}` :
-                     payment.schedule ? `Schedule: ${payment.schedule._id?.slice(-6)}` :
-                     'N/A'
-      }))
-    };
+    if (!filteredPayments || filteredPayments.length === 0) {
+      alert("No payment data to export");
+      return;
+    }
 
-    // Create HTML content for PDF generation
-    const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Payment Management Report</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.4;
-            color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #4F46E5;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-        .company-name {
-            font-size: 28px;
-            font-weight: bold;
-            color: #4F46E5;
-            margin-bottom: 10px;
-        }
-        .report-title {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .report-meta {
-            font-size: 14px;
-            color: #666;
-        }
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
-        }
-        .summary-card {
-            border: 1px solid #E5E7EB;
-            border-radius: 8px;
-            padding: 20px;
-            background: #F9FAFB;
-        }
-        .summary-title {
-            font-size: 14px;
-            font-weight: bold;
-            color: #6B7280;
-            margin-bottom: 10px;
-        }
-        .summary-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #1F2937;
-        }
-        .breakdown-section {
-            margin: 30px 0;
-        }
-        .section-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #1F2937;
-        }
-        .breakdown-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-        }
-        .breakdown-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            background: #F3F4F6;
-            border-radius: 6px;
-        }
-        .table-container {
-            margin-top: 30px;
-            overflow-x: auto;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
-        th, td {
-            border: 1px solid #E5E7EB;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #F3F4F6;
-            font-weight: bold;
-            color: #374151;
-        }
-        tr:nth-child(even) {
-            background-color: #F9FAFB;
-        }
-        .status {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: bold;
-            text-align: center;
-        }
-        .status-success { background: #D1FAE5; color: #065F46; }
-        .status-pending { background: #FEF3C7; color: #92400E; }
-        .status-failed { background: #FEE2E2; color: #991B1B; }
-        .status-refunded { background: #E0E7FF; color: #3730A3; }
-        .footer {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 12px;
-            color: #6B7280;
-            border-top: 1px solid #E5E7EB;
-            padding-top: 20px;
-        }
-        @media print {
-            body { margin: 0; padding: 15px; }
-            .header { page-break-after: avoid; }
-            table { page-break-inside: auto; }
-            tr { page-break-inside: avoid; page-break-after: auto; }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="company-name">BusZone Management System</div>
-        <div class="report-title">Payment Management Report</div>
-        <div class="report-meta">
-            Generated on: ${reportData.generatedAt}<br>
-            Report Period: ${filteredPayments.length > 0 ? 
-              `${new Date(Math.min(...filteredPayments.map(p => new Date(p.createdAt)))).toLocaleDateString()} - ${new Date(Math.max(...filteredPayments.map(p => new Date(p.createdAt)))).toLocaleDateString()}` 
-              : 'No data available'}
-        </div>
-    </div>
+    setExporting(true);
 
-    <div class="summary-grid">
-        <div class="summary-card">
-            <div class="summary-title">Total Payments</div>
-            <div class="summary-value">${reportData.totalPayments}</div>
-        </div>
-        <div class="summary-card">
-            <div class="summary-title">Total Revenue</div>
-            <div class="summary-value">LKR ${reportData.totalAmount.toLocaleString()}</div>
-        </div>
-        <div class="summary-card">
-            <div class="summary-title">Success Rate</div>
-            <div class="summary-value">${reportData.totalPayments > 0 ? Math.round((reportData.statusBreakdown.success / reportData.totalPayments) * 100) : 0}%</div>
-        </div>
-        <div class="summary-card">
-            <div class="summary-title">Average Amount</div>
-            <div class="summary-value">LKR ${reportData.totalPayments > 0 ? Math.round(reportData.totalAmount / reportData.totalPayments).toLocaleString() : '0'}</div>
-        </div>
-    </div>
-
-    <div class="breakdown-section">
-        <div class="section-title">Payment Status Breakdown</div>
-        <div class="breakdown-grid">
-            <div class="breakdown-item">
-                <span>Successful</span>
-                <span class="status status-success">${reportData.statusBreakdown.success}</span>
-            </div>
-            <div class="breakdown-item">
-                <span>Pending</span>
-                <span class="status status-pending">${reportData.statusBreakdown.pending}</span>
-            </div>
-            <div class="breakdown-item">
-                <span>Failed</span>
-                <span class="status status-failed">${reportData.statusBreakdown.failed}</span>
-            </div>
-            <div class="breakdown-item">
-                <span>Refunded</span>
-                <span class="status status-refunded">${reportData.statusBreakdown.refunded}</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="breakdown-section">
-        <div class="section-title">Payment Type Breakdown</div>
-        <div class="breakdown-grid">
-            <div class="breakdown-item">
-                <span>Booking Payments</span>
-                <span>${reportData.typeBreakdown.booking}</span>
-            </div>
-            <div class="breakdown-item">
-                <span>Maintenance Payments</span>
-                <span>${reportData.typeBreakdown.maintenance}</span>
-            </div>
-            <div class="breakdown-item">
-                <span>Salary Payments</span>
-                <span>${reportData.typeBreakdown.salary}</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="table-container">
-        <div class="section-title">Detailed Payment Records</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Payment ID</th>
-                    <th>Customer</th>
-                    <th>Email</th>
-                    <th>Amount (LKR)</th>
-                    <th>Status</th>
-                    <th>Type</th>
-                    <th>Method</th>
-                    <th>Gateway</th>
-                    <th>Date</th>
-                    <th>Related Entity</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${reportData.payments.map(payment => `
-                    <tr>
-                        <td>${payment.paymentId}</td>
-                        <td>${payment.customerName}</td>
-                        <td>${payment.email}</td>
-                        <td>${payment.amount.toLocaleString()}</td>
-                        <td><span class="status status-${payment.status}">${payment.status.toUpperCase()}</span></td>
-                        <td>${payment.paymentType}</td>
-                        <td>${payment.paymentMethod.replace('_', ' ')}</td>
-                        <td>${payment.gateway}</td>
-                        <td>${payment.createdAt}</td>
-                        <td>${payment.relatedEntity}</td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    </div>
-
-    <div class="footer">
-        <p>This report contains ${reportData.totalPayments} payment records as of ${reportData.generatedAt}</p>
-        <p>Generated by BusZone Payment Management System</p>
-        <p><strong>Confidential:</strong> This report contains sensitive financial information</p>
-    </div>
-</body>
-</html>
-    `;
-
-    // Create a new window for PDF generation
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    try {
+      console.log('Starting PDF generation...', filteredPayments.length, 'payments');
+      const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation for better table layout
     
-    // Wait for content to load then trigger print dialog
-    printWindow.onload = () => {
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-        // Close the window after printing (optional)
-        setTimeout(() => {
-          printWindow.close();
-        }, 1000);
-      }, 500);
-    };
+      // Page dimensions
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
+
+      // Add BusZone+ Header
+      doc.setFontSize(18);
+      doc.setTextColor(59, 130, 246);
+      doc.setFont(undefined, 'bold');
+      doc.text('BusZone+', margin, margin + 10);
+      
+      // Subtitle
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      doc.text('Premium Bus Rental Management System', margin, margin + 16);
+      
+      // Report title
+      doc.setFontSize(20);
+      doc.setTextColor(30, 30, 30);
+      doc.setFont(undefined, 'bold');
+      doc.text('Payment Management Report', pageWidth / 2, margin + 25, { align: 'center' });
+      
+      // Report metadata
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      const currentDate = new Date();
+      doc.text(`Generated on: ${currentDate.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })} at ${currentDate.toLocaleTimeString()}`, pageWidth / 2, margin + 32, { align: 'center' });
+      
+      // Statistics section
+      const statsY = margin + 40;
+      doc.setFontSize(12);
+      doc.setTextColor(30, 30, 30);
+      doc.setFont(undefined, 'bold');
+      doc.text('Report Summary', margin, statsY);
+      
+      // Calculate statistics
+      const totalPayments = filteredPayments.length;
+      const totalAmount = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
+      const successPayments = filteredPayments.filter(p => p.status === 'success').length;
+      const pendingPayments = filteredPayments.filter(p => p.status === 'pending').length;
+      const failedPayments = filteredPayments.filter(p => p.status === 'failed').length;
+      const refundedPayments = filteredPayments.filter(p => p.status === 'refunded').length;
+      const bookingPayments = filteredPayments.filter(p => p.paymentType === 'booking').length;
+      const maintenancePayments = filteredPayments.filter(p => p.paymentType === 'maintenance').length;
+      const salaryPayments = filteredPayments.filter(p => p.paymentType === 'salary').length;
+      
+      // Statistics boxes - responsive layout
+      const availableWidth = pageWidth - (margin * 2);
+      const boxCount = 4;
+      const boxSpacing = 6;
+      const boxWidth = Math.min(35, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
+      const boxHeight = 25;
+      let currentX = margin;
+      
+      // Total Payments box - Blue theme
+      doc.setFillColor(59, 130, 246);
+      doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Total Payments', currentX + 2, statsY + 15);
+      doc.setFontSize(16);
+      doc.text(totalPayments.toString(), currentX + 2, statsY + 22);
+      currentX += boxWidth + boxSpacing;
+      
+      // Total Revenue box - Green theme
+      doc.setFillColor(34, 197, 94);
+      doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Total Revenue', currentX + 2, statsY + 15);
+      doc.setFontSize(14);
+      doc.text(`LKR ${totalAmount.toLocaleString()}`, currentX + 2, statsY + 22);
+      currentX += boxWidth + boxSpacing;
+      
+      // Success Rate box - Green theme
+      doc.setFillColor(16, 185, 129);
+      doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Success Rate', currentX + 2, statsY + 15);
+      doc.setFontSize(16);
+      const successRate = totalPayments > 0 ? Math.round((successPayments / totalPayments) * 100) : 0;
+      doc.text(`${successRate}%`, currentX + 2, statsY + 22);
+      currentX += boxWidth + boxSpacing;
+      
+      // Average Amount box - Purple theme
+      doc.setFillColor(147, 51, 234);
+      doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Avg Amount', currentX + 2, statsY + 15);
+      doc.setFontSize(14);
+      const avgAmount = totalPayments > 0 ? Math.round(totalAmount / totalPayments) : 0;
+      doc.text(`LKR ${avgAmount.toLocaleString()}`, currentX + 2, statsY + 22);
+      
+      // Breakdown section
+      const breakdownY = statsY + 45;
+      doc.setFontSize(12);
+      doc.setTextColor(30, 30, 30);
+      doc.setFont(undefined, 'bold');
+      doc.text('Payment Status Breakdown', margin, breakdownY);
+      
+      // Status breakdown boxes
+      const statusBoxWidth = 25;
+      const statusBoxHeight = 20;
+      let statusX = margin;
+      
+      // Success
+      doc.setFillColor(34, 197, 94);
+      doc.roundedRect(statusX, breakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('Success', statusX + 2, breakdownY + 15);
+      doc.setFontSize(14);
+      doc.text(successPayments.toString(), statusX + 2, breakdownY + 22);
+      statusX += statusBoxWidth + 4;
+      
+      // Pending
+      doc.setFillColor(245, 158, 11);
+      doc.roundedRect(statusX, breakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('Pending', statusX + 2, breakdownY + 15);
+      doc.setFontSize(14);
+      doc.text(pendingPayments.toString(), statusX + 2, breakdownY + 22);
+      statusX += statusBoxWidth + 4;
+      
+      // Failed
+      doc.setFillColor(239, 68, 68);
+      doc.roundedRect(statusX, breakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('Failed', statusX + 2, breakdownY + 15);
+      doc.setFontSize(14);
+      doc.text(failedPayments.toString(), statusX + 2, breakdownY + 22);
+      statusX += statusBoxWidth + 4;
+      
+      // Refunded
+      doc.setFillColor(147, 51, 234);
+      doc.roundedRect(statusX, breakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('Refunded', statusX + 2, breakdownY + 15);
+      doc.setFontSize(14);
+      doc.text(refundedPayments.toString(), statusX + 2, breakdownY + 22);
+      
+      // Payment type breakdown
+      const typeBreakdownY = breakdownY + 40;
+      doc.setFontSize(12);
+      doc.setTextColor(30, 30, 30);
+      doc.setFont(undefined, 'bold');
+      doc.text('Payment Type Breakdown', margin, typeBreakdownY);
+      
+      // Type breakdown boxes
+      let typeX = margin;
+      
+      // Booking
+      doc.setFillColor(59, 130, 246);
+      doc.roundedRect(typeX, typeBreakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('Booking', typeX + 2, typeBreakdownY + 15);
+      doc.setFontSize(14);
+      doc.text(bookingPayments.toString(), typeX + 2, typeBreakdownY + 22);
+      typeX += statusBoxWidth + 4;
+      
+      // Maintenance
+      doc.setFillColor(245, 158, 11);
+      doc.roundedRect(typeX, typeBreakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('Maintenance', typeX + 2, typeBreakdownY + 15);
+      doc.setFontSize(14);
+      doc.text(maintenancePayments.toString(), typeX + 2, typeBreakdownY + 22);
+      typeX += statusBoxWidth + 4;
+      
+      // Salary
+      doc.setFillColor(16, 185, 129);
+      doc.roundedRect(typeX, typeBreakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('Salary', typeX + 2, typeBreakdownY + 15);
+      doc.setFontSize(14);
+      doc.text(salaryPayments.toString(), typeX + 2, typeBreakdownY + 22);
+      
+      // Main payment data table
+      const tableStartY = typeBreakdownY + 40;
+      doc.setFontSize(12);
+      doc.setTextColor(30, 30, 30);
+      doc.setFont(undefined, 'bold');
+      doc.text('Payment Details', margin, tableStartY);
+      
+      // Prepare table data
+      const tableColumns = [
+        { header: 'Payment ID', dataKey: 'paymentId', width: 25 },
+        { header: 'Customer', dataKey: 'customer', width: 35 },
+        { header: 'Amount', dataKey: 'amount', width: 25 },
+        { header: 'Status', dataKey: 'status', width: 20 },
+        { header: 'Type', dataKey: 'type', width: 20 },
+        { header: 'Method', dataKey: 'method', width: 20 },
+        { header: 'Date', dataKey: 'date', width: 25 }
+      ];
+      
+      const tableRows = filteredPayments.map((payment) => ({
+        paymentId: payment.paymentId?.substring(0, 12) + '...',
+        customer: `${payment.user?.firstName || ''} ${payment.user?.lastName || ''}`.trim().substring(0, 20) || 'N/A',
+        amount: `LKR ${payment.amount.toLocaleString()}`,
+        status: payment.status?.charAt(0).toUpperCase() + payment.status?.slice(1) || 'N/A',
+        type: payment.paymentType?.charAt(0).toUpperCase() + payment.paymentType?.slice(1) || 'N/A',
+        method: payment.paymentMethod?.charAt(0).toUpperCase() + payment.paymentMethod?.slice(1) || 'N/A',
+        date: payment.createdAt ? new Date(payment.createdAt).toLocaleDateString('en-GB') : 'N/A'
+      }));
+
+      // Use autoTable function properly
+      autoTable(doc, {
+        startY: tableStartY + 8,
+        columns: tableColumns,
+        body: tableRows,
+        styles: { 
+          fontSize: 8, 
+          cellPadding: 2,
+          textColor: [30, 30, 30],
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1,
+          overflow: 'linebreak',
+          halign: 'left'
+        },
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: [255, 255, 255],
+          halign: 'center',
+          fontStyle: 'bold',
+          fontSize: 10
+        },
+        alternateRowStyles: { 
+          fillColor: [248, 250, 252] 
+        },
+        columnStyles: {
+          paymentId: { halign: 'center', fontSize: 7, cellWidth: 25 },
+          customer: { halign: 'left', fontSize: 8, cellWidth: 35, overflow: 'linebreak' },
+          amount: { halign: 'right', fontSize: 8, cellWidth: 25 },
+          status: { halign: 'center', fontSize: 8, cellWidth: 20 },
+          type: { halign: 'center', fontSize: 8, cellWidth: 20 },
+          method: { halign: 'center', fontSize: 8, cellWidth: 20 },
+          date: { halign: 'center', fontSize: 7, cellWidth: 25 }
+        },
+        margin: { left: margin, right: margin },
+        tableWidth: 'auto',
+        showHead: 'everyPage',
+        didDrawPage: function (data) {
+          // Add footer on each page
+          const pageNumber = doc.internal.getNumberOfPages();
+          const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+          
+          doc.setFontSize(8);
+          doc.setTextColor(100, 100, 100);
+          doc.text(`Page ${currentPage} of ${pageNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+          doc.text('BusZone+ Payment Management Report', pageWidth / 2, pageHeight - 5, { align: 'center' });
+        }
+      });
+
+      // Add footer with company info
+      const finalY = doc.lastAutoTable.finalY || pageHeight - 30;
+      if (finalY < pageHeight - 40) {
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.setFont(undefined, 'normal');
+        doc.text('This report was generated by BusZone+ Management System', pageWidth / 2, finalY + 20, { align: 'center' });
+        doc.text('For support, contact: info@buszoneplus.com | +94 704 222 777', pageWidth / 2, finalY + 25, { align: 'center' });
+      }
+
+      // Save the PDF
+      const fileName = `BusZone_PaymentReport_${currentDate.toISOString().split('T')[0]}_${Date.now()}.pdf`;
+      
+      // Try to save the PDF
+      try {
+        doc.save(fileName);
+        alert("PDF report generated successfully!");
+      } catch (saveError) {
+        console.error('Error saving PDF:', saveError);
+        // Fallback: Open PDF in new window for printing
+        const pdfDataUri = doc.output('datauristring');
+        const printWindow = window.open();
+        printWindow.document.write(`
+          <html>
+            <head><title>Payment Management Report</title></head>
+            <body style="margin:0; padding:0;">
+              <iframe src="${pdfDataUri}" style="width:100%; height:100vh; border:none;"></iframe>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        alert("PDF opened in new window. You can print or save it from there.");
+      }
+    } catch (error) {
+      console.error('Error generating PDF report:', error);
+      alert("Error generating PDF report. Please try again.");
+    } finally {
+      setExporting(false);
+      setShowExportModal(false);
+    }
   };
 
   const exportCSV = () => {
@@ -985,6 +1090,31 @@ const PaymentManagement = () => {
     link.href = url;
     link.download = `payments-export-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExport = () => {
+    if (filteredPayments.length === 0) {
+      alert('No payments to export');
+      return;
+    }
+
+    setExporting(true);
+
+    try {
+      if (exportFormat === 'csv') {
+        exportCSV();
+        alert('CSV report downloaded successfully!');
+      } else {
+        generatePDFReport();
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert('Failed to generate report. Please try again.');
+    } finally {
+      setExporting(false);
+      setShowExportModal(false);
+    }
   };
 
   if (isLoading) {
@@ -1037,18 +1167,11 @@ const PaymentManagement = () => {
           </div>
           <div className="flex space-x-3">
             <button
-              onClick={generatePDFReport}
+              onClick={() => setShowExportModal(true)}
               className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center"
             >
               <FileText className="h-5 w-5 mr-2" />
-              PDF Report
-            </button>
-            <button
-              onClick={exportCSV}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center"
-            >
-              <Download className="h-5 w-5 mr-2" />
-              Export CSV
+              Generate Report
             </button>
             <button
               onClick={fetchAllPayments}
@@ -1373,6 +1496,17 @@ const PaymentManagement = () => {
           isOpen={showDetailsModal}
           onClose={() => setShowDetailsModal(false)}
           onProcessRefund={handleProcessRefund}
+        />
+
+        {/* Export Modal */}
+        <ExportModal
+          show={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          format={exportFormat}
+          setFormat={setExportFormat}
+          itemCount={filteredPayments.length}
+          onExport={handleExport}
+          loading={exporting}
         />
 
         {/* Report Information */}

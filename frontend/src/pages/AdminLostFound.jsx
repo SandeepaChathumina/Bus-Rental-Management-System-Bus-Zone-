@@ -660,7 +660,6 @@ const AdminLostFound = () => {
     }
   };
 
-  // Rest of the component functions remain the same...
   const handleSubmitReport = async (e) => {
     e.preventDefault();
     
@@ -858,12 +857,13 @@ const AdminLostFound = () => {
         )
       );
 
-      // Notify user page about the admin reply
+      // Notify user page about the admin reply - This is the key part for real-time updates
       window.dispatchEvent(new CustomEvent('lostItemUpdated', {
         detail: {
           itemId: replyingItem._id,
           updates: updatedItem,
-          source: 'admin'
+          source: 'admin',
+          adminReply: true // Flag to indicate this is specifically an admin reply
         }
       }));
 

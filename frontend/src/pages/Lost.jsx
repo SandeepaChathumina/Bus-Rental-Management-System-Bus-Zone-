@@ -25,7 +25,9 @@ import {
   Shield,
   MessageSquare,
   Save,
-  Reply
+  Reply,
+  ArrowLeftCircle,
+  ArrowLeft
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -112,8 +114,8 @@ const Lost = () => {
   useEffect(() => {
     const handleLostItemUpdated = (event) => {
       try {
-        const { itemId, updates } = event.detail;
-        console.log('Lost.jsx: Received update for item:', itemId, updates);
+        const { itemId, updates, source, adminReply } = event.detail;
+        console.log('Lost.jsx: Received update for item:', itemId, updates, 'from source:', source, 'adminReply:', adminReply);
         
         setLostItems(prev => {
           const updatedItems = prev.map(item => {
@@ -124,13 +126,51 @@ const Lost = () => {
                 updatedAt: new Date().toISOString()
               };
               
-              // Show notification if admin replied to user's item
-              if ((updates.adminNotes && updates.adminNotes.trim() !== '') || (updates.adminReply && updates.adminReply.trim() !== '')) {
+              console.log('Updated item:', updatedItem);
+              
+              // Show enhanced notification if admin replied to user's item
+              if (adminReply && updates.adminReply && updates.adminReply.trim() !== '') {
+                if (item.user?._id === user?._id) {
+                  console.log('Showing enhanced admin reply notification for item:', item.itemName);
+                  
+                  // Enhanced notification with more details
+                  toast.success(`🎉 Admin replied to "${item.itemName}"! Check the green reply box below.`, {
+                    duration: 8000,
+                    icon: '💬',
+                    style: {
+                      background: 'linear-gradient(135deg, #10b981, #059669)',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      fontSize: '14px',
+                      padding: '16px',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px rgba(16, 185, 129, 0.3)'
+                    }
+                  });
+                  
+                  // Additional visual feedback - scroll to the item if it's visible
+                  setTimeout(() => {
+                    const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+                    if (itemElement) {
+                      itemElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                      });
+                      // Add a temporary highlight effect
+                      itemElement.classList.add('animate-pulse');
+                      setTimeout(() => {
+                        itemElement.classList.remove('animate-pulse');
+                      }, 3000);
+                    }
+                  }, 1000);
+                }
+              } else if ((updates.adminNotes && updates.adminNotes.trim() !== '') || (updates.adminReply && updates.adminReply.trim() !== '')) {
                 if (item.user?._id === user?._id && 
                     ((!item.adminNotes || item.adminNotes.trim() === '') && (!item.adminReply || item.adminReply.trim() === ''))) {
                   
                   // Different notifications for different types of admin responses
                   if (updates.adminReply && updates.adminReply.trim() !== '') {
+                    console.log('Showing admin reply notification for item:', item.itemName);
                     toast.success('🎉 Admin has replied to your lost item report! Check the green reply box below.', {
                       duration: 6000,
                       icon: '💬',
@@ -141,6 +181,7 @@ const Lost = () => {
                       }
                     });
                   } else {
+                    console.log('Showing admin notes notification for item:', item.itemName);
                     toast.success('Admin has responded to your lost item report! Item is now locked.', {
                       duration: 5000,
                       icon: '🔒'
@@ -156,6 +197,7 @@ const Lost = () => {
           
           // Save to localStorage
           saveToLocalStorage(updatedItems);
+          console.log('Lost items updated after admin reply:', updatedItems.filter(item => item.adminReply));
           return updatedItems;
         });
       } catch (error) {
@@ -211,17 +253,10 @@ const Lost = () => {
   }, [user]);
 
   useEffect(() => {
+    // Load lost items on component mount
     fetchLostItems();
   }, [user]);
 
-  // Debug: Log lost items when they change
-  useEffect(() => {
-    console.log('Lost items updated:', lostItems);
-    const itemsWithReplies = lostItems.filter(item => item.adminReply && item.adminReply.trim() !== '');
-    if (itemsWithReplies.length > 0) {
-      console.log('Items with admin replies:', itemsWithReplies);
-    }
-  }, [lostItems]);
 
   // Auto-refresh every 30 seconds for better sync
   useEffect(() => {
@@ -338,7 +373,21 @@ const Lost = () => {
 
         setLostItems(filteredMockData);
         saveToLocalStorage(filteredMockData);
-        console.log('Loaded lost items with admin replies:', filteredMockData.filter(item => item.adminReply));
+        
+        // Log admin replies for debugging
+        const itemsWithReplies = filteredMockData.filter(item => item.adminReply && item.adminReply.trim() !== '');
+        console.log('Total items loaded:', filteredMockData.length);
+        console.log('Items with admin replies:', itemsWithReplies.length);
+        if (itemsWithReplies.length > 0) {
+          console.log('Admin replies loaded:', itemsWithReplies.map(item => ({
+            itemName: item.itemName,
+            adminReply: item.adminReply,
+            repliedBy: item.repliedBy
+          })));
+        } else {
+          console.log('No admin replies found in mock data');
+        }
+        
         return;
       }
 
@@ -645,12 +694,46 @@ const Lost = () => {
   const clearLocalStorage = () => {
     if (window.confirm('Are you sure you want to clear all local data? This cannot be undone.')) {
       localStorage.removeItem(LOST_ITEMS_STORAGE_KEY);
-      toast.success('Local data cleared');
-      fetchLostItems(); // Reload with fresh data
+      localStorage.removeItem('buszone_lost_items');
+      localStorage.removeItem('buszone_feedbacks');
+      toast.success('All cache data cleared successfully');
+      
+      // Force refresh the page to reload fresh data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     }
   };
 
-  // Permission checks
+  // Simulate admin reply for testing
+  const simulateAdminReply = (itemId) => {
+    const adminReplies = [
+      "Thank you for reporting this item. We have found it and it is available for pickup at our main office. Please contact us at +94 704 222 777 to arrange collection.",
+      "Hello! We found your item at the main depot. It's in good condition and ready for pickup. Please bring a valid ID when you come to collect it.",
+      "Your lost item has been located and is currently at our lost & found office. Please contact us during business hours (9 AM - 5 PM) to arrange pickup.",
+      "Good news! We have found your item. It's currently being held at our main office. Please call us at +94 704 222 777 to schedule a pickup time.",
+      "We have successfully located your lost item. It's in excellent condition and ready for collection. Please visit our office with a valid ID to claim it."
+    ];
+    
+    const randomReply = adminReplies[Math.floor(Math.random() * adminReplies.length)];
+    
+    // Simulate the real-time event system
+    window.dispatchEvent(new CustomEvent('lostItemUpdated', {
+      detail: {
+        itemId: itemId,
+        updates: {
+          adminReply: randomReply,
+          repliedBy: 'Sandeepa Admin',
+          repliedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        source: 'admin',
+        adminReply: true
+      }
+    }));
+  };
+
+  // Permission checks - UPDATED TO DISABLE BUTTONS AFTER ADMIN REPLY
   const canEditItem = (item) => {
     if (!item) return false;
     
@@ -659,10 +742,10 @@ const Lost = () => {
     
     // Users can only edit their own items that don't have admin responses
     const isOwnItem = item.user && item.user._id === user?._id;
-    const hasAdminReply = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
+    const hasAdminResponse = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
     const isUserReported = item.reportedBy === 'User';
     
-    return isUserReported && isOwnItem && !hasAdminReply;
+    return isUserReported && isOwnItem && !hasAdminResponse;
   };
 
   const canDeleteItem = (item) => {
@@ -673,10 +756,10 @@ const Lost = () => {
     
     // Users can only delete their own items that don't have admin responses
     const isOwnItem = item.user && item.user._id === user?._id;
-    const hasAdminReply = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
+    const hasAdminResponse = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
     const isUserReported = item.reportedBy === 'User';
     
-    return isUserReported && isOwnItem && !hasAdminReply;
+    return isUserReported && isOwnItem && !hasAdminResponse;
   };
 
   const getLockIcon = (item) => {
@@ -694,9 +777,9 @@ const Lost = () => {
     }
     
     const userCanEdit = canEditItem(item);
-    const hasAdminReply = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
+    const hasAdminResponse = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
     
-    if (hasAdminReply && !userCanEdit) {
+    if (hasAdminResponse && !userCanEdit) {
       return 'Locked - Admin Replied';
     }
     
@@ -834,6 +917,18 @@ const Lost = () => {
         </div>
 
         <nav className="mt-6 px-4">
+          {/* Back to Booking Button */}
+          <button
+            onClick={() => {
+              navigate('/booking');
+              setSidebarOpen(false);
+            }}
+            className="flex items-center w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg mb-4 font-medium"
+          >
+            <ArrowLeft className="w-5 h-5 mr-3" />
+            <span>Back</span>
+          </button>
+          
           <Link
             to="/booking"
             className="flex items-center px-4 py-3 text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg mb-2"
@@ -881,12 +976,34 @@ const Lost = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-800 mb-2">Lost & Found</h1>
-              <p className="text-slate-600">Report and track lost items from your bus journeys</p>
-              <div className="flex items-center mt-1 text-xs text-slate-500">
-                <span>Data persistence: Active</span>
-                <div className="w-2 h-2 bg-green-400 rounded-full ml-2"></div>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigate('/booking')}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200 group"
+              >
+                <ArrowLeft className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Back</span>
+              </button>
+              
+              <div>
+                <h1 className="text-3xl font-bold text-slate-800 mb-2">Lost & Found</h1>
+                <p className="text-slate-600">Report and track lost items from your bus journeys</p>
+                <div className="flex items-center mt-1 text-xs text-slate-500">
+                  <span>Data persistence: Active</span>
+                  <div className="w-2 h-2 bg-green-400 rounded-full ml-2"></div>
+                  {lostItems.some(item => item.adminReply && item.adminReply.trim() !== '') && (
+                    <>
+                      <span className="ml-4 flex items-center">
+                        <Reply className="w-3 h-3 mr-1 text-green-500" />
+                        Admin replies: 
+                        <span className="ml-1 font-semibold text-green-600">
+                          {lostItems.filter(item => item.adminReply && item.adminReply.trim() !== '').length}
+                        </span>
+                      </span>
+                      <div className="w-2 h-2 bg-green-400 rounded-full ml-2 animate-pulse"></div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -899,30 +1016,6 @@ const Lost = () => {
                 Report Lost Item
               </button>
               
-              {/* Debug: Test admin reply button */}
-              <button
-                onClick={() => {
-                  if (lostItems.length > 0) {
-                    const testItem = lostItems[0];
-                    const updatedItems = lostItems.map(item => 
-                      item._id === testItem._id 
-                        ? { 
-                            ...item, 
-                            adminReply: 'This is a test admin reply to verify the display functionality!',
-                            repliedBy: 'Test Admin',
-                            repliedAt: new Date().toISOString()
-                          }
-                        : item
-                    );
-                    setLostItems(updatedItems);
-                    saveToLocalStorage(updatedItems);
-                    toast.success('Test admin reply added!');
-                  }
-                }}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              >
-                Test Admin Reply
-              </button>
             </div>
           </div>
 
@@ -964,13 +1057,56 @@ const Lost = () => {
 
               {/* Debug button for admins */}
               {user?.role === 'admin' && (
-                <button
-                  onClick={clearLocalStorage}
-                  className="p-3 bg-orange-100 hover:bg-orange-200 border border-orange-200 rounded-xl text-orange-700 hover:text-orange-800 transition-colors shadow-sm"
-                  title="Clear local data"
-                >
-                  <span className="text-xs">Clear Data</span>
-                </button>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={clearLocalStorage}
+                    className="p-3 bg-orange-100 hover:bg-orange-200 border border-orange-200 rounded-xl text-orange-700 hover:text-orange-800 transition-colors shadow-sm"
+                    title="Clear local data"
+                  >
+                    <span className="text-xs">Clear Data</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      if (lostItems.length > 0) {
+                        const firstItem = lostItems[0];
+                        simulateAdminReply(firstItem._id);
+                      }
+                    }}
+                    className="p-3 bg-green-100 hover:bg-green-200 border border-green-200 rounded-xl text-green-700 hover:text-green-800 transition-colors shadow-sm"
+                    title="Simulate admin reply"
+                  >
+                    <span className="text-xs">Test Reply</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      // Test the event system by dispatching a test event
+                      const testItem = lostItems.find(item => !item.adminReply);
+                      if (testItem) {
+                        console.log('Testing event system with item:', testItem.itemName);
+                        window.dispatchEvent(new CustomEvent('lostItemUpdated', {
+                          detail: {
+                            itemId: testItem._id,
+                            updates: {
+                              adminReply: 'This is a test admin reply to verify the real-time update system is working correctly!',
+                              repliedBy: 'Test Admin',
+                              repliedAt: new Date().toISOString()
+                            },
+                            source: 'test'
+                          }
+                        }));
+                        toast.success('Test event dispatched! Check if admin reply appears.');
+                      } else {
+                        toast.error('No items available for testing');
+                      }
+                    }}
+                    className="p-3 bg-blue-100 hover:bg-blue-200 border border-blue-200 rounded-xl text-blue-700 hover:text-blue-800 transition-colors shadow-sm"
+                    title="Test event system"
+                  >
+                    <span className="text-xs">Test Event</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -1001,7 +1137,7 @@ const Lost = () => {
               </div>
             ) : (
               filteredItems.map((item) => (
-                <div key={item._id} className="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 border border-blue-200 hover:border-blue-300 transition-all duration-300 relative shadow-lg hover:shadow-xl">
+                <div key={item._id} data-item-id={item._id} className="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 border border-blue-200 hover:border-blue-300 transition-all duration-300 relative shadow-lg hover:shadow-xl">
                   {/* Lock/Admin Indicator */}
                   {user?.role !== 'admin' && (
                     <div className="absolute top-4 right-4 flex items-center space-x-1">
@@ -1072,48 +1208,50 @@ const Lost = () => {
                     </div>
                   )}
 
-                  {(() => {
-                    console.log('Checking admin reply for item:', item.itemName, 'adminReply:', item.adminReply);
-                    return item.adminReply && item.adminReply.trim() !== '';
-                  })() && (
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 mb-4 shadow-lg">
-                      <div className="flex items-start">
-                        <div className="bg-green-500 p-2 rounded-full mr-3 flex-shrink-0">
-                          <Reply className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="text-sm font-bold text-green-800 flex items-center">
-                              <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs mr-2">NEW</span>
-                              Admin Reply
-                            </p>
-                            {item.repliedBy && (
-                              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                                by {item.repliedBy}
-                              </span>
+                  {item.adminReply && item.adminReply.trim() !== '' && (
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 mb-4 shadow-lg animate-pulse relative overflow-hidden">
+                      {/* Animated background effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-green-100/50 to-emerald-100/50 animate-pulse"></div>
+                      
+                      <div className="relative z-10">
+                        <div className="flex items-start">
+                          <div className="bg-green-500 p-2 rounded-full mr-3 flex-shrink-0 animate-bounce shadow-lg">
+                            <Reply className="w-4 h-4 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-sm font-bold text-green-800 flex items-center">
+                                <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs mr-2 animate-pulse shadow-md">NEW</span>
+                                Admin Reply
+                              </p>
+                              {item.repliedBy && (
+                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full shadow-sm">
+                                  by {item.repliedBy}
+                                </span>
+                              )}
+                            </div>
+                            <div className="bg-white rounded-lg p-3 border border-green-200 shadow-sm">
+                              <p className="text-slate-800 text-sm leading-relaxed">{item.adminReply}</p>
+                            </div>
+                            {item.repliedAt && (
+                              <p className="text-xs text-slate-500 mt-2 flex items-center">
+                                <Clock className="w-3 h-3 mr-1" />
+                                Replied on: {new Date(item.repliedAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
                             )}
                           </div>
-                          <div className="bg-white rounded-lg p-3 border border-green-200">
-                            <p className="text-slate-800 text-sm leading-relaxed">{item.adminReply}</p>
-                          </div>
-                          {item.repliedAt && (
-                            <p className="text-xs text-slate-500 mt-2 flex items-center">
-                              <Clock className="w-3 h-3 mr-1" />
-                              Replied on: {new Date(item.repliedAt).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Action buttons */}
+                  {/* Action buttons - UPDATED TO DISABLE AFTER ADMIN REPLY */}
                   <div className="pt-3 border-t border-blue-200">
                     {user?.role === 'admin' ? (
                       <div className="flex items-center space-x-2">
