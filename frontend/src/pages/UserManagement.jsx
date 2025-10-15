@@ -103,10 +103,28 @@ const validationUtils = {
     }
   },
 
-  // Check if NIC is valid (9 digits + V or 12 digits)
+  // Check if NIC is valid (9 digits + V or 12 digits) and age > 21
   validateNIC: (nic) => {
     const nicRegex = /^\d{9}[Vv]$|^\d{12}$/;
-    return nicRegex.test(nic);
+    if (!nicRegex.test(nic)) {
+      return { isValid: false, message: "Invalid NIC format" };
+    }
+    
+    // For 12-digit format, check age requirement (birth year < 2004)
+    if (nic.length === 12) {
+      const birthYear = parseInt(nic.substring(0, 4));
+      const currentYear = new Date().getFullYear();
+      const age = currentYear - birthYear;
+      
+      if (age < 21) {
+        return { 
+          isValid: false, 
+          message: `Age must be over 21. Birth year ${birthYear} makes you ${age} years old.` 
+        };
+      }
+    }
+    
+    return { isValid: true, message: "Valid NIC format" };
   },
 
   // Check if phone number is valid (must start with 0 and be exactly 10 digits)
@@ -507,7 +525,9 @@ const ValidationMessages = ({ validation, field }) => {
         } else if (validation.nic.isValid && !validation.nic.available) {
           return <p className="text-red-600">✗ NIC number already exists</p>;
         } else {
-          return <p className="text-red-600">✗ NIC must be 9 digits + V or 12 digits</p>;
+          // Show specific error message from validation
+          const errorMessage = validation.nic.message || "NIC must be old format (9 digits + V/X) or new format (12 digits)";
+          return <p className="text-red-600">✗ {errorMessage}</p>;
         }
 
       case "phone":
@@ -709,7 +729,7 @@ const UserManagement = () => {
     username: { available: false, checked: false },
     email: { available: false, valid: false, checked: false, message: "" },
     password: { isValid: false, checked: false, requirements: {} },
-    nic: { isValid: false, available: false, checked: false },
+    nic: { isValid: false, available: false, checked: false, message: "" },
     phone: { isValid: false, available: false, checked: false },
     licenseNumber: { isValid: false, checked: false },
     licenseExpiry: { isValid: false, checked: false },
@@ -819,9 +839,9 @@ const UserManagement = () => {
   useEffect(() => {
     const validateNIC = async () => {
       if (form.nic.length >= 9) {
-        // First check format
-        const isFormatValid = validationUtils.validateNIC(form.nic);
-        if (isFormatValid) {
+        // First check format and age
+        const formatValidation = validationUtils.validateNIC(form.nic);
+        if (formatValidation.isValid) {
           // Then check availability
           const isAvailable = await validationUtils.checkNIC(form.nic);
           setValidation((prev) => ({
@@ -830,6 +850,7 @@ const UserManagement = () => {
               isValid: isAvailable,
               available: isAvailable,
               checked: true,
+              message: formatValidation.message,
             },
           }));
         } else {
@@ -839,6 +860,7 @@ const UserManagement = () => {
               isValid: false,
               available: false,
               checked: true,
+              message: formatValidation.message,
             },
           }));
         }
@@ -849,6 +871,7 @@ const UserManagement = () => {
             isValid: false,
             available: false,
             checked: false,
+            message: "",
           },
         }));
       }
@@ -1717,14 +1740,44 @@ const UserManagement = () => {
               validation={validation}
             />
 
-            <FormField
-              field="nic"
-              label="NIC Number"
-              placeholder="Enter NIC number"
-              value={form.nic}
-              onChange={(e) => setForm({ ...form, nic: e.target.value })}
-              validation={validation}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                National Identity Card (NIC)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 861230123V or 198612300123"
+                value={form.nic}
+                onChange={(e) => setForm({ ...form, nic: e.target.value })}
+                className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
+                  validation.nic?.checked
+                    ? (() => {
+                        // For fields with both isValid and available (phone, nic)
+                        if (validation.nic?.isValid !== undefined && validation.nic?.available !== undefined) {
+                          return validation.nic?.isValid && validation.nic?.available
+                            ? "border-green-500 focus:ring-green-500"
+                            : "border-red-500 focus:ring-red-500";
+                        }
+                        // For fields with only isValid (password, license, etc.)
+                        else if (validation.nic?.isValid !== undefined) {
+                          return validation.nic?.isValid
+                            ? "border-green-500 focus:ring-green-500"
+                            : "border-red-500 focus:ring-red-500";
+                        }
+                        // For fields with only available (username, email)
+                        else if (validation.nic?.available !== undefined) {
+                          return validation.nic?.available
+                            ? "border-green-500 focus:ring-green-500"
+                            : "border-red-500 focus:ring-red-500";
+                        }
+                        // Default to red if checked but no clear validation state
+                        return "border-red-500 focus:ring-red-500";
+                      })()
+                    : "border-blue-300 focus:ring-blue-500"
+                }`}
+              />
+              <ValidationMessages validation={validation} field="nic" />
+            </div>
 
             <FormField
               field="phone"
@@ -1896,14 +1949,44 @@ const UserManagement = () => {
               validation={validation}
             />
 
-            <FormField
-              field="nic"
-              label="NIC Number"
-              placeholder="Enter NIC number"
-              value={form.nic}
-              onChange={(e) => setForm({ ...form, nic: e.target.value })}
-              validation={validation}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                National Identity Card (NIC)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 861230123V or 198612300123"
+                value={form.nic}
+                onChange={(e) => setForm({ ...form, nic: e.target.value })}
+                className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
+                  validation.nic?.checked
+                    ? (() => {
+                        // For fields with both isValid and available (phone, nic)
+                        if (validation.nic?.isValid !== undefined && validation.nic?.available !== undefined) {
+                          return validation.nic?.isValid && validation.nic?.available
+                            ? "border-green-500 focus:ring-green-500"
+                            : "border-red-500 focus:ring-red-500";
+                        }
+                        // For fields with only isValid (password, license, etc.)
+                        else if (validation.nic?.isValid !== undefined) {
+                          return validation.nic?.isValid
+                            ? "border-green-500 focus:ring-green-500"
+                            : "border-red-500 focus:ring-red-500";
+                        }
+                        // For fields with only available (username, email)
+                        else if (validation.nic?.available !== undefined) {
+                          return validation.nic?.available
+                            ? "border-green-500 focus:ring-green-500"
+                            : "border-red-500 focus:ring-red-500";
+                        }
+                        // Default to red if checked but no clear validation state
+                        return "border-red-500 focus:ring-red-500";
+                      })()
+                    : "border-blue-300 focus:ring-blue-500"
+                }`}
+              />
+              <ValidationMessages validation={validation} field="nic" />
+            </div>
 
             <FormField
               field="phone"
