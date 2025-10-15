@@ -103,7 +103,6 @@ const AdminBookingCard = ({ booking, onViewDetails }) => {
             <h3 className="text-lg font-bold text-slate-800">
               {booking.bus?.busType || 'Standard'} Coach
             </h3>
-            <p className="text-sm text-slate-600 font-mono">{booking.bookingId}</p>
             <p className="text-xs text-slate-500">
               by {booking.user?.firstName} {booking.user?.lastName}
             </p>
@@ -198,7 +197,7 @@ const AdminBookingCard = ({ booking, onViewDetails }) => {
       <div className="mt-4 pt-4 border-t border-slate-200">
         <div className="flex justify-between text-xs text-slate-500">
           <span>Created: {new Date(booking.createdAt).toLocaleDateString()}</span>
-          <span>ID: {booking._id?.slice(-8) || 'N/A'}</span>
+          <span>Status: {booking.bookingStatus}</span>
         </div>
       </div>
     </div>
@@ -233,7 +232,7 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
         <div className="flex items-center justify-between p-6 border-b border-slate-200">
           <div>
             <h2 className="text-2xl font-bold text-slate-800">Booking Management</h2>
-            <p className="text-slate-600">Booking ID: {booking.bookingId}</p>
+            <p className="text-slate-600">Route: {booking.route?.from} → {booking.route?.to}</p>
           </div>
           <button
             onClick={onClose}
