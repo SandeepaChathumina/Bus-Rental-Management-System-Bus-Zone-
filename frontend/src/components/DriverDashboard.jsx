@@ -679,9 +679,9 @@ const ScheduleManagement = React.memo(() => {
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-orange-600">In Progress</p>
+              <p className="text-sm text-orange-600">Pending Response</p>
               <p className="text-2xl font-bold text-orange-600">
-                {filteredSchedules.filter(s => s.status === 'In Progress').length}
+                {filteredSchedules.filter(s => s.driverResponse === 'pending').length}
               </p>
             </div>
             <User className="w-8 h-8 text-orange-500" />
@@ -790,12 +790,6 @@ const ScheduleManagement = React.memo(() => {
                             <p className="text-gray-900 font-medium">{formatDateTime(schedule.actualEndTime)}</p>
                           </div>
                         )}
-                        <div>
-                          <span className="text-gray-600">Bus Details:</span>
-                          <p className="text-gray-900 font-medium">
-                            {schedule.busId.busId} - {schedule.busId.busType}
-                          </p>
-                        </div>
                       </div>
                       
                       {/* Driver Response Buttons for New Assignments */}
