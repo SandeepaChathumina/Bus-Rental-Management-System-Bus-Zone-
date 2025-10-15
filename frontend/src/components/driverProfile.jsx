@@ -91,9 +91,7 @@ const DriverProfile = () => {
     address: '',
     licenseNumber: '',
     licenseExpiry: '',
-    emergencyContact: '',
-    experience: '',
-    hourlyRate: ''
+    emergencyContact: ''
   });
   const [phoneValidation, setPhoneValidation] = useState({ isValid: true, message: '' });
 
@@ -136,9 +134,7 @@ const DriverProfile = () => {
       address: userData.address || '',
       licenseNumber: driverProfileData?.licenseNumber || '',
       licenseExpiry: driverProfileData?.licenseExpiry || '',
-      emergencyContact: driverProfileData?.emergencyContact || '',
-      experience: driverProfileData?.experience || '',
-      hourlyRate: driverProfileData?.hourlyRate || ''
+      emergencyContact: driverProfileData?.emergencyContact || ''
     };
 
     console.log('Initializing form data:', baseData);
@@ -476,28 +472,6 @@ const DriverProfile = () => {
                 <p className="text-gray-500 text-xs mt-1">Emergency contact cannot be changed</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-600">Experience</span>
-                  </div>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {formData.experience ? `${formData.experience} years` : 'Not provided'}
-                  </p>
-                  <p className="text-gray-500 text-xs mt-1">Years of experience cannot be changed</p>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-600">Hourly Rate</span>
-                  </div>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {formData.hourlyRate ? `LKR ${formData.hourlyRate}` : 'Not provided'}
-                  </p>
-                  <p className="text-gray-500 text-xs mt-1">Hourly rate cannot be changed</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
