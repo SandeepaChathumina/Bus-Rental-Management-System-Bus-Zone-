@@ -1135,7 +1135,7 @@ const DriverScheduleManagement = () => {
                   <option value="">Choose a driver...</option>
                   {drivers?.map((driver) => (
                     <option key={driver._id} value={driver._id}>
-                      {driver.user?.firstName || 'N/A'} {driver.user?.lastName || 'N/A'} - {driver.licenseNumber || 'N/A'} ({driver.experience || 0} years exp)
+                      {driver.user?.firstName || 'N/A'} {driver.user?.lastName || 'N/A'} - {driver.licenseNumber || 'N/A'}{driver.experience && driver.experience > 0 ? ` (${driver.experience} years exp)` : ''}
                     </option>
                   ))}
                 </select>
