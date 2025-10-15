@@ -61,7 +61,6 @@ export const generateBookingInvoicePDF = (booking, invoice) => {
     let yPos = 100;
     
     const bookingDetails = [
-      `Booking ID: ${booking.bookingId}`,
       `Route: ${booking.route?.from || 'N/A'} to ${booking.route?.to || 'N/A'}`,
       `Travel Date: ${new Date(booking.travelDate).toLocaleDateString()}`,
       `Departure Time: ${booking.departureTime || 'N/A'}`,
@@ -106,7 +105,7 @@ export const generateBookingInvoicePDF = (booking, invoice) => {
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Item: Bus Booking - ${booking.bookingId}`, 20, yPos);
+    doc.text(`Item: Bus Booking`, 20, yPos);
     doc.text(`Quantity: ${booking.seats?.length || 1}`, 20, yPos + 5);
     doc.text(`Unit Price: LKR ${((booking.totalAmount || 0) / (booking.seats?.length || 1)).toLocaleString()}`, 20, yPos + 10);
     doc.text(`Total Amount: LKR ${(booking.totalAmount || 0).toLocaleString()}`, 20, yPos + 15);

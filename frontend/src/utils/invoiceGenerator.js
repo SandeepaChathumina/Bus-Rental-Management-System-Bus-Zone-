@@ -33,7 +33,7 @@ export const generateCompanyInvoice = (bookingData, paymentData, companyInfo = {
   // Invoice Details
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Invoice #: ${paymentData?.paymentId || bookingData?.bookingId || 'N/A'}`, 150, 28);
+  doc.text(`Invoice #: ${paymentData?.paymentId || 'N/A'}`, 150, 28);
   doc.text(`Date: ${new Date().toLocaleDateString()}`, 150, 34);
   
   // Reset text color
@@ -62,7 +62,6 @@ export const generateCompanyInvoice = (bookingData, paymentData, companyInfo = {
   let yPos = 100;
   
   const bookingDetails = [
-    `Booking ID: ${bookingData?.bookingId || 'N/A'}`,
     `Route: ${bookingData?.route?.from || 'N/A'} to ${bookingData?.route?.to || 'N/A'}`,
     `Travel Date: ${bookingData?.travelDate ? new Date(bookingData.travelDate).toLocaleDateString() : 'N/A'}`,
     `Departure Time: ${bookingData?.departureTime || 'N/A'}`,
@@ -86,7 +85,7 @@ export const generateCompanyInvoice = (bookingData, paymentData, companyInfo = {
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Item: Bus Booking - ${bookingData?.bookingId || 'N/A'}`, 20, yPos);
+  doc.text(`Item: Bus Booking`, 20, yPos);
   doc.text(`Quantity: ${bookingData?.seats?.length || 1}`, 20, yPos + 5);
   doc.text(`Unit Price: LKR ${((bookingData?.totalAmount || 0) / (bookingData?.seats?.length || 1)).toLocaleString()}`, 20, yPos + 10);
   doc.text(`Total Amount: LKR ${(bookingData?.totalAmount || 0).toLocaleString()}`, 20, yPos + 15);
@@ -169,7 +168,7 @@ export const generatePaymentReceipt = (paymentData, bookingData) => {
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Booking ID: ${bookingData.bookingId || 'N/A'}`, 20, 110);
+    doc.text(`Route: ${bookingData.route?.from || 'N/A'} to ${bookingData.route?.to || 'N/A'}`, 20, 110);
     doc.text(`Route: ${bookingData.route?.from || 'N/A'} to ${bookingData.route?.to || 'N/A'}`, 20, 115);
     doc.text(`Travel Date: ${bookingData.travelDate ? new Date(bookingData.travelDate).toLocaleDateString() : 'N/A'}`, 20, 120);
   }
