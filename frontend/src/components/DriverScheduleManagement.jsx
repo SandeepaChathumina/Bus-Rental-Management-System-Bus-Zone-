@@ -1054,10 +1054,25 @@ const DriverScheduleManagement = () => {
       if (booking._id === currentBooking._id) return false; // Skip current booking
       if (!booking.assignedDriver || booking.assignedDriver !== driverId) return false;
       
-      // Check if same travel date (one driver per day constraint)
-      const sameDate = new Date(booking.travelDate).toDateString() === new Date(currentBooking.travelDate).toDateString();
+      const currentBookingDate = new Date(currentBooking.travelDate);
+      const existingBookingStartDate = new Date(booking.travelDate);
+      const existingBookingEndDate = booking.returnDate ? new Date(booking.returnDate) : existingBookingStartDate;
       
-      return sameDate;
+      // For round trip bookings, check if current booking date falls within the date range
+      if (booking.tripType === 'round-trip') {
+        return currentBookingDate >= existingBookingStartDate && currentBookingDate <= existingBookingEndDate;
+      }
+      
+      // For one-way bookings, check if dates overlap
+      if (currentBooking.tripType === 'round-trip') {
+        const currentBookingEndDate = currentBooking.returnDate ? new Date(currentBooking.returnDate) : currentBookingDate;
+        return (currentBookingDate <= existingBookingStartDate && currentBookingEndDate >= existingBookingStartDate) ||
+               (currentBookingDate <= existingBookingEndDate && currentBookingEndDate >= existingBookingEndDate) ||
+               (currentBookingDate >= existingBookingStartDate && currentBookingEndDate <= existingBookingEndDate);
+      }
+      
+      // For one-way to one-way, check if same date
+      return currentBookingDate.toDateString() === existingBookingStartDate.toDateString();
     });
   };
 

@@ -9,6 +9,43 @@ import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
 import { sendBookingConfirmation } from '../utils/emailService.js';
 
+// Check driver availability for booking considering round trips
+const checkDriverAvailabilityForBooking = async (driverId, currentBooking) => {
+  try {
+    // Find all existing bookings assigned to this driver
+    const existingBookings = await Booking.find({
+      assignedDriver: driverId,
+      bookingStatus: { $ne: 'Cancelled' },
+      _id: { $ne: currentBooking._id } // Exclude current booking
+    });
+
+    const currentBookingStartDate = new Date(currentBooking.travelDate);
+    const currentBookingEndDate = currentBooking.returnDate ? new Date(currentBooking.returnDate) : currentBookingStartDate;
+
+    // Check for conflicts with existing bookings
+    for (const existingBooking of existingBookings) {
+      const existingStartDate = new Date(existingBooking.travelDate);
+      const existingEndDate = existingBooking.returnDate ? new Date(existingBooking.returnDate) : existingStartDate;
+
+      // Check if dates overlap
+      const hasOverlap = (
+        (currentBookingStartDate <= existingStartDate && currentBookingEndDate >= existingStartDate) ||
+        (currentBookingStartDate <= existingEndDate && currentBookingEndDate >= existingEndDate) ||
+        (currentBookingStartDate >= existingStartDate && currentBookingEndDate <= existingEndDate)
+      );
+
+      if (hasOverlap) {
+        return false; // Driver is not available
+      }
+    }
+
+    return true; // Driver is available
+  } catch (error) {
+    console.error('Error checking driver availability:', error);
+    return false; // Default to not available on error
+  }
+};
+
 // Create new booking
 export const createBooking = async (req, res) => {
   try {
@@ -1185,6 +1222,15 @@ export const assignDriverToBooking = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Driver not found or invalid driver'
+      });
+    }
+
+    // Check driver availability for the booking dates
+    const isDriverAvailable = await checkDriverAvailabilityForBooking(driverId, booking);
+    if (!isDriverAvailable) {
+      return res.status(400).json({
+        success: false,
+        message: 'Driver is not available for the selected dates'
       });
     }
 
