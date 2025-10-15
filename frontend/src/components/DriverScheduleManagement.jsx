@@ -389,13 +389,13 @@ const DriverScheduleManagement = () => {
           if (!booking) return false;
           
           if (statusFilter === 'assigned') {
-            return booking.assignedDriver && !booking.driverResponse;
+            return booking.assignedDriver && (booking.driverResponse === 'pending' || booking.driverResponse === 'accepted');
           } else if (statusFilter === 'accepted') {
             return booking.driverResponse === 'accepted';
           } else if (statusFilter === 'declined') {
             return booking.driverResponse === 'declined';
           } else if (statusFilter === 'pending') {
-            return booking.driverResponse === 'pending';
+            return booking.assignedDriver && booking.driverResponse === 'pending';
           } else if (statusFilter === 'unassigned') {
             return !booking.assignedDriver;
           }
@@ -1165,7 +1165,6 @@ const DriverScheduleManagement = () => {
           <table className="w-full">
             <thead>
               <tr className="bg-gradient-to-r from-blue-50 to-blue-100">
-                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Booking ID</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Passenger</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Bus Details</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Route</th>
@@ -1177,10 +1176,6 @@ const DriverScheduleManagement = () => {
             <tbody className="divide-y divide-blue-100">
               {filteredBookings?.map((booking) => (
                 <tr key={booking._id} className="hover:bg-blue-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-800">{booking.bookingId}</div>
-                    <div className="text-xs text-gray-500">{booking.numberOfPassengers} passenger(s)</div>
-                  </td>
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-800">
                       {booking.user?.firstName || 'N/A'} {booking.user?.lastName || 'N/A'}
