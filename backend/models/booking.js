@@ -60,8 +60,9 @@ const bookingSchema = new mongoose.Schema({
     },
     passengerNIC: {
       type: String,
-      required: true,
-      trim: true
+      required: false,
+      trim: true,
+      default: ''
     },
     passengerAge: Number,
     passengerGender: {

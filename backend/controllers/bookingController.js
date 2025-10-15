@@ -71,13 +71,13 @@ export const createBooking = async (req, res) => {
 
     // Validate seats data structure
     const validSeats = seats.every(seat => 
-      seat.seatNumber && seat.passengerName && seat.passengerNIC && seat.passengerAge && seat.passengerGender
+      seat.seatNumber && seat.passengerName && seat.passengerAge && seat.passengerGender
     );
 
     if (!validSeats) {
       return res.status(400).json({ 
         success: false,
-        message: 'All seat information must include seatNumber, passengerName, passengerNIC, passengerAge, and passengerGender' 
+        message: 'All seat information must include seatNumber, passengerName, passengerAge, and passengerGender' 
       });
     }
 
