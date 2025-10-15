@@ -996,15 +996,16 @@ const DriverScheduleManagement = () => {
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-800">{booking.bus?.numberPlate || 'N/A'}</div>
                     <div className="text-xs text-gray-500">{booking.bus?.busType || 'N/A'}</div>
-                    <div className="text-xs text-gray-500">Capacity: {booking.bus?.capacity || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-800">
                       {booking.route?.from || 'N/A'} → {booking.route?.to || 'N/A'}
         </div>
-                    <div className="text-xs text-gray-500">
-                      {booking.route?.distance || 'N/A'}km • {booking.route?.estimatedDuration || 'N/A'}
-      </div>
+                    {booking.route?.estimatedDuration && (
+                      <div className="text-xs text-gray-500">
+                        {booking.route.estimatedDuration}
+                      </div>
+                    )}
                     <div className="text-xs text-gray-500">
                       Departure: {formatTime(booking.departureTime)}
           </div>
