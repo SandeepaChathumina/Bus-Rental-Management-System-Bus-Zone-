@@ -971,6 +971,16 @@ const AllBookings = () => {
             </div>
           </div>
 
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-red-200/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-red-700 font-medium">Cancelled</p>
+                <p className="text-2xl font-bold text-red-800">{stats.cancelledBookings || 0}</p>
+              </div>
+              <XCircle className="h-8 w-8 text-red-600" />
+            </div>
+          </div>
+
           <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-indigo-200/50">
             <div className="flex items-center justify-between">
               <div>
@@ -1008,7 +1018,6 @@ const AllBookings = () => {
                 <option value="confirmed">Confirmed</option>
                 <option value="pending">Pending</option>
                 <option value="cancelled">Cancelled</option>
-                <option value="completed">Completed</option>
               </select>
             </div>
 
