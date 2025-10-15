@@ -1086,8 +1086,9 @@ const DriverScheduleManagement = () => {
 
           {/* Date Range Filters */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-        <div className="flex items-center space-x-2">
-          <Filter className="text-gray-400 w-5 h-5" />
+            <div className="flex items-center space-x-2">
+              <Calendar className="text-gray-400 w-5 h-5" />
+              <span className="text-sm font-medium text-gray-700">Date Range:</span>
             </div>
             
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
@@ -1097,7 +1098,7 @@ const DriverScheduleManagement = () => {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
               
@@ -1107,7 +1108,7 @@ const DriverScheduleManagement = () => {
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
             </div>
@@ -1116,7 +1117,7 @@ const DriverScheduleManagement = () => {
           {/* Status Filter */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
             <div className="flex items-center space-x-2">
-              <UserCheck className="text-gray-400 w-5 h-5" />
+              <Filter className="text-gray-400 w-5 h-5" />
               <span className="text-sm font-medium text-gray-700">Status:</span>
             </div>
             
@@ -1124,7 +1125,7 @@ const DriverScheduleManagement = () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="appearance-none bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-8 cursor-pointer"
+                className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-8 cursor-pointer"
               >
                 <option value="">All Status</option>
                 <option value="unassigned">Unassigned</option>

@@ -334,7 +334,13 @@ const AttendanceManagement = () => {
     if (activeTab === 'records') {
       fetchAttendanceRecords();
     }
-  }, [currentPage, selectedUser, statusFilter, startDate, endDate, activeTab]);
+  }, [currentPage, selectedUser, activeTab]);
+
+  // Separate useEffect for frontend filtering (no backend call needed)
+  useEffect(() => {
+    // This will trigger re-render when frontend filters change
+    // The filteredRecords will be recalculated automatically
+  }, [startDate, endDate, statusFilter, searchQuery]);
 
   const fetchUsers = async () => {
     try {
@@ -363,11 +369,8 @@ const AttendanceManagement = () => {
         limit: 10,
         ...(selectedUser && { userId: selectedUser }),
         // Don't apply status filter to backend if it's 'Checked-In' (we'll filter on frontend)
-        ...(statusFilter && statusFilter !== 'Checked-In' && { status: statusFilter }),
-        ...(startDate && { startDate }),
-        ...(endDate && { endDate }),
-        // If start and end dates are the same, add a flag to indicate single date filtering
-        ...(startDate && endDate && startDate === endDate && { singleDate: 'true' })
+        ...(statusFilter && statusFilter !== 'Checked-In' && { status: statusFilter })
+        // Date filters are now handled on frontend only
       });
 
       const response = await axios.get(
@@ -390,18 +393,7 @@ const AttendanceManagement = () => {
         setTotalRecords(response.data.length);
       }
 
-      // Frontend fallback: if start and end dates are the same, filter for that specific date
-      if (startDate && endDate && startDate === endDate) {
-        const targetDate = new Date(startDate);
-        records = records.filter(record => {
-          if (!record.date) return false;
-          const recordDate = new Date(record.date);
-          return recordDate.toDateString() === targetDate.toDateString();
-        });
-        // Update total records count for single date filtering
-        setTotalRecords(records.length);
-        setTotalPages(1);
-      }
+      // Date filtering is now handled in the filteredRecords function
 
       setAttendanceRecords(records);
     } catch (error) {
@@ -856,50 +848,8 @@ const AttendanceManagement = () => {
   const handleExport = async () => {
     setExportLoading(true);
     try {
-      // Get all records for export (not just filtered ones)
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams({
-        ...(selectedUser && { userId: selectedUser }),
-        // Don't apply status filter to backend if it's 'Checked-In' (we'll filter on frontend)
-        ...(statusFilter && statusFilter !== 'Checked-In' && { status: statusFilter }),
-        ...(startDate && { startDate }),
-        ...(endDate && { endDate }),
-        // If start and end dates are the same, add a flag to indicate single date filtering
-        ...(startDate && endDate && startDate === endDate && { singleDate: 'true' })
-      });
-
-      const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/attendance?${params}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-
-      let exportRecords = [];
-      if (response.data && response.data.docs && Array.isArray(response.data.docs)) {
-        exportRecords = response.data.docs;
-      } else if (response.data && Array.isArray(response.data)) {
-        exportRecords = response.data;
-      }
-
-      // Frontend fallback: if start and end dates are the same, filter for that specific date
-      if (startDate && endDate && startDate === endDate) {
-        const targetDate = new Date(startDate);
-        exportRecords = exportRecords.filter(record => {
-          if (!record.date) return false;
-          const recordDate = new Date(record.date);
-          return recordDate.toDateString() === targetDate.toDateString();
-        });
-      }
-
-      // Apply frontend filtering for Checked-In status
-      if (statusFilter === 'Checked-In') {
-        exportRecords = exportRecords.filter(record => 
-          record.status === 'Checked-In' || record.status === 'Checked-Out'
-        );
-      }
+      // Use the already filtered records for export
+      const exportRecords = filteredRecords;
 
       if (exportFormat === 'csv') {
         exportCSV(exportRecords, searchQuery, selectedUser, statusFilter, startDate, endDate, users);
@@ -956,6 +906,26 @@ const AttendanceManagement = () => {
       
       if (!matchesSearch) return false;
     }
+
+    // Apply date range filter
+    if (startDate || endDate) {
+      if (!record.date) return false;
+      
+      const recordDate = new Date(record.date);
+      const recordDateOnly = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
+      
+      if (startDate) {
+        const start = new Date(startDate);
+        const startDateOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        if (recordDateOnly < startDateOnly) return false;
+      }
+      
+      if (endDate) {
+        const end = new Date(endDate);
+        const endDateOnly = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+        if (recordDateOnly > endDateOnly) return false;
+      }
+    }
     
     // Apply status filter
     if (!statusFilter) return true;
@@ -1001,104 +971,139 @@ const AttendanceManagement = () => {
       {activeTab === 'records' && (
         <div>
           {/* Filters */}
-          <div className="bg-white rounded-xl p-6 mb-6 border border-blue-200 shadow-lg">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-              <div className="md:col-span-2 lg:col-span-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-6">
+            <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search by name, role, date, or status..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              {/* User Filter */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <div className="flex items-center space-x-2">
+                  <User className="text-gray-400 w-5 h-5" />
+                  <span className="text-sm font-medium text-gray-700">User:</span>
+                </div>
+                
                 <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search by name, role, date, or status..."
-                    className="w-full pl-10 bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+                  <select
+                    value={selectedUser}
+                    onChange={(e) => setSelectedUser(e.target.value)}
+                    className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-8 cursor-pointer"
+                  >
+                    <option value="">All Users</option>
+                    {users.map(user => (
+                      <option key={user._id} value={user._id}>
+                        {user.firstName} {user.lastName} ({user.role})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
-                <select
-                  className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={selectedUser}
-                  onChange={(e) => setSelectedUser(e.target.value)}
-                >
-                  <option value="">All Users</option>
-                  {users.map(user => (
-                    <option key={user._id} value={user._id}>
-                      {user.firstName} {user.lastName} ({user.role})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="">All Status</option>
-                  <option value="Checked-In">Checked-In</option>
-                  <option value="Checked-Out">Checked-Out</option>
-                </select>
+
+              {/* Date Range Filters */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="text-gray-400 w-5 h-5" />
+                  <span className="text-sm font-medium text-gray-700">Date Range:</span>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                  <div className="flex items-center space-x-2">
+                    <label className="text-xs text-gray-600 whitespace-nowrap">From:</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <label className="text-xs text-gray-600 whitespace-nowrap">To:</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-                <input
-                  type="date"
-                  className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
+              {/* Status Filter */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <div className="flex items-center space-x-2">
+                  <UserCheck className="text-gray-400 w-5 h-5" />
+                  <span className="text-sm font-medium text-gray-700">Status:</span>
+                </div>
+                
+                <div className="relative">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-8 cursor-pointer"
+                  >
+                    <option value="">All Status</option>
+                    <option value="Checked-In">Checked-In</option>
+                    <option value="Checked-Out">Checked-Out</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-                <input
-                  type="date"
-                  className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
+                {/* Clear Filters Button */}
+                {(startDate || endDate || statusFilter || selectedUser || searchQuery) && (
+                  <button
+                    onClick={() => {
+                      setSelectedUser('');
+                      setStatusFilter('');
+                      setSearchQuery('');
+                      setStartDate('');
+                      setEndDate('');
+                      setCurrentPage(1);
+                    }}
+                    className="px-3 py-2 text-xs bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Clear Filters
+                  </button>
+                )}
               </div>
             </div>
-            
-            <div className="flex justify-end items-end space-x-3 mt-4">
-              <button
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                onClick={() => {
-                  setSelectedUser('');
-                  setStatusFilter('');
-                  setSearchQuery('');
-                  setStartDate('');
-                  setEndDate('');
-                  setCurrentPage(1);
-                }}
-              >
-                Clear Filters
-              </button>
-              
-              <button
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center transition-colors"
-                onClick={() => setShowExportModal(true)}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export Report
-              </button>
+          </div>
 
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center transition-colors"
-                onClick={fetchAttendanceRecords}
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
-              </button>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-3 mb-6">
+            <button
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center transition-colors"
+              onClick={() => setShowExportModal(true)}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export Report
+            </button>
+
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center transition-colors"
+              onClick={fetchAttendanceRecords}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </button>
           </div>
 
           {/* Attendance Records Table */}
