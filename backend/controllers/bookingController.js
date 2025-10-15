@@ -9,6 +9,43 @@ import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
 import { sendBookingConfirmation } from '../utils/emailService.js';
 
+// Check driver availability for booking considering round trips
+const checkDriverAvailabilityForBooking = async (driverId, currentBooking) => {
+  try {
+    // Find all existing bookings assigned to this driver
+    const existingBookings = await Booking.find({
+      assignedDriver: driverId,
+      bookingStatus: { $ne: 'Cancelled' },
+      _id: { $ne: currentBooking._id } // Exclude current booking
+    });
+
+    const currentBookingStartDate = new Date(currentBooking.travelDate);
+    const currentBookingEndDate = currentBooking.returnDate ? new Date(currentBooking.returnDate) : currentBookingStartDate;
+
+    // Check for conflicts with existing bookings
+    for (const existingBooking of existingBookings) {
+      const existingStartDate = new Date(existingBooking.travelDate);
+      const existingEndDate = existingBooking.returnDate ? new Date(existingBooking.returnDate) : existingStartDate;
+
+      // Check if dates overlap
+      const hasOverlap = (
+        (currentBookingStartDate <= existingStartDate && currentBookingEndDate >= existingStartDate) ||
+        (currentBookingStartDate <= existingEndDate && currentBookingEndDate >= existingEndDate) ||
+        (currentBookingStartDate >= existingStartDate && currentBookingEndDate <= existingEndDate)
+      );
+
+      if (hasOverlap) {
+        return false; // Driver is not available
+      }
+    }
+
+    return true; // Driver is available
+  } catch (error) {
+    console.error('Error checking driver availability:', error);
+    return false; // Default to not available on error
+  }
+};
+
 // Create new booking
 export const createBooking = async (req, res) => {
   try {
@@ -1138,13 +1175,6 @@ export const assignDriverToBooking = async (req, res) => {
     const { id: bookingId } = req.params;
     const { driverId, resetDriverResponse } = req.body;
 
-    if (!driverId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Driver ID is required'
-      });
-    }
-
     // Check if booking exists
     const booking = await Booking.findById(bookingId)
       .populate('bus')
@@ -1157,12 +1187,50 @@ export const assignDriverToBooking = async (req, res) => {
       });
     }
 
+    // Handle driver assignment removal (when driverId is null)
+    if (driverId === null || driverId === undefined) {
+      booking.assignedDriver = null;
+      booking.driverResponse = null;
+      booking.driverResponseTime = null;
+      
+      await booking.save();
+
+      return res.json({
+        success: true,
+        message: 'Driver assignment removed successfully',
+        booking: {
+          _id: booking._id,
+          bookingId: booking.bookingId,
+          assignedDriver: booking.assignedDriver,
+          driverResponse: booking.driverResponse,
+          driverResponseTime: booking.driverResponseTime
+        }
+      });
+    }
+
+    // Handle driver assignment (when driverId is provided)
+    if (!driverId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Driver ID is required for assignment'
+      });
+    }
+
     // Check if driver exists and has driver role
     const driver = await User.findById(driverId);
     if (!driver || driver.role !== 'driver') {
       return res.status(404).json({
         success: false,
         message: 'Driver not found or invalid driver'
+      });
+    }
+
+    // Check driver availability for the booking dates
+    const isDriverAvailable = await checkDriverAvailabilityForBooking(driverId, booking);
+    if (!isDriverAvailable) {
+      return res.status(400).json({
+        success: false,
+        message: 'Driver is not available for the selected dates'
       });
     }
 
@@ -1343,6 +1411,8 @@ export const getDriverSchedules = async (req, res) => {
         actualStartTime: booking.actualStartTime || null,
         actualEndTime: booking.actualEndTime || null,
         travelDate: booking.travelDate,
+        returnDate: booking.returnDate || null,
+        tripType: booking.tripType || 'one-way',
         departureTime: booking.departureTime,
         arrivalTime: booking.arrivalTime,
         route: booking.route,

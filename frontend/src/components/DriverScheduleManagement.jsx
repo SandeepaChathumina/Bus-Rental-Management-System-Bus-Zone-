@@ -19,7 +19,8 @@ import {
   X,
   Plus,
   Download,
-  FileText
+  FileText,
+  RotateCcw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
@@ -356,18 +357,22 @@ const DriverScheduleManagement = () => {
     if (startDate || endDate) {
         filtered = filtered.filter(booking => {
           if (!booking || !booking.travelDate) return false;
-          const bookingDate = new Date(booking.travelDate);
+          const bookingStartDate = new Date(booking.travelDate);
+          const bookingEndDate = booking.returnDate ? new Date(booking.returnDate) : bookingStartDate;
           
           if (startDate && endDate) {
             const start = new Date(startDate);
             const end = new Date(endDate);
-            return bookingDate >= start && bookingDate <= end;
+            // Check if booking date range overlaps with filter date range
+            return (bookingStartDate <= end && bookingEndDate >= start);
           } else if (startDate) {
             const start = new Date(startDate);
-            return bookingDate >= start;
+            // Check if booking ends on or after the start date
+            return bookingEndDate >= start;
           } else if (endDate) {
             const end = new Date(endDate);
-            return bookingDate <= end;
+            // Check if booking starts on or before the end date
+            return bookingStartDate <= end;
           }
           return true;
         });
@@ -378,8 +383,16 @@ const DriverScheduleManagement = () => {
         const filterDateObj = new Date(filterDate);
         filtered = filtered.filter(booking => {
           if (!booking || !booking.travelDate) return false;
-          const bookingDate = new Date(booking.travelDate);
-          return bookingDate.toDateString() === filterDateObj.toDateString();
+          const bookingStartDate = new Date(booking.travelDate);
+          const bookingEndDate = booking.returnDate ? new Date(booking.returnDate) : bookingStartDate;
+          
+          // For round trip bookings, check if filter date falls within the date range
+          if (booking.tripType === 'round-trip') {
+            return filterDateObj >= bookingStartDate && filterDateObj <= bookingEndDate;
+          }
+          
+          // For one-way bookings, check if dates match exactly
+          return bookingStartDate.toDateString() === filterDateObj.toDateString();
         });
       }
 
@@ -414,6 +427,51 @@ const DriverScheduleManagement = () => {
     setSelectedBooking(booking);
     setSelectedDriver('');
     setShowAssignModal(true);
+  };
+
+  const handleResetAssignment = async (booking) => {
+    if (!window.confirm('Are you sure you want to unassign this driver from the booking?')) {
+      return;
+    }
+
+    try {
+      setAssigning(true);
+      const token = localStorage.getItem('token');
+      
+      // Reset driver assignment
+      const response = await axios.patch(
+        `${BACKEND_URL}/api/bookings/${booking._id}/assign-driver`,
+        { 
+          driverId: null
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        // Update local state - remove driver assignment
+        setConfirmedBookings(prev =>
+          prev.map(b =>
+            b._id === booking._id
+              ? { 
+                  ...b, 
+                  assignedDriver: null,
+                  driverResponse: null,
+                  driverResponseTime: null
+                }
+              : b
+          )
+        );
+        
+        toast.success('Driver assignment removed successfully');
+      } else {
+        toast.error('Failed to remove driver assignment: ' + (response.data.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Failed to reset driver assignment:', error);
+      toast.error('Failed to remove driver assignment: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setAssigning(false);
+    }
   };
 
   const checkDriverResponses = () => {
@@ -918,6 +976,14 @@ const DriverScheduleManagement = () => {
       return;
     }
 
+    // Check if driver already has a booking on the same date and time
+    const hasConflict = checkDriverConflict(selectedDriver, selectedBooking);
+
+    if (hasConflict) {
+      toast.error('This driver already has a booking on the same date. One driver can only be assigned to one trip per day.');
+      return;
+    }
+
     try {
       setAssigning(true);
       const token = localStorage.getItem('token');
@@ -993,6 +1059,33 @@ const DriverScheduleManagement = () => {
   const getDriverName = (driverId) => {
     const driver = drivers.find(d => d._id === driverId);
     return driver ? `${driver.user?.firstName || 'N/A'} ${driver.user?.lastName || 'N/A'}` : 'Not Assigned';
+  };
+
+  const checkDriverConflict = (driverId, currentBooking) => {
+    return confirmedBookings.some(booking => {
+      if (booking._id === currentBooking._id) return false; // Skip current booking
+      if (!booking.assignedDriver || booking.assignedDriver !== driverId) return false;
+      
+      const currentBookingDate = new Date(currentBooking.travelDate);
+      const existingBookingStartDate = new Date(booking.travelDate);
+      const existingBookingEndDate = booking.returnDate ? new Date(booking.returnDate) : existingBookingStartDate;
+      
+      // For round trip bookings, check if current booking date falls within the date range
+      if (booking.tripType === 'round-trip') {
+        return currentBookingDate >= existingBookingStartDate && currentBookingDate <= existingBookingEndDate;
+      }
+      
+      // For one-way bookings, check if dates overlap
+      if (currentBooking.tripType === 'round-trip') {
+        const currentBookingEndDate = currentBooking.returnDate ? new Date(currentBooking.returnDate) : currentBookingDate;
+        return (currentBookingDate <= existingBookingStartDate && currentBookingEndDate >= existingBookingStartDate) ||
+               (currentBookingDate <= existingBookingEndDate && currentBookingEndDate >= existingBookingEndDate) ||
+               (currentBookingDate >= existingBookingStartDate && currentBookingEndDate <= existingBookingEndDate);
+      }
+      
+      // For one-way to one-way, check if same date
+      return currentBookingDate.toDateString() === existingBookingStartDate.toDateString();
+    });
   };
 
   const getStatusColor = (status) => {
@@ -1141,6 +1234,18 @@ const DriverScheduleManagement = () => {
               </div>
             </div>
 
+            {/* Today Filter Button */}
+            <button
+              onClick={() => {
+                const today = new Date().toISOString().split('T')[0];
+                setStartDate(today);
+                setEndDate(today);
+              }}
+              className="px-3 py-2 text-xs bg-indigo-100 text-indigo-800 rounded-lg hover:bg-indigo-200 transition-colors"
+            >
+              Today
+            </button>
+
             {/* Clear Filters Button */}
             {(startDate || endDate || searchTerm || statusFilter) && (
               <button
@@ -1258,13 +1363,26 @@ const DriverScheduleManagement = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <button
-                      onClick={() => handleAssignDriver(booking)}
-                      className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-2 rounded transition-colors"
-                      title="Assign Driver"
-                    >
-                      <UserCheck className="w-4 h-4" />
-              </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleAssignDriver(booking)}
+                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-2 rounded transition-colors"
+                        title="Assign Driver"
+                      >
+                        <UserCheck className="w-4 h-4" />
+                      </button>
+                      
+                      {booking.assignedDriver && (
+                        <button
+                          onClick={() => handleResetAssignment(booking)}
+                          disabled={assigning}
+                          className="text-red-600 hover:text-red-800 hover:bg-red-100 p-2 rounded transition-colors disabled:opacity-50"
+                          title="Remove Driver Assignment"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1324,12 +1442,26 @@ const DriverScheduleManagement = () => {
                   required
                 >
                   <option value="">Choose a driver...</option>
-                  {drivers?.map((driver) => (
-                    <option key={driver._id} value={driver._id}>
-                      {driver.user?.firstName || 'N/A'} {driver.user?.lastName || 'N/A'} - {driver.licenseNumber || 'N/A'}{driver.experience && driver.experience > 0 ? ` (${driver.experience} years exp)` : ''}
-                    </option>
-                  ))}
+                  {drivers?.map((driver) => {
+                    // Check if driver already has a booking on the same date and time
+                    const hasConflict = checkDriverConflict(driver._id, selectedBooking);
+
+                    return (
+                      <option 
+                        key={driver._id} 
+                        value={driver._id}
+                        disabled={hasConflict}
+                        style={{ color: hasConflict ? '#9CA3AF' : 'inherit' }}
+                      >
+                        {driver.user?.firstName || 'N/A'} {driver.user?.lastName || 'N/A'} - {driver.licenseNumber || 'N/A'}{driver.experience && driver.experience > 0 ? ` (${driver.experience} years exp)` : ''}
+                        {hasConflict ? ' - Already assigned on this date' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Drivers already assigned on the same date are disabled
+                </p>
             </div>
 
             <div className="flex justify-end space-x-3 pt-4">
