@@ -412,8 +412,8 @@ const AllBookings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
-  const [sortBy, setSortBy] = useState('createdAt');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [stats, setStats] = useState({});
@@ -430,7 +430,7 @@ const AllBookings = () => {
 
   useEffect(() => {
     filterAndSortBookings();
-  }, [bookings, searchTerm, statusFilter, paymentFilter, dateFilter, sortBy]);
+  }, [bookings, searchTerm, statusFilter, paymentFilter, startDate, endDate]);
 
   const fetchAllBookings = async () => {
     try {
@@ -519,27 +519,23 @@ const AllBookings = () => {
       );
     }
 
-    // Apply date filter
-    if (dateFilter) {
-      const filterDate = new Date(dateFilter);
+    // Apply date range filter
+    if (startDate || endDate) {
       filtered = filtered.filter(booking => {
         const bookingDate = new Date(booking.travelDate);
-        return bookingDate.toDateString() === filterDate.toDateString();
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+        
+        if (start && end) {
+          return bookingDate >= start && bookingDate <= end;
+        } else if (start) {
+          return bookingDate >= start;
+        } else if (end) {
+          return bookingDate <= end;
+        }
+        return true;
       });
     }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'travelDate':
-          return new Date(b.travelDate) - new Date(a.travelDate);
-        case 'amount':
-          return b.totalAmount - a.totalAmount;
-        case 'createdAt':
-        default:
-          return new Date(b.createdAt) - new Date(a.createdAt);
-      }
-    });
 
     setFilteredBookings(filtered);
   };
@@ -1039,24 +1035,24 @@ const AllBookings = () => {
               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500" />
               <input
                 type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                placeholder="From Date"
                 className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
               />
             </div>
 
             <div className="relative">
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500 pointer-events-none" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full pl-4 pr-10 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 appearance-none bg-white"
-              >
-                <option value="createdAt">Sort by Date Created</option>
-                <option value="travelDate">Sort by Travel Date</option>
-                <option value="amount">Sort by Amount</option>
-              </select>
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500" />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                placeholder="To Date"
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
+              />
             </div>
+
           </div>
 
           {/* Quick Filters */}
@@ -1065,7 +1061,8 @@ const AllBookings = () => {
               onClick={() => {
                 setStatusFilter('');
                 setPaymentFilter('');
-                setDateFilter('');
+                setStartDate('');
+                setEndDate('');
                 setSearchTerm('');
               }}
               className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm hover:bg-slate-200 transition-colors"
@@ -1073,7 +1070,10 @@ const AllBookings = () => {
               Clear All Filters
             </button>
             <button
-              onClick={() => setDateFilter(new Date().toISOString().split('T')[0])}
+              onClick={() => {
+                setStartDate(new Date().toISOString().split('T')[0]);
+                setEndDate(new Date().toISOString().split('T')[0]);
+              }}
               className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm hover:bg-indigo-200 transition-colors"
             >
               Today's Travel
@@ -1086,13 +1086,14 @@ const AllBookings = () => {
           <p className="text-slate-600">
             Showing {filteredBookings.length} of {bookings.length} bookings
           </p>
-          {(searchTerm || statusFilter || paymentFilter || dateFilter) && (
+          {(searchTerm || statusFilter || paymentFilter || startDate || endDate) && (
             <button
               onClick={() => {
                 setSearchTerm('');
                 setStatusFilter('');
                 setPaymentFilter('');
-                setDateFilter('');
+                setStartDate('');
+                setEndDate('');
               }}
               className="text-sky-600 hover:text-sky-700 text-sm font-medium flex items-center"
             >
