@@ -492,13 +492,15 @@ export const getAllBookings = async (req, res) => {
 
     const bookings = await Booking.find(filter)
       .populate('user', 'firstName lastName email phone')
-      .populate('bus', 'busType numberPlate')
+      .populate('bus', 'busType numberPlate capacity')
       .sort({ createdAt: -1 });
 
     console.log('🔍 Admin getAllBookings - Found bookings:', bookings.length);
     if (bookings.length > 0) {
       console.log('📊 First booking status:', bookings[0].bookingStatus);
       console.log('📊 First booking payment status:', bookings[0].paymentStatus);
+      console.log('📊 First booking bus data:', bookings[0].bus);
+      console.log('📊 First booking bus capacity:', bookings[0].bus?.capacity);
     }
 
     res.json({

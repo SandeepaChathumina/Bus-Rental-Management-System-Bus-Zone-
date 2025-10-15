@@ -307,7 +307,10 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-emerald-700">Capacity:</span>
-                      <span className="font-medium">{booking.bus?.capacity} seats</span>
+                      <span className="font-medium">
+                        {booking.bus?.capacity ? `${booking.bus.capacity} seats` : 'N/A seats'}
+                        {console.log('Debug - Bus object:', booking.bus, 'Capacity:', booking.bus?.capacity)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -446,6 +449,11 @@ const AllBookings = () => {
       });
 
       if (response.data.success) {
+        console.log('📊 Fetched bookings:', response.data.bookings.length);
+        if (response.data.bookings.length > 0) {
+          console.log('📊 First booking bus data:', response.data.bookings[0].bus);
+          console.log('📊 First booking bus capacity:', response.data.bookings[0].bus?.capacity);
+        }
         setBookings(response.data.bookings);
       } else {
         setError(response.data.message || 'Failed to fetch bookings');
