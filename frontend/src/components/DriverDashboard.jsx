@@ -448,6 +448,8 @@ const ScheduleManagement = React.memo(() => {
       });
 
       if (response.data.success) {
+        console.log('Schedules received:', response.data.schedules);
+        console.log('First schedule driver data:', response.data.schedules?.[0]?.driverId);
         setSchedules(response.data.schedules || []);
         if (response.data.schedules?.length === 0) {
           console.log('No schedules found for this driver');
@@ -757,15 +759,8 @@ const ScheduleManagement = React.memo(() => {
                       <MapPin className="w-4 h-4 mr-3 text-red-500" />
                       <div>
                         <p className="font-medium">{schedule.startLocation} → {schedule.destination}</p>
-                        <p className="text-gray-500 text-sm">{schedule.bookingId.route}</p>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm text-gray-600">
-                    <span>Booking: {schedule.bookingId.bookingId}</span>
-                    <span>Passengers: {schedule.bookingId.passengers}</span>
-                    <span>Route: {schedule.startLocation} → {schedule.destination}</span>
                   </div>
 
                   {expandedSchedules[schedule._id] && (

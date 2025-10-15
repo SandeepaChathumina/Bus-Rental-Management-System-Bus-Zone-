@@ -365,7 +365,9 @@ const AttendanceManagement = () => {
         // Don't apply status filter to backend if it's 'Checked-In' (we'll filter on frontend)
         ...(statusFilter && statusFilter !== 'Checked-In' && { status: statusFilter }),
         ...(startDate && { startDate }),
-        ...(endDate && { endDate })
+        ...(endDate && { endDate }),
+        // If start and end dates are the same, add a flag to indicate single date filtering
+        ...(startDate && endDate && startDate === endDate && { singleDate: 'true' })
       });
 
       const response = await axios.get(
@@ -377,17 +379,31 @@ const AttendanceManagement = () => {
         }
       );
       
+      let records = [];
       if (response.data && response.data.docs && Array.isArray(response.data.docs)) {
-        setAttendanceRecords(response.data.docs);
+        records = response.data.docs;
         setTotalPages(response.data.totalPages || 1);
         setTotalRecords(response.data.totalDocs || response.data.docs.length);
       } else if (response.data && Array.isArray(response.data)) {
-        setAttendanceRecords(response.data);
+        records = response.data;
         setTotalPages(1);
         setTotalRecords(response.data.length);
-      } else {
-        setAttendanceRecords([]);
       }
+
+      // Frontend fallback: if start and end dates are the same, filter for that specific date
+      if (startDate && endDate && startDate === endDate) {
+        const targetDate = new Date(startDate);
+        records = records.filter(record => {
+          if (!record.date) return false;
+          const recordDate = new Date(record.date);
+          return recordDate.toDateString() === targetDate.toDateString();
+        });
+        // Update total records count for single date filtering
+        setTotalRecords(records.length);
+        setTotalPages(1);
+      }
+
+      setAttendanceRecords(records);
     } catch (error) {
       console.error('Error fetching attendance records:', error);
       setAttendanceRecords([]);
@@ -494,18 +510,57 @@ const AttendanceManagement = () => {
   };
 
   // Updated export functions
-  const exportCSV = (records) => {
+  const exportCSV = (records, searchQuery = '', selectedUser = '', statusFilter = '', startDate = '', endDate = '', users = []) => {
     if (!records || records.length === 0) {
       alert('No data to export');
       return;
     }
 
+    // Check if filters are applied
+    const hasFilters = searchQuery || selectedUser || statusFilter || startDate || endDate;
+    
+    // Add filter information as comments at the top of CSV
+    let csvContent = '';
+    
+    if (hasFilters) {
+      csvContent += '# BusZone+ Attendance Management Report - Filtered Data\n';
+      csvContent += `# Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}\n`;
+      csvContent += '# Applied Filters:\n';
+      
+      if (searchQuery) csvContent += `# - Search: "${searchQuery}"\n`;
+      if (selectedUser) {
+        const selectedUserObj = users.find(u => u._id === selectedUser);
+        if (selectedUserObj) {
+          csvContent += `# - User: ${selectedUserObj.firstName} ${selectedUserObj.lastName} (${selectedUserObj.role})\n`;
+        }
+      }
+      if (statusFilter) csvContent += `# - Status: ${statusFilter}\n`;
+      if (startDate && endDate) {
+        if (startDate === endDate) {
+          csvContent += `# - Date: ${startDate}\n`;
+        } else {
+          csvContent += `# - Date Range: ${startDate} to ${endDate}\n`;
+        }
+      } else if (startDate) {
+        csvContent += `# - From Date: ${startDate}\n`;
+      } else if (endDate) {
+        csvContent += `# - To Date: ${endDate}\n`;
+      }
+      csvContent += '#\n';
+    } else {
+      csvContent += '# BusZone+ Attendance Management Report - All Data\n';
+      csvContent += `# Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}\n`;
+      csvContent += '#\n';
+    }
+
     const headers = 'Name,Role,Date,Check-In Time,Check-Out Time,Status\n';
     const csvData = records.map(record => 
-      `"${record.userId?.firstName || ''} ${record.userId?.lastName || ''}","${record.userId?.role || ''}","${formatDate(record.date)}","${record.checkInTime ? formatTime(record.checkInTime) : 'N/A'}","${record.checkOutTime ? formatTime(record.checkOutTime) : 'N/A'}","${record.status || ''}"`
+      `"${record.userId?.firstName || ''} ${record.userId?.lastName || ''}","${record.userId?.role || ''}","${formatDate(record.date)}","${record.checkInTime ? formatTime(record.checkInTime) : 'N/A'}","${record.checkOutTime ? formatTime(record.checkOutTime) : 'Pending'}","${record.status || ''}"`
     ).join('\n');
     
-    const blob = new Blob([headers + csvData], { type: 'text/csv' });
+    csvContent += headers + csvData;
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -514,7 +569,7 @@ const AttendanceManagement = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const exportPDF = (records, statusFilter = '') => {
+  const exportPDF = (records, statusFilter = '', searchQuery = '', selectedUser = '', startDate = '', endDate = '', users = []) => {
     if (!records || records.length === 0) {
       alert('No data to export');
       return;
@@ -557,8 +612,52 @@ const AttendanceManagement = () => {
       day: 'numeric' 
     })} at ${currentDate.toLocaleTimeString()}`, pageWidth / 2, margin + 32, { align: 'center' });
     
+    // Add filter information if any filters are applied
+    const hasFilters = searchQuery || selectedUser || statusFilter || startDate || endDate;
+    let filterY = margin + 40;
+    
+    if (hasFilters) {
+      doc.setFontSize(12);
+      doc.setTextColor(59, 130, 246);
+      doc.setFont(undefined, 'bold');
+      doc.text('Filtered Report', pageWidth / 2, filterY, { align: 'center' });
+      
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      
+      let filterDetails = [];
+      if (searchQuery) filterDetails.push(`Search: "${searchQuery}"`);
+      if (selectedUser) {
+        const selectedUserObj = users.find(u => u._id === selectedUser);
+        if (selectedUserObj) {
+          filterDetails.push(`User: ${selectedUserObj.firstName} ${selectedUserObj.lastName} (${selectedUserObj.role})`);
+        }
+      }
+      if (statusFilter) {
+        filterDetails.push(`Status: ${statusFilter}`);
+      }
+      if (startDate && endDate) {
+        if (startDate === endDate) {
+          filterDetails.push(`Date: ${startDate}`);
+        } else {
+          filterDetails.push(`Date Range: ${startDate} to ${endDate}`);
+        }
+      } else if (startDate) {
+        filterDetails.push(`From Date: ${startDate}`);
+      } else if (endDate) {
+        filterDetails.push(`To Date: ${endDate}`);
+      }
+      
+      if (filterDetails.length > 0) {
+        doc.text(`Applied Filters: ${filterDetails.join(' | ')}`, pageWidth / 2, filterY + 7, { align: 'center' });
+      }
+      
+      filterY += 20;
+    }
+    
     // Statistics section
-    const statsY = margin + 40;
+    const statsY = filterY;
     doc.setFontSize(12);
     doc.setTextColor(30, 30, 30);
     doc.setFont(undefined, 'bold');
@@ -569,11 +668,10 @@ const AttendanceManagement = () => {
     const checkedIn = records.filter(r => r.status === 'Checked-In').length;
     const checkedOut = records.filter(r => r.status === 'Checked-Out').length;
     const checkedInAndOut = checkedIn + checkedOut; // Combined count for Checked-In filter
-    const absent = records.filter(r => r.status === 'Absent').length;
     
     // Statistics boxes
     const availableWidth = pageWidth - (margin * 2);
-    const boxCount = 4;
+    const boxCount = 3;
     const boxSpacing = 8;
     const boxWidth = Math.min(35, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
     const boxHeight = 25;
@@ -613,17 +711,6 @@ const AttendanceManagement = () => {
     doc.setFontSize(7);
     doc.text('Checked-Out', currentX + boxWidth/2, statsY + 25, { align: 'center' });
     
-    currentX += boxWidth + boxSpacing;
-    
-    // Absent box
-    doc.setFillColor(30, 64, 175);
-    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text(absent.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
-    doc.setFontSize(7);
-    doc.text('Absent', currentX + boxWidth/2, statsY + 25, { align: 'center' });
     
     // Status distribution table
     const statusTableY = statsY + 50;
@@ -636,8 +723,7 @@ const AttendanceManagement = () => {
     const statusData = [
       ['Status', 'Count', 'Percentage'],
       ['Checked-In', checkedInAndOut.toString(), `${((checkedInAndOut/totalRecords)*100).toFixed(1)}%`],
-      ['Checked-Out', checkedOut.toString(), `${((checkedOut/totalRecords)*100).toFixed(1)}%`],
-      ['Absent', absent.toString(), `${((absent/totalRecords)*100).toFixed(1)}%`]
+      ['Checked-Out', checkedOut.toString(), `${((checkedOut/totalRecords)*100).toFixed(1)}%`]
     ];
     
     autoTable(doc, {
@@ -702,7 +788,7 @@ const AttendanceManagement = () => {
       role: record.userId?.role?.charAt(0).toUpperCase() + record.userId?.role?.slice(1) || 'N/A',
       date: formatDate(record.date),
       checkIn: record.checkInTime ? formatTime(record.checkInTime) : 'N/A',
-      checkOut: record.checkOutTime ? formatTime(record.checkOutTime) : 'N/A',
+      checkOut: record.checkOutTime ? formatTime(record.checkOutTime) : 'Pending',
       status: record.status || 'Unknown'
     }));
 
@@ -777,7 +863,9 @@ const AttendanceManagement = () => {
         // Don't apply status filter to backend if it's 'Checked-In' (we'll filter on frontend)
         ...(statusFilter && statusFilter !== 'Checked-In' && { status: statusFilter }),
         ...(startDate && { startDate }),
-        ...(endDate && { endDate })
+        ...(endDate && { endDate }),
+        // If start and end dates are the same, add a flag to indicate single date filtering
+        ...(startDate && endDate && startDate === endDate && { singleDate: 'true' })
       });
 
       const response = await axios.get(
@@ -796,6 +884,16 @@ const AttendanceManagement = () => {
         exportRecords = response.data;
       }
 
+      // Frontend fallback: if start and end dates are the same, filter for that specific date
+      if (startDate && endDate && startDate === endDate) {
+        const targetDate = new Date(startDate);
+        exportRecords = exportRecords.filter(record => {
+          if (!record.date) return false;
+          const recordDate = new Date(record.date);
+          return recordDate.toDateString() === targetDate.toDateString();
+        });
+      }
+
       // Apply frontend filtering for Checked-In status
       if (statusFilter === 'Checked-In') {
         exportRecords = exportRecords.filter(record => 
@@ -804,9 +902,9 @@ const AttendanceManagement = () => {
       }
 
       if (exportFormat === 'csv') {
-        exportCSV(exportRecords);
+        exportCSV(exportRecords, searchQuery, selectedUser, statusFilter, startDate, endDate, users);
       } else {
-        exportPDF(exportRecords, statusFilter);
+        exportPDF(exportRecords, statusFilter, searchQuery, selectedUser, startDate, endDate, users);
       }
 
       setShowExportModal(false);
@@ -1076,7 +1174,7 @@ const AttendanceManagement = () => {
                             {record.checkInTime ? formatTime(record.checkInTime) : 'N/A'}
                           </td>
                           <td className="px-4 py-3 text-gray-700">
-                            {record.checkOutTime ? formatTime(record.checkOutTime) : 'N/A'}
+                            {record.checkOutTime ? formatTime(record.checkOutTime) : 'Pending'}
                           </td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
