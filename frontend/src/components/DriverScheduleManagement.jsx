@@ -357,18 +357,22 @@ const DriverScheduleManagement = () => {
     if (startDate || endDate) {
         filtered = filtered.filter(booking => {
           if (!booking || !booking.travelDate) return false;
-          const bookingDate = new Date(booking.travelDate);
+          const bookingStartDate = new Date(booking.travelDate);
+          const bookingEndDate = booking.returnDate ? new Date(booking.returnDate) : bookingStartDate;
           
           if (startDate && endDate) {
             const start = new Date(startDate);
             const end = new Date(endDate);
-            return bookingDate >= start && bookingDate <= end;
+            // Check if booking date range overlaps with filter date range
+            return (bookingStartDate <= end && bookingEndDate >= start);
           } else if (startDate) {
             const start = new Date(startDate);
-            return bookingDate >= start;
+            // Check if booking ends on or after the start date
+            return bookingEndDate >= start;
           } else if (endDate) {
             const end = new Date(endDate);
-            return bookingDate <= end;
+            // Check if booking starts on or before the end date
+            return bookingStartDate <= end;
           }
           return true;
         });
@@ -379,8 +383,16 @@ const DriverScheduleManagement = () => {
         const filterDateObj = new Date(filterDate);
         filtered = filtered.filter(booking => {
           if (!booking || !booking.travelDate) return false;
-          const bookingDate = new Date(booking.travelDate);
-          return bookingDate.toDateString() === filterDateObj.toDateString();
+          const bookingStartDate = new Date(booking.travelDate);
+          const bookingEndDate = booking.returnDate ? new Date(booking.returnDate) : bookingStartDate;
+          
+          // For round trip bookings, check if filter date falls within the date range
+          if (booking.tripType === 'round-trip') {
+            return filterDateObj >= bookingStartDate && filterDateObj <= bookingEndDate;
+          }
+          
+          // For one-way bookings, check if dates match exactly
+          return bookingStartDate.toDateString() === filterDateObj.toDateString();
         });
       }
 

@@ -1411,6 +1411,8 @@ export const getDriverSchedules = async (req, res) => {
         actualStartTime: booking.actualStartTime || null,
         actualEndTime: booking.actualEndTime || null,
         travelDate: booking.travelDate,
+        returnDate: booking.returnDate || null,
+        tripType: booking.tripType || 'one-way',
         departureTime: booking.departureTime,
         arrivalTime: booking.arrivalTime,
         route: booking.route,

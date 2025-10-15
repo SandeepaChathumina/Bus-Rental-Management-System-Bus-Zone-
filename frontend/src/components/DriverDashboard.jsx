@@ -519,14 +519,22 @@ const ScheduleManagement = React.memo(() => {
 
     // Date range filter
     if (startDate || endDate) {
-      const scheduleDate = new Date(schedule.travelDate);
-      if (startDate) {
+      const scheduleStartDate = new Date(schedule.travelDate);
+      const scheduleEndDate = schedule.returnDate ? new Date(schedule.returnDate) : scheduleStartDate;
+      
+      if (startDate && endDate) {
         const start = new Date(startDate);
-        if (scheduleDate < start) return false;
-      }
-      if (endDate) {
         const end = new Date(endDate);
-        if (scheduleDate > end) return false;
+        // Check if schedule date range overlaps with filter date range
+        return (scheduleStartDate <= end && scheduleEndDate >= start);
+      } else if (startDate) {
+        const start = new Date(startDate);
+        // Check if schedule ends on or after the start date
+        return scheduleEndDate >= start;
+      } else if (endDate) {
+        const end = new Date(endDate);
+        // Check if schedule starts on or before the end date
+        return scheduleStartDate <= end;
       }
     }
 
@@ -864,6 +872,20 @@ const ScheduleManagement = React.memo(() => {
                       <MapPin className="w-4 h-4 mr-3 text-red-500" />
                       <div>
                         <p className="font-medium">{schedule.startLocation} → {schedule.destination}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            schedule.tripType === 'round-trip' 
+                              ? 'bg-purple-100 text-purple-800' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {schedule.tripType === 'round-trip' ? 'Round Trip' : 'Single Trip'}
+                          </span>
+                          {schedule.tripType === 'round-trip' && schedule.returnDate && (
+                            <span className="text-xs text-gray-500">
+                              Return: {formatDate(schedule.returnDate)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -876,6 +898,20 @@ const ScheduleManagement = React.memo(() => {
                           <p className="text-gray-900 font-medium">
                             {schedule.startLocation} → {schedule.destination}
                           </p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              schedule.tripType === 'round-trip' 
+                                ? 'bg-purple-100 text-purple-800' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {schedule.tripType === 'round-trip' ? 'Round Trip' : 'Single Trip'}
+                            </span>
+                            {schedule.tripType === 'round-trip' && schedule.returnDate && (
+                              <span className="text-xs text-gray-500">
+                                Return: {formatDate(schedule.returnDate)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div>
                           <span className="text-gray-600">Departure Time:</span>
