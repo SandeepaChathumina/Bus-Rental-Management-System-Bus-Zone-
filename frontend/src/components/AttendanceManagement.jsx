@@ -306,6 +306,8 @@ const AttendanceManagement = () => {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -332,7 +334,7 @@ const AttendanceManagement = () => {
     if (activeTab === 'records') {
       fetchAttendanceRecords();
     }
-  }, [currentPage, selectedUser, statusFilter, activeTab]);
+  }, [currentPage, selectedUser, statusFilter, startDate, endDate, activeTab]);
 
   const fetchUsers = async () => {
     try {
@@ -360,7 +362,10 @@ const AttendanceManagement = () => {
         page: currentPage,
         limit: 10,
         ...(selectedUser && { userId: selectedUser }),
-        ...(statusFilter && { status: statusFilter })
+        // Don't apply status filter to backend if it's 'Checked-In' (we'll filter on frontend)
+        ...(statusFilter && statusFilter !== 'Checked-In' && { status: statusFilter }),
+        ...(startDate && { startDate }),
+        ...(endDate && { endDate })
       });
 
       const response = await axios.get(
@@ -509,7 +514,7 @@ const AttendanceManagement = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const exportPDF = (records) => {
+  const exportPDF = (records, statusFilter = '') => {
     if (!records || records.length === 0) {
       alert('No data to export');
       return;
@@ -563,6 +568,7 @@ const AttendanceManagement = () => {
     const totalRecords = records.length;
     const checkedIn = records.filter(r => r.status === 'Checked-In').length;
     const checkedOut = records.filter(r => r.status === 'Checked-Out').length;
+    const checkedInAndOut = checkedIn + checkedOut; // Combined count for Checked-In filter
     const absent = records.filter(r => r.status === 'Absent').length;
     
     // Statistics boxes
@@ -585,19 +591,19 @@ const AttendanceManagement = () => {
     
     currentX += boxWidth + boxSpacing;
     
-    // Checked-In box
+    // Checked-In box (always show combined count)
     doc.setFillColor(37, 99, 235);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
-    doc.text(checkedIn.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.text(checkedInAndOut.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
     doc.setFontSize(7);
     doc.text('Checked-In', currentX + boxWidth/2, statsY + 25, { align: 'center' });
     
     currentX += boxWidth + boxSpacing;
     
-    // Checked-Out box
+    // Checked-Out box (show original checked out count)
     doc.setFillColor(29, 78, 216);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
@@ -626,9 +632,10 @@ const AttendanceManagement = () => {
     doc.setFont(undefined, 'bold');
     doc.text('Status Distribution', margin, statusTableY);
     
+    // Status data with correct counts
     const statusData = [
       ['Status', 'Count', 'Percentage'],
-      ['Checked-In', checkedIn.toString(), `${((checkedIn/totalRecords)*100).toFixed(1)}%`],
+      ['Checked-In', checkedInAndOut.toString(), `${((checkedInAndOut/totalRecords)*100).toFixed(1)}%`],
       ['Checked-Out', checkedOut.toString(), `${((checkedOut/totalRecords)*100).toFixed(1)}%`],
       ['Absent', absent.toString(), `${((absent/totalRecords)*100).toFixed(1)}%`]
     ];
@@ -767,7 +774,10 @@ const AttendanceManagement = () => {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams({
         ...(selectedUser && { userId: selectedUser }),
-        ...(statusFilter && { status: statusFilter })
+        // Don't apply status filter to backend if it's 'Checked-In' (we'll filter on frontend)
+        ...(statusFilter && statusFilter !== 'Checked-In' && { status: statusFilter }),
+        ...(startDate && { startDate }),
+        ...(endDate && { endDate })
       });
 
       const response = await axios.get(
@@ -786,10 +796,17 @@ const AttendanceManagement = () => {
         exportRecords = response.data;
       }
 
+      // Apply frontend filtering for Checked-In status
+      if (statusFilter === 'Checked-In') {
+        exportRecords = exportRecords.filter(record => 
+          record.status === 'Checked-In' || record.status === 'Checked-Out'
+        );
+      }
+
       if (exportFormat === 'csv') {
         exportCSV(exportRecords);
       } else {
-        exportPDF(exportRecords);
+        exportPDF(exportRecords, statusFilter);
       }
 
       setShowExportModal(false);
@@ -826,18 +843,33 @@ const AttendanceManagement = () => {
   };
 
   const filteredRecords = attendanceRecords.filter(record => {
-    if (!searchQuery) return true;
+    // Apply search filter first
+    if (searchQuery) {
+      const searchTerm = searchQuery.toLowerCase();
+      const userName = `${record.userId?.firstName || ''} ${record.userId?.lastName || ''}`.toLowerCase();
+      const userRole = (record.userId?.role || '').toLowerCase();
+      const recordDate = formatDate(record.date).toLowerCase();
+      const recordStatus = (record.status || '').toLowerCase();
+      
+      const matchesSearch = userName.includes(searchTerm) || 
+             userRole.includes(searchTerm) || 
+             recordDate.includes(searchTerm) ||
+             recordStatus.includes(searchTerm);
+      
+      if (!matchesSearch) return false;
+    }
     
-    const searchTerm = searchQuery.toLowerCase();
-    const userName = `${record.userId?.firstName || ''} ${record.userId?.lastName || ''}`.toLowerCase();
-    const userRole = (record.userId?.role || '').toLowerCase();
-    const recordDate = formatDate(record.date).toLowerCase();
-    const recordStatus = (record.status || '').toLowerCase();
+    // Apply status filter
+    if (!statusFilter) return true;
     
-    return userName.includes(searchTerm) || 
-           userRole.includes(searchTerm) || 
-           recordDate.includes(searchTerm) ||
-           recordStatus.includes(searchTerm);
+    if (statusFilter === 'Checked-In') {
+      // Show both Checked-In and Checked-Out records
+      return record.status === 'Checked-In' || record.status === 'Checked-Out';
+    } else if (statusFilter === 'Checked-Out') {
+      return record.status === 'Checked-Out';
+    }
+    
+    return true;
   });
 
   return (
@@ -873,8 +905,8 @@ const AttendanceManagement = () => {
           {/* Filters */}
           <div className="bg-white rounded-xl p-6 mb-6 border border-blue-200 shadow-lg">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              <div className="md:col-span-2 lg:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
@@ -914,8 +946,27 @@ const AttendanceManagement = () => {
                   <option value="">All Status</option>
                   <option value="Checked-In">Checked-In</option>
                   <option value="Checked-Out">Checked-Out</option>
-                  <option value="Absent">Absent</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                <input
+                  type="date"
+                  className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                <input
+                  type="date"
+                  className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
               </div>
             </div>
             
@@ -926,6 +977,8 @@ const AttendanceManagement = () => {
                   setSelectedUser('');
                   setStatusFilter('');
                   setSearchQuery('');
+                  setStartDate('');
+                  setEndDate('');
                   setCurrentPage(1);
                 }}
               >
