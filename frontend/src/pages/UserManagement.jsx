@@ -103,10 +103,28 @@ const validationUtils = {
     }
   },
 
-  // Check if NIC is valid (9 digits + V or 12 digits)
+  // Check if NIC is valid (9 digits + V/X or 12 digits) and age > 21
   validateNIC: (nic) => {
-    const nicRegex = /^\d{9}[Vv]$|^\d{12}$/;
-    return nicRegex.test(nic);
+    const nicRegex = /^\d{9}[VvXx]$|^\d{12}$/;
+    if (!nicRegex.test(nic)) {
+      return { isValid: false, message: "Invalid NIC format" };
+    }
+    
+    // For 12-digit format, check age requirement (birth year < 2004)
+    if (nic.length === 12) {
+      const birthYear = parseInt(nic.substring(0, 4));
+      const currentYear = new Date().getFullYear();
+      const age = currentYear - birthYear;
+      
+      if (age < 21) {
+        return { 
+          isValid: false, 
+          message: `Age must be over 21. Birth year ${birthYear} makes you ${age} years old.` 
+        };
+      }
+    }
+    
+    return { isValid: true, message: "Valid NIC format" };
   },
 
   // Check if phone number is valid (must start with 0 and be exactly 10 digits)
@@ -507,7 +525,9 @@ const ValidationMessages = ({ validation, field }) => {
         } else if (validation.nic.isValid && !validation.nic.available) {
           return <p className="text-red-600">✗ NIC number already exists</p>;
         } else {
-          return <p className="text-red-600">✗ NIC must be 9 digits + V or 12 digits</p>;
+          // Show specific error message from validation
+          const errorMessage = validation.nic.message || "NIC must be old format (9 digits + V/X) or new format (12 digits)";
+          return <p className="text-red-600">✗ {errorMessage}</p>;
         }
 
       case "phone":
@@ -709,7 +729,7 @@ const UserManagement = () => {
     username: { available: false, checked: false },
     email: { available: false, valid: false, checked: false, message: "" },
     password: { isValid: false, checked: false, requirements: {} },
-    nic: { isValid: false, available: false, checked: false },
+    nic: { isValid: false, available: false, checked: false, message: "" },
     phone: { isValid: false, available: false, checked: false },
     licenseNumber: { isValid: false, checked: false },
     licenseExpiry: { isValid: false, checked: false },
@@ -819,9 +839,9 @@ const UserManagement = () => {
   useEffect(() => {
     const validateNIC = async () => {
       if (form.nic.length >= 9) {
-        // First check format
-        const isFormatValid = validationUtils.validateNIC(form.nic);
-        if (isFormatValid) {
+        // First check format and age
+        const formatValidation = validationUtils.validateNIC(form.nic);
+        if (formatValidation.isValid) {
           // Then check availability
           const isAvailable = await validationUtils.checkNIC(form.nic);
           setValidation((prev) => ({
@@ -830,6 +850,7 @@ const UserManagement = () => {
               isValid: isAvailable,
               available: isAvailable,
               checked: true,
+              message: formatValidation.message,
             },
           }));
         } else {
@@ -839,6 +860,7 @@ const UserManagement = () => {
               isValid: false,
               available: false,
               checked: true,
+              message: formatValidation.message,
             },
           }));
         }
@@ -849,6 +871,7 @@ const UserManagement = () => {
             isValid: false,
             available: false,
             checked: false,
+            message: "",
           },
         }));
       }
@@ -1168,9 +1191,6 @@ const UserManagement = () => {
               {`${row.firstName || ""} ${row.lastName || ""}`.trim() ||
                 row.username}
             </div>
-            <div className="text-xs text-gray-500">
-              ID: {row._id || row.id}
-            </div>
           </div>
         </div>
       ),
@@ -1199,7 +1219,6 @@ const UserManagement = () => {
       return;
     }
     const rows = list.map((u) => ({
-      id: u._id || u.id,
       username: u.username,
       firstName: u.firstName,
       lastName: u.lastName,
@@ -1414,18 +1433,16 @@ const UserManagement = () => {
     
     // Prepare table data with responsive formatting
     const tableColumns = [
-      { header: 'ID', dataKey: 'id', width: 20 },
-      { header: 'Name', dataKey: 'name', width: 45 },
-      { header: 'Email', dataKey: 'email', width: 55 },
-      { header: 'Role', dataKey: 'role', width: 20 },
-      { header: 'Status', dataKey: 'status', width: 20 },
-      { header: 'Join Date', dataKey: 'joinDate', width: 25 }
+      { header: 'Name', dataKey: 'name', width: 50 },
+      { header: 'Email', dataKey: 'email', width: 60 },
+      { header: 'Role', dataKey: 'role', width: 25 },
+      { header: 'Status', dataKey: 'status', width: 25 },
+      { header: 'Join Date', dataKey: 'joinDate', width: 30 }
     ];
     
     const tableRows = list.map((u, index) => ({
-      id: (u._id || u.id).toString().substring(0, 6) + '...',
-      name: `${u.firstName || ''} ${u.lastName || ''}`.trim().substring(0, 20) || u.username?.substring(0, 15),
-      email: u.email?.substring(0, 25) + (u.email?.length > 25 ? '...' : ''),
+      name: `${u.firstName || ''} ${u.lastName || ''}`.trim().substring(0, 25) || u.username?.substring(0, 20),
+      email: u.email?.substring(0, 30) + (u.email?.length > 30 ? '...' : ''),
       role: u.role?.charAt(0).toUpperCase() + u.role?.slice(1) || 'N/A',
       status: u.isActive !== false ? 'Active' : 'Inactive',
       joinDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-GB') : 'N/A'
@@ -1455,12 +1472,11 @@ const UserManagement = () => {
         fillColor: [248, 250, 252] 
       },
       columnStyles: {
-        id: { halign: 'center', fontSize: 7, cellWidth: 20 },
-        name: { halign: 'left', fontSize: 8, cellWidth: 45, overflow: 'linebreak' },
-        email: { halign: 'left', fontSize: 7, cellWidth: 55, overflow: 'linebreak' },
-        role: { halign: 'center', fontSize: 8, cellWidth: 20 },
-        status: { halign: 'center', fontSize: 8, cellWidth: 20 },
-        joinDate: { halign: 'center', fontSize: 7, cellWidth: 25 }
+        name: { halign: 'left', fontSize: 8, cellWidth: 50, overflow: 'linebreak' },
+        email: { halign: 'left', fontSize: 7, cellWidth: 60, overflow: 'linebreak' },
+        role: { halign: 'center', fontSize: 8, cellWidth: 25 },
+        status: { halign: 'center', fontSize: 8, cellWidth: 25 },
+        joinDate: { halign: 'center', fontSize: 7, cellWidth: 30 }
       },
       margin: { left: margin, right: margin },
       tableWidth: 'auto',
@@ -1724,14 +1740,44 @@ const UserManagement = () => {
               validation={validation}
             />
 
-            <FormField
-              field="nic"
-              label="NIC Number"
-              placeholder="Enter NIC number"
-              value={form.nic}
-              onChange={(e) => setForm({ ...form, nic: e.target.value })}
-              validation={validation}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                National Identity Card (NIC)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 861230123V or 198612300123"
+                value={form.nic}
+                onChange={(e) => setForm({ ...form, nic: e.target.value })}
+                className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
+                  validation.nic?.checked
+                    ? (() => {
+                        // For fields with both isValid and available (phone, nic)
+                        if (validation.nic?.isValid !== undefined && validation.nic?.available !== undefined) {
+                          return validation.nic?.isValid && validation.nic?.available
+                            ? "border-green-500 focus:ring-green-500"
+                            : "border-red-500 focus:ring-red-500";
+                        }
+                        // For fields with only isValid (password, license, etc.)
+                        else if (validation.nic?.isValid !== undefined) {
+                          return validation.nic?.isValid
+                            ? "border-green-500 focus:ring-green-500"
+                            : "border-red-500 focus:ring-red-500";
+                        }
+                        // For fields with only available (username, email)
+                        else if (validation.nic?.available !== undefined) {
+                          return validation.nic?.available
+                            ? "border-green-500 focus:ring-green-500"
+                            : "border-red-500 focus:ring-red-500";
+                        }
+                        // Default to red if checked but no clear validation state
+                        return "border-red-500 focus:ring-red-500";
+                      })()
+                    : "border-blue-300 focus:ring-blue-500"
+                }`}
+              />
+              <ValidationMessages validation={validation} field="nic" />
+            </div>
 
             <FormField
               field="phone"
@@ -1903,14 +1949,44 @@ const UserManagement = () => {
               validation={validation}
             />
 
-            <FormField
-              field="nic"
-              label="NIC Number"
-              placeholder="Enter NIC number"
-              value={form.nic}
-              onChange={(e) => setForm({ ...form, nic: e.target.value })}
-              validation={validation}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                National Identity Card (NIC)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 861230123V or 198612300123"
+                value={form.nic}
+                onChange={(e) => setForm({ ...form, nic: e.target.value })}
+                className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
+                  validation.nic?.checked
+                    ? (() => {
+                        // For fields with both isValid and available (phone, nic)
+                        if (validation.nic?.isValid !== undefined && validation.nic?.available !== undefined) {
+                          return validation.nic?.isValid && validation.nic?.available
+                            ? "border-green-500 focus:ring-green-500"
+                            : "border-red-500 focus:ring-red-500";
+                        }
+                        // For fields with only isValid (password, license, etc.)
+                        else if (validation.nic?.isValid !== undefined) {
+                          return validation.nic?.isValid
+                            ? "border-green-500 focus:ring-green-500"
+                            : "border-red-500 focus:ring-red-500";
+                        }
+                        // For fields with only available (username, email)
+                        else if (validation.nic?.available !== undefined) {
+                          return validation.nic?.available
+                            ? "border-green-500 focus:ring-green-500"
+                            : "border-red-500 focus:ring-red-500";
+                        }
+                        // Default to red if checked but no clear validation state
+                        return "border-red-500 focus:ring-red-500";
+                      })()
+                    : "border-blue-300 focus:ring-blue-500"
+                }`}
+              />
+              <ValidationMessages validation={validation} field="nic" />
+            </div>
 
             <FormField
               field="phone"
