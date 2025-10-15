@@ -35,6 +35,9 @@ const DriverScheduleManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDate, setFilterDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedDriver, setSelectedDriver] = useState('');
@@ -65,7 +68,7 @@ const DriverScheduleManagement = () => {
       console.error('Error filtering bookings:', err);
       setError('Failed to filter bookings');
     }
-  }, [confirmedBookings, searchTerm, filterDate]);
+  }, [confirmedBookings, searchTerm, filterDate, startDate, endDate, statusFilter]);
 
   const fetchConfirmedBookings = async () => {
     try {
@@ -349,13 +352,54 @@ const DriverScheduleManagement = () => {
       });
     }
 
-    // Filter by date
+    // Filter by date range
+    if (startDate || endDate) {
+        filtered = filtered.filter(booking => {
+          if (!booking || !booking.travelDate) return false;
+          const bookingDate = new Date(booking.travelDate);
+          
+          if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            return bookingDate >= start && bookingDate <= end;
+          } else if (startDate) {
+            const start = new Date(startDate);
+            return bookingDate >= start;
+          } else if (endDate) {
+            const end = new Date(endDate);
+            return bookingDate <= end;
+          }
+          return true;
+        });
+      }
+
+    // Keep the old single date filter for backward compatibility
     if (filterDate) {
         const filterDateObj = new Date(filterDate);
         filtered = filtered.filter(booking => {
           if (!booking || !booking.travelDate) return false;
           const bookingDate = new Date(booking.travelDate);
           return bookingDate.toDateString() === filterDateObj.toDateString();
+        });
+      }
+
+    // Filter by driver response status
+    if (statusFilter) {
+        filtered = filtered.filter(booking => {
+          if (!booking) return false;
+          
+          if (statusFilter === 'assigned') {
+            return booking.assignedDriver && (booking.driverResponse === 'pending' || booking.driverResponse === 'accepted');
+          } else if (statusFilter === 'accepted') {
+            return booking.driverResponse === 'accepted';
+          } else if (statusFilter === 'declined') {
+            return booking.driverResponse === 'declined';
+          } else if (statusFilter === 'pending') {
+            return booking.assignedDriver && booking.driverResponse === 'pending';
+          } else if (statusFilter === 'unassigned') {
+            return !booking.assignedDriver;
+          }
+          return true;
         });
       }
 
@@ -468,8 +512,46 @@ const DriverScheduleManagement = () => {
       day: 'numeric' 
     })} at ${currentDate.toLocaleTimeString()}`, pageWidth / 2, margin + 32, { align: 'center' });
     
+    // Add filter information if any filters are applied
+    const hasFilters = searchTerm || startDate || endDate || statusFilter || filterDate;
+    let filterY = margin + 40;
+    
+    if (hasFilters) {
+      doc.setFontSize(12);
+      doc.setTextColor(59, 130, 246);
+      doc.setFont(undefined, 'bold');
+      doc.text('Filtered Report', pageWidth / 2, filterY, { align: 'center' });
+      
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      
+      let filterDetails = [];
+      if (searchTerm) filterDetails.push(`Search: "${searchTerm}"`);
+      if (startDate && endDate) filterDetails.push(`Date Range: ${startDate} to ${endDate}`);
+      else if (startDate) filterDetails.push(`From Date: ${startDate}`);
+      else if (endDate) filterDetails.push(`To Date: ${endDate}`);
+      if (filterDate) filterDetails.push(`Specific Date: ${filterDate}`);
+      if (statusFilter) {
+        const statusLabels = {
+          'unassigned': 'Unassigned',
+          'assigned': 'Assigned',
+          'accepted': 'Accepted',
+          'declined': 'Declined',
+          'pending': 'Pending'
+        };
+        filterDetails.push(`Status: ${statusLabels[statusFilter] || statusFilter}`);
+      }
+      
+      if (filterDetails.length > 0) {
+        doc.text(`Applied Filters: ${filterDetails.join(' | ')}`, pageWidth / 2, filterY + 7, { align: 'center' });
+      }
+      
+      filterY += 20;
+    }
+    
     // Statistics section
-    const statsY = margin + 40;
+    const statsY = filterY;
     doc.setFontSize(12);
     doc.setTextColor(30, 30, 30);
     doc.setFont(undefined, 'bold');
@@ -694,7 +776,8 @@ const DriverScheduleManagement = () => {
       }
 
       // Save the PDF
-    const fileName = `BusZone_DriverScheduleReport_${currentDate.toISOString().split('T')[0]}_${Date.now()}.pdf`;
+    const filterSuffix = hasFilters ? '_Filtered' : '_AllData';
+    const fileName = `BusZone_DriverScheduleReport${filterSuffix}_${currentDate.toISOString().split('T')[0]}_${Date.now()}.pdf`;
       doc.save(fileName);
   };
 
@@ -704,6 +787,9 @@ const DriverScheduleManagement = () => {
       return;
     }
 
+    // Check if filters are applied
+    const hasFilters = searchTerm || startDate || endDate || statusFilter || filterDate;
+    
     // CSV Headers
     const headers = [
       'Booking ID',
@@ -722,6 +808,36 @@ const DriverScheduleManagement = () => {
       'Driver Response Time',
       'Created At'
     ];
+
+    // Add filter information as comments at the top of CSV
+    let csvContent = '';
+    
+    if (hasFilters) {
+      csvContent += '# BusZone+ Driver Schedule Management Report - Filtered Data\n';
+      csvContent += `# Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}\n`;
+      csvContent += '# Applied Filters:\n';
+      
+      if (searchTerm) csvContent += `# - Search: "${searchTerm}"\n`;
+      if (startDate && endDate) csvContent += `# - Date Range: ${startDate} to ${endDate}\n`;
+      else if (startDate) csvContent += `# - From Date: ${startDate}\n`;
+      else if (endDate) csvContent += `# - To Date: ${endDate}\n`;
+      if (filterDate) csvContent += `# - Specific Date: ${filterDate}\n`;
+      if (statusFilter) {
+        const statusLabels = {
+          'unassigned': 'Unassigned',
+          'assigned': 'Assigned',
+          'accepted': 'Accepted',
+          'declined': 'Declined',
+          'pending': 'Pending'
+        };
+        csvContent += `# - Status: ${statusLabels[statusFilter] || statusFilter}\n`;
+      }
+      csvContent += '#\n';
+    } else {
+      csvContent += '# BusZone+ Driver Schedule Management Report - All Data\n';
+      csvContent += `# Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}\n`;
+      csvContent += '#\n';
+    }
 
     // Convert data to CSV format
     const csvData = bookings.map(booking => [
@@ -742,10 +858,11 @@ const DriverScheduleManagement = () => {
       booking.createdAt ? new Date(booking.createdAt).toLocaleString() : 'N/A'
     ]);
 
-    // Combine headers and data
-    const csvContent = [headers, ...csvData]
-      .map(row => row.map(field => `"${field}"`).join(','))
-      .join('\n');
+    // Combine filter info, headers and data
+    const csvRows = [headers, ...csvData]
+      .map(row => row.map(field => `"${field}"`).join(','));
+    
+    csvContent += csvRows.join('\n');
 
     // Create and download CSV file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -754,7 +871,8 @@ const DriverScheduleManagement = () => {
     link.setAttribute('href', url);
     
     const currentDate = new Date();
-    const fileName = `BusZone_DriverScheduleReport_${currentDate.toISOString().split('T')[0]}_${Date.now()}.csv`;
+    const filterSuffix = hasFilters ? '_Filtered' : '_AllData';
+    const fileName = `BusZone_DriverScheduleReport${filterSuffix}_${currentDate.toISOString().split('T')[0]}_${Date.now()}.csv`;
     link.setAttribute('download', fileName);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
@@ -765,12 +883,22 @@ const DriverScheduleManagement = () => {
   const handleExport = async () => {
     setExportLoading(true);
     try {
+      // Use filtered data if any filters are applied, otherwise use all confirmed bookings
+      const dataToExport = (searchTerm || startDate || endDate || statusFilter || filterDate) 
+        ? filteredBookings 
+        : confirmedBookings;
+      
       if (exportFormat === 'pdf') {
-        exportToPDF(confirmedBookings);
+        exportToPDF(dataToExport);
       } else if (exportFormat === 'csv') {
-        exportToCSV(confirmedBookings);
+        exportToCSV(dataToExport);
       }
-      toast.success('Report exported successfully');
+      
+      const filterInfo = (searchTerm || startDate || endDate || statusFilter || filterDate) 
+        ? ' (filtered data)' 
+        : ' (all data)';
+      
+      toast.success(`Report exported successfully${filterInfo}`);
       setShowExportModal(false);
     } catch (error) {
       console.error('Export error:', error);
@@ -942,7 +1070,9 @@ const DriverScheduleManagement = () => {
 
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+      <div className="bg-white rounded-lg border border-blue-200 p-4 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
+          {/* Search Input */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
@@ -953,14 +1083,80 @@ const DriverScheduleManagement = () => {
             className="w-full pl-10 pr-4 py-2 bg-white border border-blue-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
               </div>
-        <div className="flex items-center space-x-2">
-          <Filter className="text-gray-400 w-5 h-5" />
+
+          {/* Date Range Filters */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <div className="flex items-center space-x-2">
+              <Calendar className="text-gray-400 w-5 h-5" />
+              <span className="text-sm font-medium text-gray-700">Date Range:</span>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+              <div className="flex items-center space-x-2">
+                <label className="text-xs text-gray-600 whitespace-nowrap">From:</label>
                 <input
                   type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-            className="bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <label className="text-xs text-gray-600 whitespace-nowrap">To:</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <div className="flex items-center space-x-2">
+              <Filter className="text-gray-400 w-5 h-5" />
+              <span className="text-sm font-medium text-gray-700">Status:</span>
+            </div>
+            
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-8 cursor-pointer"
+              >
+                <option value="">All Status</option>
+                <option value="unassigned">Unassigned</option>
+                <option value="assigned">Assigned</option>
+                <option value="accepted">Accepted</option>
+                <option value="declined">Declined</option>
+                <option value="pending">Pending</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Clear Filters Button */}
+            {(startDate || endDate || searchTerm || statusFilter) && (
+              <button
+                onClick={() => {
+                  setStartDate('');
+                  setEndDate('');
+                  setSearchTerm('');
+                  setFilterDate('');
+                  setStatusFilter('');
+                }}
+                className="px-3 py-2 text-xs bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
               </div>
             </div>
 
@@ -970,7 +1166,6 @@ const DriverScheduleManagement = () => {
           <table className="w-full">
             <thead>
               <tr className="bg-gradient-to-r from-blue-50 to-blue-100">
-                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Booking ID</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Passenger</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Bus Details</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Route</th>
@@ -982,10 +1177,6 @@ const DriverScheduleManagement = () => {
             <tbody className="divide-y divide-blue-100">
               {filteredBookings?.map((booking) => (
                 <tr key={booking._id} className="hover:bg-blue-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-800">{booking.bookingId}</div>
-                    <div className="text-xs text-gray-500">{booking.numberOfPassengers} passenger(s)</div>
-                  </td>
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-800">
                       {booking.user?.firstName || 'N/A'} {booking.user?.lastName || 'N/A'}
@@ -996,15 +1187,16 @@ const DriverScheduleManagement = () => {
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-800">{booking.bus?.numberPlate || 'N/A'}</div>
                     <div className="text-xs text-gray-500">{booking.bus?.busType || 'N/A'}</div>
-                    <div className="text-xs text-gray-500">Capacity: {booking.bus?.capacity || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-800">
                       {booking.route?.from || 'N/A'} → {booking.route?.to || 'N/A'}
         </div>
+                    {booking.route?.estimatedDuration && (
                     <div className="text-xs text-gray-500">
-                      {booking.route?.distance || 'N/A'}km • {booking.route?.estimatedDuration || 'N/A'}
+                        {booking.route.estimatedDuration}
       </div>
+                    )}
                     <div className="text-xs text-gray-500">
                       Departure: {formatTime(booking.departureTime)}
           </div>
@@ -1134,7 +1326,7 @@ const DriverScheduleManagement = () => {
                   <option value="">Choose a driver...</option>
                   {drivers?.map((driver) => (
                     <option key={driver._id} value={driver._id}>
-                      {driver.user?.firstName || 'N/A'} {driver.user?.lastName || 'N/A'} - {driver.licenseNumber || 'N/A'} ({driver.experience || 0} years exp)
+                      {driver.user?.firstName || 'N/A'} {driver.user?.lastName || 'N/A'} - {driver.licenseNumber || 'N/A'}{driver.experience && driver.experience > 0 ? ` (${driver.experience} years exp)` : ''}
                     </option>
                   ))}
                 </select>
@@ -1217,7 +1409,16 @@ const DriverScheduleManagement = () => {
 
             <div className="mb-6 p-3 bg-gray-50 rounded-lg">
               <div className="text-sm text-gray-600">
-                <div className="mb-1">Report will include {confirmedBookings.length} records</div>
+                <div className="mb-1">
+                  Report will include {
+                    (searchTerm || startDate || endDate || statusFilter || filterDate) 
+                      ? filteredBookings.length 
+                      : confirmedBookings.length
+                  } records
+                  {(searchTerm || startDate || endDate || statusFilter || filterDate) && (
+                    <span className="text-blue-600 font-medium"> (filtered data)</span>
+                  )}
+                </div>
                 <div>Generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}</div>
               </div>
           </div>

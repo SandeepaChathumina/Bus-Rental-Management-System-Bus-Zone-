@@ -306,6 +306,8 @@ const AttendanceManagement = () => {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -332,7 +334,13 @@ const AttendanceManagement = () => {
     if (activeTab === 'records') {
       fetchAttendanceRecords();
     }
-  }, [currentPage, selectedUser, statusFilter, activeTab]);
+  }, [currentPage, selectedUser, activeTab]);
+
+  // Separate useEffect for frontend filtering (no backend call needed)
+  useEffect(() => {
+    // This will trigger re-render when frontend filters change
+    // The filteredRecords will be recalculated automatically
+  }, [startDate, endDate, statusFilter, searchQuery]);
 
   const fetchUsers = async () => {
     try {
@@ -360,7 +368,9 @@ const AttendanceManagement = () => {
         page: currentPage,
         limit: 10,
         ...(selectedUser && { userId: selectedUser }),
-        ...(statusFilter && { status: statusFilter })
+        // Don't apply status filter to backend if it's 'Checked-In' (we'll filter on frontend)
+        ...(statusFilter && statusFilter !== 'Checked-In' && { status: statusFilter })
+        // Date filters are now handled on frontend only
       });
 
       const response = await axios.get(
@@ -372,17 +382,20 @@ const AttendanceManagement = () => {
         }
       );
       
+      let records = [];
       if (response.data && response.data.docs && Array.isArray(response.data.docs)) {
-        setAttendanceRecords(response.data.docs);
+        records = response.data.docs;
         setTotalPages(response.data.totalPages || 1);
         setTotalRecords(response.data.totalDocs || response.data.docs.length);
       } else if (response.data && Array.isArray(response.data)) {
-        setAttendanceRecords(response.data);
+        records = response.data;
         setTotalPages(1);
         setTotalRecords(response.data.length);
-      } else {
-        setAttendanceRecords([]);
       }
+
+      // Date filtering is now handled in the filteredRecords function
+
+      setAttendanceRecords(records);
     } catch (error) {
       console.error('Error fetching attendance records:', error);
       setAttendanceRecords([]);
@@ -489,18 +502,57 @@ const AttendanceManagement = () => {
   };
 
   // Updated export functions
-  const exportCSV = (records) => {
+  const exportCSV = (records, searchQuery = '', selectedUser = '', statusFilter = '', startDate = '', endDate = '', users = []) => {
     if (!records || records.length === 0) {
       alert('No data to export');
       return;
     }
 
+    // Check if filters are applied
+    const hasFilters = searchQuery || selectedUser || statusFilter || startDate || endDate;
+    
+    // Add filter information as comments at the top of CSV
+    let csvContent = '';
+    
+    if (hasFilters) {
+      csvContent += '# BusZone+ Attendance Management Report - Filtered Data\n';
+      csvContent += `# Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}\n`;
+      csvContent += '# Applied Filters:\n';
+      
+      if (searchQuery) csvContent += `# - Search: "${searchQuery}"\n`;
+      if (selectedUser) {
+        const selectedUserObj = users.find(u => u._id === selectedUser);
+        if (selectedUserObj) {
+          csvContent += `# - User: ${selectedUserObj.firstName} ${selectedUserObj.lastName} (${selectedUserObj.role})\n`;
+        }
+      }
+      if (statusFilter) csvContent += `# - Status: ${statusFilter}\n`;
+      if (startDate && endDate) {
+        if (startDate === endDate) {
+          csvContent += `# - Date: ${startDate}\n`;
+        } else {
+          csvContent += `# - Date Range: ${startDate} to ${endDate}\n`;
+        }
+      } else if (startDate) {
+        csvContent += `# - From Date: ${startDate}\n`;
+      } else if (endDate) {
+        csvContent += `# - To Date: ${endDate}\n`;
+      }
+      csvContent += '#\n';
+    } else {
+      csvContent += '# BusZone+ Attendance Management Report - All Data\n';
+      csvContent += `# Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}\n`;
+      csvContent += '#\n';
+    }
+
     const headers = 'Name,Role,Date,Check-In Time,Check-Out Time,Status\n';
     const csvData = records.map(record => 
-      `"${record.userId?.firstName || ''} ${record.userId?.lastName || ''}","${record.userId?.role || ''}","${formatDate(record.date)}","${record.checkInTime ? formatTime(record.checkInTime) : 'N/A'}","${record.checkOutTime ? formatTime(record.checkOutTime) : 'N/A'}","${record.status || ''}"`
+      `"${record.userId?.firstName || ''} ${record.userId?.lastName || ''}","${record.userId?.role || ''}","${formatDate(record.date)}","${record.checkInTime ? formatTime(record.checkInTime) : 'N/A'}","${record.checkOutTime ? formatTime(record.checkOutTime) : 'Pending'}","${record.status || ''}"`
     ).join('\n');
     
-    const blob = new Blob([headers + csvData], { type: 'text/csv' });
+    csvContent += headers + csvData;
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -509,7 +561,7 @@ const AttendanceManagement = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const exportPDF = (records) => {
+  const exportPDF = (records, statusFilter = '', searchQuery = '', selectedUser = '', startDate = '', endDate = '', users = []) => {
     if (!records || records.length === 0) {
       alert('No data to export');
       return;
@@ -552,8 +604,52 @@ const AttendanceManagement = () => {
       day: 'numeric' 
     })} at ${currentDate.toLocaleTimeString()}`, pageWidth / 2, margin + 32, { align: 'center' });
     
+    // Add filter information if any filters are applied
+    const hasFilters = searchQuery || selectedUser || statusFilter || startDate || endDate;
+    let filterY = margin + 40;
+    
+    if (hasFilters) {
+      doc.setFontSize(12);
+      doc.setTextColor(59, 130, 246);
+      doc.setFont(undefined, 'bold');
+      doc.text('Filtered Report', pageWidth / 2, filterY, { align: 'center' });
+      
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      
+      let filterDetails = [];
+      if (searchQuery) filterDetails.push(`Search: "${searchQuery}"`);
+      if (selectedUser) {
+        const selectedUserObj = users.find(u => u._id === selectedUser);
+        if (selectedUserObj) {
+          filterDetails.push(`User: ${selectedUserObj.firstName} ${selectedUserObj.lastName} (${selectedUserObj.role})`);
+        }
+      }
+      if (statusFilter) {
+        filterDetails.push(`Status: ${statusFilter}`);
+      }
+      if (startDate && endDate) {
+        if (startDate === endDate) {
+          filterDetails.push(`Date: ${startDate}`);
+        } else {
+          filterDetails.push(`Date Range: ${startDate} to ${endDate}`);
+        }
+      } else if (startDate) {
+        filterDetails.push(`From Date: ${startDate}`);
+      } else if (endDate) {
+        filterDetails.push(`To Date: ${endDate}`);
+      }
+      
+      if (filterDetails.length > 0) {
+        doc.text(`Applied Filters: ${filterDetails.join(' | ')}`, pageWidth / 2, filterY + 7, { align: 'center' });
+      }
+      
+      filterY += 20;
+    }
+    
     // Statistics section
-    const statsY = margin + 40;
+    const statsY = filterY;
     doc.setFontSize(12);
     doc.setTextColor(30, 30, 30);
     doc.setFont(undefined, 'bold');
@@ -563,11 +659,11 @@ const AttendanceManagement = () => {
     const totalRecords = records.length;
     const checkedIn = records.filter(r => r.status === 'Checked-In').length;
     const checkedOut = records.filter(r => r.status === 'Checked-Out').length;
-    const absent = records.filter(r => r.status === 'Absent').length;
+    const checkedInAndOut = checkedIn + checkedOut; // Combined count for Checked-In filter
     
     // Statistics boxes
     const availableWidth = pageWidth - (margin * 2);
-    const boxCount = 4;
+    const boxCount = 3;
     const boxSpacing = 8;
     const boxWidth = Math.min(35, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
     const boxHeight = 25;
@@ -585,19 +681,19 @@ const AttendanceManagement = () => {
     
     currentX += boxWidth + boxSpacing;
     
-    // Checked-In box
+    // Checked-In box (always show combined count)
     doc.setFillColor(37, 99, 235);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
-    doc.text(checkedIn.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.text(checkedInAndOut.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
     doc.setFontSize(7);
     doc.text('Checked-In', currentX + boxWidth/2, statsY + 25, { align: 'center' });
     
     currentX += boxWidth + boxSpacing;
     
-    // Checked-Out box
+    // Checked-Out box (show original checked out count)
     doc.setFillColor(29, 78, 216);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
@@ -607,17 +703,6 @@ const AttendanceManagement = () => {
     doc.setFontSize(7);
     doc.text('Checked-Out', currentX + boxWidth/2, statsY + 25, { align: 'center' });
     
-    currentX += boxWidth + boxSpacing;
-    
-    // Absent box
-    doc.setFillColor(30, 64, 175);
-    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text(absent.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
-    doc.setFontSize(7);
-    doc.text('Absent', currentX + boxWidth/2, statsY + 25, { align: 'center' });
     
     // Status distribution table
     const statusTableY = statsY + 50;
@@ -626,11 +711,11 @@ const AttendanceManagement = () => {
     doc.setFont(undefined, 'bold');
     doc.text('Status Distribution', margin, statusTableY);
     
+    // Status data with correct counts
     const statusData = [
       ['Status', 'Count', 'Percentage'],
-      ['Checked-In', checkedIn.toString(), `${((checkedIn/totalRecords)*100).toFixed(1)}%`],
-      ['Checked-Out', checkedOut.toString(), `${((checkedOut/totalRecords)*100).toFixed(1)}%`],
-      ['Absent', absent.toString(), `${((absent/totalRecords)*100).toFixed(1)}%`]
+      ['Checked-In', checkedInAndOut.toString(), `${((checkedInAndOut/totalRecords)*100).toFixed(1)}%`],
+      ['Checked-Out', checkedOut.toString(), `${((checkedOut/totalRecords)*100).toFixed(1)}%`]
     ];
     
     autoTable(doc, {
@@ -695,7 +780,7 @@ const AttendanceManagement = () => {
       role: record.userId?.role?.charAt(0).toUpperCase() + record.userId?.role?.slice(1) || 'N/A',
       date: formatDate(record.date),
       checkIn: record.checkInTime ? formatTime(record.checkInTime) : 'N/A',
-      checkOut: record.checkOutTime ? formatTime(record.checkOutTime) : 'N/A',
+      checkOut: record.checkOutTime ? formatTime(record.checkOutTime) : 'Pending',
       status: record.status || 'Unknown'
     }));
 
@@ -763,33 +848,13 @@ const AttendanceManagement = () => {
   const handleExport = async () => {
     setExportLoading(true);
     try {
-      // Get all records for export (not just filtered ones)
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams({
-        ...(selectedUser && { userId: selectedUser }),
-        ...(statusFilter && { status: statusFilter })
-      });
-
-      const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/attendance?${params}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-
-      let exportRecords = [];
-      if (response.data && response.data.docs && Array.isArray(response.data.docs)) {
-        exportRecords = response.data.docs;
-      } else if (response.data && Array.isArray(response.data)) {
-        exportRecords = response.data;
-      }
+      // Use the already filtered records for export
+      const exportRecords = filteredRecords;
 
       if (exportFormat === 'csv') {
-        exportCSV(exportRecords);
+        exportCSV(exportRecords, searchQuery, selectedUser, statusFilter, startDate, endDate, users);
       } else {
-        exportPDF(exportRecords);
+        exportPDF(exportRecords, statusFilter, searchQuery, selectedUser, startDate, endDate, users);
       }
 
       setShowExportModal(false);
@@ -826,18 +891,53 @@ const AttendanceManagement = () => {
   };
 
   const filteredRecords = attendanceRecords.filter(record => {
-    if (!searchQuery) return true;
+    // Apply search filter first
+    if (searchQuery) {
+      const searchTerm = searchQuery.toLowerCase();
+      const userName = `${record.userId?.firstName || ''} ${record.userId?.lastName || ''}`.toLowerCase();
+      const userRole = (record.userId?.role || '').toLowerCase();
+      const recordDate = formatDate(record.date).toLowerCase();
+      const recordStatus = (record.status || '').toLowerCase();
+      
+      const matchesSearch = userName.includes(searchTerm) || 
+             userRole.includes(searchTerm) || 
+             recordDate.includes(searchTerm) ||
+             recordStatus.includes(searchTerm);
+      
+      if (!matchesSearch) return false;
+    }
+
+    // Apply date range filter
+    if (startDate || endDate) {
+      if (!record.date) return false;
+      
+      const recordDate = new Date(record.date);
+      const recordDateOnly = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
+      
+      if (startDate) {
+        const start = new Date(startDate);
+        const startDateOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        if (recordDateOnly < startDateOnly) return false;
+      }
+      
+      if (endDate) {
+        const end = new Date(endDate);
+        const endDateOnly = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+        if (recordDateOnly > endDateOnly) return false;
+      }
+    }
     
-    const searchTerm = searchQuery.toLowerCase();
-    const userName = `${record.userId?.firstName || ''} ${record.userId?.lastName || ''}`.toLowerCase();
-    const userRole = (record.userId?.role || '').toLowerCase();
-    const recordDate = formatDate(record.date).toLowerCase();
-    const recordStatus = (record.status || '').toLowerCase();
+    // Apply status filter
+    if (!statusFilter) return true;
     
-    return userName.includes(searchTerm) || 
-           userRole.includes(searchTerm) || 
-           recordDate.includes(searchTerm) ||
-           recordStatus.includes(searchTerm);
+    if (statusFilter === 'Checked-In') {
+      // Show both Checked-In and Checked-Out records
+      return record.status === 'Checked-In' || record.status === 'Checked-Out';
+    } else if (statusFilter === 'Checked-Out') {
+      return record.status === 'Checked-Out';
+    }
+    
+    return true;
   });
 
   return (
@@ -871,83 +971,139 @@ const AttendanceManagement = () => {
       {activeTab === 'records' && (
         <div>
           {/* Filters */}
-          <div className="bg-white rounded-xl p-6 mb-6 border border-blue-200 shadow-lg">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-6">
+            <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search by name, role, date, or status..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              {/* User Filter */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <div className="flex items-center space-x-2">
+                  <User className="text-gray-400 w-5 h-5" />
+                  <span className="text-sm font-medium text-gray-700">User:</span>
+                </div>
+                
                 <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search by name, role, date, or status..."
-                    className="w-full pl-10 bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+                  <select
+                    value={selectedUser}
+                    onChange={(e) => setSelectedUser(e.target.value)}
+                    className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-8 cursor-pointer"
+                  >
+                    <option value="">All Users</option>
+                    {users.map(user => (
+                      <option key={user._id} value={user._id}>
+                        {user.firstName} {user.lastName} ({user.role})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
-                <select
-                  className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={selectedUser}
-                  onChange={(e) => setSelectedUser(e.target.value)}
-                >
-                  <option value="">All Users</option>
-                  {users.map(user => (
-                    <option key={user._id} value={user._id}>
-                      {user.firstName} {user.lastName} ({user.role})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  className="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="">All Status</option>
-                  <option value="Checked-In">Checked-In</option>
-                  <option value="Checked-Out">Checked-Out</option>
-                  <option value="Absent">Absent</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="flex justify-end items-end space-x-3 mt-4">
-              <button
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                onClick={() => {
-                  setSelectedUser('');
-                  setStatusFilter('');
-                  setSearchQuery('');
-                  setCurrentPage(1);
-                }}
-              >
-                Clear Filters
-              </button>
-              
-              <button
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center transition-colors"
-                onClick={() => setShowExportModal(true)}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export Report
-              </button>
 
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center transition-colors"
-                onClick={fetchAttendanceRecords}
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
-              </button>
+              {/* Date Range Filters */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="text-gray-400 w-5 h-5" />
+                  <span className="text-sm font-medium text-gray-700">Date Range:</span>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                  <div className="flex items-center space-x-2">
+                    <label className="text-xs text-gray-600 whitespace-nowrap">From:</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <label className="text-xs text-gray-600 whitespace-nowrap">To:</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <div className="flex items-center space-x-2">
+                  <UserCheck className="text-gray-400 w-5 h-5" />
+                  <span className="text-sm font-medium text-gray-700">Status:</span>
+                </div>
+                
+                <div className="relative">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-8 cursor-pointer"
+                  >
+                    <option value="">All Status</option>
+                    <option value="Checked-In">Checked-In</option>
+                    <option value="Checked-Out">Checked-Out</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Clear Filters Button */}
+                {(startDate || endDate || statusFilter || selectedUser || searchQuery) && (
+                  <button
+                    onClick={() => {
+                      setSelectedUser('');
+                      setStatusFilter('');
+                      setSearchQuery('');
+                      setStartDate('');
+                      setEndDate('');
+                      setCurrentPage(1);
+                    }}
+                    className="px-3 py-2 text-xs bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Clear Filters
+                  </button>
+                )}
+              </div>
             </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-3 mb-6">
+            <button
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center transition-colors"
+              onClick={() => setShowExportModal(true)}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export Report
+            </button>
+
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center transition-colors"
+              onClick={fetchAttendanceRecords}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </button>
           </div>
 
           {/* Attendance Records Table */}
@@ -998,9 +1154,6 @@ const AttendanceManagement = () => {
                         <th className="px-4 py-3 text-blue-800 font-semibold">Check-In</th>
                         <th className="px-4 py-3 text-blue-800 font-semibold">Check-Out</th>
                         <th className="px-4 py-3 text-blue-800 font-semibold">Status</th>
-                        {authUser?.role === 'admin' && (
-                          <th className="px-4 py-3 text-blue-800 font-semibold">Actions</th>
-                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -1026,7 +1179,7 @@ const AttendanceManagement = () => {
                             {record.checkInTime ? formatTime(record.checkInTime) : 'N/A'}
                           </td>
                           <td className="px-4 py-3 text-gray-700">
-                            {record.checkOutTime ? formatTime(record.checkOutTime) : 'N/A'}
+                            {record.checkOutTime ? formatTime(record.checkOutTime) : 'Pending'}
                           </td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -1037,18 +1190,6 @@ const AttendanceManagement = () => {
                               {record.status || 'Unknown'}
                             </span>
                           </td>
-                          {authUser?.role === 'admin' && (
-                            <td className="px-4 py-3">
-                              <div className="flex space-x-2">
-                                <button 
-                                  className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors"
-                                  onClick={() => deleteAttendanceRecord(record._id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          )}
                         </tr>
                       ))}
                     </tbody>

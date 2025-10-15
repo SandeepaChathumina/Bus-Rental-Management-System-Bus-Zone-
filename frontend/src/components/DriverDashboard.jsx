@@ -427,6 +427,9 @@ const ScheduleManagement = React.memo(() => {
   const [loading, setLoading] = useState(true);
   const [expandedSchedules, setExpandedSchedules] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [error, setError] = useState(null);
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
@@ -448,6 +451,8 @@ const ScheduleManagement = React.memo(() => {
       });
 
       if (response.data.success) {
+        console.log('Schedules received:', response.data.schedules);
+        console.log('First schedule driver data:', response.data.schedules?.[0]?.driverId);
         setSchedules(response.data.schedules || []);
         if (response.data.schedules?.length === 0) {
           console.log('No schedules found for this driver');
@@ -499,15 +504,40 @@ const ScheduleManagement = React.memo(() => {
   };
 
   const filteredSchedules = schedules.filter(schedule => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      schedule.bookingId.bookingId.toLowerCase().includes(searchLower) ||
-      schedule.startLocation.toLowerCase().includes(searchLower) ||
-      schedule.destination.toLowerCase().includes(searchLower) ||
-      schedule.busId.numberPlate.toLowerCase().includes(searchLower) ||
-      schedule.status.toLowerCase().includes(searchLower)
-    );
+    // Search term filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = (
+        schedule.bookingId.bookingId.toLowerCase().includes(searchLower) ||
+        schedule.startLocation.toLowerCase().includes(searchLower) ||
+        schedule.destination.toLowerCase().includes(searchLower) ||
+        schedule.busId.numberPlate.toLowerCase().includes(searchLower) ||
+        schedule.status.toLowerCase().includes(searchLower)
+      );
+      if (!matchesSearch) return false;
+    }
+
+    // Date range filter
+    if (startDate || endDate) {
+      const scheduleDate = new Date(schedule.travelDate);
+      if (startDate) {
+        const start = new Date(startDate);
+        if (scheduleDate < start) return false;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        if (scheduleDate > end) return false;
+      }
+    }
+
+    // Status filter
+    if (statusFilter) {
+      if (statusFilter === 'scheduled' && schedule.status !== 'Scheduled') return false;
+      if (statusFilter === 'pending' && schedule.driverResponse !== 'pending') return false;
+      if (statusFilter === 'confirmed' && schedule.driverResponse !== 'accepted') return false;
+    }
+
+    return true;
   });
 
   const getStatusColor = (status) => {
@@ -650,18 +680,83 @@ const ScheduleManagement = React.memo(() => {
         </div>
       )}
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600">Total Schedules</p>
-              <p className="text-2xl font-bold text-gray-900">{filteredSchedules.length}</p>
+      {/* Filters */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
+          {/* Date Range Filters */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <div className="flex items-center space-x-2">
+              <Calendar className="text-gray-400 w-5 h-5" />
+              <span className="text-sm font-medium text-gray-700">Date Range:</span>
             </div>
-            <Calendar className="w-8 h-8 text-blue-500" />
+            
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+              <div className="flex items-center space-x-2">
+                <label className="text-xs text-gray-600 whitespace-nowrap">From:</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <label className="text-xs text-gray-600 whitespace-nowrap">To:</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <div className="flex items-center space-x-2">
+              <Filter className="text-gray-400 w-5 h-5" />
+              <span className="text-sm font-medium text-gray-700">Status:</span>
+            </div>
+            
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-8 cursor-pointer"
+              >
+                <option value="">All Status</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="pending">Pending Response</option>
+                <option value="confirmed">Confirmed</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Clear Filters Button */}
+            {(startDate || endDate || statusFilter) && (
+              <button
+                onClick={() => {
+                  setStartDate('');
+                  setEndDate('');
+                  setStatusFilter('');
+                }}
+                className="px-3 py-2 text-xs bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
         </div>
-        
+      </div>
+
+      {/* Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
           <div className="flex items-center justify-between">
             <div>
@@ -677,9 +772,9 @@ const ScheduleManagement = React.memo(() => {
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-orange-600">In Progress</p>
+              <p className="text-sm text-orange-600">Pending Response</p>
               <p className="text-2xl font-bold text-orange-600">
-                {filteredSchedules.filter(s => s.status === 'In Progress').length}
+                {filteredSchedules.filter(s => s.driverResponse === 'pending').length}
               </p>
             </div>
             <User className="w-8 h-8 text-orange-500" />
@@ -689,9 +784,9 @@ const ScheduleManagement = React.memo(() => {
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-green-600">Completed</p>
+              <p className="text-sm text-green-600">Confirmed</p>
               <p className="text-2xl font-bold text-green-600">
-                {filteredSchedules.filter(s => s.status === 'Completed').length}
+                {filteredSchedules.filter(s => s.driverResponse === 'accepted').length}
               </p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-500" />
@@ -757,15 +852,8 @@ const ScheduleManagement = React.memo(() => {
                       <MapPin className="w-4 h-4 mr-3 text-red-500" />
                       <div>
                         <p className="font-medium">{schedule.startLocation} → {schedule.destination}</p>
-                        <p className="text-gray-500 text-sm">{schedule.bookingId.route}</p>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm text-gray-600">
-                    <span>Booking: {schedule.bookingId.bookingId}</span>
-                    <span>Passengers: {schedule.bookingId.passengers}</span>
-                    <span>Route: {schedule.startLocation} → {schedule.destination}</span>
                   </div>
 
                   {expandedSchedules[schedule._id] && (
@@ -795,12 +883,6 @@ const ScheduleManagement = React.memo(() => {
                             <p className="text-gray-900 font-medium">{formatDateTime(schedule.actualEndTime)}</p>
                           </div>
                         )}
-                        <div>
-                          <span className="text-gray-600">Bus Details:</span>
-                          <p className="text-gray-900 font-medium">
-                            {schedule.busId.busId} - {schedule.busId.busType}
-                          </p>
-                        </div>
                       </div>
                       
                       {/* Driver Response Buttons for New Assignments */}

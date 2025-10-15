@@ -1219,7 +1219,30 @@ export const getDriverSchedules = async (req, res) => {
     .populate('bus', 'numberPlate busType capacity')
     .sort({ travelDate: 1, departureTime: 1 });
 
+    // Get driver profile for license number
+    const DriverProfile = (await import('../models/driverProfile.js')).default;
+    const mongoose = (await import('mongoose')).default;
+    
+    // Convert driverId to ObjectId if it's a string
+    const driverObjectId = typeof driverId === 'string' ? new mongoose.Types.ObjectId(driverId) : driverId;
+    const driverProfile = await DriverProfile.findOne({ user: driverObjectId });
+
     console.log(`Found ${bookings.length} bookings for driver ${driverId}`);
+    console.log('Driver profile found:', driverProfile ? 'Yes' : 'No');
+    console.log('License number:', driverProfile?.licenseNumber);
+    console.log('Driver ID type:', typeof driverId);
+    console.log('Driver ID value:', driverId);
+    console.log('Driver ObjectId:', driverObjectId);
+    
+    if (!driverProfile) {
+      console.log('No driver profile found for user:', driverId);
+      // Try to find any driver profiles to see if they exist
+      const allProfiles = await DriverProfile.find({}).limit(3);
+      console.log('Total driver profiles in database:', allProfiles.length);
+      if (allProfiles.length > 0) {
+        console.log('Sample profile user ID:', allProfiles[0].user);
+      }
+    }
 
     // Transform data to match driver dashboard format
     const schedules = bookings.map(booking => {
@@ -1310,7 +1333,7 @@ export const getDriverSchedules = async (req, res) => {
         driverId: {
           firstName: req.user?.firstName || 'N/A',
           lastName: req.user?.lastName || 'N/A',
-          licenseNumber: req.user?.driverProfile?.licenseNumber || 'N/A'
+          licenseNumber: driverProfile?.licenseNumber || `No Profile (ID: ${driverId})`
         },
         startLocation: booking.route?.from || 'N/A',
         destination: booking.route?.to || 'N/A',
