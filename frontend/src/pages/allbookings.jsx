@@ -1031,7 +1031,6 @@ const AllBookings = () => {
                 <option value="">All Payments</option>
                 <option value="paid">Paid</option>
                 <option value="pending">Pending</option>
-                <option value="failed">Failed</option>
                 <option value="refunded">Refunded</option>
               </select>
             </div>
@@ -1072,18 +1071,6 @@ const AllBookings = () => {
               className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm hover:bg-slate-200 transition-colors"
             >
               Clear All Filters
-            </button>
-            <button
-              onClick={() => setStatusFilter('confirmed')}
-              className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm hover:bg-emerald-200 transition-colors"
-            >
-              Confirmed Only
-            </button>
-            <button
-              onClick={() => setPaymentFilter('paid')}
-              className="px-3 py-1 bg-sky-100 text-sky-800 rounded-full text-sm hover:bg-sky-200 transition-colors"
-            >
-              Paid Only
             </button>
             <button
               onClick={() => setDateFilter(new Date().toISOString().split('T')[0])}
