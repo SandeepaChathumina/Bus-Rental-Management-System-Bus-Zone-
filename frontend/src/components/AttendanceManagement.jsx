@@ -998,9 +998,6 @@ const AttendanceManagement = () => {
                         <th className="px-4 py-3 text-blue-800 font-semibold">Check-In</th>
                         <th className="px-4 py-3 text-blue-800 font-semibold">Check-Out</th>
                         <th className="px-4 py-3 text-blue-800 font-semibold">Status</th>
-                        {authUser?.role === 'admin' && (
-                          <th className="px-4 py-3 text-blue-800 font-semibold">Actions</th>
-                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -1037,18 +1034,6 @@ const AttendanceManagement = () => {
                               {record.status || 'Unknown'}
                             </span>
                           </td>
-                          {authUser?.role === 'admin' && (
-                            <td className="px-4 py-3">
-                              <div className="flex space-x-2">
-                                <button 
-                                  className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors"
-                                  onClick={() => deleteAttendanceRecord(record._id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          )}
                         </tr>
                       ))}
                     </tbody>
