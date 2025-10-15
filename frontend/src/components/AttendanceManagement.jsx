@@ -1066,24 +1066,38 @@ const AttendanceManagement = () => {
                     </svg>
                   </div>
                 </div>
-
-                {/* Clear Filters Button */}
-                {(startDate || endDate || statusFilter || selectedUser || searchQuery) && (
-                  <button
-                    onClick={() => {
-                      setSelectedUser('');
-                      setStatusFilter('');
-                      setSearchQuery('');
-                      setStartDate('');
-                      setEndDate('');
-                      setCurrentPage(1);
-                    }}
-                    className="px-3 py-2 text-xs bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    Clear Filters
-                  </button>
-                )}
               </div>
+            </div>
+
+            {/* Quick Filter Buttons Row */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              {/* Today Filter Button */}
+              <button
+                onClick={() => {
+                  const today = new Date().toISOString().split('T')[0];
+                  setStartDate(today);
+                  setEndDate(today);
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 text-xs bg-indigo-100 text-indigo-800 rounded-lg hover:bg-indigo-200 transition-colors"
+              >
+                Today
+              </button>
+
+              {/* Clear Filters Button */}
+              <button
+                onClick={() => {
+                  setSelectedUser('');
+                  setStatusFilter('');
+                  setSearchQuery('');
+                  setStartDate('');
+                  setEndDate('');
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 text-xs bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Clear Filters
+              </button>
             </div>
           </div>
 

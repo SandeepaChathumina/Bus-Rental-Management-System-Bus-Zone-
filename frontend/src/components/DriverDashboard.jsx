@@ -738,6 +738,18 @@ const ScheduleManagement = React.memo(() => {
               </div>
             </div>
 
+            {/* Today Filter Button */}
+            <button
+              onClick={() => {
+                const today = new Date().toISOString().split('T')[0];
+                setStartDate(today);
+                setEndDate(today);
+              }}
+              className="px-3 py-2 text-xs bg-indigo-100 text-indigo-800 rounded-lg hover:bg-indigo-200 transition-colors"
+            >
+              Today
+            </button>
+
             {/* Clear Filters Button */}
             {(startDate || endDate || statusFilter) && (
               <button
