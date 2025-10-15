@@ -1168,9 +1168,6 @@ const UserManagement = () => {
               {`${row.firstName || ""} ${row.lastName || ""}`.trim() ||
                 row.username}
             </div>
-            <div className="text-xs text-gray-500">
-              ID: {row._id || row.id}
-            </div>
           </div>
         </div>
       ),
@@ -1199,7 +1196,6 @@ const UserManagement = () => {
       return;
     }
     const rows = list.map((u) => ({
-      id: u._id || u.id,
       username: u.username,
       firstName: u.firstName,
       lastName: u.lastName,
@@ -1414,18 +1410,16 @@ const UserManagement = () => {
     
     // Prepare table data with responsive formatting
     const tableColumns = [
-      { header: 'ID', dataKey: 'id', width: 20 },
-      { header: 'Name', dataKey: 'name', width: 45 },
-      { header: 'Email', dataKey: 'email', width: 55 },
-      { header: 'Role', dataKey: 'role', width: 20 },
-      { header: 'Status', dataKey: 'status', width: 20 },
-      { header: 'Join Date', dataKey: 'joinDate', width: 25 }
+      { header: 'Name', dataKey: 'name', width: 50 },
+      { header: 'Email', dataKey: 'email', width: 60 },
+      { header: 'Role', dataKey: 'role', width: 25 },
+      { header: 'Status', dataKey: 'status', width: 25 },
+      { header: 'Join Date', dataKey: 'joinDate', width: 30 }
     ];
     
     const tableRows = list.map((u, index) => ({
-      id: (u._id || u.id).toString().substring(0, 6) + '...',
-      name: `${u.firstName || ''} ${u.lastName || ''}`.trim().substring(0, 20) || u.username?.substring(0, 15),
-      email: u.email?.substring(0, 25) + (u.email?.length > 25 ? '...' : ''),
+      name: `${u.firstName || ''} ${u.lastName || ''}`.trim().substring(0, 25) || u.username?.substring(0, 20),
+      email: u.email?.substring(0, 30) + (u.email?.length > 30 ? '...' : ''),
       role: u.role?.charAt(0).toUpperCase() + u.role?.slice(1) || 'N/A',
       status: u.isActive !== false ? 'Active' : 'Inactive',
       joinDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-GB') : 'N/A'
@@ -1455,12 +1449,11 @@ const UserManagement = () => {
         fillColor: [248, 250, 252] 
       },
       columnStyles: {
-        id: { halign: 'center', fontSize: 7, cellWidth: 20 },
-        name: { halign: 'left', fontSize: 8, cellWidth: 45, overflow: 'linebreak' },
-        email: { halign: 'left', fontSize: 7, cellWidth: 55, overflow: 'linebreak' },
-        role: { halign: 'center', fontSize: 8, cellWidth: 20 },
-        status: { halign: 'center', fontSize: 8, cellWidth: 20 },
-        joinDate: { halign: 'center', fontSize: 7, cellWidth: 25 }
+        name: { halign: 'left', fontSize: 8, cellWidth: 50, overflow: 'linebreak' },
+        email: { halign: 'left', fontSize: 7, cellWidth: 60, overflow: 'linebreak' },
+        role: { halign: 'center', fontSize: 8, cellWidth: 25 },
+        status: { halign: 'center', fontSize: 8, cellWidth: 25 },
+        joinDate: { halign: 'center', fontSize: 7, cellWidth: 30 }
       },
       margin: { left: margin, right: margin },
       tableWidth: 'auto',
