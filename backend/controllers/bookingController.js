@@ -71,13 +71,13 @@ export const createBooking = async (req, res) => {
 
     // Validate seats data structure
     const validSeats = seats.every(seat => 
-      seat.seatNumber && seat.passengerName && seat.passengerNIC && seat.passengerAge && seat.passengerGender
+      seat.seatNumber && seat.passengerName && seat.passengerAge && seat.passengerGender
     );
 
     if (!validSeats) {
       return res.status(400).json({ 
         success: false,
-        message: 'All seat information must include seatNumber, passengerName, passengerNIC, passengerAge, and passengerGender' 
+        message: 'All seat information must include seatNumber, passengerName, passengerAge, and passengerGender' 
       });
     }
 
@@ -492,13 +492,15 @@ export const getAllBookings = async (req, res) => {
 
     const bookings = await Booking.find(filter)
       .populate('user', 'firstName lastName email phone')
-      .populate('bus', 'busType numberPlate')
+      .populate('bus', 'busType numberPlate capacity')
       .sort({ createdAt: -1 });
 
     console.log('🔍 Admin getAllBookings - Found bookings:', bookings.length);
     if (bookings.length > 0) {
       console.log('📊 First booking status:', bookings[0].bookingStatus);
       console.log('📊 First booking payment status:', bookings[0].paymentStatus);
+      console.log('📊 First booking bus data:', bookings[0].bus);
+      console.log('📊 First booking bus capacity:', bookings[0].bus?.capacity);
     }
 
     res.json({

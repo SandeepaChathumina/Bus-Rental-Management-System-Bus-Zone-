@@ -116,7 +116,6 @@ const BookingCard = ({ booking, onViewDetails, onCancelBooking, onDownloadInvoic
             <h3 className="text-lg font-bold text-slate-800">
               {booking.bus?.busType || 'Standard'} Coach
             </h3>
-            <p className="text-sm text-sky-600 font-mono font-medium">{booking.bookingId}</p>
           </div>
         </div>
         
@@ -431,16 +430,16 @@ const BookingDetailsModal = ({ booking, isOpen, onClose, onDownloadInvoice, onCa
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-sky-900">
-                  Booking Reference
+                  Booking Status
                 </h3>
-                <p className="text-2xl font-bold text-sky-600 font-mono">
-                  {booking.bookingId}
+                <p className="text-2xl font-bold text-sky-600">
+                  {booking.bookingStatus}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-sky-700">Status</p>
+                <p className="text-sm text-sky-700">Payment Status</p>
                 <p className="text-lg font-semibold text-sky-900">
-                  {booking.bookingStatus}
+                  {booking.paymentStatus}
                 </p>
               </div>
             </div>
@@ -854,7 +853,6 @@ const ViewMyBookings = () => {
     // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(booking =>
-        booking.bookingId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.route?.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.route?.to.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.bus?.numberPlate.toLowerCase().includes(searchTerm.toLowerCase())
@@ -888,7 +886,7 @@ const ViewMyBookings = () => {
   };
 
   const handleCancelBooking = async (booking) => {
-    const confirmMessage = `Are you sure you want to cancel this booking?\n\nBooking ID: ${booking.bookingId}\nRoute: ${booking.route?.from} → ${booking.route?.to}\nTravel Date: ${new Date(booking.travelDate).toLocaleDateString()}\n\nThis action cannot be undone and you will receive a refund.`;
+    const confirmMessage = `Are you sure you want to cancel this booking?\n\nRoute: ${booking.route?.from} → ${booking.route?.to}\nTravel Date: ${new Date(booking.travelDate).toLocaleDateString()}\n\nThis action cannot be undone and you will receive a refund.`;
     
     if (!window.confirm(confirmMessage)) {
       return;

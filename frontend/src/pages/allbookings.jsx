@@ -103,7 +103,6 @@ const AdminBookingCard = ({ booking, onViewDetails }) => {
             <h3 className="text-lg font-bold text-slate-800">
               {booking.bus?.busType || 'Standard'} Coach
             </h3>
-            <p className="text-sm text-slate-600 font-mono">{booking.bookingId}</p>
             <p className="text-xs text-slate-500">
               by {booking.user?.firstName} {booking.user?.lastName}
             </p>
@@ -198,7 +197,7 @@ const AdminBookingCard = ({ booking, onViewDetails }) => {
       <div className="mt-4 pt-4 border-t border-slate-200">
         <div className="flex justify-between text-xs text-slate-500">
           <span>Created: {new Date(booking.createdAt).toLocaleDateString()}</span>
-          <span>ID: {booking._id?.slice(-8) || 'N/A'}</span>
+          <span>Status: {booking.bookingStatus}</span>
         </div>
       </div>
     </div>
@@ -233,7 +232,7 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
         <div className="flex items-center justify-between p-6 border-b border-slate-200">
           <div>
             <h2 className="text-2xl font-bold text-slate-800">Booking Management</h2>
-            <p className="text-slate-600">Booking ID: {booking.bookingId}</p>
+            <p className="text-slate-600">Route: {booking.route?.from} → {booking.route?.to}</p>
           </div>
           <button
             onClick={onClose}
@@ -308,7 +307,10 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-emerald-700">Capacity:</span>
-                      <span className="font-medium">{booking.bus?.capacity} seats</span>
+                      <span className="font-medium">
+                        {booking.bus?.capacity ? `${booking.bus.capacity} seats` : 'N/A seats'}
+                        {console.log('Debug - Bus object:', booking.bus, 'Capacity:', booking.bus?.capacity)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -410,8 +412,8 @@ const AllBookings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
-  const [sortBy, setSortBy] = useState('createdAt');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [stats, setStats] = useState({});
@@ -428,7 +430,7 @@ const AllBookings = () => {
 
   useEffect(() => {
     filterAndSortBookings();
-  }, [bookings, searchTerm, statusFilter, paymentFilter, dateFilter, sortBy]);
+  }, [bookings, searchTerm, statusFilter, paymentFilter, startDate, endDate]);
 
   const fetchAllBookings = async () => {
     try {
@@ -447,6 +449,11 @@ const AllBookings = () => {
       });
 
       if (response.data.success) {
+        console.log('📊 Fetched bookings:', response.data.bookings.length);
+        if (response.data.bookings.length > 0) {
+          console.log('📊 First booking bus data:', response.data.bookings[0].bus);
+          console.log('📊 First booking bus capacity:', response.data.bookings[0].bus?.capacity);
+        }
         setBookings(response.data.bookings);
       } else {
         setError(response.data.message || 'Failed to fetch bookings');
@@ -512,27 +519,23 @@ const AllBookings = () => {
       );
     }
 
-    // Apply date filter
-    if (dateFilter) {
-      const filterDate = new Date(dateFilter);
+    // Apply date range filter
+    if (startDate || endDate) {
       filtered = filtered.filter(booking => {
         const bookingDate = new Date(booking.travelDate);
-        return bookingDate.toDateString() === filterDate.toDateString();
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+        
+        if (start && end) {
+          return bookingDate >= start && bookingDate <= end;
+        } else if (start) {
+          return bookingDate >= start;
+        } else if (end) {
+          return bookingDate <= end;
+        }
+        return true;
       });
     }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'travelDate':
-          return new Date(b.travelDate) - new Date(a.travelDate);
-        case 'amount':
-          return b.totalAmount - a.totalAmount;
-        case 'createdAt':
-        default:
-          return new Date(b.createdAt) - new Date(a.createdAt);
-      }
-    });
 
     setFilteredBookings(filtered);
   };
@@ -964,6 +967,16 @@ const AllBookings = () => {
             </div>
           </div>
 
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-red-200/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-red-700 font-medium">Cancelled</p>
+                <p className="text-2xl font-bold text-red-800">{stats.cancelledBookings || 0}</p>
+              </div>
+              <XCircle className="h-8 w-8 text-red-600" />
+            </div>
+          </div>
+
           <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-indigo-200/50">
             <div className="flex items-center justify-between">
               <div>
@@ -1001,7 +1014,6 @@ const AllBookings = () => {
                 <option value="confirmed">Confirmed</option>
                 <option value="pending">Pending</option>
                 <option value="cancelled">Cancelled</option>
-                <option value="completed">Completed</option>
               </select>
             </div>
 
@@ -1015,7 +1027,6 @@ const AllBookings = () => {
                 <option value="">All Payments</option>
                 <option value="paid">Paid</option>
                 <option value="pending">Pending</option>
-                <option value="failed">Failed</option>
                 <option value="refunded">Refunded</option>
               </select>
             </div>
@@ -1024,24 +1035,24 @@ const AllBookings = () => {
               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500" />
               <input
                 type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                placeholder="From Date"
                 className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
               />
             </div>
 
             <div className="relative">
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500 pointer-events-none" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full pl-4 pr-10 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 appearance-none bg-white"
-              >
-                <option value="createdAt">Sort by Date Created</option>
-                <option value="travelDate">Sort by Travel Date</option>
-                <option value="amount">Sort by Amount</option>
-              </select>
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-sky-500" />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                placeholder="To Date"
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
+              />
             </div>
+
           </div>
 
           {/* Quick Filters */}
@@ -1050,7 +1061,8 @@ const AllBookings = () => {
               onClick={() => {
                 setStatusFilter('');
                 setPaymentFilter('');
-                setDateFilter('');
+                setStartDate('');
+                setEndDate('');
                 setSearchTerm('');
               }}
               className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm hover:bg-slate-200 transition-colors"
@@ -1058,19 +1070,10 @@ const AllBookings = () => {
               Clear All Filters
             </button>
             <button
-              onClick={() => setStatusFilter('confirmed')}
-              className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm hover:bg-emerald-200 transition-colors"
-            >
-              Confirmed Only
-            </button>
-            <button
-              onClick={() => setPaymentFilter('paid')}
-              className="px-3 py-1 bg-sky-100 text-sky-800 rounded-full text-sm hover:bg-sky-200 transition-colors"
-            >
-              Paid Only
-            </button>
-            <button
-              onClick={() => setDateFilter(new Date().toISOString().split('T')[0])}
+              onClick={() => {
+                setStartDate(new Date().toISOString().split('T')[0]);
+                setEndDate(new Date().toISOString().split('T')[0]);
+              }}
               className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm hover:bg-indigo-200 transition-colors"
             >
               Today's Travel
@@ -1083,13 +1086,14 @@ const AllBookings = () => {
           <p className="text-slate-600">
             Showing {filteredBookings.length} of {bookings.length} bookings
           </p>
-          {(searchTerm || statusFilter || paymentFilter || dateFilter) && (
+          {(searchTerm || statusFilter || paymentFilter || startDate || endDate) && (
             <button
               onClick={() => {
                 setSearchTerm('');
                 setStatusFilter('');
                 setPaymentFilter('');
-                setDateFilter('');
+                setStartDate('');
+                setEndDate('');
               }}
               className="text-sky-600 hover:text-sky-700 text-sm font-medium flex items-center"
             >

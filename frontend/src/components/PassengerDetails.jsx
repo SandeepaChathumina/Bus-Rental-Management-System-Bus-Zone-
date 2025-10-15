@@ -120,6 +120,10 @@ const PassengerDetails = () => {
   // Name validation removed - no validation needed
 
   const validateNIC = (nic) => {
+    // If NIC is empty, it's valid (optional field)
+    if (!nic || nic.trim() === '') {
+      return true;
+    }
     const nicRegex = /^\d{9}[Vv]$|^\d{12}$/;
     return nicRegex.test(nic);
   };
@@ -229,7 +233,11 @@ const PassengerDetails = () => {
         break;
       case 'nic':
         isValid = validateNIC(value);
-        message = isValid ? '✓ Valid NIC' : '✗ NIC must be 9 digits + V or 12 digits';
+        if (value.trim() === '') {
+          message = '✓ NIC is optional (leave blank for babies)'; // No validation message for empty field
+        } else {
+          message = isValid ? '✓ Valid NIC' : '✗ NIC must be 9 digits + V or 12 digits';
+        }
         break;
       case 'age':
         isValid = validateAge(value);
@@ -273,7 +281,7 @@ const PassengerDetails = () => {
         seats: passengerDetails.map((passenger, index) => ({
           seatNumber: passenger.seatNumber,
           passengerName: passenger.name,
-          passengerNIC: passenger.nic,
+          passengerNIC: passenger.nic || '', // Send empty string if NIC is empty
           passengerAge: parseInt(passenger.age),
           passengerGender: passenger.gender
         })),
@@ -327,7 +335,7 @@ const PassengerDetails = () => {
       const validations = passengerValidations[index] || {};
       return (
         passenger.name && // Just check if name exists, no validation
-        passenger.nic && validateNIC(passenger.nic) &&
+        validateNIC(passenger.nic) && // NIC is optional, but if provided must be valid
         passenger.age && validateAge(passenger.age) &&
         passenger.gender && validateGender(passenger.gender)
       );
@@ -619,9 +627,8 @@ const PassengerDetails = () => {
                                 ? 'border-red-500 focus:ring-red-500'
                                 : 'border-blue-200 focus:ring-blue-500'
                             }`}
-                            required
                             disabled={isCreatingBooking}
-                            placeholder="9 digits + V or 12 digits"
+                            placeholder="9 digits + V or 12 digits (optional for babies)"
                             maxLength={12}
                           />
                           {passengerValidations[index]?.nic?.message && (
