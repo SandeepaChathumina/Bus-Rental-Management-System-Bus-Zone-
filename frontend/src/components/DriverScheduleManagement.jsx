@@ -512,8 +512,46 @@ const DriverScheduleManagement = () => {
       day: 'numeric' 
     })} at ${currentDate.toLocaleTimeString()}`, pageWidth / 2, margin + 32, { align: 'center' });
     
+    // Add filter information if any filters are applied
+    const hasFilters = searchTerm || startDate || endDate || statusFilter || filterDate;
+    let filterY = margin + 40;
+    
+    if (hasFilters) {
+      doc.setFontSize(12);
+      doc.setTextColor(59, 130, 246);
+      doc.setFont(undefined, 'bold');
+      doc.text('Filtered Report', pageWidth / 2, filterY, { align: 'center' });
+      
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      
+      let filterDetails = [];
+      if (searchTerm) filterDetails.push(`Search: "${searchTerm}"`);
+      if (startDate && endDate) filterDetails.push(`Date Range: ${startDate} to ${endDate}`);
+      else if (startDate) filterDetails.push(`From Date: ${startDate}`);
+      else if (endDate) filterDetails.push(`To Date: ${endDate}`);
+      if (filterDate) filterDetails.push(`Specific Date: ${filterDate}`);
+      if (statusFilter) {
+        const statusLabels = {
+          'unassigned': 'Unassigned',
+          'assigned': 'Assigned',
+          'accepted': 'Accepted',
+          'declined': 'Declined',
+          'pending': 'Pending'
+        };
+        filterDetails.push(`Status: ${statusLabels[statusFilter] || statusFilter}`);
+      }
+      
+      if (filterDetails.length > 0) {
+        doc.text(`Applied Filters: ${filterDetails.join(' | ')}`, pageWidth / 2, filterY + 7, { align: 'center' });
+      }
+      
+      filterY += 20;
+    }
+    
     // Statistics section
-    const statsY = margin + 40;
+    const statsY = filterY;
     doc.setFontSize(12);
     doc.setTextColor(30, 30, 30);
     doc.setFont(undefined, 'bold');
@@ -738,7 +776,8 @@ const DriverScheduleManagement = () => {
       }
 
       // Save the PDF
-    const fileName = `BusZone_DriverScheduleReport_${currentDate.toISOString().split('T')[0]}_${Date.now()}.pdf`;
+    const filterSuffix = hasFilters ? '_Filtered' : '_AllData';
+    const fileName = `BusZone_DriverScheduleReport${filterSuffix}_${currentDate.toISOString().split('T')[0]}_${Date.now()}.pdf`;
       doc.save(fileName);
   };
 
@@ -748,6 +787,9 @@ const DriverScheduleManagement = () => {
       return;
     }
 
+    // Check if filters are applied
+    const hasFilters = searchTerm || startDate || endDate || statusFilter || filterDate;
+    
     // CSV Headers
     const headers = [
       'Booking ID',
@@ -766,6 +808,36 @@ const DriverScheduleManagement = () => {
       'Driver Response Time',
       'Created At'
     ];
+
+    // Add filter information as comments at the top of CSV
+    let csvContent = '';
+    
+    if (hasFilters) {
+      csvContent += '# BusZone+ Driver Schedule Management Report - Filtered Data\n';
+      csvContent += `# Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}\n`;
+      csvContent += '# Applied Filters:\n';
+      
+      if (searchTerm) csvContent += `# - Search: "${searchTerm}"\n`;
+      if (startDate && endDate) csvContent += `# - Date Range: ${startDate} to ${endDate}\n`;
+      else if (startDate) csvContent += `# - From Date: ${startDate}\n`;
+      else if (endDate) csvContent += `# - To Date: ${endDate}\n`;
+      if (filterDate) csvContent += `# - Specific Date: ${filterDate}\n`;
+      if (statusFilter) {
+        const statusLabels = {
+          'unassigned': 'Unassigned',
+          'assigned': 'Assigned',
+          'accepted': 'Accepted',
+          'declined': 'Declined',
+          'pending': 'Pending'
+        };
+        csvContent += `# - Status: ${statusLabels[statusFilter] || statusFilter}\n`;
+      }
+      csvContent += '#\n';
+    } else {
+      csvContent += '# BusZone+ Driver Schedule Management Report - All Data\n';
+      csvContent += `# Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}\n`;
+      csvContent += '#\n';
+    }
 
     // Convert data to CSV format
     const csvData = bookings.map(booking => [
@@ -786,10 +858,11 @@ const DriverScheduleManagement = () => {
       booking.createdAt ? new Date(booking.createdAt).toLocaleString() : 'N/A'
     ]);
 
-    // Combine headers and data
-    const csvContent = [headers, ...csvData]
-      .map(row => row.map(field => `"${field}"`).join(','))
-      .join('\n');
+    // Combine filter info, headers and data
+    const csvRows = [headers, ...csvData]
+      .map(row => row.map(field => `"${field}"`).join(','));
+    
+    csvContent += csvRows.join('\n');
 
     // Create and download CSV file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -798,7 +871,8 @@ const DriverScheduleManagement = () => {
     link.setAttribute('href', url);
     
     const currentDate = new Date();
-    const fileName = `BusZone_DriverScheduleReport_${currentDate.toISOString().split('T')[0]}_${Date.now()}.csv`;
+    const filterSuffix = hasFilters ? '_Filtered' : '_AllData';
+    const fileName = `BusZone_DriverScheduleReport${filterSuffix}_${currentDate.toISOString().split('T')[0]}_${Date.now()}.csv`;
     link.setAttribute('download', fileName);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
