@@ -103,9 +103,9 @@ const validationUtils = {
     }
   },
 
-  // Check if NIC is valid (9 digits + V or 12 digits) and age > 21
+  // Check if NIC is valid (9 digits + V/X or 12 digits) and age > 21
   validateNIC: (nic) => {
-    const nicRegex = /^\d{9}[Vv]$|^\d{12}$/;
+    const nicRegex = /^\d{9}[VvXx]$|^\d{12}$/;
     if (!nicRegex.test(nic)) {
       return { isValid: false, message: "Invalid NIC format" };
     }
