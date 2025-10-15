@@ -9,7 +9,6 @@ import {
   Eye,
   Download,
   Filter,
-  RefreshCw,
   Package,
   AlertCircle,
   CheckCircle,
@@ -31,7 +30,7 @@ import toast from 'react-hot-toast';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// Export Modal Component - Matching UserManagement layout
+// Export Modal Component
 const ExportModal = ({ 
   show, 
   onClose, 
@@ -96,7 +95,7 @@ const ExportModal = ({
 };
 
 const AdminLostFound = () => {
-  const { user: authUser } = useAuth();
+  const { user } = useAuth(); // FIXED: Changed from authUser to user
   const navigate = useNavigate();
   
   const [lostItems, setLostItems] = useState([]);
@@ -108,7 +107,7 @@ const AdminLostFound = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   
-  // Updated Export states - Simplified like UserManagement
+  // Export states
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFormat, setExportFormat] = useState('pdf');
   const [exporting, setExporting] = useState(false);
@@ -116,6 +115,9 @@ const AdminLostFound = () => {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyingItem, setReplyingItem] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('Reported');
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingItem, setViewingItem] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -309,7 +311,7 @@ const AdminLostFound = () => {
     ];
   };
 
-  // Export Functions - Simplified like UserManagement
+  // Export Functions
   const exportCSV = (items) => {
     if (!items || items.length === 0) {
       toast.error('No data to export');
@@ -329,6 +331,7 @@ const AdminLostFound = () => {
       'User Phone',
       'Admin Notes',
       'Admin Reply',
+      'Reply Date',
       'Created Date',
       'Last Updated'
     ];
@@ -340,12 +343,13 @@ const AdminLostFound = () => {
       item.busNumber || 'N/A',
       item.dateLost ? new Date(item.dateLost).toLocaleDateString() : 'N/A',
       item.status || 'N/A',
-      item.reportedBy || 'N/A',
+      item.user ? `${item.user.firstName} ${item.user.lastName}` : (item.reportedBy || 'N/A'),
       item.user ? `${item.user.firstName} ${item.user.lastName}` : 'N/A',
       item.user?.email || 'N/A',
       item.user?.phone || 'N/A',
       `"${(item.adminNotes || '').replace(/"/g, '""')}"`,
       `"${(item.adminReply || '').replace(/"/g, '""')}"`,
+      item.repliedAt ? new Date(item.repliedAt).toLocaleString() : 'N/A',
       item.createdAt ? new Date(item.createdAt).toLocaleString() : 'N/A',
       item.updatedAt ? new Date(item.updatedAt).toLocaleString() : 'N/A'
     ]);
@@ -370,14 +374,14 @@ const AdminLostFound = () => {
     toast.success('CSV report downloaded successfully!');
   };
 
-  // PDF Export Function - Professional layout matching UserManagement
+  // PDF Export Function
   const exportPDF = (items) => {
     if (!items || items.length === 0) {
       toast.error('No data to export');
       return;
     }
 
-    const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation for better table layout
+    const doc = new jsPDF('l', 'mm', 'a4');
     
     // Page dimensions
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -385,7 +389,7 @@ const AdminLostFound = () => {
     const margin = 15;
     const contentWidth = pageWidth - (margin * 2);
 
-    // Add BusZone+ Header (without logo)
+    // Add BusZone+ Header
     doc.setFontSize(18);
     doc.setTextColor(59, 130, 246);
     doc.setFont(undefined, 'bold');
@@ -428,7 +432,7 @@ const AdminLostFound = () => {
     const claimedItems = items.filter(item => item.status === 'Claimed').length;
     const returnedItems = items.filter(item => item.status === 'Returned').length;
     
-    // Statistics boxes - responsive layout
+    // Statistics boxes
     const availableWidth = pageWidth - (margin * 2);
     const boxCount = 5;
     const boxSpacing = 6;
@@ -436,10 +440,10 @@ const AdminLostFound = () => {
     const boxHeight = 25;
     let currentX = margin;
     
-    // Total Items box - Primary blue
+    // Total Items box
     doc.setFillColor(59, 130, 246);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255); // White text
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
     doc.text(totalItems.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
@@ -448,10 +452,10 @@ const AdminLostFound = () => {
     
     currentX += boxWidth + boxSpacing;
     
-    // Reported Items box - Darker blue
+    // Reported Items box
     doc.setFillColor(37, 99, 235);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255); // White text
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
     doc.text(reportedItems.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
@@ -460,10 +464,10 @@ const AdminLostFound = () => {
     
     currentX += boxWidth + boxSpacing;
     
-    // Found Items box - Light blue
+    // Found Items box
     doc.setFillColor(96, 165, 250);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255); // White text
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
     doc.text(foundItems.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
@@ -472,10 +476,10 @@ const AdminLostFound = () => {
     
     currentX += boxWidth + boxSpacing;
     
-    // Claimed Items box - Navy blue
+    // Claimed Items box
     doc.setFillColor(29, 78, 216);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255); // White text
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
     doc.text(claimedItems.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
@@ -484,10 +488,10 @@ const AdminLostFound = () => {
     
     currentX += boxWidth + boxSpacing;
     
-    // Returned Items box - Sky blue
+    // Returned Items box
     doc.setFillColor(14, 165, 233);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255); // White text
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
     doc.text(returnedItems.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
@@ -535,7 +539,7 @@ const AdminLostFound = () => {
       margin: { left: margin, right: margin }
     });
 
-    // Add new page for item details table to prevent overlap
+    // Add new page for item details table
     doc.addPage();
     
     // Add header to second page
@@ -549,30 +553,34 @@ const AdminLostFound = () => {
     doc.setFont(undefined, 'normal');
     doc.text('Premium Bus Rental Management System', margin, margin + 16);
     
-    // Main item data table - now on separate page
+    // Main item data table
     const tableStartY = margin + 30;
     doc.setFontSize(12);
     doc.setTextColor(30, 30, 30);
     doc.setFont(undefined, 'bold');
     doc.text('Lost Item Details', margin, tableStartY);
     
-    // Prepare table data with responsive formatting
+    // Prepare table data
     const tableColumns = [
-      { header: 'Item Name', dataKey: 'itemName', width: 50 },
-      { header: 'Bus No.', dataKey: 'busNumber', width: 25 },
-      { header: 'Date Lost', dataKey: 'dateLost', width: 30 },
-      { header: 'Status', dataKey: 'status', width: 25 },
+      { header: 'Item Name', dataKey: 'itemName', width: 40 },
+      { header: 'Bus No.', dataKey: 'busNumber', width: 20 },
+      { header: 'Date Lost', dataKey: 'dateLost', width: 25 },
+      { header: 'Status', dataKey: 'status', width: 20 },
       { header: 'Reported By', dataKey: 'reportedBy', width: 25 },
-      { header: 'User Contact', dataKey: 'userContact', width: 40 }
+      { header: 'User Contact', dataKey: 'userContact', width: 30 },
+      { header: 'Admin Reply', dataKey: 'adminReply', width: 50 },
+      { header: 'Reply Date', dataKey: 'replyDate', width: 25 }
     ];
     
     const tableRows = items.map((item, index) => ({
-      itemName: (item.itemName || '').substring(0, 30) + (item.itemName?.length > 30 ? '...' : ''),
+      itemName: (item.itemName || '').substring(0, 25) + (item.itemName?.length > 25 ? '...' : ''),
       busNumber: item.busNumber || 'N/A',
       dateLost: item.dateLost ? new Date(item.dateLost).toLocaleDateString('en-GB') : 'N/A',
       status: item.status || 'N/A',
-      reportedBy: item.reportedBy || 'N/A',
-      userContact: item.user ? `${item.user.firstName} ${item.user.lastName}`.substring(0, 20) : 'N/A'
+      reportedBy: item.user ? `${item.user.firstName} ${item.user.lastName}` : (item.reportedBy || 'N/A'),
+      userContact: item.user?.phone || 'N/A',
+      adminReply: (item.adminReply || '').substring(0, 40) + (item.adminReply?.length > 40 ? '...' : '') || 'N/A',
+      replyDate: item.repliedAt ? new Date(item.repliedAt).toLocaleDateString('en-GB') : 'N/A'
     }));
 
     autoTable(doc, {
@@ -599,12 +607,14 @@ const AdminLostFound = () => {
         fillColor: [248, 250, 252] 
       },
       columnStyles: {
-        itemName: { halign: 'left', fontSize: 8, cellWidth: 50, overflow: 'linebreak' },
-        busNumber: { halign: 'center', fontSize: 8, cellWidth: 25 },
-        dateLost: { halign: 'center', fontSize: 7, cellWidth: 30 },
-        status: { halign: 'center', fontSize: 8, cellWidth: 25 },
-        reportedBy: { halign: 'center', fontSize: 8, cellWidth: 25 },
-        userContact: { halign: 'left', fontSize: 7, cellWidth: 40, overflow: 'linebreak' }
+        itemName: { halign: 'left', fontSize: 7, cellWidth: 40, overflow: 'linebreak' },
+        busNumber: { halign: 'center', fontSize: 7, cellWidth: 20 },
+        dateLost: { halign: 'center', fontSize: 6, cellWidth: 25 },
+        status: { halign: 'center', fontSize: 7, cellWidth: 20 },
+        reportedBy: { halign: 'center', fontSize: 7, cellWidth: 25 },
+        userContact: { halign: 'left', fontSize: 6, cellWidth: 30, overflow: 'linebreak' },
+        adminReply: { halign: 'left', fontSize: 6, cellWidth: 50, overflow: 'linebreak' },
+        replyDate: { halign: 'center', fontSize: 6, cellWidth: 25 }
       },
       margin: { left: margin, right: margin },
       tableWidth: 'auto',
@@ -660,125 +670,8 @@ const AdminLostFound = () => {
     }
   };
 
-  const handleSubmitReport = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.itemName.trim() || !formData.busNumber.trim()) {
-      toast.error('Item name and bus number are required');
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BACKEND_URL}/api/lost-items`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      let newItem;
-      if (!response.ok) {
-        // Create mock item for demo
-        newItem = {
-          _id: `item_${Date.now()}`,
-          ...formData,
-          reportedBy: 'Admin',
-          user: null,
-          adminNotes: formData.adminNotes || '',
-          adminReply: '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        toast.success('Lost item reported successfully (demo mode)');
-      } else {
-        const data = await response.json();
-        newItem = data.lostItem;
-        toast.success('Lost item reported successfully');
-      }
-
-      setLostItems(prev => [newItem, ...prev]);
-      
-      // Notify user page about the new item
-      window.dispatchEvent(new CustomEvent('lostItemCreated', {
-        detail: { 
-          item: newItem,
-          source: 'admin'
-        }
-      }));
-      
-      // Reset form and close
-      setFormData({
-        itemName: '',
-        description: '',
-        dateLost: '',
-        busNumber: '',
-        status: 'Reported',
-        adminNotes: ''
-      });
-      setShowReportForm(false);
-
-    } catch (error) {
-      console.error('Error reporting lost item:', error);
-      toast.error('Failed to report lost item');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const updateItemStatus = async (itemId, updates) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BACKEND_URL}/api/lost-items/${itemId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(updates)
-      });
-
-      let updatedItem;
-      if (!response.ok) {
-        // Mock update for demo
-        updatedItem = { ...updates, updatedAt: new Date().toISOString() };
-        toast.success('Item updated successfully (demo mode)');
-      } else {
-        const data = await response.json();
-        updatedItem = data.lostItem;
-        toast.success('Item updated successfully');
-      }
-
-      setLostItems(prev =>
-        prev.map(item =>
-          item._id === itemId ? { ...item, ...updatedItem } : item
-        )
-      );
-
-      // Notify user page about the update
-      window.dispatchEvent(new CustomEvent('lostItemUpdated', {
-        detail: {
-          itemId: itemId,
-          updates: updatedItem,
-          source: 'admin'
-        }
-      }));
-
-    } catch (error) {
-      console.error('Error updating item:', error);
-      toast.error('Failed to update item');
-    }
-  };
-
-  const deleteItem = async (itemId) => {
-    if (!window.confirm('Are you sure you want to delete this lost item report?')) {
-      return;
-    }
-
+  // Handle delete lost item
+  const handleDeleteItem = async (itemId) => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${BACKEND_URL}/api/lost-items/${itemId}`, {
@@ -788,28 +681,36 @@ const AdminLostFound = () => {
         }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete item');
+      if (response.ok) {
+        // Remove item from state
+        setLostItems(prev => prev.filter(item => item._id !== itemId));
+        
+        // Notify user page about the deletion
+        window.dispatchEvent(new CustomEvent('lostItemDeleted', {
+          detail: { itemId }
+        }));
+        
+        toast.success('Lost item deleted successfully');
+      } else {
+        // For demo purposes, still remove from state even if API fails
+        setLostItems(prev => prev.filter(item => item._id !== itemId));
+        toast.success('Lost item deleted successfully (demo mode)');
       }
-
-      setLostItems(prev => prev.filter(item => item._id !== itemId));
-      
-      // Notify user page about the deletion
-      window.dispatchEvent(new CustomEvent('lostItemDeleted', {
-        detail: { 
-          itemId: itemId,
-          source: 'admin'
-        }
-      }));
-      
-      toast.success('Lost item report deleted successfully');
-
     } catch (error) {
-      console.error('Error deleting item:', error);
-      toast.error('Failed to delete item');
+      console.error('Error deleting lost item:', error);
+      // For demo purposes, still remove from state
+      setLostItems(prev => prev.filter(item => item._id !== itemId));
+      toast.success('Lost item deleted successfully (demo mode)');
     }
   };
 
+  // Handle view item
+  const handleViewItem = (item) => {
+    setViewingItem(item);
+    setShowViewModal(true);
+  };
+
+  // Handle admin reply with status - FIXED VERSION
   const handleAdminReply = async (e) => {
     e.preventDefault();
     
@@ -822,6 +723,19 @@ const AdminLostFound = () => {
 
     try {
       const token = localStorage.getItem('token');
+      
+      // Generate status-specific reply templates
+      let finalReplyMessage = replyMessage;
+      
+      // Add status-specific context to the reply
+      if (selectedStatus === 'Found' && !replyMessage.includes('found')) {
+        finalReplyMessage = `Good news! We have found your item "${replyingItem.itemName}". ${replyMessage}`;
+      } else if (selectedStatus === 'Returned' && !replyMessage.includes('returned')) {
+        finalReplyMessage = `We are pleased to inform you that your item "${replyingItem.itemName}" has been successfully returned. ${replyMessage}`;
+      } else if (selectedStatus === 'Claimed' && !replyMessage.includes('claimed')) {
+        finalReplyMessage = `Your item "${replyingItem.itemName}" is ready for pickup and has been marked as claimed. ${replyMessage}`;
+      }
+
       const response = await fetch(`${BACKEND_URL}/api/lost-items/${replyingItem._id}/reply`, {
         method: 'POST',
         headers: {
@@ -829,8 +743,9 @@ const AdminLostFound = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          adminReply: replyMessage,
-          repliedBy: authUser?.firstName || 'Admin'
+          adminReply: finalReplyMessage,
+          status: selectedStatus,
+          repliedBy: user?.firstName || 'Admin' // FIXED: Changed from authUser to user
         })
       });
 
@@ -838,16 +753,55 @@ const AdminLostFound = () => {
       if (!response.ok) {
         // Mock reply for demo
         updatedItem = {
-          adminReply: replyMessage,
-          repliedBy: authUser?.firstName || 'Admin',
+          adminReply: finalReplyMessage,
+          status: selectedStatus,
+          repliedBy: user?.firstName || 'Admin', // FIXED: Changed from authUser to user
           repliedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
-        toast.success('Reply sent successfully (demo mode)');
+        
+        // Show status-specific success message
+        if (selectedStatus === 'Found') {
+          toast.success('Item marked as FOUND and reply sent!', {
+            icon: '🎉',
+            style: {
+              background: '#10b981',
+              color: 'white'
+            }
+          });
+        } else if (selectedStatus === 'Returned') {
+          toast.success('Item marked as RETURNED and reply sent!', {
+            icon: '✅',
+            style: {
+              background: '#8b5cf6',
+              color: 'white'
+            }
+          });
+        } else if (selectedStatus === 'Claimed') {
+          toast.success('Item marked as CLAIMED and reply sent!', {
+            icon: '📦',
+            style: {
+              background: '#3b82f6',
+              color: 'white'
+            }
+          });
+        } else {
+          toast.success('Reply sent successfully (demo mode)');
+        }
       } else {
         const data = await response.json();
         updatedItem = data.lostItem;
-        toast.success('Reply sent successfully');
+        
+        // Show status-specific success message for real API
+        if (selectedStatus === 'Found') {
+          toast.success('Item marked as FOUND and reply sent successfully!');
+        } else if (selectedStatus === 'Returned') {
+          toast.success('Item marked as RETURNED and reply sent successfully!');
+        } else if (selectedStatus === 'Claimed') {
+          toast.success('Item marked as CLAIMED and reply sent successfully!');
+        } else {
+          toast.success('Reply sent successfully');
+        }
       }
 
       // Update the item in the state
@@ -857,19 +811,21 @@ const AdminLostFound = () => {
         )
       );
 
-      // Notify user page about the admin reply - This is the key part for real-time updates
+      // Notify user page about the admin reply with status information
       window.dispatchEvent(new CustomEvent('lostItemUpdated', {
         detail: {
           itemId: replyingItem._id,
           updates: updatedItem,
           source: 'admin',
-          adminReply: true // Flag to indicate this is specifically an admin reply
+          adminReply: true,
+          status: selectedStatus
         }
       }));
 
       setShowReplyForm(false);
       setReplyingItem(null);
       setReplyMessage('');
+      setSelectedStatus('Reported');
       
     } catch (error) {
       console.error('Error sending reply:', error);
@@ -877,26 +833,6 @@ const AdminLostFound = () => {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    if (editingItem) {
-      const updates = {
-        status: editingItem.status,
-        adminNotes: editingItem.adminNotes || ''
-      };
-      
-      await updateItemStatus(editingItem._id, updates);
-      setEditingItem(null);
-    }
-  };
-
-  const handleEditChange = (field, value) => {
-    setEditingItem(prev => ({
-      ...prev,
-      [field]: value
-    }));
   };
 
   const filteredItems = lostItems.filter(item => {
@@ -958,6 +894,7 @@ const AdminLostFound = () => {
     return { total, reported, found, claimed, returned };
   };
 
+  // Make statistics reactive to lostItems changes
   const stats = getStatistics();
 
   return (
@@ -968,92 +905,76 @@ const AdminLostFound = () => {
         <p className="text-gray-600">Manage and track lost items from bus journeys</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left Column - Statistics and Search */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Statistics Cards */}
-          <div className="bg-white rounded-xl border border-blue-200 p-6 shadow-lg hover:shadow-xl transition-shadow">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Report Log Item</h2>
+      {/* Top Section - Statistics and Search */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Statistics Card */}
+        <div className="bg-white rounded-xl border border-blue-200 p-6 shadow-lg hover:shadow-xl transition-shadow">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Report Log Item</h2>
+          
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Total Items</span>
+              <span className="font-semibold text-gray-800">{stats.total}</span>
+            </div>
             
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total Items</span>
-                <span className="font-semibold text-gray-800">{stats.total}</span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Reported</span>
-                <span className="font-semibold text-yellow-600">{stats.reported}</span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Found</span>
-                <span className="font-semibold text-green-600">{stats.found}</span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Claimed</span>
-                <span className="font-semibold text-blue-600">{stats.claimed}</span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Returned</span>
-                <span className="font-semibold text-purple-600">{stats.returned}</span>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Reported</span>
+              <span className="font-semibold text-yellow-600">{stats.reported}</span>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Found</span>
+              <span className="font-semibold text-green-600">{stats.found}</span>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Claimed</span>
+              <span className="font-semibold text-blue-600">{stats.claimed}</span>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Returned</span>
+              <span className="font-semibold text-purple-600">{stats.returned}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Search and Filter Card */}
+        <div className="bg-white rounded-xl border border-blue-200 p-6 shadow-lg">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search items, descriptions, or bus numbers..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-blue-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
               </div>
             </div>
 
-            <button
-              onClick={() => setShowReportForm(true)}
-              className="w-full mt-6 flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-medium transition-colors shadow-md"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Report Lost Item
-            </button>
-          </div>
-
-          {/* Search and Filter */}
-          <div className="bg-white rounded-xl border border-blue-200 p-6 shadow-lg">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Search items, descriptions, or bus numbers..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-white border border-blue-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="all">All Status</option>
-                  <option value="reported">Reported</option>
-                  <option value="found">Found</option>
-                  <option value="claimed">Claimed</option>
-                  <option value="returned">Returned</option>
-                </select>
-              </div>
-
-              <button
-                onClick={fetchLostItems}
-                className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 hover:text-gray-800 transition-colors"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
-              </button>
+                <option value="all">All Status</option>
+                <option value="reported">Reported</option>
+                <option value="found">Found</option>
+                <option value="claimed">Claimed</option>
+                <option value="returned">Returned</option>
+              </select>
+            </div>
 
+            <div className="flex space-x-2">
               <button
                 onClick={() => setShowExportModal(true)}
-                className="w-full flex items-center justify-center px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-medium transition-colors shadow-md"
+                className="flex-1 flex items-center justify-center px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-medium transition-colors shadow-md"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Export Report
@@ -1061,9 +982,10 @@ const AdminLostFound = () => {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Right Column - Items List */}
-        <div className="lg:col-span-3">
+      {/* Items List - Full Width */}
+      <div className="w-full">
           <div className="bg-white rounded-xl border border-blue-200 shadow-lg">
             {loading ? (
               <div className="flex items-center justify-center py-20">
@@ -1190,7 +1112,7 @@ const AdminLostFound = () => {
                     {/* Action Buttons */}
                     <div className="flex items-center justify-end space-x-2 pt-4 border-t border-blue-200">
                       <button
-                        onClick={() => setSelectedItem(item)}
+                        onClick={() => handleViewItem(item)}
                         className="px-3 py-1 text-gray-500 hover:text-blue-600 transition-colors flex items-center text-sm hover:bg-blue-50 rounded"
                       >
                         <Eye className="w-4 h-4 mr-1" />
@@ -1201,6 +1123,7 @@ const AdminLostFound = () => {
                         onClick={() => {
                           setReplyingItem(item);
                           setReplyMessage(item.adminReply || '');
+                          setSelectedStatus(item.status || 'Reported');
                           setShowReplyForm(true);
                         }}
                         className="px-3 py-1 text-green-600 hover:text-green-700 transition-colors flex items-center text-sm hover:bg-green-50 rounded"
@@ -1210,7 +1133,11 @@ const AdminLostFound = () => {
                       </button>
                       
                       <button
-                        onClick={() => deleteItem(item._id)}
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete "${item.itemName}"? This action cannot be undone.`)) {
+                            handleDeleteItem(item._id);
+                          }
+                        }}
                         className="px-3 py-1 text-red-600 hover:text-red-700 transition-colors flex items-center text-sm hover:bg-red-50 rounded"
                       >
                         <Trash2 className="w-4 h-4 mr-1" />
@@ -1222,10 +1149,9 @@ const AdminLostFound = () => {
               </div>
             )}
           </div>
-        </div>
       </div>
 
-      {/* Export Report Modal - Matching UserManagement layout */}
+      {/* Export Report Modal */}
       <ExportModal
         show={showExportModal}
         onClose={() => setShowExportModal(false)}
@@ -1236,126 +1162,23 @@ const AdminLostFound = () => {
         loading={exporting}
       />
 
-      {/* Item Details Modal */}
-      {selectedItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-slate-800">Item Details</h2>
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {/* Item Information */}
-              <div className="bg-slate-50 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-slate-800 mb-4">Item Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-slate-600">Item Name</label>
-                    <p className="text-slate-800">{selectedItem.itemName}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-600">Bus Number</label>
-                    <p className="text-slate-800">{selectedItem.busNumber}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-600">Date Lost</label>
-                    <p className="text-slate-800">{formatDate(selectedItem.dateLost)}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-600">Status</label>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      selectedItem.status === 'reported' ? 'bg-yellow-100 text-yellow-800' :
-                      selectedItem.status === 'found' ? 'bg-green-100 text-green-800' :
-                      selectedItem.status === 'claimed' ? 'bg-blue-100 text-blue-800' :
-                      'bg-purple-100 text-purple-800'
-                    }`}>
-                      {selectedItem.status}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <label className="text-sm font-medium text-slate-600">Description</label>
-                  <p className="text-slate-800 mt-1">{selectedItem.description || 'No description provided'}</p>
-                </div>
-              </div>
-
-              {/* User Information */}
-              {selectedItem.user && (
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-slate-800 mb-4">User Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-slate-600">Name</label>
-                      <p className="text-slate-800">{selectedItem.user.firstName} {selectedItem.user.lastName}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-600">Email</label>
-                      <p className="text-slate-800">{selectedItem.user.email}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-600">Phone</label>
-                      <p className="text-slate-800">{selectedItem.user.phone || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-600">Reported Date</label>
-                      <p className="text-slate-800">{formatDate(selectedItem.createdAt)}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Admin Notes */}
-              {selectedItem.adminNotes && (
-                <div className="bg-yellow-50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-slate-800 mb-2">Admin Notes</h3>
-                  <p className="text-slate-800">{selectedItem.adminNotes}</p>
-                </div>
-              )}
-
-              {/* Admin Reply */}
-              {selectedItem.adminReply && (
-                <div className="bg-green-50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-slate-800 mb-2">Admin Reply</h3>
-                  <p className="text-slate-800">{selectedItem.adminReply}</p>
-                  {selectedItem.repliedBy && (
-                    <p className="text-sm text-slate-600 mt-2">Replied by: {selectedItem.repliedBy}</p>
-                  )}
-                  {selectedItem.repliedAt && (
-                    <p className="text-sm text-slate-600">Replied on: {formatDateTime(selectedItem.repliedAt)}</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end mt-6">
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Reply Modal */}
+      {/* Reply Modal with Enhanced Status Dropdown */}
       {showReplyForm && replyingItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-800">Reply to User</h2>
+              <h2 className="text-xl font-bold text-slate-800">
+                {selectedStatus === 'Found' ? 'Mark as Found' :
+                 selectedStatus === 'Returned' ? 'Mark as Returned' :
+                 selectedStatus === 'Claimed' ? 'Mark as Claimed' :
+                 'Reply to User'}
+              </h2>
               <button
                 onClick={() => {
                   setShowReplyForm(false);
                   setReplyingItem(null);
                   setReplyMessage('');
+                  setSelectedStatus('Reported');
                 }}
                 className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
               >
@@ -1369,18 +1192,54 @@ const AdminLostFound = () => {
             </div>
 
             <form onSubmit={handleAdminReply} className="space-y-4">
+              {/* Enhanced Status Dropdown with Icons */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Reply Message *
+                  Update Status *
+                </label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                  required
+                >
+                  <option value="Reported">📝 Reported - Initial report</option>
+                  <option value="Found">🎉 Found - Item located</option>
+                  <option value="Claimed">📦 Claimed - Ready for pickup</option>
+                  <option value="Returned">✅ Returned - Given back to owner</option>
+                </select>
+                <p className="text-xs text-slate-500 mt-1">
+                  {selectedStatus === 'Found' && 'Item has been located and is in our possession'}
+                  {selectedStatus === 'Claimed' && 'Item is ready for pickup by the owner'}
+                  {selectedStatus === 'Returned' && 'Item has been successfully returned to the owner'}
+                  {selectedStatus === 'Reported' && 'Initial report - still searching for item'}
+                </p>
+              </div>
+
+              {/* Reply Message with Status-Based Placeholder */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  {selectedStatus === 'Found' ? 'Found Notification Message *' :
+                   selectedStatus === 'Returned' ? 'Return Confirmation Message *' :
+                   selectedStatus === 'Claimed' ? 'Pickup Instructions *' :
+                   'Reply Message *'}
                 </label>
                 <textarea
                   value={replyMessage}
                   onChange={(e) => setReplyMessage(e.target.value)}
                   rows={4}
                   className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-sm"
-                  placeholder="Enter your reply to the user..."
+                  placeholder={
+                    selectedStatus === 'Found' ? `Good news! We found your ${replyingItem.itemName}. Please provide details about where and how to collect it...` :
+                    selectedStatus === 'Returned' ? `We're happy to inform you that your ${replyingItem.itemName} has been returned. Add any additional notes...` :
+                    selectedStatus === 'Claimed' ? `Your ${replyingItem.itemName} is ready for pickup. Provide pickup location, timing, and required documents...` :
+                    'Enter your reply to the user...'
+                  }
                   required
                 />
+                <p className="text-xs text-slate-500 mt-1">
+                  This message will be sent to the user with the status update.
+                </p>
               </div>
 
               <div className="flex space-x-3 pt-4">
@@ -1390,6 +1249,7 @@ const AdminLostFound = () => {
                     setShowReplyForm(false);
                     setReplyingItem(null);
                     setReplyMessage('');
+                    setSelectedStatus('Reported');
                   }}
                   className="flex-1 px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors shadow-sm"
                 >
@@ -1398,16 +1258,187 @@ const AdminLostFound = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500 disabled:from-slate-400 disabled:to-slate-500 text-white rounded-lg font-medium transition-all duration-300 disabled:cursor-not-allowed shadow-lg"
+                  className={`flex-1 px-4 py-3 text-white rounded-lg font-medium transition-all duration-300 disabled:cursor-not-allowed shadow-lg ${
+                    selectedStatus === 'Found' ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500' :
+                    selectedStatus === 'Returned' ? 'bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-400 hover:to-violet-500' :
+                    selectedStatus === 'Claimed' ? 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500' :
+                    'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-400 hover:to-cyan-500'
+                  } disabled:from-slate-400 disabled:to-slate-500`}
                 >
-                  {submitting ? 'Sending...' : 'Send Reply'}
+                  {submitting ? 'Sending...' : 
+                   selectedStatus === 'Found' ? 'Mark as Found & Send' :
+                   selectedStatus === 'Returned' ? 'Mark as Returned & Send' :
+                   selectedStatus === 'Claimed' ? 'Mark as Claimed & Send' :
+                   'Send Reply'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-      
+
+      {/* View Item Modal */}
+      {showViewModal && viewingItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-slate-800">Item Details</h2>
+              <button
+                onClick={() => {
+                  setShowViewModal(false);
+                  setViewingItem(null);
+                }}
+                className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Item Header */}
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <h3 className="text-xl font-semibold text-gray-800">{viewingItem.itemName}</h3>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(viewingItem.status)} flex items-center gap-2`}>
+                      {getStatusIcon(viewingItem.status)}
+                      {viewingItem.status}
+                    </span>
+                  </div>
+                  
+                  {viewingItem.description && (
+                    <p className="text-gray-600 text-lg leading-relaxed">{viewingItem.description}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Item Information Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-blue-800 mb-2 flex items-center">
+                      <Bus className="w-5 h-5 mr-2" />
+                      Journey Details
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Bus Number:</span>
+                        <span className="font-medium">{viewingItem.busNumber}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Date Lost:</span>
+                        <span className="font-medium">{formatDate(viewingItem.dateLost)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Reported By:</span>
+                        <span className="font-medium">{viewingItem.reportedBy}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {viewingItem.user && (
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-green-800 mb-2 flex items-center">
+                        <User className="w-5 h-5 mr-2" />
+                        User Information
+                      </h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Name:</span>
+                          <span className="font-medium">{viewingItem.user.firstName} {viewingItem.user.lastName}</span>
+                        </div>
+                        {viewingItem.user.email && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Email:</span>
+                            <span className="font-medium">{viewingItem.user.email}</span>
+                          </div>
+                        )}
+                        {viewingItem.user.phone && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Phone:</span>
+                            <span className="font-medium">{viewingItem.user.phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-800 mb-2 flex items-center">
+                      <Clock className="w-5 h-5 mr-2" />
+                      Timeline
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Created:</span>
+                        <span className="font-medium">{formatDateTime(viewingItem.createdAt)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Last Updated:</span>
+                        <span className="font-medium">{formatDateTime(viewingItem.updatedAt)}</span>
+                      </div>
+                      {viewingItem.repliedAt && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Last Reply:</span>
+                          <span className="font-medium">{formatDateTime(viewingItem.repliedAt)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {viewingItem.adminNotes && (
+                    <div className="bg-yellow-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-yellow-800 mb-2 flex items-center">
+                        <MessageSquare className="w-5 h-5 mr-2" />
+                        Admin Notes
+                      </h4>
+                      <p className="text-sm text-gray-700">{viewingItem.adminNotes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Admin Reply Section */}
+              {viewingItem.adminReply && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <Reply className="w-5 h-5 mr-3 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-semibold text-green-800">Admin Reply</h4>
+                        {viewingItem.repliedBy && (
+                          <span className="text-xs text-green-600">by {viewingItem.repliedBy}</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">{viewingItem.adminReply}</p>
+                      {viewingItem.repliedAt && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          {formatDateTime(viewingItem.repliedAt)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setViewingItem(null);
+                  }}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

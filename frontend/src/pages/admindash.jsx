@@ -33,7 +33,6 @@ import {
   CheckCircle,
   MessageCircle,
   Send,
-  XCircle,
   Edit,
   Trash2,
   User,
@@ -1034,13 +1033,13 @@ const AdminDashboard = () => {
       const data = await response.json();
       const processedData = data.map(feedback => ({
         ...feedback,
-        userId: feedback.userId || { 
+        userId: feedback.client_id || feedback.userId || { 
           _id: feedback.user_id || `user_${Math.random().toString(36).substr(2, 9)}`,
-          firstName: feedback.user_name ? feedback.user_name.split(' ')[0] : 'Unknown',
-          lastName: feedback.user_name ? feedback.user_name.split(' ').slice(1).join(' ') : 'User'
+          firstName: 'Unknown',
+          lastName: 'User'
         },
-        user_id: feedback.user_id || (feedback.userId ? feedback.userId._id : null),
-        user_name: feedback.user_name || `${feedback.userId?.firstName || 'Unknown'} ${feedback.userId?.lastName || 'User'}`
+        user_id: feedback.user_id || feedback.client_id?._id || (feedback.userId ? feedback.userId._id : null),
+        user_name: feedback.user_name || (feedback.client_id ? `${feedback.client_id.firstName || 'Unknown'} ${feedback.client_id.lastName || 'User'}` : `${feedback.userId?.firstName || 'Unknown'} ${feedback.userId?.lastName || 'User'}`)
       }));
       
       setFeedbacks(processedData);
@@ -1170,50 +1169,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const toggleResolve = async (feedbackId, currentStatus) => {
-    try {
-      const token = localStorage.getItem('token');
-      const newStatus = currentStatus === 'closed' ? 'replied' : 'closed';
-      
-      const response = await fetch(`${BACKEND_URL}/api/feedbacks/${feedbackId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          status: newStatus
-        })
-      });
-
-      if (!response.ok) {
-        // If backend is not available, update locally for demo
-        setFeedbacks(prev => prev.map(f => 
-          f._id === feedbackId ? { ...f, status: newStatus } : f
-        ));
-        setError('Status updated successfully (demo mode)');
-        toast.success(`Feedback ${newStatus === 'closed' ? 'resolved' : 'reopened'} successfully!`);
-        return;
-      }
-
-      const updatedFeedback = await response.json();
-      
-      setFeedbacks(prev => prev.map(f => 
-        f._id === feedbackId ? updatedFeedback : f
-      ));
-      
-      setError('');
-      toast.success(`Feedback ${newStatus === 'closed' ? 'resolved' : 'reopened'} successfully!`);
-    } catch (err) {
-      console.error('Failed to update feedback status', err);
-      const newStatus = currentStatus === 'closed' ? 'replied' : 'closed';
-      setFeedbacks(prev => prev.map(f => 
-        f._id === feedbackId ? { ...f, status: newStatus } : f
-      ));
-      setError('Status updated successfully (demo mode - backend offline)');
-      toast.success(`Feedback ${newStatus === 'closed' ? 'resolved' : 'reopened'} successfully!`);
-    }
-  };
 
   const handleDeleteFeedback = async (feedbackId) => {
     if (!window.confirm('Are you sure you want to delete this feedback/complaint? This action cannot be undone.')) {
@@ -1361,7 +1316,7 @@ const AdminDashboard = () => {
               
               <div className="mt-2 flex items-center text-sm text-gray-500">
                 <User className="h-3.5 w-3.5 mr-1.5" />
-                <span>User: {feedback.user_name || `${feedback.userId?.firstName || 'Unknown'} ${feedback.userId?.lastName || 'User'}`} (ID: {feedback.user_id || feedback.userId?._id || 'Unknown'})</span>
+                <span>User: {feedback.user_name || (feedback.client_id ? `${feedback.client_id.firstName || 'Unknown'} ${feedback.client_id.lastName || 'User'}` : (feedback.userId ? `${feedback.userId.firstName || 'Unknown'} ${feedback.userId.lastName || 'User'}` : 'Unknown User'))}</span>
               </div>
             </div>
           </div>
@@ -1468,26 +1423,6 @@ const AdminDashboard = () => {
                 </button>
               )}
               <button
-                onClick={() => toggleResolve(feedback._id, feedback.status)}
-                className={`px-4 py-2 rounded-lg flex items-center hover:opacity-90 transition-opacity ${
-                  feedback.status === 'closed' 
-                    ? 'bg-orange-600 text-white' 
-                    : 'bg-green-600 text-white'
-                }`}
-              >
-                {feedback.status === 'closed' ? (
-                  <>
-                    <XCircle size={16} className="mr-2" />
-                    Reopen
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle size={16} className="mr-2" />
-                    Mark Resolved
-                  </>
-                )}
-              </button>
-              <button
                 onClick={() => handleDeleteFeedback(feedback._id)}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg flex items-center hover:bg-red-700 transition-colors"
                 title="Delete Feedback"
@@ -1564,12 +1499,6 @@ const AdminDashboard = () => {
             </div>
 
             <div className="flex items-center space-x-4">
-              <div className="relative">
-                <button className="p-1 rounded-full hover:bg-blue-100">
-                  <Bell className="w-6 h-6 text-gray-600" />
-                </button>
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center animate-pulse">3</span>
-              </div>
 
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-blue-600 rounded-full" />

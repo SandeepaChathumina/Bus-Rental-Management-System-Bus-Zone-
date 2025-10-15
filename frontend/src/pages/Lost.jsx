@@ -278,7 +278,6 @@ const Lost = () => {
         console.log('Loading lost items from localStorage');
         const filteredData = user?.role === 'passenger' 
           ? savedItems.filter(item => 
-              item.reportedBy === 'Admin' || 
               (item.user && item.user._id === user._id)
             )
           : savedItems;
@@ -329,18 +328,6 @@ const Lost = () => {
             updatedAt: new Date('2025-10-15T10:30:00').toISOString()
           },
           {
-            _id: '2',
-            itemName: 'Black Backpack',
-            description: 'Black backpack with laptop compartment',
-            dateLost: new Date('2025-09-02').toISOString(),
-            busNumber: 'BC-1234',
-            status: 'Found',
-            reportedBy: 'Admin',
-            adminNotes: 'Found under seat 12B, contains books and water bottle',
-            createdAt: new Date('2025-09-22').toISOString(),
-            updatedAt: new Date('2025-09-22T15:30:00').toISOString()
-          },
-          {
             _id: '3',
             itemName: 'Blue Water Bottle',
             description: 'Stainless steel water bottle with university logo',
@@ -366,7 +353,6 @@ const Lost = () => {
 
         const filteredMockData = user?.role === 'passenger' 
           ? mockData.filter(item => 
-              item.reportedBy === 'Admin' || 
               (item.user && item.user._id === user._id)
             )
           : mockData;
@@ -396,7 +382,6 @@ const Lost = () => {
       if (data && data.lostItems) {
         const filteredData = user?.role === 'passenger' 
           ? data.lostItems.filter(item => 
-              item.reportedBy === 'Admin' || 
               (item.user && item.user._id === user._id)
             )
           : data.lostItems;
@@ -503,9 +488,7 @@ const Lost = () => {
 
   const handleEditItem = (item) => {
     if (!canEditItem(item)) {
-      if (item.reportedBy === 'Admin') {
-        toast.error('This item was reported by admin and cannot be edited by users.');
-      } else if ((item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '')) {
+      if ((item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '')) {
         toast.error('Cannot edit item after admin response');
       } else {
         toast.error('You do not have permission to edit this item.');
@@ -635,9 +618,7 @@ const Lost = () => {
     }
     
     if (!canDeleteItem(item)) {
-      if (item.reportedBy === 'Admin') {
-        toast.error('This item was reported by admin and cannot be deleted by users.');
-      } else if ((item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '')) {
+      if ((item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '')) {
         toast.error('Cannot delete item after admin response');
       } else {
         toast.error('You do not have permission to delete this item.');
@@ -743,9 +724,8 @@ const Lost = () => {
     // Users can only edit their own items that don't have admin responses
     const isOwnItem = item.user && item.user._id === user?._id;
     const hasAdminResponse = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
-    const isUserReported = item.reportedBy === 'User';
     
-    return isUserReported && isOwnItem && !hasAdminResponse;
+    return isOwnItem && !hasAdminResponse;
   };
 
   const canDeleteItem = (item) => {
@@ -757,25 +737,16 @@ const Lost = () => {
     // Users can only delete their own items that don't have admin responses
     const isOwnItem = item.user && item.user._id === user?._id;
     const hasAdminResponse = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
-    const isUserReported = item.reportedBy === 'User';
     
-    return isUserReported && isOwnItem && !hasAdminResponse;
+    return isOwnItem && !hasAdminResponse;
   };
 
   const getLockIcon = (item) => {
-    if (item.reportedBy === 'Admin') {
-      return <Shield className="w-4 h-4 text-purple-400" />;
-    }
-    
     const userCanEdit = canEditItem(item);
     return userCanEdit ? <Unlock className="w-4 h-4 text-green-400" /> : <Lock className="w-4 h-4 text-red-400" />;
   };
 
   const getLockText = (item) => {
-    if (item.reportedBy === 'Admin') {
-      return 'Admin Item';
-    }
-    
     const userCanEdit = canEditItem(item);
     const hasAdminResponse = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
     
@@ -787,26 +758,16 @@ const Lost = () => {
   };
 
   const getLockColor = (item) => {
-    if (item.reportedBy === 'Admin') {
-      return 'text-purple-400';
-    }
-    
     const userCanEdit = canEditItem(item);
     return userCanEdit ? 'text-green-400' : 'text-red-400';
   };
 
   const getReportedByIcon = (reportedBy) => {
-    return reportedBy === 'Admin' ? 
-      <Shield className="w-4 h-4 text-purple-400" /> : 
-      <User className="w-4 h-4 text-blue-400" />;
+    return <User className="w-4 h-4 text-blue-400" />;
   };
 
   const getReportedByText = (item) => {
-    if (item.reportedBy === 'Admin') {
-      return 'By: Admin';
-    } else {
-      return `By: ${item.user?.firstName || 'User'}`;
-    }
+    return `By: ${item.user?.firstName || 'User'}`;
   };
 
   const filteredItems = lostItems.filter(item => {
@@ -835,21 +796,21 @@ const Lost = () => {
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
-      case 'reported': return 'text-yellow-400 bg-yellow-900/30';
-      case 'found': return 'text-green-400 bg-green-900/30';
-      case 'claimed': return 'text-blue-400 bg-blue-900/30';
-      case 'returned': return 'text-purple-400 bg-purple-900/30';
-      default: return 'text-gray-400 bg-gray-900/30';
+      case 'reported': return 'bg-yellow-100 text-yellow-800 border border-yellow-300';
+      case 'found': return 'bg-green-100 text-green-800 border border-green-300';
+      case 'claimed': return 'bg-blue-100 text-blue-800 border border-blue-300';
+      case 'returned': return 'bg-purple-100 text-purple-800 border border-purple-300';
+      default: return 'bg-gray-100 text-gray-800 border border-gray-300';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status.toLowerCase()) {
-      case 'reported': return <AlertCircle className="w-4 h-4" />;
-      case 'found': return <CheckCircle className="w-4 h-4" />;
-      case 'claimed': return <User className="w-4 h-4" />;
-      case 'returned': return <CheckCircle className="w-4 h-4" />;
-      default: return <AlertCircle className="w-4 h-4" />;
+      case 'reported': return <AlertCircle className="w-3 h-3" />;
+      case 'found': return <CheckCircle className="w-3 h-3" />;
+      case 'claimed': return <User className="w-3 h-3" />;
+      case 'returned': return <CheckCircle className="w-3 h-3" />;
+      default: return <AlertCircle className="w-3 h-3" />;
     }
   };
 
@@ -1055,59 +1016,6 @@ const Lost = () => {
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               </button>
 
-              {/* Debug button for admins */}
-              {user?.role === 'admin' && (
-                <div className="flex space-x-2">
-                  <button
-                    onClick={clearLocalStorage}
-                    className="p-3 bg-orange-100 hover:bg-orange-200 border border-orange-200 rounded-xl text-orange-700 hover:text-orange-800 transition-colors shadow-sm"
-                    title="Clear local data"
-                  >
-                    <span className="text-xs">Clear Data</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      if (lostItems.length > 0) {
-                        const firstItem = lostItems[0];
-                        simulateAdminReply(firstItem._id);
-                      }
-                    }}
-                    className="p-3 bg-green-100 hover:bg-green-200 border border-green-200 rounded-xl text-green-700 hover:text-green-800 transition-colors shadow-sm"
-                    title="Simulate admin reply"
-                  >
-                    <span className="text-xs">Test Reply</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      // Test the event system by dispatching a test event
-                      const testItem = lostItems.find(item => !item.adminReply);
-                      if (testItem) {
-                        console.log('Testing event system with item:', testItem.itemName);
-                        window.dispatchEvent(new CustomEvent('lostItemUpdated', {
-                          detail: {
-                            itemId: testItem._id,
-                            updates: {
-                              adminReply: 'This is a test admin reply to verify the real-time update system is working correctly!',
-                              repliedBy: 'Test Admin',
-                              repliedAt: new Date().toISOString()
-                            },
-                            source: 'test'
-                          }
-                        }));
-                        toast.success('Test event dispatched! Check if admin reply appears.');
-                      } else {
-                        toast.error('No items available for testing');
-                      }
-                    }}
-                    className="p-3 bg-blue-100 hover:bg-blue-200 border border-blue-200 rounded-xl text-blue-700 hover:text-blue-800 transition-colors shadow-sm"
-                    title="Test event system"
-                  >
-                    <span className="text-xs">Test Event</span>
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -1138,18 +1046,23 @@ const Lost = () => {
             ) : (
               filteredItems.map((item) => (
                 <div key={item._id} data-item-id={item._id} className="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 border border-blue-200 hover:border-blue-300 transition-all duration-300 relative shadow-lg hover:shadow-xl">
-                  {/* Lock/Admin Indicator */}
-                  {user?.role !== 'admin' && (
-                    <div className="absolute top-4 right-4 flex items-center space-x-1">
-                      {getLockIcon(item)}
-                      <span className={`text-xs font-medium ${getLockColor(item)}`}>
-                        {getLockText(item)}
-                      </span>
-                    </div>
-                  )}
+                  {/* Lock/Admin Indicator - FIXED POSITIONING */}
+                  <div className="absolute top-4 right-4 flex items-center space-x-1 z-10">
+                    {getLockIcon(item)}
+                    <span className={`text-xs font-medium ${getLockColor(item)}`}>
+                      {getLockText(item)}
+                    </span>
+                  </div>
 
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
+                  {/* Status Badge - IMPROVED STYLING */}
+                  <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-full text-xs font-medium flex items-center space-x-1.5 ${getStatusColor(item.status)} z-10 shadow-sm`}>
+                    {getStatusIcon(item.status)}
+                    <span className="font-semibold">{item.status}</span>
+                  </div>
+
+                  {/* Content with proper spacing */}
+                  <div className="mt-12"> {/* Added margin top to avoid overlap */}
+                    <div className="mb-4">
                       <div className="flex items-center mb-1">
                         <h3 className="text-lg font-semibold text-slate-800">{item.itemName}</h3>
                         {item.adminReply && item.adminReply.trim() !== '' && (
@@ -1160,161 +1073,151 @@ const Lost = () => {
                       </div>
                       <p className="text-slate-600 text-sm line-clamp-2">{item.description}</p>
                     </div>
-                    
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center ${getStatusColor(item.status)}`}>
-                      {getStatusIcon(item.status)}
-                      <span className="ml-1">{item.status}</span>
-                    </div>
-                  </div>
 
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-slate-700">
-                      <Bus className="w-4 h-4 mr-2 text-blue-500" />
-                      <span>Bus: {item.busNumber}</span>
-                    </div>
-                    
-                    <div className="flex items-center text-sm text-slate-700">
-                      <Calendar className="w-4 h-4 mr-2 text-blue-500" />
-                      <span>Lost on: {formatDate(item.dateLost)}</span>
-                    </div>
-                    
-                    <div className="flex items-center text-sm text-slate-700">
-                      <Clock className="w-4 h-4 mr-2 text-blue-500" />
-                      <span>Reported: {formatDate(item.createdAt)}</span>
-                    </div>
-
-                    <div className="flex items-center text-sm text-slate-700">
-                      {getReportedByIcon(item.reportedBy)}
-                      <span className="ml-2">By: User</span>
-                    </div>
-
-                    {item.user && (
+                    <div className="space-y-2 mb-4">
                       <div className="flex items-center text-sm text-slate-700">
-                        <User className="w-4 h-4 mr-2 text-blue-500" />
-                        <span>User: {item.user.firstName} {item.user.lastName}</span>
+                        <Bus className="w-4 h-4 mr-2 text-blue-500" />
+                        <span>Bus: {item.busNumber}</span>
                       </div>
-                    )}
-                  </div>
+                      
+                      <div className="flex items-center text-sm text-slate-700">
+                        <Calendar className="w-4 h-4 mr-2 text-blue-500" />
+                        <span>Lost on: {formatDate(item.dateLost)}</span>
+                      </div>
+                      
+                      <div className="flex items-center text-sm text-slate-700">
+                        <Clock className="w-4 h-4 mr-2 text-blue-500" />
+                        <span>Reported: {formatDate(item.createdAt)}</span>
+                      </div>
 
-                  {item.adminNotes && item.adminNotes.trim() !== '' && (
-                    <div className="bg-blue-100 border border-blue-200 rounded-lg p-3 mb-4">
-                      <div className="flex items-start">
-                        <MessageSquare className="w-4 h-4 mr-2 text-blue-500 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-blue-700 mb-1">Admin Notes:</p>
-                          <p className="text-slate-700 text-sm">{item.adminNotes}</p>
+                      <div className="flex items-center text-sm text-slate-700">
+                        {getReportedByIcon(item.reportedBy)}
+                        <span className="ml-2">By: User</span>
+                      </div>
+
+                      {item.user && (
+                        <div className="flex items-center text-sm text-slate-700">
+                          <User className="w-4 h-4 mr-2 text-blue-500" />
+                          <span>User: {item.user.firstName} {item.user.lastName}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {item.adminNotes && item.adminNotes.trim() !== '' && (
+                      <div className="bg-blue-100 border border-blue-200 rounded-lg p-3 mb-4">
+                        <div className="flex items-start">
+                          <MessageSquare className="w-4 h-4 mr-2 text-blue-500 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium text-blue-700 mb-1">Admin Notes:</p>
+                            <p className="text-slate-700 text-sm">{item.adminNotes}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {item.adminReply && item.adminReply.trim() !== '' && (
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 mb-4 shadow-lg animate-pulse relative overflow-hidden">
-                      {/* Animated background effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-green-100/50 to-emerald-100/50 animate-pulse"></div>
-                      
-                      <div className="relative z-10">
-                        <div className="flex items-start">
-                          <div className="bg-green-500 p-2 rounded-full mr-3 flex-shrink-0 animate-bounce shadow-lg">
-                            <Reply className="w-4 h-4 text-white" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-2">
-                              <p className="text-sm font-bold text-green-800 flex items-center">
-                                <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs mr-2 animate-pulse shadow-md">NEW</span>
-                                Admin Reply
-                              </p>
-                              {item.repliedBy && (
-                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full shadow-sm">
-                                  by {item.repliedBy}
-                                </span>
+                    {item.adminReply && item.adminReply.trim() !== '' && (
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 mb-4 shadow-lg animate-pulse relative overflow-hidden">
+                        {/* Animated background effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-green-100/50 to-emerald-100/50 animate-pulse"></div>
+                        
+                        <div className="relative z-10">
+                          <div className="flex items-start">
+                            <div className="bg-green-500 p-2 rounded-full mr-3 flex-shrink-0 animate-bounce shadow-lg">
+                              <Reply className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-bold text-green-800 flex items-center">
+                                  <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs mr-2 animate-pulse shadow-md">NEW</span>
+                                  Admin Reply
+                                </p>
+                                {item.repliedBy && (
+                                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full shadow-sm">
+                                    by {item.repliedBy}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="bg-white rounded-lg p-3 border border-green-200 shadow-sm">
+                                <p className="text-slate-800 text-sm leading-relaxed">{item.adminReply}</p>
+                              </div>
+                              {item.repliedAt && (
+                                <p className="text-xs text-slate-500 mt-2 flex items-center">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  Replied on: {new Date(item.repliedAt).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </p>
                               )}
                             </div>
-                            <div className="bg-white rounded-lg p-3 border border-green-200 shadow-sm">
-                              <p className="text-slate-800 text-sm leading-relaxed">{item.adminReply}</p>
-                            </div>
-                            {item.repliedAt && (
-                              <p className="text-xs text-slate-500 mt-2 flex items-center">
-                                <Clock className="w-3 h-3 mr-1" />
-                                Replied on: {new Date(item.repliedAt).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </p>
-                            )}
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action buttons - UPDATED TO DISABLE AFTER ADMIN REPLY */}
-                  <div className="pt-3 border-t border-blue-200">
-                    {user?.role === 'admin' ? (
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleEditItem(item)}
-                          className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm flex items-center justify-center shadow-sm"
-                        >
-                          <Save className="w-4 h-4 mr-1" />
-                          Update
-                        </button>
-                        <button
-                          onClick={() => deleteItem(item._id)}
-                          className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm shadow-sm"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          {canEditItem(item) && (
-                            <button
-                              onClick={() => handleEditItem(item)}
-                              className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm shadow-sm"
-                            >
-                              <Edit className="w-4 h-4 mr-1" />
-                              Edit
-                            </button>
-                          )}
-                          
-                          {canDeleteItem(item) && (
-                            <button
-                              onClick={() => deleteItem(item._id)}
-                              className="flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm shadow-sm"
-                            >
-                              <Trash2 className="w-4 h-4 mr-1" />
-                              Delete
-                            </button>
-                          )}
-                        </div>
-                        
-                        {!canEditItem(item) && (
-                          <div className={`text-xs flex items-center ${item.reportedBy === 'Admin' ? 'text-purple-600' : 'text-red-600'}`}>
-                            {item.reportedBy === 'Admin' ? (
-                              <>
-                                <Shield className="w-3 h-3 mr-1" />
-                                Admin Item
-                              </>
-                            ) : ((item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '')) ? (
-                              <>
-                                <Lock className="w-3 h-3 mr-1" />
-                                Locked - Admin Replied
-                              </>
-                            ) : (
-                              <>
-                                <Lock className="w-3 h-3 mr-1" />
-                                No Permission
-                              </>
-                            )}
-                          </div>
-                        )}
                       </div>
                     )}
+
+                    {/* Action buttons - UPDATED TO DISABLE AFTER ADMIN REPLY */}
+                    <div className="pt-3 border-t border-blue-200">
+                      {user?.role === 'admin' ? (
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleEditItem(item)}
+                            className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm flex items-center justify-center shadow-sm"
+                          >
+                            <Save className="w-4 h-4 mr-1" />
+                            Update
+                          </button>
+                          <button
+                            onClick={() => deleteItem(item._id)}
+                            className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm shadow-sm"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            {canEditItem(item) && (
+                              <button
+                                onClick={() => handleEditItem(item)}
+                                className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm shadow-sm"
+                              >
+                                <Edit className="w-4 h-4 mr-1" />
+                                Edit
+                              </button>
+                            )}
+                            
+                            {canDeleteItem(item) && (
+                              <button
+                                onClick={() => deleteItem(item._id)}
+                                className="flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm shadow-sm"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                          
+                            {!canEditItem(item) && (
+                             <div className="text-xs flex items-center text-red-600">
+                               {((item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '')) ? (
+                                 <>
+                                   <Lock className="w-3 h-3 mr-1" />
+                                   Locked - Admin Replied
+                                 </>
+                               ) : (
+                                 <>
+                                   <Lock className="w-3 h-3 mr-1" />
+                                   No Permission
+                                 </>
+                               )}
+                             </div>
+                           )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))
@@ -1443,35 +1346,21 @@ const Lost = () => {
                 </button>
               </div>
 
-              {/* Warning message for users if item is locked */}
-              {user?.role !== 'admin' && !canEditItem(editingItem) && (
-                <div className={`border rounded-lg p-4 mb-4 ${
-                  editingItem.reportedBy === 'Admin' 
-                    ? 'bg-purple-100 border-purple-300' 
-                    : 'bg-red-100 border-red-300'
-                }`}>
-                  <div className="flex items-start">
-                    {editingItem.reportedBy === 'Admin' ? (
-                      <Shield className="w-5 h-5 text-purple-600 mr-2 mt-0.5 flex-shrink-0" />
-                    ) : (
-                      <Lock className="w-5 h-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
-                    )}
-                    <div>
-                      <h4 className={`font-medium text-sm ${
-                        editingItem.reportedBy === 'Admin' ? 'text-purple-700' : 'text-red-700'
-                      }`}>
-                        {editingItem.reportedBy === 'Admin' ? 'Admin Item' : 'Item Locked'}
-                      </h4>
-                      <p className={`text-sm mt-1 ${
-                        editingItem.reportedBy === 'Admin' ? 'text-purple-600' : 'text-red-600'
-                      }`}>
-                        {editingItem.reportedBy === 'Admin' 
-                          ? 'This item was reported by admin and cannot be edited by users.'
-                          : ((editingItem.adminNotes && editingItem.adminNotes.trim() !== '') || (editingItem.adminReply && editingItem.adminReply.trim() !== ''))
-                            ? 'This item cannot be edited because an admin has responded to it.'
-                            : 'You do not have permission to edit this item.'
-                        }
-                      </p>
+               {/* Warning message for users if item is locked */}
+               {user?.role !== 'admin' && !canEditItem(editingItem) && (
+                 <div className="border rounded-lg p-4 mb-4 bg-red-100 border-red-300">
+                   <div className="flex items-start">
+                     <Lock className="w-5 h-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
+                     <div>
+                       <h4 className="font-medium text-sm text-red-700">
+                         Item Locked
+                       </h4>
+                       <p className="text-sm mt-1 text-red-600">
+                         {((editingItem.adminNotes && editingItem.adminNotes.trim() !== '') || (editingItem.adminReply && editingItem.adminReply.trim() !== ''))
+                           ? 'This item cannot be edited because an admin has responded to it.'
+                           : 'You do not have permission to edit this item.'
+                         }
+                       </p>
                       {editingItem.adminNotes && editingItem.adminNotes.trim() !== '' && (
                         <div className="mt-2 p-2 bg-slate-100 rounded">
                           <p className="text-xs text-slate-600 mb-1">Admin Notes:</p>
