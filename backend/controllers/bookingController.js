@@ -1138,13 +1138,6 @@ export const assignDriverToBooking = async (req, res) => {
     const { id: bookingId } = req.params;
     const { driverId, resetDriverResponse } = req.body;
 
-    if (!driverId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Driver ID is required'
-      });
-    }
-
     // Check if booking exists
     const booking = await Booking.findById(bookingId)
       .populate('bus')
@@ -1154,6 +1147,35 @@ export const assignDriverToBooking = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Booking not found'
+      });
+    }
+
+    // Handle driver assignment removal (when driverId is null)
+    if (driverId === null || driverId === undefined) {
+      booking.assignedDriver = null;
+      booking.driverResponse = null;
+      booking.driverResponseTime = null;
+      
+      await booking.save();
+
+      return res.json({
+        success: true,
+        message: 'Driver assignment removed successfully',
+        booking: {
+          _id: booking._id,
+          bookingId: booking.bookingId,
+          assignedDriver: booking.assignedDriver,
+          driverResponse: booking.driverResponse,
+          driverResponseTime: booking.driverResponseTime
+        }
+      });
+    }
+
+    // Handle driver assignment (when driverId is provided)
+    if (!driverId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Driver ID is required for assignment'
       });
     }
 

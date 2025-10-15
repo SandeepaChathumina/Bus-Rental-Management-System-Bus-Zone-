@@ -19,7 +19,8 @@ import {
   X,
   Plus,
   Download,
-  FileText
+  FileText,
+  RotateCcw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
@@ -414,6 +415,51 @@ const DriverScheduleManagement = () => {
     setSelectedBooking(booking);
     setSelectedDriver('');
     setShowAssignModal(true);
+  };
+
+  const handleResetAssignment = async (booking) => {
+    if (!window.confirm('Are you sure you want to unassign this driver from the booking?')) {
+      return;
+    }
+
+    try {
+      setAssigning(true);
+      const token = localStorage.getItem('token');
+      
+      // Reset driver assignment
+      const response = await axios.patch(
+        `${BACKEND_URL}/api/bookings/${booking._id}/assign-driver`,
+        { 
+          driverId: null
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        // Update local state - remove driver assignment
+        setConfirmedBookings(prev =>
+          prev.map(b =>
+            b._id === booking._id
+              ? { 
+                  ...b, 
+                  assignedDriver: null,
+                  driverResponse: null,
+                  driverResponseTime: null
+                }
+              : b
+          )
+        );
+        
+        toast.success('Driver assignment removed successfully');
+      } else {
+        toast.error('Failed to remove driver assignment: ' + (response.data.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Failed to reset driver assignment:', error);
+      toast.error('Failed to remove driver assignment: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setAssigning(false);
+    }
   };
 
   const checkDriverResponses = () => {
@@ -918,6 +964,14 @@ const DriverScheduleManagement = () => {
       return;
     }
 
+    // Check if driver already has a booking on the same date and time
+    const hasConflict = checkDriverConflict(selectedDriver, selectedBooking);
+
+    if (hasConflict) {
+      toast.error('This driver already has a booking on the same date. One driver can only be assigned to one trip per day.');
+      return;
+    }
+
     try {
       setAssigning(true);
       const token = localStorage.getItem('token');
@@ -993,6 +1047,18 @@ const DriverScheduleManagement = () => {
   const getDriverName = (driverId) => {
     const driver = drivers.find(d => d._id === driverId);
     return driver ? `${driver.user?.firstName || 'N/A'} ${driver.user?.lastName || 'N/A'}` : 'Not Assigned';
+  };
+
+  const checkDriverConflict = (driverId, currentBooking) => {
+    return confirmedBookings.some(booking => {
+      if (booking._id === currentBooking._id) return false; // Skip current booking
+      if (!booking.assignedDriver || booking.assignedDriver !== driverId) return false;
+      
+      // Check if same travel date (one driver per day constraint)
+      const sameDate = new Date(booking.travelDate).toDateString() === new Date(currentBooking.travelDate).toDateString();
+      
+      return sameDate;
+    });
   };
 
   const getStatusColor = (status) => {
@@ -1270,13 +1336,26 @@ const DriverScheduleManagement = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <button
-                      onClick={() => handleAssignDriver(booking)}
-                      className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-2 rounded transition-colors"
-                      title="Assign Driver"
-                    >
-                      <UserCheck className="w-4 h-4" />
-              </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleAssignDriver(booking)}
+                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-2 rounded transition-colors"
+                        title="Assign Driver"
+                      >
+                        <UserCheck className="w-4 h-4" />
+                      </button>
+                      
+                      {booking.assignedDriver && (
+                        <button
+                          onClick={() => handleResetAssignment(booking)}
+                          disabled={assigning}
+                          className="text-red-600 hover:text-red-800 hover:bg-red-100 p-2 rounded transition-colors disabled:opacity-50"
+                          title="Remove Driver Assignment"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1336,12 +1415,26 @@ const DriverScheduleManagement = () => {
                   required
                 >
                   <option value="">Choose a driver...</option>
-                  {drivers?.map((driver) => (
-                    <option key={driver._id} value={driver._id}>
-                      {driver.user?.firstName || 'N/A'} {driver.user?.lastName || 'N/A'} - {driver.licenseNumber || 'N/A'}{driver.experience && driver.experience > 0 ? ` (${driver.experience} years exp)` : ''}
-                    </option>
-                  ))}
+                  {drivers?.map((driver) => {
+                    // Check if driver already has a booking on the same date and time
+                    const hasConflict = checkDriverConflict(driver._id, selectedBooking);
+
+                    return (
+                      <option 
+                        key={driver._id} 
+                        value={driver._id}
+                        disabled={hasConflict}
+                        style={{ color: hasConflict ? '#9CA3AF' : 'inherit' }}
+                      >
+                        {driver.user?.firstName || 'N/A'} {driver.user?.lastName || 'N/A'} - {driver.licenseNumber || 'N/A'}{driver.experience && driver.experience > 0 ? ` (${driver.experience} years exp)` : ''}
+                        {hasConflict ? ' - Already assigned on this date' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Drivers already assigned on the same date are disabled
+                </p>
             </div>
 
             <div className="flex justify-end space-x-3 pt-4">
