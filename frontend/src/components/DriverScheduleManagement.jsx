@@ -35,6 +35,9 @@ const DriverScheduleManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDate, setFilterDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedDriver, setSelectedDriver] = useState('');
@@ -65,7 +68,7 @@ const DriverScheduleManagement = () => {
       console.error('Error filtering bookings:', err);
       setError('Failed to filter bookings');
     }
-  }, [confirmedBookings, searchTerm, filterDate]);
+  }, [confirmedBookings, searchTerm, filterDate, startDate, endDate, statusFilter]);
 
   const fetchConfirmedBookings = async () => {
     try {
@@ -349,13 +352,54 @@ const DriverScheduleManagement = () => {
       });
     }
 
-    // Filter by date
+    // Filter by date range
+    if (startDate || endDate) {
+        filtered = filtered.filter(booking => {
+          if (!booking || !booking.travelDate) return false;
+          const bookingDate = new Date(booking.travelDate);
+          
+          if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            return bookingDate >= start && bookingDate <= end;
+          } else if (startDate) {
+            const start = new Date(startDate);
+            return bookingDate >= start;
+          } else if (endDate) {
+            const end = new Date(endDate);
+            return bookingDate <= end;
+          }
+          return true;
+        });
+      }
+
+    // Keep the old single date filter for backward compatibility
     if (filterDate) {
         const filterDateObj = new Date(filterDate);
         filtered = filtered.filter(booking => {
           if (!booking || !booking.travelDate) return false;
           const bookingDate = new Date(booking.travelDate);
           return bookingDate.toDateString() === filterDateObj.toDateString();
+        });
+      }
+
+    // Filter by driver response status
+    if (statusFilter) {
+        filtered = filtered.filter(booking => {
+          if (!booking) return false;
+          
+          if (statusFilter === 'assigned') {
+            return booking.assignedDriver && !booking.driverResponse;
+          } else if (statusFilter === 'accepted') {
+            return booking.driverResponse === 'accepted';
+          } else if (statusFilter === 'declined') {
+            return booking.driverResponse === 'declined';
+          } else if (statusFilter === 'pending') {
+            return booking.driverResponse === 'pending';
+          } else if (statusFilter === 'unassigned') {
+            return !booking.assignedDriver;
+          }
+          return true;
         });
       }
 
@@ -765,12 +809,22 @@ const DriverScheduleManagement = () => {
   const handleExport = async () => {
     setExportLoading(true);
     try {
+      // Use filtered data if any filters are applied, otherwise use all confirmed bookings
+      const dataToExport = (searchTerm || startDate || endDate || statusFilter || filterDate) 
+        ? filteredBookings 
+        : confirmedBookings;
+      
       if (exportFormat === 'pdf') {
-        exportToPDF(confirmedBookings);
+        exportToPDF(dataToExport);
       } else if (exportFormat === 'csv') {
-        exportToCSV(confirmedBookings);
+        exportToCSV(dataToExport);
       }
-      toast.success('Report exported successfully');
+      
+      const filterInfo = (searchTerm || startDate || endDate || statusFilter || filterDate) 
+        ? ' (filtered data)' 
+        : ' (all data)';
+      
+      toast.success(`Report exported successfully${filterInfo}`);
       setShowExportModal(false);
     } catch (error) {
       console.error('Export error:', error);
@@ -942,7 +996,9 @@ const DriverScheduleManagement = () => {
 
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+      <div className="bg-white rounded-lg border border-blue-200 p-4 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
+          {/* Search Input */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
@@ -953,14 +1009,79 @@ const DriverScheduleManagement = () => {
             className="w-full pl-10 pr-4 py-2 bg-white border border-blue-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
               </div>
+
+          {/* Date Range Filters */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
         <div className="flex items-center space-x-2">
           <Filter className="text-gray-400 w-5 h-5" />
+            </div>
+            
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+              <div className="flex items-center space-x-2">
+                <label className="text-xs text-gray-600 whitespace-nowrap">From:</label>
                 <input
                   type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-            className="bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <label className="text-xs text-gray-600 whitespace-nowrap">To:</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <div className="flex items-center space-x-2">
+              <UserCheck className="text-gray-400 w-5 h-5" />
+              <span className="text-sm font-medium text-gray-700">Status:</span>
+            </div>
+            
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="appearance-none bg-white border border-blue-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-8 cursor-pointer"
+              >
+                <option value="">All Status</option>
+                <option value="unassigned">Unassigned</option>
+                <option value="assigned">Assigned</option>
+                <option value="accepted">Accepted</option>
+                <option value="declined">Declined</option>
+                <option value="pending">Pending</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Clear Filters Button */}
+            {(startDate || endDate || searchTerm || statusFilter) && (
+              <button
+                onClick={() => {
+                  setStartDate('');
+                  setEndDate('');
+                  setSearchTerm('');
+                  setFilterDate('');
+                  setStatusFilter('');
+                }}
+                className="px-3 py-2 text-xs bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
               </div>
             </div>
 
@@ -1002,9 +1123,9 @@ const DriverScheduleManagement = () => {
                       {booking.route?.from || 'N/A'} → {booking.route?.to || 'N/A'}
         </div>
                     {booking.route?.estimatedDuration && (
-                      <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500">
                         {booking.route.estimatedDuration}
-                      </div>
+      </div>
                     )}
                     <div className="text-xs text-gray-500">
                       Departure: {formatTime(booking.departureTime)}
@@ -1218,7 +1339,16 @@ const DriverScheduleManagement = () => {
 
             <div className="mb-6 p-3 bg-gray-50 rounded-lg">
               <div className="text-sm text-gray-600">
-                <div className="mb-1">Report will include {confirmedBookings.length} records</div>
+                <div className="mb-1">
+                  Report will include {
+                    (searchTerm || startDate || endDate || statusFilter || filterDate) 
+                      ? filteredBookings.length 
+                      : confirmedBookings.length
+                  } records
+                  {(searchTerm || startDate || endDate || statusFilter || filterDate) && (
+                    <span className="text-blue-600 font-medium"> (filtered data)</span>
+                  )}
+                </div>
                 <div>Generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}</div>
               </div>
           </div>
