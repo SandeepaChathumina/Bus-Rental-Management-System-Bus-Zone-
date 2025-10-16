@@ -50,7 +50,8 @@ import {
   Download,
   Printer,
   CreditCard,
-  DollarSign
+  DollarSign,
+  Star
 } from 'lucide-react';
 
 import toast from 'react-hot-toast';
@@ -990,6 +991,7 @@ const AdminDashboard = () => {
               title: 'AD3412 Bus is not safe',
               description: 'Bus has serious safety concerns and needs immediate attention',
               type: 'complaint',
+              rating: 0,
               userId: { 
                 _id: currentUserId,
                 firstName: currentUser.firstName || 'John', 
@@ -1008,6 +1010,7 @@ const AdminDashboard = () => {
               title: 'Good Sheets',
               description: '247BC Bus have good sheets and it\'s very comfortable',
               type: 'feedback',
+              rating: 4,
               userId: { 
                 _id: currentUserId,
                 firstName: currentUser.firstName || 'John', 
@@ -1020,6 +1023,44 @@ const AdminDashboard = () => {
               admin_reply: null,
               reply_date: null,
               booking_reference: 'BZ-2025-002'
+            },
+            {
+              _id: '3',
+              title: 'Excellent Service!',
+              description: 'The bus was very clean, comfortable and arrived exactly on time. Driver was very professional and helpful.',
+              type: 'feedback',
+              rating: 5,
+              userId: { 
+                _id: currentUserId,
+                firstName: currentUser.firstName || 'John', 
+                lastName: currentUser.lastName || 'Doe' 
+              },
+              user_id: currentUserId,
+              user_name: currentUserName,
+              send_date: new Date('2025-09-19T15:30:00').toISOString(),
+              status: 'replied',
+              admin_reply: 'Thank you for your positive feedback! We are happy to hear that you had a great experience.',
+              reply_date: new Date('2025-09-19T16:45:00').toISOString(),
+              booking_reference: 'BZ-2025-003'
+            },
+            {
+              _id: '4',
+              title: 'Poor AC Performance',
+              description: 'The air conditioning was not working properly during the entire journey. Very uncomfortable.',
+              type: 'complaint',
+              rating: 0,
+              userId: { 
+                _id: currentUserId,
+                firstName: currentUser.firstName || 'John', 
+                lastName: currentUser.lastName || 'Doe' 
+              },
+              user_id: currentUserId,
+              user_name: currentUserName,
+              send_date: new Date('2025-09-18T10:15:00').toISOString(),
+              status: 'pending',
+              admin_reply: null,
+              reply_date: null,
+              booking_reference: 'BZ-2025-004'
             }
           ];
           setFeedbacks(mockFeedbacks);
@@ -1060,6 +1101,7 @@ const AdminDashboard = () => {
           title: 'AD3412 Bus is not safe',
           description: 'Bus has serious safety concerns and needs immediate attention',
           type: 'complaint',
+          rating: 0,
           userId: { 
             _id: currentUserId,
             firstName: currentUser.firstName || 'John', 
@@ -1078,6 +1120,7 @@ const AdminDashboard = () => {
           title: 'Good Sheets',
           description: '247BC Bus have good sheets and it\'s very comfortable',
           type: 'feedback',
+          rating: 4,
           userId: { 
             _id: currentUserId,
             firstName: currentUser.firstName || 'John', 
@@ -1090,6 +1133,44 @@ const AdminDashboard = () => {
           admin_reply: null,
           reply_date: null,
           booking_reference: 'BZ-2025-002'
+        },
+        {
+          _id: '3',
+          title: 'Excellent Service!',
+          description: 'The bus was very clean, comfortable and arrived exactly on time. Driver was very professional and helpful.',
+          type: 'feedback',
+          rating: 5,
+          userId: { 
+            _id: currentUserId,
+            firstName: currentUser.firstName || 'John', 
+            lastName: currentUser.lastName || 'Doe' 
+          },
+          user_id: currentUserId,
+          user_name: currentUserName,
+          send_date: new Date('2025-09-19T15:30:00').toISOString(),
+          status: 'replied',
+          admin_reply: 'Thank you for your positive feedback! We are happy to hear that you had a great experience.',
+          reply_date: new Date('2025-09-19T16:45:00').toISOString(),
+          booking_reference: 'BZ-2025-003'
+        },
+        {
+          _id: '4',
+          title: 'Poor AC Performance',
+          description: 'The air conditioning was not working properly during the entire journey. Very uncomfortable.',
+          type: 'complaint',
+          rating: 0,
+          userId: { 
+            _id: currentUserId,
+            firstName: currentUser.firstName || 'John', 
+            lastName: currentUser.lastName || 'Doe' 
+          },
+          user_id: currentUserId,
+          user_name: currentUserName,
+          send_date: new Date('2025-09-18T10:15:00').toISOString(),
+          status: 'pending',
+          admin_reply: null,
+          reply_date: null,
+          booking_reference: 'BZ-2025-004'
         }
       ];
       setFeedbacks(mockFeedbacks);
@@ -1299,6 +1380,24 @@ const AdminDashboard = () => {
       }
     };
 
+    const renderRatingStars = (rating) => {
+      if (!rating || rating === 0) return null;
+      
+      return (
+        <div className="flex items-center mt-2">
+          <div className="flex items-center">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star
+                key={star}
+                className={`h-4 w-4 ${star <= rating ? 'text-amber-500 fill-amber-500' : 'text-slate-300'}`}
+              />
+            ))}
+          </div>
+          <span className="ml-2 text-sm text-slate-500">({rating}/5)</span>
+        </div>
+      );
+    };
+
     return (
       <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
         <div className="flex items-start justify-between">
@@ -1309,6 +1408,13 @@ const AdminDashboard = () => {
             <div className="flex-1">
               <h3 className="text-lg font-medium text-gray-800">{feedback.title}</h3>
               <p className="text-gray-600 mt-1">{feedback.description}</p>
+              
+              {/* Rating Display */}
+              {feedback.rating && feedback.rating > 0 && (
+                <div className="mt-2">
+                  {renderRatingStars(feedback.rating)}
+                </div>
+              )}
               
               <div className="flex items-center mt-2 text-sm text-gray-500">
                 <span>{formatDate(feedback.send_date)}</span>

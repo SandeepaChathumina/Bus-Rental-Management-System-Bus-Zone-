@@ -40,14 +40,13 @@ const Feedback = () => {
     type: 'feedback',
     title: '',
     description: '',
-    rating: 5
+    rating: 0
   });
   const [submitting, setSubmitting] = useState(false);
   const [userId, setUserId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [expandedFeedback, setExpandedFeedback] = useState(null);
   const navigate = useNavigate();
 
@@ -413,7 +412,7 @@ const Feedback = () => {
         feedback.type === 'complaint' 
           ? 'border-rose-100 hover:border-rose-200' 
           : 'border-blue-100 hover:border-blue-200'
-      } ${viewMode === 'list' ? 'max-w-4xl mx-auto' : ''}`}>
+      }`}>
         
         {/* User Info Section - Always at the top */}
         <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-200">
@@ -508,7 +507,7 @@ const Feedback = () => {
           </div>
           
           <div className="flex items-center space-x-2">
-            {canEditFeedback(feedback) ? (
+            {canEditFeedback(feedback) && (
               <>
                 <button
                   onClick={() => handleEdit(feedback)}
@@ -527,14 +526,6 @@ const Feedback = () => {
                   <span>Delete</span>
                 </button>
               </>
-            ) : (
-              <button
-                className="flex items-center space-x-1 px-3 py-1.5 text-slate-400 cursor-not-allowed rounded-lg border border-slate-300"
-                title="Cannot edit after admin response"
-              >
-                <Lock className="h-3.5 w-3.5" />
-                <span>Locked</span>
-              </button>
             )}
           </div>
         </div>
@@ -554,16 +545,6 @@ const Feedback = () => {
                 {feedback.admin_reply}
               </p>
               
-              {feedback.status === 'replied' && (
-                <div className="mt-3 flex justify-end">
-                  <button
-                    onClick={() => toast.success('Feedback reopened')}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium underline"
-                  >
-                    Reopen Feedback
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -581,11 +562,6 @@ const Feedback = () => {
       return;
     }
 
-    if (!formData.description.trim()) {
-      toast.error('Please enter a description');
-      setSubmitting(false);
-      return;
-    }
 
     try {
       const token = localStorage.getItem('token');
@@ -637,7 +613,7 @@ const Feedback = () => {
         type: 'feedback',
         title: '',
         description: '',
-        rating: 5
+        rating: 0
       });
       
       await fetchFeedbacks();
@@ -671,7 +647,7 @@ const Feedback = () => {
       type: feedback.type,
       title: feedback.title,
       description: feedback.description,
-      rating: feedback.rating || 5
+      rating: feedback.rating || 0
     });
     setIsEditing(true);
     setIsFormOpen(true);
@@ -719,9 +695,11 @@ const Feedback = () => {
   };
 
   const handleRatingChange = (rating) => {
+    // If clicking on the same rating that's already selected, set it to 0
+    const newRating = formData.rating === rating ? 0 : rating;
     setFormData({
       ...formData,
-      rating: rating
+      rating: newRating
     });
   };
 
@@ -852,40 +830,6 @@ const Feedback = () => {
                 <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               </div>
 
-              View Mode Toggle
-              <div className="flex border border-slate-200 rounded-xl overflow-hidden">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`flex items-center space-x-2 px-4 py-3 transition-all ${
-                    viewMode === 'grid' 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-white text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="grid grid-cols-2 gap-1 w-4 h-4">
-                    <div className={`rounded-sm ${viewMode === 'grid' ? 'bg-white' : 'bg-slate-400'}`}></div>
-                    <div className={`rounded-sm ${viewMode === 'grid' ? 'bg-white' : 'bg-slate-400'}`}></div>
-                    <div className={`rounded-sm ${viewMode === 'grid' ? 'bg-white' : 'bg-slate-400'}`}></div>
-                    <div className={`rounded-sm ${viewMode === 'grid' ? 'bg-white' : 'bg-slate-400'}`}></div>
-                  </div>
-                  <span className="text-sm font-medium">Grid</span>
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`flex items-center space-x-2 px-4 py-3 transition-all ${
-                    viewMode === 'list' 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-white text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex flex-col space-y-1 w-4 h-4">
-                    <div className={`h-1 rounded-sm ${viewMode === 'list' ? 'bg-white' : 'bg-slate-400'}`}></div>
-                    <div className={`h-1 rounded-sm ${viewMode === 'list' ? 'bg-white' : 'bg-slate-400'}`}></div>
-                    <div className={`h-1 rounded-sm ${viewMode === 'list' ? 'bg-white' : 'bg-slate-400'}`}></div>
-                  </div>
-                  <span className="text-sm font-medium">List</span>
-                </button>
-              </div>
 
               {/* Clear Filters */}
               {(searchTerm || filterType !== 'all' || filterStatus !== 'all') && (
@@ -898,9 +842,6 @@ const Feedback = () => {
               )}
             </div>
 
-            <div className="text-sm text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
-              Showing <span className="font-semibold text-slate-700">{filteredFeedbacks.length}</span> of <span className="font-semibold text-slate-700">{feedbacks.length}</span> feedbacks
-            </div>
           </div>
         </div>
 
@@ -929,11 +870,7 @@ const Feedback = () => {
             )}
           </div>
         ) : (
-          <div className={`grid gap-6 ${
-            viewMode === 'grid' 
-              ? 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3' 
-              : 'grid-cols-1'
-          }`}>
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
             {filteredFeedbacks.map((feedback) => (
               <FeedbackBox key={feedback._id} feedback={feedback} />
             ))}
@@ -958,7 +895,7 @@ const Feedback = () => {
                     type: 'feedback',
                     title: '',
                     description: '',
-                    rating: 5
+                    rating: 0
                   });
                 }}
                 className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
@@ -1063,7 +1000,6 @@ const Feedback = () => {
                   rows={6}
                   placeholder={`Describe your ${formData.type} in detail...`}
                   className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  required
                 />
               </div>
 
@@ -1079,7 +1015,7 @@ const Feedback = () => {
                       type: 'feedback',
                       title: '',
                       description: '',
-                      rating: 5
+                      rating: 0
                     });
                   }}
                   className="px-6 py-2.5 text-slate-600 hover:text-slate-800 border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors"
