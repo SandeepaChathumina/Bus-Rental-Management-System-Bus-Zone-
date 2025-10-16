@@ -1006,7 +1006,8 @@ export const getPaymentStatus = async (req, res) => {
 // Refund payment
 export const processRefund = async (req, res) => {
   try {
-    const { paymentId, reason, amount } = req.body;
+    const { reason, amount } = req.body;
+    const paymentId = req.params.paymentId;
     const userId = req.user._id;
 
     const payment = await Payment.findOne({ 
@@ -1017,23 +1018,51 @@ export const processRefund = async (req, res) => {
       return res.status(404).json({ message: 'Payment not found' });
     }
 
-    if (payment.status !== 'success') {
-      return res.status(400).json({ message: 'Only successful payments can be refunded' });
+    if (payment.status !== 'success' && payment.status !== 'refunded') {
+      return res.status(400).json({ message: 'Only successful or already refunded payments can be processed for refund' });
     }
 
     const refundAmount = amount || payment.amount;
 
     // Process refund based on payment gateway
     let refundResult;
-    if (payment.paymentGateway === 'stripe') {
-      refundResult = await stripe.refunds.create({
-        payment_intent: payment.transactionId,
-        amount: Math.round(refundAmount * 100),
-        reason: 'requested_by_customer'
-      });
+    if (payment.paymentGateway === 'stripe' && payment.transactionId) {
+      try {
+        // Check if transaction ID looks like a Stripe payment intent
+        if (payment.transactionId.startsWith('pi_') || payment.transactionId.startsWith('ch_')) {
+          refundResult = await stripe.refunds.create({
+            payment_intent: payment.transactionId,
+            amount: Math.round(refundAmount * 100),
+            reason: 'requested_by_customer'
+          });
+        } else {
+          // Transaction ID doesn't look like Stripe format, treat as manual
+          console.log(`Transaction ID ${payment.transactionId} doesn't match Stripe format, processing as manual refund`);
+          refundResult = { 
+            id: `manual_ref_${Date.now()}`, 
+            status: 'succeeded',
+            gateway: 'manual',
+            reason: 'Non-Stripe transaction ID format'
+          };
+        }
+      } catch (stripeError) {
+        console.error('Stripe refund error:', stripeError.message);
+        // If Stripe refund fails, process as manual refund
+        refundResult = { 
+          id: `manual_ref_${Date.now()}`, 
+          status: 'succeeded',
+          gateway: 'manual',
+          reason: `Stripe error: ${stripeError.message}`
+        };
+      }
     } else {
-      // Manual refund for non-Stripe payments
-      refundResult = { id: `manual_ref_${Date.now()}`, status: 'succeeded' };
+      // Manual refund for non-Stripe payments or missing transaction ID
+      refundResult = { 
+        id: `manual_ref_${Date.now()}`, 
+        status: 'succeeded',
+        gateway: 'manual',
+        reason: 'Non-Stripe payment gateway'
+      };
     }
 
     // Update payment record
@@ -1067,7 +1096,9 @@ export const processRefund = async (req, res) => {
       refund: {
         refundId: refundResult.id,
         amount: refundAmount,
-        status: refundResult.status === 'succeeded' ? 'processed' : 'failed'
+        status: refundResult.status === 'succeeded' ? 'processed' : 'failed',
+        gateway: refundResult.gateway || payment.paymentGateway,
+        processingNote: refundResult.reason || 'Refund processed'
       }
     });
 

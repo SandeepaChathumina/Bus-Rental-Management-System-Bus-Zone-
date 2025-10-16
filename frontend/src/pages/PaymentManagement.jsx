@@ -218,7 +218,7 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund, onSoftDelete }) 
           <div className="flex items-center text-blue-800">
             <Bus className="h-4 w-4 mr-2" />
             <span className="text-sm font-medium">
-              Booking: {payment.booking.bookingId}
+              Booking Payment
             </span>
           </div>
           <p className="text-xs text-blue-600 mt-1">
@@ -269,13 +269,18 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund, onSoftDelete }) 
           Details
         </button>
 
-        {payment.status === 'success' && (
+        {(payment.status === 'cancelled' || payment.status === 'refunded') && (
           <button
             onClick={() => onProcessRefund(payment)}
-            className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+            disabled={payment.refunds && payment.refunds.length > 1}
+            className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              payment.refunds && payment.refunds.length > 1
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                : 'bg-purple-600 text-white hover:bg-purple-700'
+            }`}
           >
             <ArrowDownRight className="h-4 w-4 mr-2" />
-            Refund
+            {payment.refunds && payment.refunds.length > 1 ? 'Refunded' : 'Refund'}
           </button>
         )}
 
@@ -309,7 +314,7 @@ const PaymentDetailsModal = ({ payment, isOpen, onClose, onProcessRefund }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-blue-200 bg-opacity-70 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -460,14 +465,14 @@ const PaymentDetailsModal = ({ payment, isOpen, onClose, onProcessRefund }) => {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-blue-600">Booking ID</p>
-                  <p className="font-medium text-blue-900">{payment.booking.bookingId}</p>
-                </div>
-                <div>
                   <p className="text-sm text-blue-600">Travel Date</p>
                   <p className="font-medium text-blue-900">
                     {new Date(payment.booking.travelDate).toLocaleDateString()}
                   </p>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-600">Payment Type</p>
+                  <p className="font-medium text-blue-900">Booking Payment</p>
                 </div>
               </div>
             </div>
@@ -490,13 +495,18 @@ const PaymentDetailsModal = ({ payment, isOpen, onClose, onProcessRefund }) => {
 
           {/* Actions */}
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-            {payment.status === 'success' && (
+            {(payment.status === 'cancelled' || payment.status === 'refunded') && (
               <button
                 onClick={() => onProcessRefund(payment)}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"
+                disabled={payment.refunds && payment.refunds.length > 1}
+                className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center ${
+                  payment.refunds && payment.refunds.length > 1
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                }`}
               >
                 <ArrowDownRight className="h-4 w-4 mr-2" />
-                Process Refund
+                {payment.refunds && payment.refunds.length > 1 ? 'Already Refunded' : 'Process Refund'}
               </button>
             )}
             <button
@@ -608,7 +618,6 @@ const PaymentManagement = () => {
         payment.user?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         payment.user?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         payment.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        payment.booking?.bookingId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         payment.maintenance?.maintenanceId?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -654,12 +663,49 @@ const PaymentManagement = () => {
   };
 
   const handleProcessRefund = async (payment) => {
+    // Show payment details for admin review
+    const paymentDetails = `
+Payment Details:
+- Payment ID: ${payment.paymentId}
+- Amount: LKR ${payment.amount.toLocaleString()}
+- Payment Method: ${payment.paymentMethod}
+- Payment Gateway: ${payment.paymentGateway}
+- Transaction ID: ${payment.transactionId}
+
+Customer: ${payment.user?.firstName} ${payment.user?.lastName}
+Email: ${payment.user?.email}
+    `;
+
+    if (!confirm(`${paymentDetails}\n\nDo you want to process a refund for this payment?`)) {
+      return;
+    }
+
     const reason = prompt('Enter refund reason:');
     if (!reason) return;
 
-    const amount = prompt(`Enter refund amount (max: ${payment.amount}):`);
+    const amount = prompt(`Enter refund amount (max: LKR ${payment.amount.toLocaleString()}):`);
     if (!amount || isNaN(amount) || parseFloat(amount) > payment.amount) {
       alert('Invalid amount');
+      return;
+    }
+
+    // Show final confirmation with refund details
+    const refundDetails = `
+Refund Details:
+- Refund Amount: LKR ${parseFloat(amount).toLocaleString()}
+- Reason: ${reason}
+- Payment Gateway: ${payment.paymentGateway}
+- Transaction ID: ${payment.transactionId}
+
+${payment.paymentGateway === 'stripe' 
+  ? 'This will process an automatic refund through Stripe to the customer\'s original payment method.'
+  : 'This will mark the payment for manual refund processing. Please process the refund through your bank/payment system.'
+}
+
+Are you sure you want to proceed?
+    `;
+
+    if (!confirm(refundDetails)) {
       return;
     }
 
@@ -677,8 +723,16 @@ const PaymentManagement = () => {
       );
 
       if (response.data.success) {
-        alert('Refund processed successfully');
+        const refundInfo = response.data.refund;
+        const isStripeRefund = refundInfo?.gateway === 'stripe';
+        const processingNote = refundInfo?.processingNote || '';
+        
+        alert(`Refund processed successfully!\n\nRefund ID: ${refundInfo?.refundId || 'N/A'}\nAmount: LKR ${parseFloat(amount).toLocaleString()}\nGateway: ${refundInfo?.gateway || payment.paymentGateway}\n\n${isStripeRefund 
+          ? 'The refund has been automatically processed to the customer\'s payment method.' 
+          : `Manual refund processed. ${processingNote ? `\nNote: ${processingNote}` : ''}\nPlease process the refund through your bank/payment system.`
+        }`);
         fetchAllPayments();
+        fetchPaymentStats();
       } else {
         alert(response.data.message || 'Failed to process refund');
       }
@@ -734,7 +788,7 @@ const PaymentManagement = () => {
       const margin = 15;
       const contentWidth = pageWidth - (margin * 2);
 
-      // Add BusZone+ Header
+      // Add BusZone+ Header (without logo)
       doc.setFontSize(18);
       doc.setTextColor(59, 130, 246);
       doc.setFont(undefined, 'bold');
@@ -783,175 +837,145 @@ const PaymentManagement = () => {
       
       // Statistics boxes - responsive layout
       const availableWidth = pageWidth - (margin * 2);
-      const boxCount = 4;
+      const boxCount = 5;
       const boxSpacing = 6;
-      const boxWidth = Math.min(35, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
+      const boxWidth = Math.min(30, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
       const boxHeight = 25;
       let currentX = margin;
       
-      // Total Payments box - Blue theme
+      // Total Payments box - Blue theme with white text
       doc.setFillColor(59, 130, 246);
       doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(255, 255, 255); // White text
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
-      doc.text('Total Payments', currentX + 2, statsY + 15);
-      doc.setFontSize(16);
-      doc.text(totalPayments.toString(), currentX + 2, statsY + 22);
+      doc.text(totalPayments.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text('Total Payments', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+      
       currentX += boxWidth + boxSpacing;
       
-      // Total Revenue box - Green theme
-      doc.setFillColor(34, 197, 94);
+      // Success Payments box - Blue theme with white text
+      doc.setFillColor(37, 99, 235);
       doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(255, 255, 255); // White text
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
-      doc.text('Total Revenue', currentX + 2, statsY + 15);
-      doc.setFontSize(14);
-      doc.text(`LKR ${totalAmount.toLocaleString()}`, currentX + 2, statsY + 22);
+      doc.text(successPayments.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text('Success', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+      
       currentX += boxWidth + boxSpacing;
       
-      // Success Rate box - Green theme
-      doc.setFillColor(16, 185, 129);
+      // Pending Payments box - Blue theme with white text
+      doc.setFillColor(29, 78, 216);
       doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(255, 255, 255); // White text
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
-      doc.text('Success Rate', currentX + 2, statsY + 15);
-      doc.setFontSize(16);
-      const successRate = totalPayments > 0 ? Math.round((successPayments / totalPayments) * 100) : 0;
-      doc.text(`${successRate}%`, currentX + 2, statsY + 22);
+      doc.text(pendingPayments.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text('Pending', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+      
       currentX += boxWidth + boxSpacing;
       
-      // Average Amount box - Purple theme
-      doc.setFillColor(147, 51, 234);
+      // Failed Payments box - Blue theme with white text
+      doc.setFillColor(30, 64, 175);
       doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(255, 255, 255); // White text
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
-      doc.text('Avg Amount', currentX + 2, statsY + 15);
-      doc.setFontSize(14);
-      const avgAmount = totalPayments > 0 ? Math.round(totalAmount / totalPayments) : 0;
-      doc.text(`LKR ${avgAmount.toLocaleString()}`, currentX + 2, statsY + 22);
+      doc.text(failedPayments.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text('Failed', currentX + boxWidth/2, statsY + 25, { align: 'center' });
       
-      // Breakdown section
-      const breakdownY = statsY + 45;
+      currentX += boxWidth + boxSpacing;
+      
+      // Total Revenue box - Blue theme with white text
+      doc.setFillColor(14, 165, 233);
+      doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255); // White text
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text(`LKR ${Math.round(totalAmount/1000)}K`, currentX + boxWidth/2, statsY + 18, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text('Total Revenue', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+      
+      // Payment type breakdown table - moved to separate page to prevent overlap
+      const typeTableY = statsY + 50;
       doc.setFontSize(12);
       doc.setTextColor(30, 30, 30);
       doc.setFont(undefined, 'bold');
-      doc.text('Payment Status Breakdown', margin, breakdownY);
+      doc.text('Payment Type Breakdown', margin, typeTableY);
       
-      // Status breakdown boxes
-      const statusBoxWidth = 25;
-      const statusBoxHeight = 20;
-      let statusX = margin;
+      const typeData = [
+        ['Type', 'Count', 'Percentage'],
+        ['Booking', bookingPayments.toString(), `${((bookingPayments/totalPayments)*100).toFixed(1)}%`],
+        ['Maintenance', maintenancePayments.toString(), `${((maintenancePayments/totalPayments)*100).toFixed(1)}%`],
+        ['Salary', salaryPayments.toString(), `${((salaryPayments/totalPayments)*100).toFixed(1)}%`]
+      ];
       
-      // Success
-      doc.setFillColor(34, 197, 94);
-      doc.roundedRect(statusX, breakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
+      autoTable(doc, {
+        startY: typeTableY + 8,
+        head: [typeData[0]],
+        body: typeData.slice(1),
+        styles: { 
+          fontSize: 10, 
+          cellPadding: 4,
+          textColor: [30, 30, 30]
+        },
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: [255, 255, 255],
+          halign: 'center',
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: { 
+          fillColor: [248, 250, 252] 
+        },
+        columnStyles: {
+          0: { halign: 'left' },
+          1: { halign: 'center' },
+          2: { halign: 'center' }
+        },
+        margin: { left: margin, right: margin }
+      });
+
+      // Add new page for payment details table to prevent overlap
+      doc.addPage();
+      
+      // Add header to second page
+      doc.setFontSize(16);
+      doc.setTextColor(59, 130, 246);
+      doc.setFont(undefined, 'bold');
+      doc.text('BusZone+', margin, margin + 10);
+      
       doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Success', statusX + 2, breakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(successPayments.toString(), statusX + 2, breakdownY + 22);
-      statusX += statusBoxWidth + 4;
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      doc.text('Premium Bus Rental Management System', margin, margin + 16);
       
-      // Pending
-      doc.setFillColor(245, 158, 11);
-      doc.roundedRect(statusX, breakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Pending', statusX + 2, breakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(pendingPayments.toString(), statusX + 2, breakdownY + 22);
-      statusX += statusBoxWidth + 4;
-      
-      // Failed
-      doc.setFillColor(239, 68, 68);
-      doc.roundedRect(statusX, breakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Failed', statusX + 2, breakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(failedPayments.toString(), statusX + 2, breakdownY + 22);
-      statusX += statusBoxWidth + 4;
-      
-      // Refunded
-      doc.setFillColor(147, 51, 234);
-      doc.roundedRect(statusX, breakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Refunded', statusX + 2, breakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(refundedPayments.toString(), statusX + 2, breakdownY + 22);
-      
-      // Payment type breakdown
-      const typeBreakdownY = breakdownY + 40;
-      doc.setFontSize(12);
-      doc.setTextColor(30, 30, 30);
-      doc.setFont(undefined, 'bold');
-      doc.text('Payment Type Breakdown', margin, typeBreakdownY);
-      
-      // Type breakdown boxes
-      let typeX = margin;
-      
-      // Booking
-      doc.setFillColor(59, 130, 246);
-      doc.roundedRect(typeX, typeBreakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Booking', typeX + 2, typeBreakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(bookingPayments.toString(), typeX + 2, typeBreakdownY + 22);
-      typeX += statusBoxWidth + 4;
-      
-      // Maintenance
-      doc.setFillColor(245, 158, 11);
-      doc.roundedRect(typeX, typeBreakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Maintenance', typeX + 2, typeBreakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(maintenancePayments.toString(), typeX + 2, typeBreakdownY + 22);
-      typeX += statusBoxWidth + 4;
-      
-      // Salary
-      doc.setFillColor(16, 185, 129);
-      doc.roundedRect(typeX, typeBreakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Salary', typeX + 2, typeBreakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(salaryPayments.toString(), typeX + 2, typeBreakdownY + 22);
-      
-      // Main payment data table
-      const tableStartY = typeBreakdownY + 40;
+      // Main payment data table - now on separate page
+      const tableStartY = margin + 30;
       doc.setFontSize(12);
       doc.setTextColor(30, 30, 30);
       doc.setFont(undefined, 'bold');
       doc.text('Payment Details', margin, tableStartY);
       
-      // Prepare table data
+      // Prepare table data with responsive formatting
       const tableColumns = [
-        { header: 'Payment ID', dataKey: 'paymentId', width: 25 },
-        { header: 'Customer', dataKey: 'customer', width: 35 },
-        { header: 'Amount', dataKey: 'amount', width: 25 },
-        { header: 'Status', dataKey: 'status', width: 20 },
-        { header: 'Type', dataKey: 'type', width: 20 },
-        { header: 'Method', dataKey: 'method', width: 20 },
-        { header: 'Date', dataKey: 'date', width: 25 }
+        { header: 'Payment ID', dataKey: 'paymentId', width: 40 },
+        { header: 'Customer', dataKey: 'customer', width: 50 },
+        { header: 'Amount', dataKey: 'amount', width: 30 },
+        { header: 'Status', dataKey: 'status', width: 25 },
+        { header: 'Type', dataKey: 'type', width: 25 },
+        { header: 'Method', dataKey: 'method', width: 25 },
+        { header: 'Date', dataKey: 'date', width: 30 }
       ];
       
       const tableRows = filteredPayments.map((payment) => ({
-        paymentId: payment.paymentId?.substring(0, 12) + '...',
-        customer: `${payment.user?.firstName || ''} ${payment.user?.lastName || ''}`.trim().substring(0, 20) || 'N/A',
+        paymentId: payment.paymentId?.substring(0, 15) + (payment.paymentId?.length > 15 ? '...' : ''),
+        customer: `${payment.user?.firstName || ''} ${payment.user?.lastName || ''}`.trim().substring(0, 25) || 'N/A',
         amount: `LKR ${payment.amount.toLocaleString()}`,
         status: payment.status?.charAt(0).toUpperCase() + payment.status?.slice(1) || 'N/A',
         type: payment.paymentType?.charAt(0).toUpperCase() + payment.paymentType?.slice(1) || 'N/A',
@@ -959,7 +983,6 @@ const PaymentManagement = () => {
         date: payment.createdAt ? new Date(payment.createdAt).toLocaleDateString('en-GB') : 'N/A'
       }));
 
-      // Use autoTable function properly
       autoTable(doc, {
         startY: tableStartY + 8,
         columns: tableColumns,
@@ -984,13 +1007,13 @@ const PaymentManagement = () => {
           fillColor: [248, 250, 252] 
         },
         columnStyles: {
-          paymentId: { halign: 'center', fontSize: 7, cellWidth: 25 },
-          customer: { halign: 'left', fontSize: 8, cellWidth: 35, overflow: 'linebreak' },
-          amount: { halign: 'right', fontSize: 8, cellWidth: 25 },
-          status: { halign: 'center', fontSize: 8, cellWidth: 20 },
-          type: { halign: 'center', fontSize: 8, cellWidth: 20 },
-          method: { halign: 'center', fontSize: 8, cellWidth: 20 },
-          date: { halign: 'center', fontSize: 7, cellWidth: 25 }
+          paymentId: { halign: 'left', fontSize: 7, cellWidth: 40, overflow: 'linebreak' },
+          customer: { halign: 'left', fontSize: 8, cellWidth: 50, overflow: 'linebreak' },
+          amount: { halign: 'right', fontSize: 8, cellWidth: 30 },
+          status: { halign: 'center', fontSize: 8, cellWidth: 25 },
+          type: { halign: 'center', fontSize: 8, cellWidth: 25 },
+          method: { halign: 'center', fontSize: 8, cellWidth: 25 },
+          date: { halign: 'center', fontSize: 7, cellWidth: 30 }
         },
         margin: { left: margin, right: margin },
         tableWidth: 'auto',
@@ -1074,7 +1097,7 @@ const PaymentManagement = () => {
       payment.paymentMethod,
       payment.paymentGateway,
       payment.transactionId,
-      payment.booking ? `Booking: ${payment.booking.bookingId}` :
+      payment.booking ? `Booking Payment` :
       payment.maintenance ? `Maintenance: ${payment.maintenance.maintenanceId}` :
       'N/A',
       new Date(payment.createdAt).toLocaleString()
@@ -1157,7 +1180,7 @@ const PaymentManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 pt-32 pb-16 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 pt-8 pb-16 px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
