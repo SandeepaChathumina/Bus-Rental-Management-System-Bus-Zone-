@@ -153,7 +153,6 @@ const Chatbot = () => {
         >
           <div className="relative">
             <Bot size={24} className="group-hover:animate-bounce" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
           </div>
         </button>
       )}
@@ -173,7 +172,6 @@ const Chatbot = () => {
             <div className="flex items-center space-x-3">
               <div className="relative">
                 <Bot size={20} className="animate-pulse" />
-                <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
               </div>
               <div>
                 <span className="font-semibold text-sm">Bus Zone Assistant</span>
@@ -230,9 +228,6 @@ const Chatbot = () => {
                           <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.text}</p>
                           <p className="text-xs opacity-70 mt-2 flex items-center space-x-1">
                             <span>{message.timestamp.toLocaleTimeString()}</span>
-                            {message.sender === 'bot' && !message.isError && (
-                              <span className="text-green-500">✓</span>
-                            )}
                           </p>
                         </div>
                         {message.sender === 'user' && (
@@ -248,7 +243,6 @@ const Chatbot = () => {
                       <div className="flex items-center space-x-3">
                         <div className="relative">
                           <Bot size={16} className="text-blue-600" />
-                          <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
                         </div>
                         <div className="flex space-x-1">
                           <div className="w-2 h-2 bg-blue-400 rounded-full typing-dot"></div>
@@ -297,11 +291,6 @@ const Chatbot = () => {
                     🗑️ Clear chat
                   </button>
                   <div className="flex items-center space-x-2">
-                    <div className="flex space-x-1">
-                      <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
-                      <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                    </div>
                     <span className="text-xs text-gray-400">
                       Powered by AI
                     </span>

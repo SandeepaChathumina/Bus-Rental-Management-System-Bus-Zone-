@@ -14,9 +14,10 @@ const busSchema = new mongoose.Schema({
   brand: {
     type: String,
     required: true,
-    enum: ['Toyota', 'Mercedes-Benz', 'Volvo', 'Scania', 'MAN', 'Iveco', 'Hino', 'Isuzu', 'Mitsubishi', 'Nissan', 'Ashok Leyland', 'Tata', 'Other'],
     trim: true,
-    default: 'Toyota'
+    default: 'Toyota',
+    minlength: 2,
+    maxlength: 50
   },
   engineNumber: {
     type: String,
