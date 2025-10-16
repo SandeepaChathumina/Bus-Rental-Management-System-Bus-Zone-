@@ -400,6 +400,24 @@ export const cancelBooking = async (req, res) => {
     
     await booking.save();
 
+    // Update the associated payment status to refunded
+    await Payment.findOneAndUpdate(
+      { booking: booking._id },
+      { 
+        status: 'refunded',
+        $push: {
+          refunds: {
+            amount: booking.totalAmount,
+            reason: 'Booking cancelled by user',
+            processedAt: new Date(),
+            refundId: `REF-${Date.now()}`,
+            status: 'processed'
+          }
+        }
+      },
+      { new: true }
+    );
+
     res.json({ 
       success: true,
       message: 'Booking cancelled successfully',
