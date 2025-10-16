@@ -218,7 +218,7 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund, onSoftDelete }) 
           <div className="flex items-center text-blue-800">
             <Bus className="h-4 w-4 mr-2" />
             <span className="text-sm font-medium">
-              Booking: {payment.booking.bookingId}
+              Booking Payment
             </span>
           </div>
           <p className="text-xs text-blue-600 mt-1">
@@ -460,14 +460,14 @@ const PaymentDetailsModal = ({ payment, isOpen, onClose, onProcessRefund }) => {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-blue-600">Booking ID</p>
-                  <p className="font-medium text-blue-900">{payment.booking.bookingId}</p>
-                </div>
-                <div>
                   <p className="text-sm text-blue-600">Travel Date</p>
                   <p className="font-medium text-blue-900">
                     {new Date(payment.booking.travelDate).toLocaleDateString()}
                   </p>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-600">Payment Type</p>
+                  <p className="font-medium text-blue-900">Booking Payment</p>
                 </div>
               </div>
             </div>
@@ -608,7 +608,6 @@ const PaymentManagement = () => {
         payment.user?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         payment.user?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         payment.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        payment.booking?.bookingId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         payment.maintenance?.maintenanceId?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -1074,7 +1073,7 @@ const PaymentManagement = () => {
       payment.paymentMethod,
       payment.paymentGateway,
       payment.transactionId,
-      payment.booking ? `Booking: ${payment.booking.bookingId}` :
+      payment.booking ? `Booking Payment` :
       payment.maintenance ? `Maintenance: ${payment.maintenance.maintenanceId}` :
       'N/A',
       new Date(payment.createdAt).toLocaleString()
@@ -1157,7 +1156,7 @@ const PaymentManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 pt-32 pb-16 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 pt-8 pb-16 px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
