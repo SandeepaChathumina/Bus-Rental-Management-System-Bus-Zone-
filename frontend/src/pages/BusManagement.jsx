@@ -159,6 +159,10 @@ const BusManagement = () => {
     // Brand validation
     if (!formData.brand) {
       errors.brand = 'Bus brand is required';
+    } else if (formData.brand.trim().length < 2) {
+      errors.brand = 'Brand name must be at least 2 characters';
+    } else if (formData.brand.trim().length > 50) {
+      errors.brand = 'Brand name must be less than 50 characters';
     }
 
     // Status validation
@@ -214,6 +218,7 @@ const BusManagement = () => {
       setEditingBus(null);
       setFormData({
         busType: 'Standard',
+        brand: 'Toyota',
         engineNumber: '',
         capacity: '',
         numberPlate: '',
@@ -283,6 +288,23 @@ const BusManagement = () => {
     }
 
     setFormData(newFormData);
+  };
+
+  const handleBrandChange = (e) => {
+    const { value } = e.target;
+    
+    // Clear error when user starts typing
+    if (formErrors.brand) {
+      setFormErrors({
+        ...formErrors,
+        brand: ''
+      });
+    }
+
+    setFormData({
+      ...formData,
+      brand: value
+    });
   };
 
   const handleImageUpload = (imageUrl) => {
@@ -1001,6 +1023,7 @@ const BusManagement = () => {
                   setEditingBus(null);
                   setFormData({
                     busType: 'Standard',
+                    brand: 'Toyota',
                     engineNumber: '',
                     capacity: '',
                     numberPlate: '',
@@ -1047,32 +1070,75 @@ const BusManagement = () => {
                     Bus Brand
                     {editingBus && <span className="text-gray-500 text-xs ml-1">(Cannot be changed)</span>}
                   </label>
-                  <select
-                    name="brand"
-                    value={formData.brand}
-                    onChange={handleInputChange}
-                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
-                      editingBus ? 'cursor-not-allowed opacity-50 border-gray-300' : 'border-blue-300 focus:ring-blue-500'
-                    }`}
-                    required
-                    disabled={editingBus}
-                  >
-                    <option value="Toyota">Toyota</option>
-                    <option value="Mercedes-Benz">Mercedes-Benz</option>
-                    <option value="Volvo">Volvo</option>
-                    <option value="Scania">Scania</option>
-                    <option value="MAN">MAN</option>
-                    <option value="Iveco">Iveco</option>
-                    <option value="Hino">Hino</option>
-                    <option value="Isuzu">Isuzu</option>
-                    <option value="Mitsubishi">Mitsubishi</option>
-                    <option value="Nissan">Nissan</option>
-                    <option value="Ashok Leyland">Ashok Leyland</option>
-                    <option value="Tata">Tata</option>
-                    <option value="Other">Other</option>
-                  </select>
+                  <div className="relative">
+                    <div className="flex border border-blue-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
+                      <select
+                        name="brand"
+                        value={formData.brand}
+                        onChange={handleBrandChange}
+                        className={`flex-1 p-3 bg-white text-gray-800 focus:outline-none transition-colors ${
+                          editingBus 
+                            ? 'cursor-not-allowed opacity-50' 
+                            : formErrors.brand ? 'text-red-500' : ''
+                        }`}
+                        disabled={editingBus}
+                      >
+                        <option value="">Select or type brand...</option>
+                        <option value="Toyota">Toyota</option>
+                        <option value="Mercedes-Benz">Mercedes-Benz</option>
+                        <option value="Volvo">Volvo</option>
+                        <option value="Scania">Scania</option>
+                        <option value="MAN">MAN</option>
+                        <option value="Iveco">Iveco</option>
+                        <option value="Hino">Hino</option>
+                        <option value="Isuzu">Isuzu</option>
+                        <option value="Mitsubishi">Mitsubishi</option>
+                        <option value="Nissan">Nissan</option>
+                        <option value="Ashok Leyland">Ashok Leyland</option>
+                        <option value="Tata">Tata</option>
+                        <option value="Hyundai">Hyundai</option>
+                        <option value="Kia">Kia</option>
+                        <option value="Ford">Ford</option>
+                        <option value="Chevrolet">Chevrolet</option>
+                        <option value="BYD">BYD</option>
+                        <option value="Yutong">Yutong</option>
+                        <option value="King Long">King Long</option>
+                        <option value="Golden Dragon">Golden Dragon</option>
+                        <option value="Dongfeng">Dongfeng</option>
+                        <option value="FAW">FAW</option>
+                        <option value="Xiamen King Long">Xiamen King Long</option>
+                        <option value="Zhongtong">Zhongtong</option>
+                        <option value="Ankai">Ankai</option>
+                        <option value="Higer">Higer</option>
+                        <option value="JAC">JAC</option>
+                        <option value="Foton">Foton</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          name="brand"
+                          value={formData.brand}
+                          onChange={handleBrandChange}
+                          className={`w-full p-3 bg-white text-gray-800 placeholder-gray-400 focus:outline-none transition-colors border-l border-gray-300 ${
+                            editingBus 
+                              ? 'cursor-not-allowed opacity-50' 
+                              : formErrors.brand ? 'text-red-500' : ''
+                          }`}
+                          placeholder="Or type custom brand..."
+                          disabled={editingBus}
+                        />
+                      </div>
+                    </div>
+                  </div>
                   {formErrors.brand && (
                     <p className="text-red-600 text-xs mt-1">{formErrors.brand}</p>
+                  )}
+                  {!editingBus && (
+                    <p className="text-gray-500 text-xs mt-1">
+                      <span className="font-medium">Dropdown:</span> Select from popular brands • 
+                      <span className="font-medium"> Text field:</span> Type any custom brand name
+                    </p>
                   )}
                 </div>
 
@@ -1226,6 +1292,7 @@ const BusManagement = () => {
                     setEditingBus(null);
                     setFormData({
                       busType: 'Standard',
+                      brand: 'Toyota',
                       engineNumber: '',
                       capacity: '',
                       numberPlate: '',
