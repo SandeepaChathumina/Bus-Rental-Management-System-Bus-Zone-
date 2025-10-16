@@ -224,6 +224,21 @@ const AdminLostFound = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
+      
+      // First try to load from localStorage for immediate display
+      const savedItems = localStorage.getItem('buszone_lost_items');
+      if (savedItems) {
+        try {
+          const parsedItems = JSON.parse(savedItems);
+          if (parsedItems && parsedItems.length > 0) {
+            console.log('AdminLostFound.jsx: Loading from localStorage first');
+            setLostItems(parsedItems);
+          }
+        } catch (error) {
+          console.error('Error parsing localStorage data:', error);
+        }
+      }
+      
       const response = await fetch(`${BACKEND_URL}/api/lost-items`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -232,11 +247,28 @@ const AdminLostFound = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setLostItems(data.lostItems || []);
+        const apiItems = data.lostItems || [];
+        setLostItems(apiItems);
+        
+        // Save API data to localStorage
+        try {
+          localStorage.setItem('buszone_lost_items', JSON.stringify(apiItems));
+          console.log('AdminLostFound.jsx: Saved API data to localStorage');
+        } catch (error) {
+          console.error('Error saving API data to localStorage:', error);
+        }
       } else {
         // Fallback mock data
         const mockData = getMockData();
         setLostItems(mockData);
+        
+        // Save mock data to localStorage
+        try {
+          localStorage.setItem('buszone_lost_items', JSON.stringify(mockData));
+          console.log('AdminLostFound.jsx: Saved mock data to localStorage');
+        } catch (error) {
+          console.error('Error saving mock data to localStorage:', error);
+        }
       }
     } catch (error) {
       console.error('Error fetching lost items:', error);
@@ -244,6 +276,14 @@ const AdminLostFound = () => {
       // Use mock data as fallback
       const mockData = getMockData();
       setLostItems(mockData);
+      
+      // Save mock data to localStorage
+      try {
+        localStorage.setItem('buszone_lost_items', JSON.stringify(mockData));
+        console.log('AdminLostFound.jsx: Saved fallback mock data to localStorage');
+      } catch (error) {
+        console.error('Error saving fallback mock data to localStorage:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -821,11 +861,21 @@ const AdminLostFound = () => {
       }
 
       // Update the item in the state
-      setLostItems(prev =>
-        prev.map(item =>
+      setLostItems(prev => {
+        const updatedItems = prev.map(item =>
           item._id === replyingItem._id ? { ...item, ...updatedItem } : item
-        )
-      );
+        );
+        
+        // Save to localStorage for persistence
+        try {
+          localStorage.setItem('buszone_lost_items', JSON.stringify(updatedItems));
+          console.log('AdminLostFound.jsx: Saved updated items to localStorage');
+        } catch (error) {
+          console.error('Error saving to localStorage:', error);
+        }
+        
+        return updatedItems;
+      });
 
       // Notify user page about the admin reply with status information
       console.log('AdminLostFound.jsx: Dispatching lostItemUpdated event with auto-generated message');
@@ -837,7 +887,8 @@ const AdminLostFound = () => {
           updates: updatedItem,
           source: 'admin',
           adminReply: true,
-          status: selectedStatus
+          status: selectedStatus,
+          user: replyingItem.user // Include user information for proper filtering
         }
       }));
 

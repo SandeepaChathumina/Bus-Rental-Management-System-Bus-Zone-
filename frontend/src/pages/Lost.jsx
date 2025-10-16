@@ -114,11 +114,53 @@ const Lost = () => {
   useEffect(() => {
     const handleLostItemUpdated = (event) => {
       try {
-        const { itemId, updates, source, adminReply } = event.detail;
+        const { itemId, updates, source, adminReply, user: eventUser } = event.detail;
         console.log('Lost.jsx: Received update for item:', itemId, updates, 'from source:', source, 'adminReply:', adminReply);
         console.log('Lost.jsx: Auto-generated message status:', updates.status);
+        console.log('Lost.jsx: Event user:', eventUser, 'Current user:', user?._id);
         
         setLostItems(prev => {
+          // Check if the item exists in current user's items
+          const existingItem = prev.find(item => item._id === itemId);
+          
+          // If item doesn't exist in user's current list, check if it should be added
+          if (!existingItem) {
+            // Only add if it belongs to the current user and has admin reply
+            const belongsToCurrentUser = (eventUser && eventUser._id === user?._id) || 
+                                       (updates.user && updates.user._id === user?._id);
+            if (updates.adminReply && updates.adminReply.trim() !== '' && belongsToCurrentUser) {
+              // Create a new item with the admin reply
+              const newItem = {
+                _id: itemId,
+                ...updates,
+                user: eventUser || updates.user || { _id: user._id }, // Use the user from the event or fallback
+                updatedAt: new Date().toISOString()
+              };
+              
+              // Show notification for new admin reply
+              console.log('Adding new item with admin reply:', newItem);
+              toast.success(`🎉 Admin replied to your lost item! Check the green reply box below.`, {
+                duration: 8000,
+                icon: '💬',
+                style: {
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                  padding: '16px',
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 32px rgba(16, 185, 129, 0.3)'
+                }
+              });
+              
+              const updatedItems = [newItem, ...prev];
+              saveToLocalStorage(updatedItems);
+              return updatedItems;
+            }
+            return prev; // Don't add if it doesn't belong to user
+          }
+          
+          // Update existing item
           const updatedItems = prev.map(item => {
             if (item._id === itemId) {
               const updatedItem = { 
@@ -268,32 +310,80 @@ const Lost = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Add a function to force refresh from localStorage
+  const refreshFromLocalStorage = () => {
+    const savedItems = loadFromLocalStorage();
+    if (savedItems && savedItems.length > 0) {
+      console.log('Lost.jsx: Force refreshing from localStorage');
+      const filteredData = user?.role === 'passenger' 
+        ? savedItems.filter(item => 
+            (item.user && item.user._id === user._id)
+          )
+        : savedItems;
+      
+      // Check for admin replies before updating
+      const itemsWithReplies = filteredData.filter(item => item.adminReply && item.adminReply.trim() !== '');
+      const currentItemsWithReplies = lostItems.filter(item => item.adminReply && item.adminReply.trim() !== '');
+      
+      setLostItems(filteredData);
+      
+      // Log admin replies for debugging
+      console.log('LocalStorage refresh: Total items loaded:', filteredData.length);
+      console.log('LocalStorage refresh: Items with admin replies:', itemsWithReplies.length);
+      if (itemsWithReplies.length > 0) {
+        console.log('LocalStorage refresh: Admin replies found:', itemsWithReplies.map(item => ({
+          itemName: item.itemName,
+          adminReply: item.adminReply,
+          repliedBy: item.repliedBy,
+          status: item.status
+        })));
+        
+        // Show notification if new admin replies are found
+        if (itemsWithReplies.length > currentItemsWithReplies.length) {
+          const newRepliesCount = itemsWithReplies.length - currentItemsWithReplies.length;
+          toast.success(`🎉 Found ${newRepliesCount} new admin reply(ies)! Check the green reply boxes below.`, {
+            duration: 6000,
+            icon: '💬',
+            style: {
+              background: 'linear-gradient(135deg, #10b981, #059669)',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              padding: '16px',
+              borderRadius: '12px',
+              boxShadow: '0 8px 32px rgba(16, 185, 129, 0.3)'
+            }
+          });
+        }
+      }
+    }
+  };
+
   const fetchLostItems = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      
-      // First, try to load from localStorage
-      const savedItems = loadFromLocalStorage();
-      if (savedItems && savedItems.length > 0) {
-        console.log('Loading lost items from localStorage');
-        const filteredData = user?.role === 'passenger' 
-          ? savedItems.filter(item => 
-              (item.user && item.user._id === user._id)
-            )
-          : savedItems;
-        setLostItems(filteredData);
-        setLoading(false);
-        return;
-      }
 
       if (!token) {
         console.warn('No auth token found');
-        setLostItems([]);
+        // Try to load from localStorage as fallback
+        const savedItems = loadFromLocalStorage();
+        if (savedItems && savedItems.length > 0) {
+          console.log('Loading lost items from localStorage (no token)');
+          const filteredData = user?.role === 'passenger' 
+            ? savedItems.filter(item => 
+                (item.user && item.user._id === user._id)
+              )
+            : savedItems;
+          setLostItems(filteredData);
+        } else {
+          setLostItems([]);
+        }
         setLoading(false);
         return;
       }
 
+      // Always try to fetch from API first to get latest data including admin replies
       const response = await fetch(`${BACKEND_URL}/api/lost-items`, {
         method: 'GET',
         headers: {
@@ -303,7 +393,21 @@ const Lost = () => {
       });
 
       if (!response.ok) {
-        console.warn('API not available, using mock data');
+        console.warn('API not available, using localStorage or mock data');
+        // Try localStorage first, then mock data
+        const savedItems = loadFromLocalStorage();
+        if (savedItems && savedItems.length > 0) {
+          console.log('Loading lost items from localStorage (API unavailable)');
+          const filteredData = user?.role === 'passenger' 
+            ? savedItems.filter(item => 
+                (item.user && item.user._id === user._id)
+              )
+            : savedItems;
+          setLostItems(filteredData);
+          setLoading(false);
+          return;
+        }
+        
         // Enhanced mock data with proper sync simulation
         const mockData = [
           {
@@ -371,6 +475,23 @@ const Lost = () => {
             adminReply: item.adminReply,
             repliedBy: item.repliedBy
           })));
+          
+          // Show notification for admin replies found in mock data
+          // setTimeout(() => {
+          //   toast.success(`🎉 You have ${itemsWithReplies.length} admin reply(ies)! Check the green reply boxes below.`, {
+          //     duration: 5000,
+          //     icon: '💬',
+          //     style: {
+          //       background: 'linear-gradient(135deg, #10b981, #059669)',
+          //       color: 'white',
+          //       fontWeight: 'bold',
+          //       fontSize: '14px',
+          //       padding: '16px',
+          //       borderRadius: '12px',
+          //       boxShadow: '0 8px 32px rgba(16, 185, 129, 0.3)'
+          //     }
+          //   });
+          // }, 1000);
         } else {
           console.log('No admin replies found in mock data');
         }
@@ -389,6 +510,38 @@ const Lost = () => {
 
         setLostItems(filteredData);
         saveToLocalStorage(filteredData);
+        
+        // Log admin replies for debugging
+        const itemsWithReplies = filteredData.filter(item => item.adminReply && item.adminReply.trim() !== '');
+        console.log('API: Total items loaded:', filteredData.length);
+        console.log('API: Items with admin replies:', itemsWithReplies.length);
+        if (itemsWithReplies.length > 0) {
+          console.log('API: Admin replies loaded:', itemsWithReplies.map(item => ({
+            itemName: item.itemName,
+            adminReply: item.adminReply,
+            repliedBy: item.repliedBy,
+            status: item.status
+          })));
+          
+          // Show notification for admin replies found on page load
+          setTimeout(() => {
+            toast.success(`🎉 You have ${itemsWithReplies.length} admin reply(ies)! Check the green reply boxes below.`, {
+              duration: 5000,
+              icon: '💬',
+              style: {
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '14px',
+                padding: '16px',
+                borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(16, 185, 129, 0.3)'
+              }
+            });
+          }, 1000);
+        } else {
+          console.log('API: No admin replies found in data');
+        }
       } else {
         console.warn('No lost items data received');
         setLostItems([]);
@@ -699,6 +852,9 @@ const Lost = () => {
     
     const randomReply = adminReplies[Math.floor(Math.random() * adminReplies.length)];
     
+    // Find the item to get user information
+    const item = lostItems.find(item => item._id === itemId);
+    
     // Simulate the real-time event system
     window.dispatchEvent(new CustomEvent('lostItemUpdated', {
       detail: {
@@ -707,10 +863,12 @@ const Lost = () => {
           adminReply: randomReply,
           repliedBy: 'Sandeepa Admin',
           repliedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          status: 'Found'
         },
         source: 'admin',
-        adminReply: true
+        adminReply: true,
+        user: item?.user // Include user information
       }
     }));
   };
@@ -902,16 +1060,47 @@ const Lost = () => {
           
           {/* Debug option for admins */}
           {user?.role === 'admin' && (
-            <button
-              onClick={() => {
-                clearLocalStorage();
-                setSidebarOpen(false);
-              }}
-              className="flex items-center w-full px-4 py-3 text-orange-600 hover:bg-orange-50 hover:text-orange-700 rounded-lg mb-2"
-            >
-              <RefreshCw className="w-5 h-5 mr-3" />
-              <span>Clear Local Data</span>
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  clearLocalStorage();
+                  setSidebarOpen(false);
+                }}
+                className="flex items-center w-full px-4 py-3 text-orange-600 hover:bg-orange-50 hover:text-orange-700 rounded-lg mb-2"
+              >
+                <RefreshCw className="w-5 h-5 mr-3" />
+                <span>Clear Local Data</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (lostItems.length > 0) {
+                    const firstItem = lostItems[0];
+                    simulateAdminReply(firstItem._id);
+                    setSidebarOpen(false);
+                    toast.success('Test admin reply sent! Check if it appears in the user view.');
+                  } else {
+                    toast.error('No items to test with. Please create a lost item first.');
+                  }
+                }}
+                className="flex items-center w-full px-4 py-3 text-blue-600 hover:bg-blue-50 hover:text-blue-700 rounded-lg mb-2"
+              >
+                <Reply className="w-5 h-5 mr-3" />
+                <span>Test Admin Reply</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  refreshFromLocalStorage();
+                  setSidebarOpen(false);
+                  toast.success('Data refreshed from localStorage!');
+                }}
+                className="flex items-center w-full px-4 py-3 text-green-600 hover:bg-green-50 hover:text-green-700 rounded-lg mb-2"
+              >
+                <RefreshCw className="w-5 h-5 mr-3" />
+                <span>Refresh from Storage</span>
+              </button>
+            </>
           )}
           
           <button
