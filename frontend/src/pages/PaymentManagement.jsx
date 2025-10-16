@@ -272,10 +272,15 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund, onSoftDelete }) 
         {(payment.status === 'cancelled' || payment.status === 'refunded') && (
           <button
             onClick={() => onProcessRefund(payment)}
-            className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+            disabled={payment.status === 'refunded' && payment.refunds && payment.refunds.length > 0}
+            className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              payment.status === 'refunded' && payment.refunds && payment.refunds.length > 0
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                : 'bg-purple-600 text-white hover:bg-purple-700'
+            }`}
           >
             <ArrowDownRight className="h-4 w-4 mr-2" />
-            Refund
+            {payment.status === 'refunded' && payment.refunds && payment.refunds.length > 0 ? 'Refunded' : 'Refund'}
           </button>
         )}
 
@@ -493,10 +498,15 @@ const PaymentDetailsModal = ({ payment, isOpen, onClose, onProcessRefund }) => {
             {(payment.status === 'cancelled' || payment.status === 'refunded') && (
               <button
                 onClick={() => onProcessRefund(payment)}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"
+                disabled={payment.status === 'refunded' && payment.refunds && payment.refunds.length > 0}
+                className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center ${
+                  payment.status === 'refunded' && payment.refunds && payment.refunds.length > 0
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                }`}
               >
                 <ArrowDownRight className="h-4 w-4 mr-2" />
-                Process Refund
+                {payment.status === 'refunded' && payment.refunds && payment.refunds.length > 0 ? 'Already Refunded' : 'Process Refund'}
               </button>
             )}
             <button
@@ -653,12 +663,49 @@ const PaymentManagement = () => {
   };
 
   const handleProcessRefund = async (payment) => {
+    // Show payment details for admin review
+    const paymentDetails = `
+Payment Details:
+- Payment ID: ${payment.paymentId}
+- Amount: LKR ${payment.amount.toLocaleString()}
+- Payment Method: ${payment.paymentMethod}
+- Payment Gateway: ${payment.paymentGateway}
+- Transaction ID: ${payment.transactionId}
+
+Customer: ${payment.user?.firstName} ${payment.user?.lastName}
+Email: ${payment.user?.email}
+    `;
+
+    if (!confirm(`${paymentDetails}\n\nDo you want to process a refund for this payment?`)) {
+      return;
+    }
+
     const reason = prompt('Enter refund reason:');
     if (!reason) return;
 
-    const amount = prompt(`Enter refund amount (max: ${payment.amount}):`);
+    const amount = prompt(`Enter refund amount (max: LKR ${payment.amount.toLocaleString()}):`);
     if (!amount || isNaN(amount) || parseFloat(amount) > payment.amount) {
       alert('Invalid amount');
+      return;
+    }
+
+    // Show final confirmation with refund details
+    const refundDetails = `
+Refund Details:
+- Refund Amount: LKR ${parseFloat(amount).toLocaleString()}
+- Reason: ${reason}
+- Payment Gateway: ${payment.paymentGateway}
+- Transaction ID: ${payment.transactionId}
+
+${payment.paymentGateway === 'stripe' 
+  ? 'This will process an automatic refund through Stripe to the customer\'s original payment method.'
+  : 'This will mark the payment for manual refund processing. Please process the refund through your bank/payment system.'
+}
+
+Are you sure you want to proceed?
+    `;
+
+    if (!confirm(refundDetails)) {
       return;
     }
 
@@ -676,8 +723,16 @@ const PaymentManagement = () => {
       );
 
       if (response.data.success) {
-        alert('Refund processed successfully');
+        const refundInfo = response.data.refund;
+        const isStripeRefund = refundInfo?.gateway === 'stripe';
+        const processingNote = refundInfo?.processingNote || '';
+        
+        alert(`Refund processed successfully!\n\nRefund ID: ${refundInfo?.refundId || 'N/A'}\nAmount: LKR ${parseFloat(amount).toLocaleString()}\nGateway: ${refundInfo?.gateway || payment.paymentGateway}\n\n${isStripeRefund 
+          ? 'The refund has been automatically processed to the customer\'s payment method.' 
+          : `Manual refund processed. ${processingNote ? `\nNote: ${processingNote}` : ''}\nPlease process the refund through your bank/payment system.`
+        }`);
         fetchAllPayments();
+        fetchPaymentStats();
       } else {
         alert(response.data.message || 'Failed to process refund');
       }
