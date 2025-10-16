@@ -476,7 +476,11 @@ const MaintenanceManagement = () => {
       const inProgressMaintenances = maintenances.filter(m => m.status === 'In Progress').length;
       const completedMaintenances = maintenances.filter(m => m.status === 'Completed').length;
       const cancelledMaintenances = maintenances.filter(m => m.status === 'Cancelled').length;
-      const totalCost = maintenances.reduce((sum, m) => sum + (m.actualCost || m.estimatedCost || 0), 0);
+      
+      // Calculate total cost only for completed maintenance requests with actual costs
+      const totalCost = maintenances
+        .filter(m => m.status === 'Completed' && m.actualCost > 0)
+        .reduce((sum, m) => sum + m.actualCost, 0);
       
       // Statistics boxes - matching user management theme
       const availableWidth = pageWidth - (margin * 2);

@@ -666,7 +666,7 @@ const AllBookings = () => {
     
     // Statistics boxes - reduced spacing
     const availableWidth = pageWidth - (margin * 2);
-    const boxCount = 4;
+    const boxCount = 5;
     const boxSpacing = 6;
     const boxWidth = Math.min(40, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
     const boxHeight = 20;
@@ -705,6 +705,18 @@ const AllBookings = () => {
     doc.text(pendingBookings.toString(), currentX + boxWidth/2, statsY + 14, { align: 'center' });
     doc.setFontSize(6);
     doc.text('Pending', currentX + boxWidth/2, statsY + 19, { align: 'center' });
+    
+    currentX += boxWidth + boxSpacing;
+    
+    // Cancelled Bookings box
+    doc.setFillColor(17, 24, 39);
+    doc.roundedRect(currentX, statsY + 5, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text(cancelledBookings.toString(), currentX + boxWidth/2, statsY + 14, { align: 'center' });
+    doc.setFontSize(6);
+    doc.text('Cancelled', currentX + boxWidth/2, statsY + 19, { align: 'center' });
     
     currentX += boxWidth + boxSpacing;
     
