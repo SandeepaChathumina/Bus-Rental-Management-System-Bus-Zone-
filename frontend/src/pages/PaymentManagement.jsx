@@ -272,15 +272,15 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund, onSoftDelete }) 
         {(payment.status === 'cancelled' || payment.status === 'refunded') && (
           <button
             onClick={() => onProcessRefund(payment)}
-            disabled={payment.status === 'refunded' && payment.refunds && payment.refunds.length > 0}
+            disabled={payment.refunds && payment.refunds.length > 1}
             className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              payment.status === 'refunded' && payment.refunds && payment.refunds.length > 0
+              payment.refunds && payment.refunds.length > 1
                 ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                 : 'bg-purple-600 text-white hover:bg-purple-700'
             }`}
           >
             <ArrowDownRight className="h-4 w-4 mr-2" />
-            {payment.status === 'refunded' && payment.refunds && payment.refunds.length > 0 ? 'Refunded' : 'Refund'}
+            {payment.refunds && payment.refunds.length > 1 ? 'Refunded' : 'Refund'}
           </button>
         )}
 
@@ -498,15 +498,15 @@ const PaymentDetailsModal = ({ payment, isOpen, onClose, onProcessRefund }) => {
             {(payment.status === 'cancelled' || payment.status === 'refunded') && (
               <button
                 onClick={() => onProcessRefund(payment)}
-                disabled={payment.status === 'refunded' && payment.refunds && payment.refunds.length > 0}
+                disabled={payment.refunds && payment.refunds.length > 1}
                 className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center ${
-                  payment.status === 'refunded' && payment.refunds && payment.refunds.length > 0
+                  payment.refunds && payment.refunds.length > 1
                     ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                     : 'bg-purple-600 text-white hover:bg-purple-700'
                 }`}
               >
                 <ArrowDownRight className="h-4 w-4 mr-2" />
-                {payment.status === 'refunded' && payment.refunds && payment.refunds.length > 0 ? 'Already Refunded' : 'Process Refund'}
+                {payment.refunds && payment.refunds.length > 1 ? 'Already Refunded' : 'Process Refund'}
               </button>
             )}
             <button
