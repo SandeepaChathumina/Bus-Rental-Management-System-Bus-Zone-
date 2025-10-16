@@ -1,25 +1,33 @@
 import mongoose from 'mongoose';
 
-// Define schema
 const lostItemSchema = new mongoose.Schema({
     itemName: {
         type: String,
-        required: true,
-        trim: true
+        required: [true, 'Item name is required'],
+        trim: true,
+        maxlength: [100, 'Item name cannot exceed 100 characters']
     },
     description: {
         type: String,
-        trim: true
+        trim: true,
+        maxlength: [500, 'Description cannot exceed 500 characters']
     },
     dateLost: {
         type: Date,
-        required: true,
-        default: Date.now
+        required: [true, 'Date lost is required'],
+        validate: {
+            validator: function(value) {
+                return value <= new Date();
+            },
+            message: 'Date lost cannot be in the future'
+        }
     },
     busNumber: {
         type: String,
-        required: true,
-        trim: true
+        required: [true, 'Bus number is required'],
+        trim: true,
+        uppercase: true,
+        match: [/^[A-Z]{2}-\d{4}$/, 'Bus number must be in format: AB-1234']
     },
     status: {
         type: String,
@@ -34,17 +42,19 @@ const lostItemSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: function () {
+        required: function() {
             return this.reportedBy === 'User';
         }
     },
     adminNotes: {
         type: String,
-        trim: true
+        trim: true,
+        maxlength: [1000, 'Admin notes cannot exceed 1000 characters']
     },
     adminReply: {
         type: String,
-        trim: true
+        trim: true,
+        maxlength: [1000, 'Admin reply cannot exceed 1000 characters']
     },
     repliedBy: {
         type: String,
@@ -57,7 +67,11 @@ const lostItemSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Create model
+// Index for better query performance
+lostItemSchema.index({ user: 1, createdAt: -1 });
+lostItemSchema.index({ status: 1 });
+lostItemSchema.index({ busNumber: 1 });
+
 const LostItem = mongoose.model('LostItem', lostItemSchema);
 
 export default LostItem;

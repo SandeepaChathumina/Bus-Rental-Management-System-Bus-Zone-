@@ -1,29 +1,45 @@
 import LostItem from '../models/lostItem.js';
-import User from '../models/user.js';
 
-// @desc    Report a lost item (User or Admin)
+// @desc    Report a lost item
 // @route   POST /api/lost-items
 // @access  Private
 export const reportLostItem = async (req, res) => {
     try {
         const { itemName, description, dateLost, busNumber } = req.body;
 
-        // Basic validation
-        if (!itemName || !busNumber) {
-            return res.status(400).json({ message: 'Item name and bus number are required' });
+        // Validation
+        if (!itemName || !dateLost || !busNumber) {
+            return res.status(400).json({ 
+                message: 'Item name, date lost, and bus number are required' 
+            });
         }
 
-        // Create the lost item record
-        const lostItem = await LostItem.create({
+        // Validate bus number format
+        const busNumberPattern = /^[A-Z]{2}-\d{4}$/;
+        if (!busNumberPattern.test(busNumber)) {
+            return res.status(400).json({ 
+                message: 'Bus number must be in format AB-1234' 
+            });
+        }
+
+        // Validate date is not in the future
+        const lostDate = new Date(dateLost);
+        if (lostDate > new Date()) {
+            return res.status(400).json({ 
+                message: 'Date lost cannot be in the future' 
+            });
+        }
+
+        const lostItem = new LostItem({
             itemName,
             description,
-            dateLost: dateLost || new Date(),
-            busNumber,
+            dateLost: lostDate,
+            busNumber: busNumber.toUpperCase(),
             reportedBy: req.user.role === 'admin' ? 'Admin' : 'User',
-            user: req.user.role === 'passenger' ? req.user._id : undefined,
+            user: req.user.role === 'passenger' ? req.user._id : undefined
         });
 
-        // Populate the user details for the response
+        await lostItem.save();
         await lostItem.populate('user', 'firstName lastName email phone');
 
         res.status(201).json({
@@ -37,23 +53,24 @@ export const reportLostItem = async (req, res) => {
     }
 };
 
-// @desc    Get all lost items (Admin can see all, Users see only their reports)
+// @desc    Get lost items
 // @route   GET /api/lost-items
 // @access  Private
 export const getLostItems = async (req, res) => {
     try {
         let query = {};
-        // If the user is not an admin, only show them their own reports
+
+        // If user is not admin, only show their own items
         if (req.user.role !== 'admin') {
-            query = { user: req.user._id };
+            query.user = req.user._id;
         }
 
         const lostItems = await LostItem.find(query)
             .populate('user', 'firstName lastName email phone')
-            .sort({ createdAt: -1 }); // Newest first
+            .sort({ createdAt: -1 });
 
         res.json({
-            count: lostItems.length,
+            message: 'Lost items retrieved successfully',
             lostItems
         });
 
@@ -63,26 +80,62 @@ export const getLostItems = async (req, res) => {
     }
 };
 
-// @desc    Update a lost item (e.g., mark as found, add admin notes)
+// @desc    Update lost item
 // @route   PUT /api/lost-items/:id
 // @access  Private/Admin
 export const updateLostItem = async (req, res) => {
     try {
-        const { status, adminNotes } = req.body;
-        const allowedUpdates = {};
+        const { itemName, description, dateLost, busNumber, status, adminNotes } = req.body;
 
-        // Only allow updating status and adminNotes
-        if (status) allowedUpdates.status = status;
-        if (adminNotes !== undefined) allowedUpdates.adminNotes = adminNotes;
+        // Validation
+        if (!itemName || !dateLost || !busNumber) {
+            return res.status(400).json({ 
+                message: 'Item name, date lost, and bus number are required' 
+            });
+        }
+
+        // Validate bus number format
+        const busNumberPattern = /^[A-Z]{2}-\d{4}$/;
+        if (!busNumberPattern.test(busNumber)) {
+            return res.status(400).json({ 
+                message: 'Bus number must be in format AB-1234' 
+            });
+        }
+
+        // Validate status if provided
+        if (status && !['Reported', 'Found', 'Claimed', 'Returned'].includes(status)) {
+            return res.status(400).json({ 
+                message: 'Invalid status. Must be one of: Reported, Found, Claimed, Returned' 
+            });
+        }
+
+        // Validate date is not in the future
+        const lostDate = new Date(dateLost);
+        if (lostDate > new Date()) {
+            return res.status(400).json({ 
+                message: 'Date lost cannot be in the future' 
+            });
+        }
+
+        const updateData = {
+            itemName,
+            description,
+            dateLost: lostDate,
+            busNumber: busNumber.toUpperCase()
+        };
+
+        // Add optional fields if provided
+        if (status) updateData.status = status;
+        if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
 
         const lostItem = await LostItem.findByIdAndUpdate(
             req.params.id,
-            allowedUpdates,
-            { new: true, runValidators: true } // Return the updated document and run validation
+            updateData,
+            { new: true, runValidators: true }
         ).populate('user', 'firstName lastName email phone');
 
         if (!lostItem) {
-            return res.status(404).json({ message: 'Lost item report not found' });
+            return res.status(404).json({ message: 'Lost item not found' });
         }
 
         res.json({
@@ -96,24 +149,37 @@ export const updateLostItem = async (req, res) => {
     }
 };
 
-// @desc    Add admin reply to lost item
+// @desc    Add admin reply to lost item and update status
 // @route   POST /api/lost-items/:id/reply
 // @access  Private/Admin
 export const addAdminReply = async (req, res) => {
     try {
-        const { adminReply, repliedBy } = req.body;
+        const { adminReply, repliedBy, status } = req.body;
 
         if (!adminReply) {
             return res.status(400).json({ message: 'Reply message is required' });
         }
 
+        // Validate status if provided
+        if (status && !['Reported', 'Found', 'Claimed', 'Returned'].includes(status)) {
+            return res.status(400).json({ message: 'Invalid status. Must be one of: Reported, Found, Claimed, Returned' });
+        }
+
+        // Prepare update object
+        const updateData = {
+            adminReply,
+            repliedBy: repliedBy || 'Admin',
+            repliedAt: new Date()
+        };
+
+        // Add status to update if provided
+        if (status) {
+            updateData.status = status;
+        }
+
         const lostItem = await LostItem.findByIdAndUpdate(
             req.params.id,
-            { 
-                adminReply,
-                repliedBy: repliedBy || 'Admin',
-                repliedAt: new Date()
-            },
+            updateData,
             { new: true, runValidators: true }
         ).populate('user', 'firstName lastName email phone');
 
@@ -122,7 +188,7 @@ export const addAdminReply = async (req, res) => {
         }
 
         res.json({
-            message: 'Admin reply added successfully',
+            message: status ? `Admin reply added and status updated to ${status} successfully` : 'Admin reply added successfully',
             lostItem
         });
 
@@ -132,7 +198,7 @@ export const addAdminReply = async (req, res) => {
     }
 };
 
-// @desc    Delete a lost item report
+// @desc    Delete lost item
 // @route   DELETE /api/lost-items/:id
 // @access  Private/Admin
 export const deleteLostItem = async (req, res) => {
@@ -140,10 +206,13 @@ export const deleteLostItem = async (req, res) => {
         const lostItem = await LostItem.findByIdAndDelete(req.params.id);
 
         if (!lostItem) {
-            return res.status(404).json({ message: 'Lost item report not found' });
+            return res.status(404).json({ message: 'Lost item not found' });
         }
 
-        res.json({ message: 'Lost item report deleted successfully' });
+        res.json({
+            message: 'Lost item deleted successfully',
+            lostItem
+        });
 
     } catch (error) {
         console.error('Delete lost item error:', error);
