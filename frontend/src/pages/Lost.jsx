@@ -116,6 +116,7 @@ const Lost = () => {
       try {
         const { itemId, updates, source, adminReply } = event.detail;
         console.log('Lost.jsx: Received update for item:', itemId, updates, 'from source:', source, 'adminReply:', adminReply);
+        console.log('Lost.jsx: Auto-generated message status:', updates.status);
         
         setLostItems(prev => {
           const updatedItems = prev.map(item => {
@@ -1066,8 +1067,16 @@ const Lost = () => {
                       <div className="flex items-center mb-1">
                         <h3 className="text-lg font-semibold text-slate-800">{item.itemName}</h3>
                         {item.adminReply && item.adminReply.trim() !== '' && (
-                          <span className="ml-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold animate-pulse">
-                            Admin Replied
+                          <span className={`ml-2 text-white px-2 py-1 rounded-full text-xs font-bold animate-pulse ${
+                            item.status === 'Found' ? 'bg-green-500' :
+                            item.status === 'Claimed' ? 'bg-blue-500' :
+                            item.status === 'Returned' ? 'bg-purple-500' :
+                            'bg-green-500'
+                          }`}>
+                            {item.status === 'Found' ? '🎉 Found & Replied' :
+                             item.status === 'Claimed' ? '📦 Ready for Pickup' :
+                             item.status === 'Returned' ? '✅ Returned' :
+                             'Admin Replied'}
                           </span>
                         )}
                       </div>
@@ -1116,29 +1125,69 @@ const Lost = () => {
                     )}
 
                     {item.adminReply && item.adminReply.trim() !== '' && (
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 mb-4 shadow-lg animate-pulse relative overflow-hidden">
+                      <div className={`rounded-xl p-4 mb-4 shadow-lg relative overflow-hidden ${
+                        item.status === 'Found' ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300' :
+                        item.status === 'Claimed' ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-300' :
+                        item.status === 'Returned' ? 'bg-gradient-to-r from-purple-50 to-violet-50 border-2 border-purple-300' :
+                        'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300'
+                      } animate-pulse`}>
                         {/* Animated background effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-green-100/50 to-emerald-100/50 animate-pulse"></div>
+                        <div className={`absolute inset-0 animate-pulse ${
+                          item.status === 'Found' ? 'bg-gradient-to-r from-green-100/50 to-emerald-100/50' :
+                          item.status === 'Claimed' ? 'bg-gradient-to-r from-blue-100/50 to-cyan-100/50' :
+                          item.status === 'Returned' ? 'bg-gradient-to-r from-purple-100/50 to-violet-100/50' :
+                          'bg-gradient-to-r from-green-100/50 to-emerald-100/50'
+                        }`}></div>
                         
                         <div className="relative z-10">
                           <div className="flex items-start">
-                            <div className="bg-green-500 p-2 rounded-full mr-3 flex-shrink-0 animate-bounce shadow-lg">
+                            <div className={`p-2 rounded-full mr-3 flex-shrink-0 animate-bounce shadow-lg ${
+                              item.status === 'Found' ? 'bg-green-500' :
+                              item.status === 'Claimed' ? 'bg-blue-500' :
+                              item.status === 'Returned' ? 'bg-purple-500' :
+                              'bg-green-500'
+                            }`}>
                               <Reply className="w-4 h-4 text-white" />
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center justify-between mb-2">
-                                <p className="text-sm font-bold text-green-800 flex items-center">
-                                  <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs mr-2 animate-pulse shadow-md">NEW</span>
+                                <p className={`text-sm font-bold flex items-center ${
+                                  item.status === 'Found' ? 'text-green-800' :
+                                  item.status === 'Claimed' ? 'text-blue-800' :
+                                  item.status === 'Returned' ? 'text-purple-800' :
+                                  'text-green-800'
+                                }`}>
+                                  <span className={`px-2 py-1 rounded-full text-xs mr-2 animate-pulse shadow-md ${
+                                    item.status === 'Found' ? 'bg-green-500 text-white' :
+                                    item.status === 'Claimed' ? 'bg-blue-500 text-white' :
+                                    item.status === 'Returned' ? 'bg-purple-500 text-white' :
+                                    'bg-green-500 text-white'
+                                  }`}>
+                                    {item.status === 'Found' ? '🎉 FOUND' :
+                                     item.status === 'Claimed' ? '📦 CLAIMED' :
+                                     item.status === 'Returned' ? '✅ RETURNED' :
+                                     'NEW'}
+                                  </span>
                                   Admin Reply
                                 </p>
                                 {item.repliedBy && (
-                                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full shadow-sm">
+                                  <span className={`text-xs px-2 py-1 rounded-full shadow-sm ${
+                                    item.status === 'Found' ? 'text-green-600 bg-green-100' :
+                                    item.status === 'Claimed' ? 'text-blue-600 bg-blue-100' :
+                                    item.status === 'Returned' ? 'text-purple-600 bg-purple-100' :
+                                    'text-green-600 bg-green-100'
+                                  }`}>
                                     by {item.repliedBy}
                                   </span>
                                 )}
                               </div>
-                              <div className="bg-white rounded-lg p-3 border border-green-200 shadow-sm">
-                                <p className="text-slate-800 text-sm leading-relaxed">{item.adminReply}</p>
+                              <div className={`rounded-lg p-3 border shadow-sm ${
+                                item.status === 'Found' ? 'bg-white border-green-200' :
+                                item.status === 'Claimed' ? 'bg-white border-blue-200' :
+                                item.status === 'Returned' ? 'bg-white border-purple-200' :
+                                'bg-white border-green-200'
+                              }`}>
+                                <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-line">{item.adminReply}</p>
                               </div>
                               {item.repliedAt && (
                                 <p className="text-xs text-slate-500 mt-2 flex items-center">

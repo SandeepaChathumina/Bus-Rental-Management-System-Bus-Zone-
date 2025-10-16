@@ -3,23 +3,26 @@ import {
     reportLostItem,
     getLostItems,
     updateLostItem,
-    deleteLostItem,
-    addAdminReply
+    addAdminReply,
+    deleteLostItem
 } from '../controllers/lostItemController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// All routes are protected (user must be logged in)
-router.route('/')
-    .post(protect, reportLostItem)
-    .get(protect, getLostItems);
+// All routes are protected
+router.use(protect);
 
+router.route('/')
+    .post(reportLostItem) // Both users and admins can report lost items
+    .get(getLostItems);   // Users see their items, admins see all
+
+// Admin only routes
 router.route('/:id')
-    .put(protect, admin, updateLostItem)
-    .delete(protect, admin, deleteLostItem);
+    .put(admin, updateLostItem)
+    .delete(admin, deleteLostItem);
 
 router.route('/:id/reply')
-    .post(protect, admin, addAdminReply);
+    .post(admin, addAdminReply);
 
 export default router;

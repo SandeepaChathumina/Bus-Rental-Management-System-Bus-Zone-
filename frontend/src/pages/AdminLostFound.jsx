@@ -95,7 +95,7 @@ const ExportModal = ({
 };
 
 const AdminLostFound = () => {
-  const { user } = useAuth(); // FIXED: Changed from authUser to user
+  const { user } = useAuth();
   const navigate = useNavigate();
   
   const [lostItems, setLostItems] = useState([]);
@@ -118,6 +118,25 @@ const AdminLostFound = () => {
   const [selectedStatus, setSelectedStatus] = useState('Reported');
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingItem, setViewingItem] = useState(null);
+
+  // Auto-generated message templates
+  const generateAutoMessage = (status, itemName, userName) => {
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    const templates = {
+      'Found': `🎉 Great news! We have successfully located your lost item "${itemName}" from your recent bus journey.`,
+      
+      'Claimed': `📦 Your lost item "${itemName}" is now ready for pickup!`,
+      
+      'Returned': `✅ Excellent news! Your lost item "${itemName}" has been successfully returned to you.`
+    };
+    
+    return templates[status] || '';
+  };
 
   // Form state
   const [formData, setFormData] = useState({
@@ -164,10 +183,7 @@ const AdminLostFound = () => {
       try {
         const { itemId } = event.detail;
         console.log('AdminLostFound.jsx: Received delete for item:', itemId);
-        setLostItems(prev => {
-          const updatedItems = prev.filter(item => item._id !== itemId);
-          return updatedItems;
-        });
+        setLostItems(prev => prev.filter(item => item._id !== itemId));
         toast.info('A lost item report has been removed by user');
       } catch (error) {
         console.error('Error handling lost item deletion:', error);
@@ -745,7 +761,7 @@ const AdminLostFound = () => {
         body: JSON.stringify({
           adminReply: finalReplyMessage,
           status: selectedStatus,
-          repliedBy: user?.firstName || 'Admin' // FIXED: Changed from authUser to user
+          repliedBy: user?.firstName || 'Admin'
         })
       });
 
@@ -755,7 +771,7 @@ const AdminLostFound = () => {
         updatedItem = {
           adminReply: finalReplyMessage,
           status: selectedStatus,
-          repliedBy: user?.firstName || 'Admin', // FIXED: Changed from authUser to user
+          repliedBy: user?.firstName || 'Admin',
           repliedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -812,6 +828,9 @@ const AdminLostFound = () => {
       );
 
       // Notify user page about the admin reply with status information
+      console.log('AdminLostFound.jsx: Dispatching lostItemUpdated event with auto-generated message');
+      console.log('AdminLostFound.jsx: Status:', selectedStatus, 'Message:', finalReplyMessage);
+      
       window.dispatchEvent(new CustomEvent('lostItemUpdated', {
         detail: {
           itemId: replyingItem._id,
@@ -1122,8 +1141,17 @@ const AdminLostFound = () => {
                       <button
                         onClick={() => {
                           setReplyingItem(item);
-                          setReplyMessage(item.adminReply || '');
                           setSelectedStatus(item.status || 'Reported');
+                          
+                          // Auto-generate message if status is Found, Claimed, or Returned
+                          if (['Found', 'Claimed', 'Returned'].includes(item.status)) {
+                            const userName = item?.user ? `${item.user.firstName} ${item.user.lastName}` : 'Valued Customer';
+                            const autoMessage = generateAutoMessage(item.status, item?.itemName || 'your item', userName);
+                            setReplyMessage(autoMessage);
+                          } else {
+                            setReplyMessage(item.adminReply || '');
+                          }
+                          
                           setShowReplyForm(true);
                         }}
                         className="px-3 py-1 text-green-600 hover:text-green-700 transition-colors flex items-center text-sm hover:bg-green-50 rounded"
@@ -1199,7 +1227,20 @@ const AdminLostFound = () => {
                 </label>
                 <select
                   value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  onChange={(e) => {
+                    const newStatus = e.target.value;
+                    setSelectedStatus(newStatus);
+                    
+                    // Auto-generate message for Found, Claimed, or Returned statuses
+                    if (['Found', 'Claimed', 'Returned'].includes(newStatus)) {
+                      const userName = replyingItem?.user ? `${replyingItem.user.firstName} ${replyingItem.user.lastName}` : 'Valued Customer';
+                      const autoMessage = generateAutoMessage(newStatus, replyingItem?.itemName || 'your item', userName);
+                      setReplyMessage(autoMessage);
+                    } else {
+                      // Clear message for Reported status
+                      setReplyMessage('');
+                    }
+                  }}
                   className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                   required
                 >
@@ -1209,36 +1250,61 @@ const AdminLostFound = () => {
                   <option value="Returned">✅ Returned - Given back to owner</option>
                 </select>
                 <p className="text-xs text-slate-500 mt-1">
-                  {selectedStatus === 'Found' && 'Item has been located and is in our possession'}
-                  {selectedStatus === 'Claimed' && 'Item is ready for pickup by the owner'}
-                  {selectedStatus === 'Returned' && 'Item has been successfully returned to the owner'}
+                  {selectedStatus === 'Found' && 'Item has been located and is in our possession - Auto-message will be generated'}
+                  {selectedStatus === 'Claimed' && 'Item is ready for pickup by the owner - Auto-message will be generated'}
+                  {selectedStatus === 'Returned' && 'Item has been successfully returned to the owner - Auto-message will be generated'}
                   {selectedStatus === 'Reported' && 'Initial report - still searching for item'}
                 </p>
               </div>
 
               {/* Reply Message with Status-Based Placeholder */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  {selectedStatus === 'Found' ? 'Found Notification Message *' :
-                   selectedStatus === 'Returned' ? 'Return Confirmation Message *' :
-                   selectedStatus === 'Claimed' ? 'Pickup Instructions *' :
-                   'Reply Message *'}
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    {selectedStatus === 'Found' ? 'Found Notification Message *' :
+                     selectedStatus === 'Returned' ? 'Return Confirmation Message *' :
+                     selectedStatus === 'Claimed' ? 'Pickup Instructions *' :
+                     'Reply Message *'}
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    {['Found', 'Claimed', 'Returned'].includes(selectedStatus) && (
+                      <>
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                          ✨ Auto-generated
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const userName = replyingItem?.user ? `${replyingItem.user.firstName} ${replyingItem.user.lastName}` : 'Valued Customer';
+                            const autoMessage = generateAutoMessage(selectedStatus, replyingItem?.itemName || 'your item', userName);
+                            setReplyMessage(autoMessage);
+                          }}
+                          className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full hover:bg-blue-200 transition-colors"
+                        >
+                          🔄 Regenerate
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
                 <textarea
                   value={replyMessage}
                   onChange={(e) => setReplyMessage(e.target.value)}
-                  rows={4}
+                  rows={6}
                   className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-sm"
                   placeholder={
-                    selectedStatus === 'Found' ? `Good news! We found your ${replyingItem.itemName}. Please provide details about where and how to collect it...` :
-                    selectedStatus === 'Returned' ? `We're happy to inform you that your ${replyingItem.itemName} has been returned. Add any additional notes...` :
-                    selectedStatus === 'Claimed' ? `Your ${replyingItem.itemName} is ready for pickup. Provide pickup location, timing, and required documents...` :
+                    selectedStatus === 'Found' ? `Good news! We found your ${replyingItem?.itemName}. Please provide details about where and how to collect it...` :
+                    selectedStatus === 'Returned' ? `We're happy to inform you that your ${replyingItem?.itemName} has been returned. Add any additional notes...` :
+                    selectedStatus === 'Claimed' ? `Your ${replyingItem?.itemName} is ready for pickup. Provide pickup location, timing, and required documents...` :
                     'Enter your reply to the user...'
                   }
                   required
                 />
                 <p className="text-xs text-slate-500 mt-1">
-                  This message will be sent to the user with the status update.
+                  {['Found', 'Claimed', 'Returned'].includes(selectedStatus) 
+                    ? 'Auto-generated message - you can edit it before sending to the user.'
+                    : 'This message will be sent to the user with the status update.'
+                  }
                 </p>
               </div>
 
