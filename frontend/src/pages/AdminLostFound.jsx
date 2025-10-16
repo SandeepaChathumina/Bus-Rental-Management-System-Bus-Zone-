@@ -1396,7 +1396,7 @@ const AdminLostFound = () => {
 
       {/* View Item Modal */}
       {showViewModal && viewingItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-blue-100 bg-opacity-90 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-slate-800">Item Details</h2>
@@ -1445,10 +1445,6 @@ const AdminLostFound = () => {
                       <div className="flex justify-between">
                         <span className="text-gray-600">Date Lost:</span>
                         <span className="font-medium">{formatDate(viewingItem.dateLost)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Reported By:</span>
-                        <span className="font-medium">{viewingItem.reportedBy}</span>
                       </div>
                     </div>
                   </div>
@@ -1540,18 +1536,6 @@ const AdminLostFound = () => {
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => {
-                    setShowViewModal(false);
-                    setViewingItem(null);
-                  }}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
-                >
-                  Close
-                </button>
-              </div>
             </div>
           </div>
         </div>

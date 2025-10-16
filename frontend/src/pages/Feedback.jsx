@@ -852,7 +852,7 @@ const Feedback = () => {
                 <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               </div>
 
-              {/* View Mode Toggle */}
+              View Mode Toggle
               <div className="flex border border-slate-200 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setViewMode('grid')}

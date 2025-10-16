@@ -4,8 +4,8 @@ const createFeedback = async (req, res) => {
   try {
     const { booking_id, type, title, description, rating } = req.body;
 
-    if (!type || !title || !description) {
-      return res.status(400).json({ message: 'Type, title and description are required' });
+    if (!type || !title) {
+      return res.status(400).json({ message: 'Type and title are required' });
     }
 
     const feedback = await Feedback.create({

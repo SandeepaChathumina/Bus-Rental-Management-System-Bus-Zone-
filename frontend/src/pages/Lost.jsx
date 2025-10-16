@@ -64,7 +64,7 @@ const Lost = () => {
 
   // Bus number validation function
   const validateBusNumber = (busNumber) => {
-    const busNumberPattern = /^[A-Z]{2}-\d{4}$/;
+    const busNumberPattern = /^N[A-Z]-\d{4}$/;
     return busNumberPattern.test(busNumber.trim());
   };
 
@@ -74,7 +74,7 @@ const Lost = () => {
       return 'Bus number is required';
     }
     if (!validateBusNumber(busNumber)) {
-      return 'Bus number must be in format AD-9876 (2 capital letters, dash, 4 digits)';
+      return 'Bus number must be in format NU-9861 (N + capital letter + dash + 4 digits)';
     }
     return null;
   };
@@ -301,14 +301,6 @@ const Lost = () => {
   }, [user]);
 
 
-  // Auto-refresh every 30 seconds for better sync
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchLostItems();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Add a function to force refresh from localStorage
   const refreshFromLocalStorage = () => {
@@ -476,22 +468,6 @@ const Lost = () => {
             repliedBy: item.repliedBy
           })));
           
-          // Show notification for admin replies found in mock data
-          // setTimeout(() => {
-          //   toast.success(`🎉 You have ${itemsWithReplies.length} admin reply(ies)! Check the green reply boxes below.`, {
-          //     duration: 5000,
-          //     icon: '💬',
-          //     style: {
-          //       background: 'linear-gradient(135deg, #10b981, #059669)',
-          //       color: 'white',
-          //       fontWeight: 'bold',
-          //       fontSize: '14px',
-          //       padding: '16px',
-          //       borderRadius: '12px',
-          //       boxShadow: '0 8px 32px rgba(16, 185, 129, 0.3)'
-          //     }
-          //   });
-          // }, 1000);
         } else {
           console.log('No admin replies found in mock data');
         }
@@ -523,22 +499,6 @@ const Lost = () => {
             status: item.status
           })));
           
-          // Show notification for admin replies found on page load
-          setTimeout(() => {
-            toast.success(`🎉 You have ${itemsWithReplies.length} admin reply(ies)! Check the green reply boxes below.`, {
-              duration: 5000,
-              icon: '💬',
-              style: {
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                color: 'white',
-                fontWeight: 'bold',
-                fontSize: '14px',
-                padding: '16px',
-                borderRadius: '12px',
-                boxShadow: '0 8px 32px rgba(16, 185, 129, 0.3)'
-              }
-            });
-          }, 1000);
         } else {
           console.log('API: No admin replies found in data');
         }
@@ -1288,10 +1248,6 @@ const Lost = () => {
                         <span>Reported: {formatDate(item.createdAt)}</span>
                       </div>
 
-                      <div className="flex items-center text-sm text-slate-700">
-                        {getReportedByIcon(item.reportedBy)}
-                        <span className="ml-2">By: User</span>
-                      </div>
 
                       {item.user && (
                         <div className="flex items-center text-sm text-slate-700">
@@ -1465,7 +1421,7 @@ const Lost = () => {
 
         {/* Report Lost Item Modal */}
         {showReportForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-blue-100 bg-opacity-90 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md border border-blue-200 shadow-xl">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-slate-800">Report Lost Item</h2>
@@ -1535,7 +1491,7 @@ const Lost = () => {
                         ? 'border-red-500 focus:ring-red-500' 
                         : 'border-blue-200 focus:ring-blue-500'
                     }`}
-                    placeholder="e.g., AD-9876"
+                    placeholder="e.g., NU-9861"
                   />
                   {validationErrors.busNumber && (
                     <p className="mt-1 text-sm text-red-500">{validationErrors.busNumber}</p>
@@ -1568,7 +1524,7 @@ const Lost = () => {
 
         {/* Edit Lost Item Modal */}
         {showEditForm && editingItem && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-blue-100 bg-opacity-90 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md border border-blue-200 shadow-xl">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-slate-800">Edit Lost Item</h2>
@@ -1678,7 +1634,7 @@ const Lost = () => {
                         ? 'border-red-500 focus:ring-red-500' 
                         : 'border-blue-200 focus:ring-blue-500'
                     }`}
-                    placeholder="e.g., AD-9876"
+                    placeholder="e.g., NU-9861"
                   />
                   {validationErrors.busNumber && (
                     <p className="mt-1 text-sm text-red-500">{validationErrors.busNumber}</p>
