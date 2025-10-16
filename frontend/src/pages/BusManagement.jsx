@@ -39,6 +39,7 @@ const BusManagement = () => {
   
   const [formData, setFormData] = useState({
     busType: 'Standard',
+    brand: 'Toyota',
     engineNumber: '',
     capacity: '',
     numberPlate: '',
@@ -83,7 +84,8 @@ const BusManagement = () => {
       filtered = filtered.filter(bus =>
         bus.numberPlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bus.engineNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        bus.busType.toLowerCase().includes(searchTerm.toLowerCase())
+        bus.busType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (bus.brand && bus.brand.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -154,6 +156,11 @@ const BusManagement = () => {
       errors.busType = 'Bus type is required';
     }
 
+    // Brand validation
+    if (!formData.brand) {
+      errors.brand = 'Bus brand is required';
+    }
+
     // Status validation
     if (!formData.status) {
       errors.status = 'Status is required';
@@ -177,6 +184,7 @@ const BusManagement = () => {
       // Prepare data according to backend expectations
       const submitData = {
         busType: formData.busType,
+        brand: formData.brand,
         engineNumber: formData.engineNumber,
         capacity: parseInt(formData.capacity),
         numberPlate: formData.numberPlate.toUpperCase(), // Convert to uppercase for consistency
@@ -226,6 +234,7 @@ const BusManagement = () => {
     setEditingBus(bus);
     setFormData({
       busType: bus.busType,
+      brand: bus.brand || 'Toyota',
       engineNumber: bus.engineNumber,
       capacity: bus.capacity.toString(),
       numberPlate: bus.numberPlate,
@@ -362,6 +371,7 @@ const BusManagement = () => {
         'Bus ID': bus.busId || 'N/A',
         'Number Plate': bus.numberPlate,
         'Bus Type': bus.busType,
+        'Brand': bus.brand || 'N/A',
         'Engine Number': bus.engineNumber,
         'Capacity': `${bus.capacity} seats`,
         'Price Per Day': formatCurrency(bus.pricePerDay),
@@ -379,6 +389,7 @@ const BusManagement = () => {
         { wch: 8 },  // Bus ID
         { wch: 15 }, // Number Plate
         { wch: 12 }, // Bus Type
+        { wch: 15 }, // Brand
         { wch: 20 }, // Engine Number
         { wch: 10 }, // Capacity
         { wch: 15 }, // Price Per Day
@@ -813,6 +824,7 @@ const BusManagement = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Bus ID</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Number Plate</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Brand</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Engine Number</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Capacity</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Price/Day</th>
@@ -846,6 +858,7 @@ const BusManagement = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{bus.busId || 'N/A'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">{bus.numberPlate}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{bus.busType}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">{bus.brand || 'N/A'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">{bus.engineNumber}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{bus.capacity} seats</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
@@ -1027,6 +1040,40 @@ const BusManagement = () => {
                     <option value="Mini">Mini</option>
                     <option value="Double Decker">Double Decker</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bus Brand
+                    {editingBus && <span className="text-gray-500 text-xs ml-1">(Cannot be changed)</span>}
+                  </label>
+                  <select
+                    name="brand"
+                    value={formData.brand}
+                    onChange={handleInputChange}
+                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
+                      editingBus ? 'cursor-not-allowed opacity-50 border-gray-300' : 'border-blue-300 focus:ring-blue-500'
+                    }`}
+                    required
+                    disabled={editingBus}
+                  >
+                    <option value="Toyota">Toyota</option>
+                    <option value="Mercedes-Benz">Mercedes-Benz</option>
+                    <option value="Volvo">Volvo</option>
+                    <option value="Scania">Scania</option>
+                    <option value="MAN">MAN</option>
+                    <option value="Iveco">Iveco</option>
+                    <option value="Hino">Hino</option>
+                    <option value="Isuzu">Isuzu</option>
+                    <option value="Mitsubishi">Mitsubishi</option>
+                    <option value="Nissan">Nissan</option>
+                    <option value="Ashok Leyland">Ashok Leyland</option>
+                    <option value="Tata">Tata</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  {formErrors.brand && (
+                    <p className="text-red-600 text-xs mt-1">{formErrors.brand}</p>
+                  )}
                 </div>
 
                 <div>
