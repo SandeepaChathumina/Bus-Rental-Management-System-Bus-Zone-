@@ -3,7 +3,7 @@ import Bus from "../models/bus.js";
 // Create new bus
 export const createBus = async (req, res) => {
   try {
-    const { busType, engineNumber, capacity, numberPlate, pricePerDay, vehiclePhoto, status } = req.body;
+    const { busType, brand, engineNumber, capacity, numberPlate, pricePerDay, vehiclePhoto, status } = req.body;
 
     // Check if bus already exists with same engine number or number plate
     const existingBus = await Bus.findOne({
@@ -21,6 +21,7 @@ export const createBus = async (req, res) => {
 
     const bus = new Bus({
       busType,
+      brand: brand || 'Toyota',
       engineNumber,
       capacity,
       numberPlate,
@@ -81,7 +82,7 @@ export const getBusById = async (req, res) => {
 // Update bus
 export const updateBus = async (req, res) => {
   try {
-    const { busType, engineNumber, capacity, numberPlate, pricePerDay, vehiclePhoto, status, isActive } = req.body;
+    const { busType, brand, engineNumber, capacity, numberPlate, pricePerDay, vehiclePhoto, status, isActive } = req.body;
 
     // Check for duplicate engine number or number plate excluding current bus
     const existingBus = await Bus.findOne({
@@ -101,6 +102,7 @@ export const updateBus = async (req, res) => {
       req.params.id,
       {
         busType,
+        brand,
         engineNumber,
         capacity,
         numberPlate,

@@ -18,6 +18,7 @@ import {
   Bus,
   Calendar,
   DollarSign,
+  Banknote,
   BarChart3,
   ChevronDown,
   MoreVertical,
@@ -84,26 +85,21 @@ const MaintenanceManagement = () => {
     return new Date().toISOString().split('T')[0];
   };
 
-  // Get tomorrow's date for minimum completion date
-  const getTomorrowDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
-  };
-
   const validateForm = () => {
     const newErrors = {};
 
-    // Required field validation
+    // Only validate required fields when creating new maintenance
+    if (!editingMaintenance) {
     if (!formData.user) newErrors.user = 'Staff member is required';
     if (!formData.bus) newErrors.bus = 'Bus selection is required';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
     if (!formData.estimatedCost || parseFloat(formData.estimatedCost) <= 0) {
       newErrors.estimatedCost = 'Valid estimated cost is required';
+      }
     }
 
-    // Date validation
-    if (formData.estimatedCompletionDate) {
+    // Date validation (only for new maintenance)
+    if (!editingMaintenance && formData.estimatedCompletionDate) {
       const estDate = new Date(formData.estimatedCompletionDate);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -236,19 +232,28 @@ const MaintenanceManagement = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const payload = {
-        ...formData,
-        userId: formData.user,
-        busId: formData.bus,
-        estimatedCost: parseFloat(formData.estimatedCost),
-        actualCost: formData.actualCost ? parseFloat(formData.actualCost) : undefined
-      };
-
+      
       if (editingMaintenance) {
+        // When editing, only send status and related fields
+        const payload = {
+          status: formData.status,
+          actualCost: formData.actualCost ? parseFloat(formData.actualCost) : undefined,
+          actualCompletionDate: formData.actualCompletionDate || undefined
+        };
+        
         await axios.put(`${BACKEND_URL}/api/maintenance/${editingMaintenance._id}`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
+        // When creating, send all fields
+      const payload = {
+        ...formData,
+        user: formData.user,
+        bus: formData.bus,
+        estimatedCost: parseFloat(formData.estimatedCost),
+        actualCost: formData.actualCost ? parseFloat(formData.actualCost) : undefined
+      };
+
         await axios.post(`${BACKEND_URL}/api/maintenance`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -273,6 +278,11 @@ const MaintenanceManagement = () => {
       fetchCostStats();
     } catch (error) {
       console.error('Failed to save maintenance request', error);
+      if (error.response?.data?.message) {
+        alert(`Error: ${error.response.data.message}`);
+      } else {
+        alert('Failed to save maintenance request. Please try again.');
+      }
     }
   };
 
@@ -831,7 +841,7 @@ const MaintenanceManagement = () => {
                     </h3>
                   </div>
                   <div className="p-3 bg-green-100 rounded-full">
-                    <DollarSign className="w-8 h-8 text-green-600" />
+                    <Banknote className="w-8 h-8 text-green-600" />
                   </div>
                 </div>
                 <p className="text-gray-500 text-sm mt-1">Overall maintenance costs</p>
@@ -850,7 +860,7 @@ const MaintenanceManagement = () => {
                     <div>
                           <p className="text-gray-800 font-medium">{maintenance.description}</p>
                           <p className="text-gray-600 text-sm">
-                        Bus: {maintenance.bus?.numberPlate} (ID: {maintenance.bus?._id.substring(0, 8)}...)
+                        Bus: {maintenance.bus?.numberPlate} • {maintenance.bus?.busType}
                       </p>
                     </div>
                   </div>
@@ -893,9 +903,10 @@ const MaintenanceManagement = () => {
         {/* List View Tab - matching user management theme */}
       {activeTab === 'list' && (
           <div className="space-y-6">
-          {/* Filters */}
+          {/* Filters and Add Button */}
             <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
             <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
@@ -932,6 +943,7 @@ const MaintenanceManagement = () => {
                 </div>
             </div>
           </div>
+          </div>
 
           {/* Table */}
             <div className="bg-white rounded-xl border border-blue-200 shadow-lg overflow-hidden">
@@ -957,7 +969,6 @@ const MaintenanceManagement = () => {
                             <Bus className="w-4 h-4 text-gray-400 mr-2" />
                           <div>
                               <div className="text-gray-800 font-medium">{maintenance.bus?.numberPlate}</div>
-                              <div className="text-gray-500 text-sm">ID: {maintenance.bus?._id.substring(0, 8)}...</div>
                               <div className="text-gray-500 text-sm">{maintenance.bus?.busType}</div>
                           </div>
                         </div>
@@ -971,9 +982,6 @@ const MaintenanceManagement = () => {
                           <div>
                               <div className="text-gray-800">
                               {maintenance.user?.firstName} {maintenance.user?.lastName}
-                            </div>
-                              <div className="text-gray-500 text-sm">
-                              {maintenance.user?.staffProfile?.employeeId || 'N/A'}
                             </div>
                           </div>
                         </div>
@@ -1182,7 +1190,7 @@ const MaintenanceManagement = () => {
                     </h3>
                   </div>
                   <div className="p-3 bg-green-100 rounded-full">
-                    <DollarSign className="w-8 h-8 text-green-600" />
+                    <Banknote className="w-8 h-8 text-green-600" />
                   </div>
                 </div>
               </div>
@@ -1311,9 +1319,16 @@ const MaintenanceManagement = () => {
             }}></div>
             <div className="relative bg-white border border-blue-200 rounded-xl p-6 z-60 w-full max-w-4xl shadow-2xl">
               <div className="flex justify-between items-center mb-4">
+                <div>
                 <h3 className="text-lg font-semibold text-gray-800">
                   {editingMaintenance ? 'Edit Maintenance Request' : 'Create Maintenance Request'}
                 </h3>
+                  {editingMaintenance && (
+                    <p className="text-sm text-blue-600 mt-1">
+                      ⚠️ Only status can be changed when editing. All other fields are locked for data integrity.
+                    </p>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     setShowModal(false);
@@ -1340,13 +1355,18 @@ const MaintenanceManagement = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Staff Member *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Staff Member *
+                      {editingMaintenance && <span className="text-gray-500 text-xs ml-1">(Cannot be changed)</span>}
+                    </label>
                     <select
                       name="user"
                       value={formData.user}
                       onChange={handleInputChange}
-                      className={`w-full bg-white border rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.user ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        editingMaintenance 
+                          ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-300' 
+                          : errors.user ? 'bg-white border-red-500 text-gray-800' : 'bg-white border-gray-300 text-gray-800'
                       }`}
                       required
                       disabled={editingMaintenance}
@@ -1354,7 +1374,7 @@ const MaintenanceManagement = () => {
                       <option value="">Select Staff Member</option>
                       {staffUsers.map((user) => (
                         <option key={user._id} value={user._id}>
-                          {user.firstName} {user.lastName} ({user.staffProfile?.employeeId || 'N/A'})
+                          {user.firstName} {user.lastName}
                         </option>
                       ))}
                     </select>
@@ -1362,13 +1382,18 @@ const MaintenanceManagement = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Bus *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Bus *
+                      {editingMaintenance && <span className="text-gray-500 text-xs ml-1">(Cannot be changed)</span>}
+                    </label>
                     <select
                       name="bus"
                       value={formData.bus}
                       onChange={handleInputChange}
-                      className={`w-full bg-white border rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.bus ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        editingMaintenance 
+                          ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-300' 
+                          : errors.bus ? 'bg-white border-red-500 text-gray-800' : 'bg-white border-gray-300 text-gray-800'
                       }`}
                       required
                       disabled={editingMaintenance}
@@ -1376,7 +1401,7 @@ const MaintenanceManagement = () => {
                       <option value="">Select Bus</option>
                       {activeBuses.map((bus) => (
                         <option key={bus._id} value={bus._id}>
-                          {bus.numberPlate} (ID: {bus._id.substring(0, 8)}...) - {bus.busType}
+                          {bus.numberPlate} - {bus.busType}
                         </option>
                       ))}
                     </select>
@@ -1385,29 +1410,43 @@ const MaintenanceManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description *
+                    {editingMaintenance && <span className="text-gray-500 text-xs ml-1">(Cannot be changed)</span>}
+                  </label>
                   <textarea
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    className={`w-full bg-white border rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      errors.description ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      editingMaintenance 
+                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-300' 
+                        : errors.description ? 'bg-white border-red-500 text-gray-800' : 'bg-white border-gray-300 text-gray-800'
                     }`}
                     placeholder="Describe the maintenance issue..."
                     rows={3}
                     required
+                    disabled={editingMaintenance}
                   />
                   {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Priority
+                      {editingMaintenance && <span className="text-gray-500 text-xs ml-1">(Cannot be changed)</span>}
+                    </label>
                     <select
                       name="priority"
                       value={formData.priority}
                       onChange={handleInputChange}
-                      className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        editingMaintenance 
+                          ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-300' 
+                          : 'bg-white border-gray-300 text-gray-800'
+                      }`}
+                      disabled={editingMaintenance}
                     >
                       <option value="Low">Low</option>
                       <option value="Medium">Medium</option>
@@ -1417,17 +1456,23 @@ const MaintenanceManagement = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Estimated Cost (LKR) *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Estimated Cost (LKR) *
+                      {editingMaintenance && <span className="text-gray-500 text-xs ml-1">(Cannot be changed)</span>}
+                    </label>
                     <input
                       type="text"
                       name="estimatedCost"
                       value={formData.estimatedCost}
                       onChange={handleNumberInput}
-                      className={`w-full bg-white border rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.estimatedCost ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        editingMaintenance 
+                          ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-300' 
+                          : errors.estimatedCost ? 'bg-white border-red-500 text-gray-800' : 'bg-white border-gray-300 text-gray-800'
                       }`}
                       placeholder="0.00"
                       required
+                      disabled={editingMaintenance}
                     />
                     {errors.estimatedCost && <p className="text-red-500 text-xs mt-1">{errors.estimatedCost}</p>}
                   </div>
@@ -1435,16 +1480,22 @@ const MaintenanceManagement = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Estimated Completion Date</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Estimated Completion Date
+                      {editingMaintenance && <span className="text-gray-500 text-xs ml-1">(Cannot be changed)</span>}
+                    </label>
                     <input
                       type="date"
                       name="estimatedCompletionDate"
                       value={formData.estimatedCompletionDate}
                       onChange={handleInputChange}
-                      min={getTomorrowDate()}
-                      className={`w-full bg-white border rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.estimatedCompletionDate ? 'border-red-500' : 'border-gray-300'
+                      min={getTodayDate()}
+                      className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        editingMaintenance 
+                          ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-300' 
+                          : errors.estimatedCompletionDate ? 'bg-white border-red-500 text-gray-800' : 'bg-white border-gray-300 text-gray-800'
                       }`}
+                      disabled={editingMaintenance}
                     />
                     {errors.estimatedCompletionDate && (
                       <p className="text-red-500 text-xs mt-1">{errors.estimatedCompletionDate}</p>
@@ -1452,7 +1503,10 @@ const MaintenanceManagement = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Status
+                      {editingMaintenance && <span className="text-blue-600 text-xs ml-1">(Only field that can be changed)</span>}
+                    </label>
                     <select
                       name="status"
                       value={formData.status}

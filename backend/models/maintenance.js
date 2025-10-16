@@ -40,10 +40,28 @@ const maintenanceSchema = new mongoose.Schema({
     default: 0
   },
   estimatedCompletionDate: {
-    type: Date
+    type: Date,
+    validate: {
+      validator: function(value) {
+        if (!value) return true; // Allow empty dates
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Start of today
+        return value >= today; // Must be today or future
+      },
+      message: 'Estimated completion date cannot be in the past'
+    }
   },
   actualCompletionDate: {
-    type: Date
+    type: Date,
+    validate: {
+      validator: function(value) {
+        if (!value) return true; // Allow empty dates
+        const today = new Date();
+        today.setHours(23, 59, 59, 999); // End of today
+        return value <= today; // Must be today or past
+      },
+      message: 'Actual completion date cannot be in the future'
+    }
   }
 }, {
   timestamps: true
