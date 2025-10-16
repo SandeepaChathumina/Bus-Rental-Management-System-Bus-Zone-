@@ -3,42 +3,48 @@ import User from '../models/user.js';
 import Bus from '../models/bus.js';
 import StaffProfile from '../models/staffProfile.js';
 
-// Create new maintenance request (simplified)
+// Create new maintenance request
 export const createMaintenance = async (req, res) => {
   try {
+    console.log('Create maintenance request body:', req.body); // Debug line
+    console.log('User from request:', req.user); // Debug line
+    
     const { 
-      userId, 
-      busId, 
+      user, 
+      bus, 
       description, 
       priority, 
       estimatedCost,
-      estimatedCompletionDate
+      estimatedCompletionDate,
+      actualCompletionDate,
+      status
     } = req.body;
 
     // Check if all required fields are provided
-    if (!userId || !busId || !description || estimatedCost === undefined) {
+    if (!user || !bus || !description || estimatedCost === undefined) {
+      console.log('Missing required fields:', { user, bus, description, estimatedCost }); // Debug line
       return res.status(400).json({
-        message: 'Please provide all required fields: userId, busId, description, estimatedCost'
+        message: 'Please provide all required fields: user, bus, description, estimatedCost'
       });
     }
 
     // Check if user exists and is a staff member
-    const user = await User.findById(userId);
-    if (!user) {
+    const userDoc = await User.findById(user);
+    if (!userDoc) {
       return res.status(404).json({ 
         message: 'User not found. Please provide a valid user ID.' 
       });
     }
 
     // Check if user has staff role
-    if (user.role !== 'staff') {
+    if (userDoc.role !== 'staff') {
       return res.status(400).json({ 
         message: 'Only staff members can create maintenance requests.' 
       });
     }
 
     // Check if staff profile exists for this user
-    const staffProfile = await StaffProfile.findOne({ user: userId });
+    const staffProfile = await StaffProfile.findOne({ user: user });
     if (!staffProfile) {
       return res.status(400).json({ 
         message: 'Staff profile not found for this user.' 
@@ -46,27 +52,54 @@ export const createMaintenance = async (req, res) => {
     }
 
     // Check if bus exists
-    const bus = await Bus.findById(busId);
-    if (!bus) {
+    const busDoc = await Bus.findById(bus);
+    if (!busDoc) {
       return res.status(404).json({ 
         message: 'Bus not found. Please provide a valid bus ID.' 
       });
     }
 
     // Check if bus is active
-    if (!bus.isActive || bus.status === 'Retired') {
+    if (!busDoc.isActive || busDoc.status === 'Retired') {
       return res.status(400).json({ 
         message: 'Cannot create maintenance request for inactive or retired bus.' 
       });
     }
 
+    // Validate estimated completion date
+    if (estimatedCompletionDate) {
+      const estDate = new Date(estimatedCompletionDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (estDate < today) {
+        return res.status(400).json({
+          message: 'Estimated completion date cannot be in the past'
+        });
+      }
+    }
+
+    // Validate actual completion date if provided
+    if (actualCompletionDate) {
+      const actualDate = new Date(actualCompletionDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (actualDate > today) {
+        return res.status(400).json({
+          message: 'Actual completion date cannot be in the future'
+        });
+      }
+    }
+
     const maintenance = new Maintenance({
-      user: userId,
-      bus: busId,
+      user: user,
+      bus: bus,
       description,
       priority: priority || 'Medium',
       estimatedCost,
-      estimatedCompletionDate: estimatedCompletionDate || null
+      estimatedCompletionDate: estimatedCompletionDate || null,
+      status: status || 'Pending'
     });
 
     const savedMaintenance = await maintenance.save();
@@ -74,7 +107,7 @@ export const createMaintenance = async (req, res) => {
     // Populate user and bus details
     const populatedMaintenance = await Maintenance.findById(savedMaintenance._id)
       .populate('user', 'firstName lastName email phone role')
-      .populate('bus', 'busId busType numberPlate capacity status');
+      .populate('bus', 'busId busType brand numberPlate capacity status');
 
     res.status(201).json({
       message: 'Maintenance request created successfully',
@@ -82,11 +115,27 @@ export const createMaintenance = async (req, res) => {
     });
   } catch (error) {
     console.error('Create maintenance error:', error);
+    
     if (error.name === 'CastError') {
       return res.status(400).json({
         message: 'Invalid ID format provided'
       });
     }
+    
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: errors
+      });
+    }
+    
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: 'Duplicate maintenance request found'
+      });
+    }
+    
     res.status(500).json({
       message: 'Server error',
       error: error.message
@@ -97,7 +146,7 @@ export const createMaintenance = async (req, res) => {
 // Get all maintenance requests
 export const getMaintenances = async (req, res) => {
   try {
-    const { status, priority, page = 1, limit = 10 } = req.query;
+    const { status, priority, page, limit } = req.query;
     let filter = {};
     
     if (status) {
@@ -108,21 +157,33 @@ export const getMaintenances = async (req, res) => {
       filter.priority = priority;
     }
 
-    const maintenances = await Maintenance.find(filter)
+    let query = Maintenance.find(filter)
       .populate('user', 'firstName lastName email phone role')
-      .populate('bus', 'busId busType numberPlate capacity status')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .populate('bus', 'busId busType brand numberPlate capacity status')
+      .sort({ createdAt: -1 });
 
-    const total = await Maintenance.countDocuments(filter);
+    // Apply pagination only if page and limit are provided
+    if (page && limit) {
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      query = query.limit(limitNum).skip((pageNum - 1) * limitNum);
+    }
 
-    res.json({
-      total,
-      page: parseInt(page),
-      totalPages: Math.ceil(total / limit),
-      maintenances
-    });
+    const maintenances = await query;
+
+    // Only calculate pagination info if pagination is used
+    let response = { maintenances };
+    if (page && limit) {
+      const total = await Maintenance.countDocuments(filter);
+      response = {
+        total,
+        page: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        maintenances
+      };
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Get maintenances error:', error);
     res.status(500).json({
@@ -137,7 +198,7 @@ export const getMaintenanceById = async (req, res) => {
   try {
     const maintenance = await Maintenance.findById(req.params.id)
       .populate('user', 'firstName lastName email phone role')
-      .populate('bus', 'busId busType numberPlate capacity status');
+      .populate('bus', 'busId busType brand numberPlate capacity status');
 
     if (!maintenance) {
       return res.status(404).json({ message: 'Maintenance request not found' });
@@ -152,7 +213,7 @@ export const getMaintenanceById = async (req, res) => {
   }
 };
 
-// Update maintenance request (simplified)
+// Update maintenance request
 export const updateMaintenance = async (req, res) => {
   try {
     const { 
@@ -165,6 +226,46 @@ export const updateMaintenance = async (req, res) => {
       actualCost
     } = req.body;
 
+    // Validate estimated completion date
+    if (estimatedCompletionDate) {
+      const estDate = new Date(estimatedCompletionDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (estDate < today) {
+        return res.status(400).json({
+          message: 'Estimated completion date cannot be in the past'
+        });
+      }
+    }
+
+    // Validate actual completion date
+    if (actualCompletionDate) {
+      const actualDate = new Date(actualCompletionDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (actualDate > today) {
+        return res.status(400).json({
+          message: 'Actual completion date cannot be in the future'
+        });
+      }
+    }
+
+    // Validate completed status requirements
+    if (status === 'Completed') {
+      if (!actualCompletionDate) {
+        return res.status(400).json({
+          message: 'Actual completion date is required for completed requests'
+        });
+      }
+      if (!actualCost || actualCost <= 0) {
+        return res.status(400).json({
+          message: 'Valid actual cost is required for completed requests'
+        });
+      }
+    }
+
     const updateData = {
       ...(status && { status }),
       ...(priority && { priority }),
@@ -175,7 +276,7 @@ export const updateMaintenance = async (req, res) => {
       ...(actualCost !== undefined && { actualCost })
     };
 
-    // If status is being updated to "Completed", set actual completion date
+    // If status is being updated to "Completed" and no actual completion date provided, set it to today
     if (status === 'Completed' && !actualCompletionDate) {
       updateData.actualCompletionDate = new Date();
     }
@@ -186,7 +287,7 @@ export const updateMaintenance = async (req, res) => {
       { new: true, runValidators: true }
     )
     .populate('user', 'firstName lastName email phone role')
-    .populate('bus', 'busId busType numberPlate capacity status');
+    .populate('bus', 'busId busType brand numberPlate capacity status');
 
     if (!updatedMaintenance) {
       return res.status(404).json({ message: 'Maintenance request not found' });
@@ -198,6 +299,21 @@ export const updateMaintenance = async (req, res) => {
     });
   } catch (error) {
     console.error('Update maintenance error:', error);
+    
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        message: 'Invalid ID format provided'
+      });
+    }
+    
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: errors
+      });
+    }
+    
     res.status(500).json({
       message: 'Server error',
       error: error.message
@@ -297,7 +413,7 @@ export const getActiveBuses = async (req, res) => {
       isActive: true, 
       status: { $ne: 'Retired' } 
     })
-    .select('busId busType numberPlate capacity status')
+    .select('busId busType brand numberPlate capacity status')
     .sort({ busId: 1 });
 
     res.json(buses);
@@ -323,7 +439,7 @@ export const getMaintenanceByUser = async (req, res) => {
 
     const maintenances = await Maintenance.find({ user: userId })
       .populate('user', 'firstName lastName email phone role')
-      .populate('bus', 'busId busType numberPlate capacity status')
+      .populate('bus', 'busId busType brand numberPlate capacity status')
       .sort({ createdAt: -1 });
 
     res.json({
@@ -358,7 +474,7 @@ export const getMaintenanceByBus = async (req, res) => {
 
     const maintenances = await Maintenance.find({ bus: busId })
       .populate('user', 'firstName lastName email phone role')
-      .populate('bus', 'busId busType numberPlate capacity status')
+      .populate('bus', 'busId busType brand numberPlate capacity status')
       .sort({ createdAt: -1 });
 
     res.json({

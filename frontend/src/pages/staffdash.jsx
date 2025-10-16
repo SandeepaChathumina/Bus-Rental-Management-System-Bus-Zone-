@@ -20,6 +20,7 @@ import {
   Bus,
   Calendar,
   DollarSign,
+  Banknote,
   BarChart3,
   ChevronDown,
   MoreVertical,
@@ -36,7 +37,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 const StaffDashboard = () => {
   const { user: authUser, logout } = useAuth();
@@ -68,7 +69,6 @@ const StaffDashboard = () => {
   const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
-    user: '',
     bus: '',
     description: '',
     priority: 'Medium',
@@ -148,8 +148,6 @@ const StaffDashboard = () => {
       if (estDate < today) {
         newErrors.estimatedCompletionDate = 'Estimated completion date cannot be in the past';
       }
-    } else {
-      newErrors.estimatedCompletionDate = 'Estimated completion date is required';
     }
 
     // Actual completion date validation (only for completed status)
@@ -284,11 +282,13 @@ const StaffDashboard = () => {
       const token = localStorage.getItem('token');
       const payload = {
         ...formData,
-        userId: authUser._id, // Use logged-in user's ID
-        busId: formData.bus,
+        user: authUser._id, // Use logged-in user's ID
+        bus: formData.bus,
         estimatedCost: parseFloat(formData.estimatedCost),
         actualCost: formData.actualCost ? parseFloat(formData.actualCost) : undefined
       };
+      
+      console.log('Staff dashboard payload:', payload); // Debug line
 
       if (editingMaintenance) {
         await axios.put(`${BACKEND_URL}/api/maintenance/${editingMaintenance._id}`, payload, {
@@ -305,7 +305,6 @@ const StaffDashboard = () => {
       setShowModal(false);
       setEditingMaintenance(null);
       setFormData({
-        user: '',
         bus: '',
         description: '',
         priority: 'Medium',
@@ -327,7 +326,6 @@ const StaffDashboard = () => {
   const handleEdit = (maintenance) => {
     setEditingMaintenance(maintenance);
     setFormData({
-      user: maintenance.user._id,
       bus: maintenance.bus._id,
       description: maintenance.description,
       priority: maintenance.priority,
@@ -886,11 +884,11 @@ const StaffDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
-              <h3 className="text-2xl font-bold text-green-600 mt-1">$125,600</h3>
+              <h3 className="text-2xl font-bold text-green-600 mt-1">LKR 125,600</h3>
               <p className="text-xs text-gray-500 mt-1">+12% from last month</p>
             </div>
             <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-100">
-              <DollarSign className="w-6 h-6 text-green-600" />
+              <Banknote className="w-6 h-6 text-green-600" />
             </div>
           </div>
         </div>
@@ -1434,7 +1432,7 @@ const StaffDashboard = () => {
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Revenue Report</h3>
-            <DollarSign className="w-5 h-5 text-purple-600" />
+            <Banknote className="w-5 h-5 text-purple-600" />
           </div>
           <p className="text-gray-600 text-sm mb-4">Financial performance and revenue analysis</p>
           <button className="w-full px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm">
@@ -1904,7 +1902,6 @@ const StaffDashboard = () => {
                     setShowModal(false);
                     setEditingMaintenance(null);
                     setFormData({
-                      user: '',
                       bus: '',
                       description: '',
                       priority: 'Medium',
@@ -1972,14 +1969,13 @@ const StaffDashboard = () => {
                     Estimated Cost (LKR) <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                     <input
                       ref={estimatedCostRef}
                       type="text"
                       name="estimatedCost"
                       value={formData.estimatedCost}
                       onChange={handleNumberInput}
-                      className={`w-full pl-10 pr-3 py-2 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full px-3 py-2 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         errors.estimatedCost ? 'border-red-500' : 'border-blue-300'
                       }`}
                       placeholder="0.00"
@@ -2042,14 +2038,13 @@ const StaffDashboard = () => {
                         Actual Cost (LKR) <span className="text-red-400">*</span>
                       </label>
                       <div className="relative">
-                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                         <input
                           ref={actualCostRef}
                           type="text"
                           name="actualCost"
                           value={formData.actualCost}
                           onChange={handleNumberInput}
-                          className={`w-full pl-10 pr-3 py-2 bg-slate-700 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          className={`w-full px-3 py-2 bg-slate-700 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                             errors.actualCost ? 'border-red-500' : 'border-slate-600'
                           }`}
                           placeholder="0.00"
@@ -2108,7 +2103,6 @@ const StaffDashboard = () => {
                     setShowModal(false);
                     setEditingMaintenance(null);
                     setFormData({
-                      user: '',
                       bus: '',
                       description: '',
                       priority: 'Medium',
