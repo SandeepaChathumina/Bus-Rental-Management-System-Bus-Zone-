@@ -224,6 +224,21 @@ const AdminLostFound = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
+      
+      // First try to load from localStorage for immediate display
+      const savedItems = localStorage.getItem('buszone_lost_items');
+      if (savedItems) {
+        try {
+          const parsedItems = JSON.parse(savedItems);
+          if (parsedItems && parsedItems.length > 0) {
+            console.log('AdminLostFound.jsx: Loading from localStorage first');
+            setLostItems(parsedItems);
+          }
+        } catch (error) {
+          console.error('Error parsing localStorage data:', error);
+        }
+      }
+      
       const response = await fetch(`${BACKEND_URL}/api/lost-items`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -232,11 +247,28 @@ const AdminLostFound = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setLostItems(data.lostItems || []);
+        const apiItems = data.lostItems || [];
+        setLostItems(apiItems);
+        
+        // Save API data to localStorage
+        try {
+          localStorage.setItem('buszone_lost_items', JSON.stringify(apiItems));
+          console.log('AdminLostFound.jsx: Saved API data to localStorage');
+        } catch (error) {
+          console.error('Error saving API data to localStorage:', error);
+        }
       } else {
         // Fallback mock data
         const mockData = getMockData();
         setLostItems(mockData);
+        
+        // Save mock data to localStorage
+        try {
+          localStorage.setItem('buszone_lost_items', JSON.stringify(mockData));
+          console.log('AdminLostFound.jsx: Saved mock data to localStorage');
+        } catch (error) {
+          console.error('Error saving mock data to localStorage:', error);
+        }
       }
     } catch (error) {
       console.error('Error fetching lost items:', error);
@@ -244,6 +276,14 @@ const AdminLostFound = () => {
       // Use mock data as fallback
       const mockData = getMockData();
       setLostItems(mockData);
+      
+      // Save mock data to localStorage
+      try {
+        localStorage.setItem('buszone_lost_items', JSON.stringify(mockData));
+        console.log('AdminLostFound.jsx: Saved fallback mock data to localStorage');
+      } catch (error) {
+        console.error('Error saving fallback mock data to localStorage:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -821,11 +861,21 @@ const AdminLostFound = () => {
       }
 
       // Update the item in the state
-      setLostItems(prev =>
-        prev.map(item =>
+      setLostItems(prev => {
+        const updatedItems = prev.map(item =>
           item._id === replyingItem._id ? { ...item, ...updatedItem } : item
-        )
-      );
+        );
+        
+        // Save to localStorage for persistence
+        try {
+          localStorage.setItem('buszone_lost_items', JSON.stringify(updatedItems));
+          console.log('AdminLostFound.jsx: Saved updated items to localStorage');
+        } catch (error) {
+          console.error('Error saving to localStorage:', error);
+        }
+        
+        return updatedItems;
+      });
 
       // Notify user page about the admin reply with status information
       console.log('AdminLostFound.jsx: Dispatching lostItemUpdated event with auto-generated message');
@@ -837,7 +887,8 @@ const AdminLostFound = () => {
           updates: updatedItem,
           source: 'admin',
           adminReply: true,
-          status: selectedStatus
+          status: selectedStatus,
+          user: replyingItem.user // Include user information for proper filtering
         }
       }));
 
@@ -1345,7 +1396,7 @@ const AdminLostFound = () => {
 
       {/* View Item Modal */}
       {showViewModal && viewingItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-blue-100 bg-opacity-90 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-slate-800">Item Details</h2>
@@ -1394,10 +1445,6 @@ const AdminLostFound = () => {
                       <div className="flex justify-between">
                         <span className="text-gray-600">Date Lost:</span>
                         <span className="font-medium">{formatDate(viewingItem.dateLost)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Reported By:</span>
-                        <span className="font-medium">{viewingItem.reportedBy}</span>
                       </div>
                     </div>
                   </div>
@@ -1489,18 +1536,6 @@ const AdminLostFound = () => {
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => {
-                    setShowViewModal(false);
-                    setViewingItem(null);
-                  }}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
-                >
-                  Close
-                </button>
-              </div>
             </div>
           </div>
         </div>
