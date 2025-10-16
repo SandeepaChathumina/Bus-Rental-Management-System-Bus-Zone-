@@ -39,7 +39,8 @@ const BusManagement = () => {
   
   const [formData, setFormData] = useState({
     busType: 'Standard',
-    brand: 'Toyota',
+    brand: '',
+    modelName: '',
     engineNumber: '',
     capacity: '',
     numberPlate: '',
@@ -85,7 +86,8 @@ const BusManagement = () => {
         bus.numberPlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bus.engineNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bus.busType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (bus.brand && bus.brand.toLowerCase().includes(searchTerm.toLowerCase()))
+        (bus.brand && bus.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (bus.modelName && bus.modelName.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -121,6 +123,15 @@ const BusManagement = () => {
         if (!customPlateRegex.test(formData.numberPlate)) {
           errors.numberPlate = 'Number plate must start with N, second letter a-f, followed by 4 numbers (e.g., NA1234, NB5678)';
         }
+      }
+    }
+
+    // Model Name validation
+    if (formData.modelName && formData.modelName.trim().length > 0) {
+      if (formData.modelName.trim().length < 2) {
+        errors.modelName = 'Model name must be at least 2 characters long';
+      } else if (formData.modelName.trim().length > 50) {
+        errors.modelName = 'Model name cannot exceed 50 characters';
       }
     }
 
@@ -189,6 +200,7 @@ const BusManagement = () => {
       const submitData = {
         busType: formData.busType,
         brand: formData.brand,
+        modelName: formData.modelName || '',
         engineNumber: formData.engineNumber,
         capacity: parseInt(formData.capacity),
         numberPlate: formData.numberPlate.toUpperCase(), // Convert to uppercase for consistency
@@ -196,6 +208,8 @@ const BusManagement = () => {
         vehiclePhoto: formData.vehiclePhoto || '',
         status: formData.status
       };
+      
+      console.log('Submitting bus data:', submitData);
       
       if (editingBus) {
         // For editing, don't allow changing engine number and number plate
@@ -218,7 +232,8 @@ const BusManagement = () => {
       setEditingBus(null);
       setFormData({
         busType: 'Standard',
-        brand: 'Toyota',
+        brand: '',
+        modelName: '',
         engineNumber: '',
         capacity: '',
         numberPlate: '',
@@ -231,7 +246,16 @@ const BusManagement = () => {
       fetchBuses();
     } catch (error) {
       console.error('Failed to save bus', error);
-      toast.error(error.response?.data?.message || 'Failed to save bus');
+      console.error('Error response:', error.response?.data);
+      
+      if (error.response?.data?.details) {
+        // Handle validation errors
+        const validationErrors = error.response.data.details;
+        const errorMessages = Object.values(validationErrors).map(err => err.message).join(', ');
+        toast.error(`Validation Error: ${errorMessages}`);
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to save bus');
+      }
     }
   };
 
@@ -239,7 +263,8 @@ const BusManagement = () => {
     setEditingBus(bus);
     setFormData({
       busType: bus.busType,
-      brand: bus.brand || 'Toyota',
+      brand: bus.brand || '',
+      modelName: bus.modelName || '',
       engineNumber: bus.engineNumber,
       capacity: bus.capacity.toString(),
       numberPlate: bus.numberPlate,
@@ -290,22 +315,6 @@ const BusManagement = () => {
     setFormData(newFormData);
   };
 
-  const handleBrandChange = (e) => {
-    const { value } = e.target;
-    
-    // Clear error when user starts typing
-    if (formErrors.brand) {
-      setFormErrors({
-        ...formErrors,
-        brand: ''
-      });
-    }
-
-    setFormData({
-      ...formData,
-      brand: value
-    });
-  };
 
   const handleImageUpload = (imageUrl) => {
     setFormData({
@@ -633,6 +642,8 @@ const BusManagement = () => {
         { header: 'ID', dataKey: 'id', width: 20 },
         { header: 'Number Plate', dataKey: 'numberPlate', width: 30 },
         { header: 'Type', dataKey: 'type', width: 25 },
+        { header: 'Brand', dataKey: 'brand', width: 25 },
+        { header: 'Model', dataKey: 'model', width: 25 },
         { header: 'Engine No.', dataKey: 'engineNumber', width: 35 },
         { header: 'Capacity', dataKey: 'capacity', width: 20 },
         { header: 'Price/Day', dataKey: 'pricePerDay', width: 25 },
@@ -643,6 +654,8 @@ const BusManagement = () => {
         id: (bus.busId || bus._id).toString().substring(0, 6) + '...',
         numberPlate: bus.numberPlate?.substring(0, 12) || 'N/A',
         type: bus.busType?.substring(0, 15) || 'N/A',
+        brand: bus.brand?.substring(0, 15) || 'N/A',
+        model: bus.modelName?.substring(0, 15) || 'N/A',
         engineNumber: bus.engineNumber?.substring(0, 20) + (bus.engineNumber?.length > 20 ? '...' : '') || 'N/A',
         capacity: `${bus.capacity} seats`,
         pricePerDay: formatCurrency(bus.pricePerDay),
@@ -847,6 +860,7 @@ const BusManagement = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Number Plate</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Type</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Brand</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Model</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Engine Number</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Capacity</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Price/Day</th>
@@ -881,6 +895,7 @@ const BusManagement = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">{bus.numberPlate}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{bus.busType}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">{bus.brand || 'N/A'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{bus.modelName || 'N/A'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">{bus.engineNumber}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{bus.capacity} seats</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
@@ -1065,80 +1080,51 @@ const BusManagement = () => {
                   </select>
                 </div>
 
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Bus Brand
                     {editingBus && <span className="text-gray-500 text-xs ml-1">(Cannot be changed)</span>}
                   </label>
-                  <div className="relative">
-                    <div className="flex border border-blue-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
-                      <select
-                        name="brand"
-                        value={formData.brand}
-                        onChange={handleBrandChange}
-                        className={`flex-1 p-3 bg-white text-gray-800 focus:outline-none transition-colors ${
-                          editingBus 
-                            ? 'cursor-not-allowed opacity-50' 
-                            : formErrors.brand ? 'text-red-500' : ''
-                        }`}
-                        disabled={editingBus}
-                      >
-                        <option value="">Select or type brand...</option>
-                        <option value="Toyota">Toyota</option>
-                        <option value="Mercedes-Benz">Mercedes-Benz</option>
-                        <option value="Volvo">Volvo</option>
-                        <option value="Scania">Scania</option>
-                        <option value="MAN">MAN</option>
-                        <option value="Iveco">Iveco</option>
-                        <option value="Hino">Hino</option>
-                        <option value="Isuzu">Isuzu</option>
-                        <option value="Mitsubishi">Mitsubishi</option>
-                        <option value="Nissan">Nissan</option>
-                        <option value="Ashok Leyland">Ashok Leyland</option>
-                        <option value="Tata">Tata</option>
-                        <option value="Hyundai">Hyundai</option>
-                        <option value="Kia">Kia</option>
-                        <option value="Ford">Ford</option>
-                        <option value="Chevrolet">Chevrolet</option>
-                        <option value="BYD">BYD</option>
-                        <option value="Yutong">Yutong</option>
-                        <option value="King Long">King Long</option>
-                        <option value="Golden Dragon">Golden Dragon</option>
-                        <option value="Dongfeng">Dongfeng</option>
-                        <option value="FAW">FAW</option>
-                        <option value="Xiamen King Long">Xiamen King Long</option>
-                        <option value="Zhongtong">Zhongtong</option>
-                        <option value="Ankai">Ankai</option>
-                        <option value="Higer">Higer</option>
-                        <option value="JAC">JAC</option>
-                        <option value="Foton">Foton</option>
-                        <option value="Other">Other</option>
-                      </select>
-                      <div className="relative flex-1">
-                        <input
-                          type="text"
-                          name="brand"
-                          value={formData.brand}
-                          onChange={handleBrandChange}
-                          className={`w-full p-3 bg-white text-gray-800 placeholder-gray-400 focus:outline-none transition-colors border-l border-gray-300 ${
-                            editingBus 
-                              ? 'cursor-not-allowed opacity-50' 
-                              : formErrors.brand ? 'text-red-500' : ''
-                          }`}
-                          placeholder="Or type custom brand..."
-                          disabled={editingBus}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  <input
+                    type="text"
+                    name="brand"
+                    value={formData.brand}
+                    onChange={handleInputChange}
+                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
+                      editingBus 
+                        ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
+                        : formErrors.brand ? 'border-red-500 focus:ring-red-500' : 'border-blue-300 focus:ring-blue-500'
+                    }`}
+                    placeholder="Enter bus brand (e.g., Toyota, Mercedes, Volvo)"
+                    required
+                    disabled={editingBus}
+                  />
                   {formErrors.brand && (
                     <p className="text-red-600 text-xs mt-1">{formErrors.brand}</p>
                   )}
-                  {!editingBus && (
-                    <p className="text-gray-500 text-xs mt-1">
-                      <span className="font-medium">Dropdown:</span> Select from popular brands • 
-                      <span className="font-medium"> Text field:</span> Type any custom brand name
-                    </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Model Name <span className="text-gray-500 text-xs">(Optional)</span>
+                    {editingBus && <span className="text-gray-500 text-xs ml-1">(Cannot be changed)</span>}
+                  </label>
+                  <input
+                    type="text"
+                    name="modelName"
+                    value={formData.modelName}
+                    onChange={handleInputChange}
+                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
+                      editingBus 
+                        ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
+                        : formErrors.modelName ? 'border-red-500 focus:ring-red-500' : 'border-blue-300 focus:ring-blue-500'
+                    }`}
+                    placeholder="e.g., Hiace, Sprinter, Coaster (optional)"
+                    disabled={editingBus}
+                  />
+                  {formErrors.modelName && (
+                    <p className="text-red-600 text-xs mt-1">{formErrors.modelName}</p>
                   )}
                 </div>
 
@@ -1203,7 +1189,7 @@ const BusManagement = () => {
                   <input
                     type="text"
                     name="numberPlate"
-                    value={formData.numberPlate}
+                    value={formData.numberPlate || ''}
                     onChange={handleInputChange}
                     className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full uppercase ${
                       editingBus 
@@ -1213,6 +1199,7 @@ const BusManagement = () => {
                     placeholder="Enter number plate (e.g., NA1234)"
                     required
                     disabled={editingBus}
+                    autoComplete="off"
                   />
                   {formErrors.numberPlate && (
                     <p className="text-red-600 text-xs mt-1">{formErrors.numberPlate}</p>

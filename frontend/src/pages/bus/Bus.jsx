@@ -67,7 +67,9 @@ const Bus = () => {
       results = results.filter(bus =>
         bus.numberPlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bus.busType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (bus.busId && bus.busId.toString().includes(searchTerm))
+        (bus.busId && bus.busId.toString().includes(searchTerm)) ||
+        (bus.brand && bus.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (bus.modelName && bus.modelName.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -274,7 +276,7 @@ const Bus = () => {
                   <div className="relative">
                     <img
                       src={bus.vehiclePhoto}
-                      alt={`${bus.busType} Coach - ${bus.numberPlate}`}
+                      alt={`${bus.brand && bus.modelName ? `${bus.brand} ${bus.modelName}` : `${bus.busType} Coach`} - ${bus.numberPlate}`}
                       className="w-full h-48 object-cover rounded-xl"
                       onError={() => handleImageError(bus._id)}
                     />
@@ -296,7 +298,9 @@ const Bus = () => {
               {/* Bus Info */}
               <div className="mb-4">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-bold text-gray-800">{bus.busType} Coach</h3>
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {bus.brand && bus.modelName ? `${bus.brand} ${bus.modelName}` : `${bus.busType} Coach`}
+                  </h3>
                   <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
                     {bus.busType}
                   </span>

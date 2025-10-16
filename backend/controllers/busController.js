@@ -3,7 +3,7 @@ import Bus from "../models/bus.js";
 // Create new bus
 export const createBus = async (req, res) => {
   try {
-    const { busType, brand, engineNumber, capacity, numberPlate, pricePerDay, vehiclePhoto, status } = req.body;
+    const { busType, brand, modelName, engineNumber, capacity, numberPlate, pricePerDay, vehiclePhoto, status } = req.body;
 
     // Check if bus already exists with same engine number or number plate
     const existingBus = await Bus.findOne({
@@ -21,7 +21,8 @@ export const createBus = async (req, res) => {
 
     const bus = new Bus({
       busType,
-      brand: brand || 'Toyota',
+      brand: brand || '',
+      modelName: modelName || '',
       engineNumber,
       capacity,
       numberPlate,
@@ -38,9 +39,17 @@ export const createBus = async (req, res) => {
     });
   } catch (error) {
     console.error('Create bus error:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      keyPattern: error.keyPattern,
+      keyValue: error.keyValue
+    });
     res.status(500).json({
       message: 'Server error',
-      error: error.message
+      error: error.message,
+      details: error.name === 'ValidationError' ? error.errors : undefined
     });
   }
 };
@@ -82,7 +91,7 @@ export const getBusById = async (req, res) => {
 // Update bus
 export const updateBus = async (req, res) => {
   try {
-    const { busType, brand, engineNumber, capacity, numberPlate, pricePerDay, vehiclePhoto, status, isActive } = req.body;
+    const { busType, brand, modelName, engineNumber, capacity, numberPlate, pricePerDay, vehiclePhoto, status, isActive } = req.body;
 
     // Check for duplicate engine number or number plate excluding current bus
     const existingBus = await Bus.findOne({
@@ -103,6 +112,7 @@ export const updateBus = async (req, res) => {
       {
         busType,
         brand,
+        modelName,
         engineNumber,
         capacity,
         numberPlate,
