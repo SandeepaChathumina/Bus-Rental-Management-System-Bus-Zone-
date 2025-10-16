@@ -788,7 +788,7 @@ Are you sure you want to proceed?
       const margin = 15;
       const contentWidth = pageWidth - (margin * 2);
 
-      // Add BusZone+ Header
+      // Add BusZone+ Header (without logo)
       doc.setFontSize(18);
       doc.setTextColor(59, 130, 246);
       doc.setFont(undefined, 'bold');
@@ -837,175 +837,145 @@ Are you sure you want to proceed?
       
       // Statistics boxes - responsive layout
       const availableWidth = pageWidth - (margin * 2);
-      const boxCount = 4;
+      const boxCount = 5;
       const boxSpacing = 6;
-      const boxWidth = Math.min(35, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
+      const boxWidth = Math.min(30, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
       const boxHeight = 25;
       let currentX = margin;
       
-      // Total Payments box - Blue theme
+      // Total Payments box - Blue theme with white text
       doc.setFillColor(59, 130, 246);
       doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(255, 255, 255); // White text
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
-      doc.text('Total Payments', currentX + 2, statsY + 15);
-      doc.setFontSize(16);
-      doc.text(totalPayments.toString(), currentX + 2, statsY + 22);
+      doc.text(totalPayments.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text('Total Payments', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+      
       currentX += boxWidth + boxSpacing;
       
-      // Total Revenue box - Green theme
-      doc.setFillColor(34, 197, 94);
+      // Success Payments box - Blue theme with white text
+      doc.setFillColor(37, 99, 235);
       doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(255, 255, 255); // White text
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
-      doc.text('Total Revenue', currentX + 2, statsY + 15);
-      doc.setFontSize(14);
-      doc.text(`LKR ${totalAmount.toLocaleString()}`, currentX + 2, statsY + 22);
+      doc.text(successPayments.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text('Success', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+      
       currentX += boxWidth + boxSpacing;
       
-      // Success Rate box - Green theme
-      doc.setFillColor(16, 185, 129);
+      // Pending Payments box - Blue theme with white text
+      doc.setFillColor(29, 78, 216);
       doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(255, 255, 255); // White text
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
-      doc.text('Success Rate', currentX + 2, statsY + 15);
-      doc.setFontSize(16);
-      const successRate = totalPayments > 0 ? Math.round((successPayments / totalPayments) * 100) : 0;
-      doc.text(`${successRate}%`, currentX + 2, statsY + 22);
+      doc.text(pendingPayments.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text('Pending', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+      
       currentX += boxWidth + boxSpacing;
       
-      // Average Amount box - Purple theme
-      doc.setFillColor(147, 51, 234);
+      // Failed Payments box - Blue theme with white text
+      doc.setFillColor(30, 64, 175);
       doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(255, 255, 255); // White text
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
-      doc.text('Avg Amount', currentX + 2, statsY + 15);
-      doc.setFontSize(14);
-      const avgAmount = totalPayments > 0 ? Math.round(totalAmount / totalPayments) : 0;
-      doc.text(`LKR ${avgAmount.toLocaleString()}`, currentX + 2, statsY + 22);
+      doc.text(failedPayments.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text('Failed', currentX + boxWidth/2, statsY + 25, { align: 'center' });
       
-      // Breakdown section
-      const breakdownY = statsY + 45;
+      currentX += boxWidth + boxSpacing;
+      
+      // Total Revenue box - Blue theme with white text
+      doc.setFillColor(14, 165, 233);
+      doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255); // White text
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text(`LKR ${Math.round(totalAmount/1000)}K`, currentX + boxWidth/2, statsY + 18, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text('Total Revenue', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+      
+      // Payment type breakdown table - moved to separate page to prevent overlap
+      const typeTableY = statsY + 50;
       doc.setFontSize(12);
       doc.setTextColor(30, 30, 30);
       doc.setFont(undefined, 'bold');
-      doc.text('Payment Status Breakdown', margin, breakdownY);
+      doc.text('Payment Type Breakdown', margin, typeTableY);
       
-      // Status breakdown boxes
-      const statusBoxWidth = 25;
-      const statusBoxHeight = 20;
-      let statusX = margin;
+      const typeData = [
+        ['Type', 'Count', 'Percentage'],
+        ['Booking', bookingPayments.toString(), `${((bookingPayments/totalPayments)*100).toFixed(1)}%`],
+        ['Maintenance', maintenancePayments.toString(), `${((maintenancePayments/totalPayments)*100).toFixed(1)}%`],
+        ['Salary', salaryPayments.toString(), `${((salaryPayments/totalPayments)*100).toFixed(1)}%`]
+      ];
       
-      // Success
-      doc.setFillColor(34, 197, 94);
-      doc.roundedRect(statusX, breakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
+      autoTable(doc, {
+        startY: typeTableY + 8,
+        head: [typeData[0]],
+        body: typeData.slice(1),
+        styles: { 
+          fontSize: 10, 
+          cellPadding: 4,
+          textColor: [30, 30, 30]
+        },
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: [255, 255, 255],
+          halign: 'center',
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: { 
+          fillColor: [248, 250, 252] 
+        },
+        columnStyles: {
+          0: { halign: 'left' },
+          1: { halign: 'center' },
+          2: { halign: 'center' }
+        },
+        margin: { left: margin, right: margin }
+      });
+
+      // Add new page for payment details table to prevent overlap
+      doc.addPage();
+      
+      // Add header to second page
+      doc.setFontSize(16);
+      doc.setTextColor(59, 130, 246);
+      doc.setFont(undefined, 'bold');
+      doc.text('BusZone+', margin, margin + 10);
+      
       doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Success', statusX + 2, breakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(successPayments.toString(), statusX + 2, breakdownY + 22);
-      statusX += statusBoxWidth + 4;
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      doc.text('Premium Bus Rental Management System', margin, margin + 16);
       
-      // Pending
-      doc.setFillColor(245, 158, 11);
-      doc.roundedRect(statusX, breakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Pending', statusX + 2, breakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(pendingPayments.toString(), statusX + 2, breakdownY + 22);
-      statusX += statusBoxWidth + 4;
-      
-      // Failed
-      doc.setFillColor(239, 68, 68);
-      doc.roundedRect(statusX, breakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Failed', statusX + 2, breakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(failedPayments.toString(), statusX + 2, breakdownY + 22);
-      statusX += statusBoxWidth + 4;
-      
-      // Refunded
-      doc.setFillColor(147, 51, 234);
-      doc.roundedRect(statusX, breakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Refunded', statusX + 2, breakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(refundedPayments.toString(), statusX + 2, breakdownY + 22);
-      
-      // Payment type breakdown
-      const typeBreakdownY = breakdownY + 40;
-      doc.setFontSize(12);
-      doc.setTextColor(30, 30, 30);
-      doc.setFont(undefined, 'bold');
-      doc.text('Payment Type Breakdown', margin, typeBreakdownY);
-      
-      // Type breakdown boxes
-      let typeX = margin;
-      
-      // Booking
-      doc.setFillColor(59, 130, 246);
-      doc.roundedRect(typeX, typeBreakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Booking', typeX + 2, typeBreakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(bookingPayments.toString(), typeX + 2, typeBreakdownY + 22);
-      typeX += statusBoxWidth + 4;
-      
-      // Maintenance
-      doc.setFillColor(245, 158, 11);
-      doc.roundedRect(typeX, typeBreakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Maintenance', typeX + 2, typeBreakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(maintenancePayments.toString(), typeX + 2, typeBreakdownY + 22);
-      typeX += statusBoxWidth + 4;
-      
-      // Salary
-      doc.setFillColor(16, 185, 129);
-      doc.roundedRect(typeX, typeBreakdownY + 8, statusBoxWidth, statusBoxHeight, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Salary', typeX + 2, typeBreakdownY + 15);
-      doc.setFontSize(14);
-      doc.text(salaryPayments.toString(), typeX + 2, typeBreakdownY + 22);
-      
-      // Main payment data table
-      const tableStartY = typeBreakdownY + 40;
+      // Main payment data table - now on separate page
+      const tableStartY = margin + 30;
       doc.setFontSize(12);
       doc.setTextColor(30, 30, 30);
       doc.setFont(undefined, 'bold');
       doc.text('Payment Details', margin, tableStartY);
       
-      // Prepare table data
+      // Prepare table data with responsive formatting
       const tableColumns = [
-        { header: 'Payment ID', dataKey: 'paymentId', width: 25 },
-        { header: 'Customer', dataKey: 'customer', width: 35 },
-        { header: 'Amount', dataKey: 'amount', width: 25 },
-        { header: 'Status', dataKey: 'status', width: 20 },
-        { header: 'Type', dataKey: 'type', width: 20 },
-        { header: 'Method', dataKey: 'method', width: 20 },
-        { header: 'Date', dataKey: 'date', width: 25 }
+        { header: 'Payment ID', dataKey: 'paymentId', width: 40 },
+        { header: 'Customer', dataKey: 'customer', width: 50 },
+        { header: 'Amount', dataKey: 'amount', width: 30 },
+        { header: 'Status', dataKey: 'status', width: 25 },
+        { header: 'Type', dataKey: 'type', width: 25 },
+        { header: 'Method', dataKey: 'method', width: 25 },
+        { header: 'Date', dataKey: 'date', width: 30 }
       ];
       
       const tableRows = filteredPayments.map((payment) => ({
-        paymentId: payment.paymentId?.substring(0, 12) + '...',
-        customer: `${payment.user?.firstName || ''} ${payment.user?.lastName || ''}`.trim().substring(0, 20) || 'N/A',
+        paymentId: payment.paymentId?.substring(0, 15) + (payment.paymentId?.length > 15 ? '...' : ''),
+        customer: `${payment.user?.firstName || ''} ${payment.user?.lastName || ''}`.trim().substring(0, 25) || 'N/A',
         amount: `LKR ${payment.amount.toLocaleString()}`,
         status: payment.status?.charAt(0).toUpperCase() + payment.status?.slice(1) || 'N/A',
         type: payment.paymentType?.charAt(0).toUpperCase() + payment.paymentType?.slice(1) || 'N/A',
@@ -1013,7 +983,6 @@ Are you sure you want to proceed?
         date: payment.createdAt ? new Date(payment.createdAt).toLocaleDateString('en-GB') : 'N/A'
       }));
 
-      // Use autoTable function properly
       autoTable(doc, {
         startY: tableStartY + 8,
         columns: tableColumns,
@@ -1038,13 +1007,13 @@ Are you sure you want to proceed?
           fillColor: [248, 250, 252] 
         },
         columnStyles: {
-          paymentId: { halign: 'center', fontSize: 7, cellWidth: 25 },
-          customer: { halign: 'left', fontSize: 8, cellWidth: 35, overflow: 'linebreak' },
-          amount: { halign: 'right', fontSize: 8, cellWidth: 25 },
-          status: { halign: 'center', fontSize: 8, cellWidth: 20 },
-          type: { halign: 'center', fontSize: 8, cellWidth: 20 },
-          method: { halign: 'center', fontSize: 8, cellWidth: 20 },
-          date: { halign: 'center', fontSize: 7, cellWidth: 25 }
+          paymentId: { halign: 'left', fontSize: 7, cellWidth: 40, overflow: 'linebreak' },
+          customer: { halign: 'left', fontSize: 8, cellWidth: 50, overflow: 'linebreak' },
+          amount: { halign: 'right', fontSize: 8, cellWidth: 30 },
+          status: { halign: 'center', fontSize: 8, cellWidth: 25 },
+          type: { halign: 'center', fontSize: 8, cellWidth: 25 },
+          method: { halign: 'center', fontSize: 8, cellWidth: 25 },
+          date: { halign: 'center', fontSize: 7, cellWidth: 30 }
         },
         margin: { left: margin, right: margin },
         tableWidth: 'auto',
