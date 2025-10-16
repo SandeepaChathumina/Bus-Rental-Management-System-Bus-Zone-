@@ -826,20 +826,26 @@ Are you sure you want to proceed?
       
       // Calculate statistics
       const totalPayments = filteredPayments.length;
-      const totalAmount = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
       const successPayments = filteredPayments.filter(p => p.status === 'success').length;
       const pendingPayments = filteredPayments.filter(p => p.status === 'pending').length;
       const failedPayments = filteredPayments.filter(p => p.status === 'failed').length;
       const refundedPayments = filteredPayments.filter(p => p.status === 'refunded').length;
+      const cancelledPayments = filteredPayments.filter(p => p.status === 'cancelled').length;
+      
+      // Calculate total revenue only from successful payments
+      const totalAmount = filteredPayments
+        .filter(p => p.status === 'success')
+        .reduce((sum, payment) => sum + payment.amount, 0);
+      
       const bookingPayments = filteredPayments.filter(p => p.paymentType === 'booking').length;
       const maintenancePayments = filteredPayments.filter(p => p.paymentType === 'maintenance').length;
       const salaryPayments = filteredPayments.filter(p => p.paymentType === 'salary').length;
       
       // Statistics boxes - responsive layout
       const availableWidth = pageWidth - (margin * 2);
-      const boxCount = 5;
+      const boxCount = 6;
       const boxSpacing = 6;
-      const boxWidth = Math.min(30, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
+      const boxWidth = Math.min(28, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
       const boxHeight = 25;
       let currentX = margin;
       
@@ -891,13 +897,25 @@ Are you sure you want to proceed?
       
       currentX += boxWidth + boxSpacing;
       
+      // Refunded Payments box - Blue theme with white text
+      doc.setFillColor(17, 24, 39);
+      doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255); // White text
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text(refundedPayments.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text('Refunded', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+      
+      currentX += boxWidth + boxSpacing;
+      
       // Total Revenue box - Blue theme with white text
       doc.setFillColor(14, 165, 233);
       doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
       doc.setTextColor(255, 255, 255); // White text
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont(undefined, 'bold');
-      doc.text(`LKR ${Math.round(totalAmount/1000)}K`, currentX + boxWidth/2, statsY + 18, { align: 'center' });
+      doc.text(`LKR ${totalAmount.toLocaleString()}`, currentX + boxWidth/2, statsY + 18, { align: 'center' });
       doc.setFontSize(7);
       doc.text('Total Revenue', currentX + boxWidth/2, statsY + 25, { align: 'center' });
       
