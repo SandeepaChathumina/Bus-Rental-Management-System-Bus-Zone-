@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, X, Save, Bell, Send, BarChart3, RefreshCw, Eye, Filter, Download, FileText, Calendar } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, X, Save, Bell, Send, BarChart3, RefreshCw, Eye, Filter, Download, FileText, Calendar, Clock } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
@@ -13,7 +13,18 @@ const AdminNotificationPanel = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    totalNotifications: 0,
+    sentNotifications: 0,
+    draftNotifications: 0,
+    scheduledNotifications: 0
+  });
+  const [filteredStats, setFilteredStats] = useState({
+    totalNotifications: 0,
+    sentNotifications: 0,
+    draftNotifications: 0,
+    scheduledNotifications: 0
+  });
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
@@ -99,6 +110,8 @@ const AdminNotificationPanel = () => {
 
   useEffect(() => {
     filterNotifications();
+    // Update stats whenever notifications change
+    updateLocalStats();
   }, [searchTerm, notifications, statusFilter, typeFilter]);
 
   const fetchNotifications = async () => {
@@ -119,6 +132,9 @@ const AdminNotificationPanel = () => {
       
       setNotifications(sortedData);
       setFilteredNotifications(sortedData);
+      
+      // Update local stats based on fetched data
+      updateLocalStatsFromData(sortedData);
     } catch (error) {
       console.error('Error fetching notifications:', error);
       toast.error('Failed to fetch notifications');
@@ -127,23 +143,23 @@ const AdminNotificationPanel = () => {
       const mockNotifications = [
         {
           _id: '1',
-          title: 'hh',
-          message: 'Test notification',
-          type: 'general',
+          title: 'System Maintenance',
+          message: 'System will be down for maintenance on Saturday',
+          type: 'alert',
           targetAudience: 'all',
           deliveryChannel: 'in_app',
           isActive: true,
-          status: 'active',
+          status: 'sent',
           expiresAt: '2025-09-11',
           createdAt: '2025-09-10'
         },
         {
           _id: '2',
-          title: 'jiu',
-          message: 'Another notification',
-          type: '',
-          targetAudience: '',
-          deliveryChannel: '',
+          title: 'New Features Available',
+          message: 'Check out our new booking features',
+          type: 'update',
+          targetAudience: 'passengers',
+          deliveryChannel: 'email',
           isActive: false,
           status: 'draft',
           expiresAt: '',
@@ -151,8 +167,8 @@ const AdminNotificationPanel = () => {
         },
         {
           _id: '3',
-          title: 'mkjfvor',
-          message: 'Package notification',
+          title: 'Special Package Offer',
+          message: 'Get 20% off on premium packages',
           type: 'package',
           targetAudience: 'all',
           deliveryChannel: 'in_app',
@@ -160,15 +176,64 @@ const AdminNotificationPanel = () => {
           status: 'scheduled',
           expiresAt: '2025-09-20',
           createdAt: '2025-09-18'
+        },
+        {
+          _id: '4',
+          title: 'Booking Confirmed',
+          message: 'Your booking has been confirmed',
+          type: 'general',
+          targetAudience: 'passengers',
+          deliveryChannel: 'sms',
+          isActive: true,
+          status: 'sent',
+          expiresAt: '2025-09-25',
+          createdAt: '2025-09-20'
         }
       ];
       
       setNotifications(mockNotifications);
       setFilteredNotifications(mockNotifications);
+      updateLocalStatsFromData(mockNotifications);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const updateLocalStatsFromData = (data) => {
+    const totalNotifications = data.length;
+    const sentNotifications = data.filter(n => n.status === 'sent').length;
+    const draftNotifications = data.filter(n => n.status === 'draft').length;
+    const scheduledNotifications = data.filter(n => n.status === 'scheduled').length;
+
+    setStats({
+      totalNotifications,
+      sentNotifications,
+      draftNotifications,
+      scheduledNotifications
+    });
+
+    // Also update filtered stats initially
+    setFilteredStats({
+      totalNotifications,
+      sentNotifications,
+      draftNotifications,
+      scheduledNotifications
+    });
+  };
+
+  const updateLocalStats = () => {
+    const totalNotifications = notifications.length;
+    const sentNotifications = notifications.filter(n => n.status === 'sent').length;
+    const draftNotifications = notifications.filter(n => n.status === 'draft').length;
+    const scheduledNotifications = notifications.filter(n => n.status === 'scheduled').length;
+
+    setStats({
+      totalNotifications,
+      sentNotifications,
+      draftNotifications,
+      scheduledNotifications
+    });
   };
 
   const refreshData = async () => {
@@ -183,16 +248,19 @@ const AdminNotificationPanel = () => {
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/notifications/admin/report`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setStats(response.data.data);
+      
+      if (response.data.data) {
+        setStats({
+          totalNotifications: response.data.data.totalNotifications || notifications.length,
+          sentNotifications: response.data.data.sentNotifications || notifications.filter(n => n.status === 'sent').length,
+          draftNotifications: response.data.data.draftNotifications || notifications.filter(n => n.status === 'draft').length,
+          scheduledNotifications: response.data.data.scheduledNotifications || notifications.filter(n => n.status === 'scheduled').length
+        });
+      }
     } catch (error) {
       console.error('Error fetching stats:', error);
-      // Create basic stats if API fails
-      setStats({
-        totalNotifications: notifications.length,
-        readRate: 65,
-        activeNotifications: notifications.filter(n => n.isActive).length,
-        scheduled: notifications.filter(n => n.status === 'scheduled').length
-      });
+      // Use local calculations if API fails
+      updateLocalStats();
     }
   };
 
@@ -218,6 +286,19 @@ const AdminNotificationPanel = () => {
     }
 
     setFilteredNotifications(filtered);
+
+    // Update filtered stats whenever filtering happens
+    const filteredTotal = filtered.length;
+    const filteredSent = filtered.filter(n => n.status === 'sent').length;
+    const filteredDraft = filtered.filter(n => n.status === 'draft').length;
+    const filteredScheduled = filtered.filter(n => n.status === 'scheduled').length;
+
+    setFilteredStats({
+      totalNotifications: filteredTotal,
+      sentNotifications: filteredSent,
+      draftNotifications: filteredDraft,
+      scheduledNotifications: filteredScheduled
+    });
   };
 
   const validateDates = () => {
@@ -468,7 +549,6 @@ const AdminNotificationPanel = () => {
     setShowForm(false);
   };
 
-
   const toggleStatus = async (id) => {
     try {
       const token = localStorage.getItem('token');
@@ -567,14 +647,13 @@ const AdminNotificationPanel = () => {
     
     // Calculate statistics
     const totalNotifications = list.length;
-    const activeNotifications = list.filter(n => n.isActive).length;
-    const draftNotifications = list.filter(n => n.status === 'draft').length;
     const sentNotifications = list.filter(n => n.status === 'sent').length;
+    const draftNotifications = list.filter(n => n.status === 'draft').length;
     const scheduledNotifications = list.filter(n => n.status === 'scheduled').length;
     
     // Statistics boxes
     const availableWidth = pageWidth - (margin * 2);
-    const boxCount = 5;
+    const boxCount = 4;
     const boxSpacing = 6;
     const boxWidth = Math.min(30, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
     const boxHeight = 25;
@@ -592,15 +671,15 @@ const AdminNotificationPanel = () => {
     
     currentX += boxWidth + boxSpacing;
     
-    // Active Notifications box
-    doc.setFillColor(37, 99, 235);
+    // Sent Notifications box
+    doc.setFillColor(30, 64, 175);
     doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
-    doc.text(activeNotifications.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
+    doc.text(sentNotifications.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
     doc.setFontSize(7);
-    doc.text('Active', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    doc.text('Sent', currentX + boxWidth/2, statsY + 25, { align: 'center' });
     
     currentX += boxWidth + boxSpacing;
     
@@ -613,18 +692,6 @@ const AdminNotificationPanel = () => {
     doc.text(draftNotifications.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
     doc.setFontSize(7);
     doc.text('Draft', currentX + boxWidth/2, statsY + 25, { align: 'center' });
-    
-    currentX += boxWidth + boxSpacing;
-    
-    // Sent Notifications box
-    doc.setFillColor(30, 64, 175);
-    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text(sentNotifications.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
-    doc.setFontSize(7);
-    doc.text('Sent', currentX + boxWidth/2, statsY + 25, { align: 'center' });
     
     currentX += boxWidth + boxSpacing;
     
@@ -647,9 +714,8 @@ const AdminNotificationPanel = () => {
     
     const statusData = [
       ['Status', 'Count', 'Percentage'],
-      ['Active', activeNotifications.toString(), `${((activeNotifications/totalNotifications)*100).toFixed(1)}%`],
-      ['Draft', draftNotifications.toString(), `${((draftNotifications/totalNotifications)*100).toFixed(1)}%`],
       ['Sent', sentNotifications.toString(), `${((sentNotifications/totalNotifications)*100).toFixed(1)}%`],
+      ['Draft', draftNotifications.toString(), `${((draftNotifications/totalNotifications)*100).toFixed(1)}%`],
       ['Scheduled', scheduledNotifications.toString(), `${((scheduledNotifications/totalNotifications)*100).toFixed(1)}%`]
     ];
     
@@ -715,7 +781,7 @@ const AdminNotificationPanel = () => {
       type: n.type?.charAt(0).toUpperCase() + n.type?.slice(1) || 'General',
       target: n.targetAudience?.charAt(0).toUpperCase() + n.targetAudience?.slice(1) || 'All',
       channel: n.deliveryChannel?.charAt(0).toUpperCase() + n.deliveryChannel?.slice(1) || 'In-App',
-      status: n.isActive ? 'Active' : 'Inactive',
+      status: n.status?.charAt(0).toUpperCase() + n.status?.slice(1) || 'Draft',
       created: n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-GB') : 'N/A'
     }));
 
@@ -815,7 +881,6 @@ const AdminNotificationPanel = () => {
 
   const statusTypes = [
     { value: 'all', label: 'All Statuses' },
-    { value: 'active', label: 'Active', color: 'bg-green-500' },
     { value: 'draft', label: 'Draft', color: 'bg-gray-500' },
     { value: 'scheduled', label: 'Scheduled', color: 'bg-blue-500' },
     { value: 'sent', label: 'Sent', color: 'bg-purple-500' },
@@ -840,8 +905,6 @@ const AdminNotificationPanel = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'active':
-        return <div className="w-3 h-3 rounded-full bg-green-500"></div>;
       case 'draft':
         return <div className="w-3 h-3 rounded-full bg-gray-500"></div>;
       case 'scheduled':
@@ -872,7 +935,7 @@ const AdminNotificationPanel = () => {
           <Bell className="h-6 w-6 mr-2 text-blue-600" />
           Notification Management
           <span className="ml-3 bg-blue-500 text-white text-sm font-medium px-2 py-1 rounded-full">
-            {notifications.length}
+            {stats.totalNotifications}
           </span>
         </h2>
         <div className="flex space-x-3">
@@ -914,7 +977,10 @@ const AdminNotificationPanel = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Notifications</p>
-              <p className="text-2xl text-gray-800 font-bold">{stats?.totalNotifications || notifications.length}</p>
+              <p className="text-2xl text-gray-800 font-bold">{filteredStats.totalNotifications}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {searchTerm || statusFilter !== 'all' || typeFilter !== 'all' ? 'Filtered' : 'All'} notifications
+              </p>
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
               <Bell className="w-8 h-8 text-blue-600" />
@@ -925,20 +991,11 @@ const AdminNotificationPanel = () => {
         <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Active Notifications</p>
-              <p className="text-2xl text-gray-800 font-bold">{stats?.activeNotifications || notifications.filter(n => n.isActive).length}</p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <BarChart3 className="w-8 h-8 text-green-600" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
               <p className="text-sm text-gray-600">Sent Notifications</p>
-              <p className="text-2xl text-gray-800 font-bold">{notifications.filter(n => n.status === 'sent').length}</p>
+              <p className="text-2xl text-gray-800 font-bold">{filteredStats.sentNotifications}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {searchTerm || statusFilter !== 'all' || typeFilter !== 'all' ? 'Filtered' : 'All'} sent
+              </p>
             </div>
             <div className="p-3 bg-cyan-100 rounded-full">
               <Send className="w-8 h-8 text-cyan-600" />
@@ -950,10 +1007,29 @@ const AdminNotificationPanel = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Draft Notifications</p>
-              <p className="text-2xl text-gray-800 font-bold">{notifications.filter(n => n.status === 'draft').length}</p>
+              <p className="text-2xl text-gray-800 font-bold">{filteredStats.draftNotifications}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {searchTerm || statusFilter !== 'all' || typeFilter !== 'all' ? 'Filtered' : 'All'} drafts
+              </p>
             </div>
             <div className="p-3 bg-indigo-100 rounded-full">
               <Bell className="w-8 h-8 text-indigo-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Scheduled Notifications Box */}
+        <div className="bg-white rounded-xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Scheduled Notifications</p>
+              <p className="text-2xl text-gray-800 font-bold">{filteredStats.scheduledNotifications}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {searchTerm || statusFilter !== 'all' || typeFilter !== 'all' ? 'Filtered' : 'All'} scheduled
+              </p>
+            </div>
+            <div className="p-3 bg-amber-100 rounded-full">
+              <Clock className="w-8 h-8 text-amber-600" />
             </div>
           </div>
         </div>
@@ -1033,37 +1109,6 @@ const AdminNotificationPanel = () => {
                 className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition-colors"
               >
                 Revert to Draft
-              </button>
-              <button
-                onClick={() => {
-                  const activeNotifications = filteredNotifications.filter(n => n.isActive);
-                  if (activeNotifications.length > 0) {
-                    bulkUpdateStatus(activeNotifications.map(n => n._id), 'draft');
-                  } else {
-                    toast('No active notifications found');
-                  }
-                }}
-                className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
-              >
-                Deactivate All
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    const token = localStorage.getItem('token');
-                    const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/notifications/test-visibility?role=passenger&userType=passenger`, {
-                      headers: { Authorization: `Bearer ${token}` }
-                    });
-                    console.log('Test visibility result:', response.data);
-                    toast.success('Check console for visibility test results');
-                  } catch (error) {
-                    console.error('Test visibility error:', error);
-                    toast.error('Failed to test visibility');
-                  }
-                }}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-              >
-                Test Visibility
               </button>
             </div>
           </div>
@@ -1224,7 +1269,6 @@ const AdminNotificationPanel = () => {
                 className="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="draft">Draft</option>
-                <option value="active">Active</option>
                 <option value="scheduled">Scheduled</option>
                 <option value="sent">Sent</option>
               </select>
@@ -1257,7 +1301,10 @@ const AdminNotificationPanel = () => {
             Notifications List
           </h3>
           <div className="text-sm text-gray-600">
-            Showing {filteredNotifications.length} of {notifications.length} total
+            Showing {filteredNotifications.length} of {stats.totalNotifications} total
+            {(searchTerm || statusFilter !== 'all' || typeFilter !== 'all') && (
+              <span className="ml-2 text-blue-600">(Filtered)</span>
+            )}
           </div>
         </div>
         
@@ -1331,7 +1378,6 @@ const AdminNotificationPanel = () => {
                             <option value="draft">Draft</option>
                             <option value="sent">Sent</option>
                             <option value="scheduled">Scheduled</option>
-                            <option value="active">Active</option>
                           </select>
                         </div>
                       </td>
@@ -1357,14 +1403,7 @@ const AdminNotificationPanel = () => {
                               <Send className="h-4 w-4" />
                             </button>
                           )}
-                          
-                          <button
-                            onClick={() => toggleStatus(notification._id)}
-                            className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100"
-                            title={notification.isActive ? 'Deactivate' : 'Activate'}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
+
                           
                           <button
                             onClick={() => handleDelete(notification._id)}

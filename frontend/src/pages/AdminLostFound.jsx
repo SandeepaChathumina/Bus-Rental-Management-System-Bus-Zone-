@@ -158,6 +158,15 @@ const AdminLostFound = () => {
     fetchLostItems();
   }, []);
 
+  // Auto-generate message when reply form opens with Found status
+  useEffect(() => {
+    if (showReplyForm && replyingItem && selectedStatus === 'Found') {
+      const userName = replyingItem?.user ? `${replyingItem.user.firstName} ${replyingItem.user.lastName}` : 'Valued Customer';
+      const autoMessage = generateAutoMessage('Found', replyingItem?.itemName || 'your item', userName);
+      setReplyMessage(autoMessage);
+    }
+  }, [showReplyForm, replyingItem, selectedStatus]);
+
   // Real-time event listeners for user updates
   useEffect(() => {
     const handleLostItemUpdated = (event) => {
@@ -455,26 +464,26 @@ const AdminLostFound = () => {
     const margin = 15;
     const contentWidth = pageWidth - (margin * 2);
 
-    // Add BusZone+ Header
-    doc.setFontSize(18);
+    // Clean header design
+    doc.setFontSize(16);
     doc.setTextColor(59, 130, 246);
     doc.setFont(undefined, 'bold');
     doc.text('BusZone+', margin, margin + 10);
     
     // Subtitle
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     doc.setFont(undefined, 'normal');
     doc.text('Premium Bus Rental Management System', margin, margin + 16);
     
     // Report title
-    doc.setFontSize(20);
+    doc.setFontSize(18);
     doc.setTextColor(30, 30, 30);
     doc.setFont(undefined, 'bold');
     doc.text('Lost & Found Report', pageWidth / 2, margin + 25, { align: 'center' });
     
     // Report metadata
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     doc.setFont(undefined, 'normal');
     const currentDate = new Date();
@@ -484,9 +493,9 @@ const AdminLostFound = () => {
       day: 'numeric' 
     })} at ${currentDate.toLocaleTimeString()}`, pageWidth / 2, margin + 32, { align: 'center' });
     
-    // Statistics section
+    // Report Summary section
     const statsY = margin + 40;
-    doc.setFontSize(12);
+    doc.setFontSize(14);
     doc.setTextColor(30, 30, 30);
     doc.setFont(undefined, 'bold');
     doc.text('Report Summary', margin, statsY);
@@ -495,78 +504,55 @@ const AdminLostFound = () => {
     const totalItems = items.length;
     const reportedItems = items.filter(item => item.status === 'Reported').length;
     const foundItems = items.filter(item => item.status === 'Found').length;
+    const notFoundItems = items.filter(item => item.status === 'Not Found').length;
     const claimedItems = items.filter(item => item.status === 'Claimed').length;
     const returnedItems = items.filter(item => item.status === 'Returned').length;
     
-    // Statistics boxes
+    // Summary Cards - Clean modern design (4 cards only)
     const availableWidth = pageWidth - (margin * 2);
-    const boxCount = 5;
-    const boxSpacing = 6;
-    const boxWidth = Math.min(30, (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount);
-    const boxHeight = 25;
+    const boxCount = 4;
+    const boxSpacing = 8;
+    const boxWidth = (availableWidth - (boxSpacing * (boxCount - 1))) / boxCount;
+    const boxHeight = 20;
     let currentX = margin;
     
-    // Total Items box
-    doc.setFillColor(59, 130, 246);
-    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text(totalItems.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
-    doc.setFontSize(7);
-    doc.text('Total Items', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    // Define card colors matching the image
+    const cardColors = [
+      [59, 130, 246],   // Total Item - Darker blue
+      [37, 99, 235],    // Reported - Slightly lighter blue  
+      [96, 165, 250],   // Found - Lighter blue
+      [29, 78, 216]     // Not Found - Darker blue
+    ];
     
-    currentX += boxWidth + boxSpacing;
+    const cardData = [
+      { value: totalItems, label: 'Total Item' },
+      { value: reportedItems, label: 'Reported' },
+      { value: foundItems, label: 'Found' },
+      { value: notFoundItems, label: 'Not Found' }
+    ];
     
-    // Reported Items box
-    doc.setFillColor(37, 99, 235);
-    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text(reportedItems.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
-    doc.setFontSize(7);
-    doc.text('Reported', currentX + boxWidth/2, statsY + 25, { align: 'center' });
+    // Draw summary cards
+    cardData.forEach((card, index) => {
+      // Draw rounded rectangle
+      doc.setFillColor(cardColors[index][0], cardColors[index][1], cardColors[index][2]);
+      doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 3, 3, 'F');
+      
+      // Draw card content
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text(card.value.toString(), currentX + boxWidth/2, statsY + 16, { align: 'center' });
+      
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      doc.text(card.label, currentX + boxWidth/2, statsY + 22, { align: 'center' });
+      
+      currentX += boxWidth + boxSpacing;
+    });
     
-    currentX += boxWidth + boxSpacing;
-    
-    // Found Items box
-    doc.setFillColor(96, 165, 250);
-    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text(foundItems.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
-    doc.setFontSize(7);
-    doc.text('Found', currentX + boxWidth/2, statsY + 25, { align: 'center' });
-    
-    currentX += boxWidth + boxSpacing;
-    
-    // Claimed Items box
-    doc.setFillColor(29, 78, 216);
-    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text(claimedItems.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
-    doc.setFontSize(7);
-    doc.text('Claimed', currentX + boxWidth/2, statsY + 25, { align: 'center' });
-    
-    currentX += boxWidth + boxSpacing;
-    
-    // Returned Items box
-    doc.setFillColor(14, 165, 233);
-    doc.roundedRect(currentX, statsY + 8, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text(returnedItems.toString(), currentX + boxWidth/2, statsY + 18, { align: 'center' });
-    doc.setFontSize(7);
-    doc.text('Returned', currentX + boxWidth/2, statsY + 25, { align: 'center' });
-    
-    // Status distribution table
-    const statusTableY = statsY + 50;
-    doc.setFontSize(12);
+    // Status Distribution Table - Clean modern design
+    const statusTableY = statsY + 45;
+    doc.setFontSize(14);
     doc.setTextColor(30, 30, 30);
     doc.setFont(undefined, 'bold');
     doc.text('Status Distribution', margin, statusTableY);
@@ -575,8 +561,7 @@ const AdminLostFound = () => {
       ['Status', 'Count', 'Percentage'],
       ['Reported', reportedItems.toString(), `${((reportedItems/totalItems)*100).toFixed(1)}%`],
       ['Found', foundItems.toString(), `${((foundItems/totalItems)*100).toFixed(1)}%`],
-      ['Claimed', claimedItems.toString(), `${((claimedItems/totalItems)*100).toFixed(1)}%`],
-      ['Returned', returnedItems.toString(), `${((returnedItems/totalItems)*100).toFixed(1)}%`]
+      ['Not Found', notFoundItems.toString(), `${((notFoundItems/totalItems)*100).toFixed(1)}%`]
     ];
     
     autoTable(doc, {
@@ -585,24 +570,30 @@ const AdminLostFound = () => {
       body: statusData.slice(1),
       styles: { 
         fontSize: 10, 
-        cellPadding: 4,
-        textColor: [30, 30, 30]
+        cellPadding: 6,
+        textColor: [30, 30, 30],
+        lineColor: [200, 200, 200],
+        lineWidth: 0.5
       },
       headStyles: {
         fillColor: [59, 130, 246],
         textColor: [255, 255, 255],
         halign: 'center',
-        fontStyle: 'bold'
+        fontStyle: 'bold',
+        fontSize: 10
       },
-      alternateRowStyles: { 
-        fillColor: [248, 250, 252] 
+      bodyStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [30, 30, 30],
+        fontSize: 10
       },
       columnStyles: {
         0: { halign: 'left' },
-        1: { halign: 'center' },
-        2: { halign: 'center' }
+        1: { halign: 'right' },
+        2: { halign: 'right' }
       },
-      margin: { left: margin, right: margin }
+      margin: { left: margin, right: margin },
+      tableWidth: 'auto'
     });
 
     // Add new page for item details table
@@ -1186,7 +1177,16 @@ const AdminLostFound = () => {
                               <Package className="w-4 h-4 text-orange-500" />
                             </div>
                             <p className="text-sm text-gray-700 mb-2">{item.deliveryAddress}</p>
-                            <div className="flex items-center justify-between">
+                            
+                            {/* Delivery Notes */}
+                            {item.deliveryNotes && (
+                              <div className="mt-2 p-2 bg-orange-100 border border-orange-300 rounded-md">
+                                <p className="text-xs font-medium text-orange-800 mb-1">Delivery Notes:</p>
+                                <p className="text-xs text-gray-700">{item.deliveryNotes}</p>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center justify-between mt-2">
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 item.deliveryStatus === 'Delivered' ? 'bg-green-100 text-green-800' :
                                 item.deliveryStatus === 'In Transit' ? 'bg-blue-100 text-blue-800' :
@@ -1254,16 +1254,12 @@ const AdminLostFound = () => {
                       <button
                         onClick={() => {
                           setReplyingItem(item);
-                          setSelectedStatus(item.status || 'Reported');
+                          setSelectedStatus('Found'); // Always start with Found status
                           
-                          // Auto-generate message if status is Found, Not Found, Claimed, or Returned
-                          if (['Found', 'Not Found', 'Claimed', 'Returned'].includes(item.status)) {
-                            const userName = item?.user ? `${item.user.firstName} ${item.user.lastName}` : 'Valued Customer';
-                            const autoMessage = generateAutoMessage(item.status, item?.itemName || 'your item', userName);
-                            setReplyMessage(autoMessage);
-                          } else {
-                            setReplyMessage(item.adminReply || '');
-                          }
+                          // Auto-generate message for Found status by default
+                          const userName = item?.user ? `${item.user.firstName} ${item.user.lastName}` : 'Valued Customer';
+                          const autoMessage = generateAutoMessage('Found', item?.itemName || 'your item', userName);
+                          setReplyMessage(autoMessage);
                           
                           setShowReplyForm(true);
                         }}
@@ -1564,6 +1560,40 @@ const AdminLostFound = () => {
                         Admin Notes
                       </h4>
                       <p className="text-sm text-gray-700">{viewingItem.adminNotes}</p>
+                    </div>
+                  )}
+
+                  {viewingItem.deliveryAddress && (
+                    <div className="bg-orange-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-orange-800 mb-2 flex items-center">
+                        <Package className="w-5 h-5 mr-2" />
+                        Delivery Information
+                      </h4>
+                      <div className="space-y-2 text-sm">
+                        <div>
+                          <span className="text-gray-600 font-medium">Address:</span>
+                          <p className="text-gray-700 mt-1">{viewingItem.deliveryAddress}</p>
+                        </div>
+                        {viewingItem.deliveryStatus && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Status:</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              viewingItem.deliveryStatus === 'Delivered' ? 'bg-green-100 text-green-800' :
+                              viewingItem.deliveryStatus === 'In Transit' ? 'bg-blue-100 text-blue-800' :
+                              viewingItem.deliveryStatus === 'Failed' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {viewingItem.deliveryStatus}
+                            </span>
+                          </div>
+                        )}
+                        {viewingItem.deliveryNotes && (
+                          <div>
+                            <span className="text-gray-600 font-medium">Notes:</span>
+                            <p className="text-gray-700 mt-1">{viewingItem.deliveryNotes}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
