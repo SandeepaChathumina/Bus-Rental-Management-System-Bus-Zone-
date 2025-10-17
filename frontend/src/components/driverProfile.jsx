@@ -250,10 +250,6 @@ const DriverProfile = () => {
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">{fullName}</h1>
                 <p className="text-lg text-gray-600 mb-3">Professional Bus Driver</p>
                 <div className="flex items-center space-x-4">
-                  <div className="flex items-center bg-yellow-50 px-3 py-1 rounded-full">
-                    <span className="text-yellow-600 text-sm font-semibold">★★★★★</span>
-                    <span className="text-gray-700 ml-2 text-sm font-medium">4.8 Rating</span>
-                  </div>
                   <div className="flex items-center bg-green-50 px-3 py-1 rounded-full">
                     <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                     <span className="text-green-700 text-sm font-medium">Active</span>
