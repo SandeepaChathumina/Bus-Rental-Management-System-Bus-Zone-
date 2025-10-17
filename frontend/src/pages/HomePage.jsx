@@ -418,14 +418,11 @@ const AdvancedBusRentalHomepage = () => {
           console.log('Fetched from localStorage:', parsedFeedbacks.length);
           
           if (parsedFeedbacks.length > 0) {
-            // Filter and transform positive feedbacks
+            // Filter and transform all feedbacks (show all feedbacks regardless of rating)
             const positiveFeedbacks = parsedFeedbacks
               .filter(feedback => {
                 const isPositive = feedback.type === 'feedback';
-                const hasGoodRating = !feedback.rating || feedback.rating >= 4;
-                const isReplied = feedback.status === 'replied' || feedback.admin_reply;
-                
-                return isPositive && hasGoodRating && isReplied;
+                return isPositive; // Show all feedbacks, not just high-rated ones
               })
               .map(feedback => ({
                 name: feedback.client_id?.firstName && feedback.client_id?.lastName 
@@ -444,7 +441,16 @@ const AdvancedBusRentalHomepage = () => {
                 isReplied: !!(feedback.admin_reply || feedback.status === 'replied'),
                 isRealCustomer: true
               }))
-              .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+              .sort((a, b) => {
+                // Sort by priority: replied first, then by rating (high to low), then by date
+                if (a.isReplied !== b.isReplied) {
+                  return b.isReplied - a.isReplied; // replied first
+                }
+                if (a.rating !== b.rating) {
+                  return (b.rating || 0) - (a.rating || 0); // higher rating first
+                }
+                return new Date(b.date || 0) - new Date(a.date || 0); // newer first
+              })
               .slice(0, 10);
 
             console.log('Filtered positive feedbacks from localStorage:', positiveFeedbacks.length);
@@ -475,15 +481,11 @@ const AdvancedBusRentalHomepage = () => {
           console.log('Fetched from general endpoint:', allFeedbacks.length);
 
           if (allFeedbacks.length > 0) {
-            // Filter and transform positive feedbacks
+            // Filter and transform all feedbacks (show all feedbacks regardless of rating)
             const positiveFeedbacks = allFeedbacks
               .filter(feedback => {
-                // Filter criteria for good testimonials
                 const isPositive = feedback.type === 'feedback';
-                const hasGoodRating = !feedback.rating || feedback.rating >= 4;
-                const isReplied = feedback.status === 'replied' || feedback.admin_reply;
-                
-                return isPositive && hasGoodRating && isReplied;
+                return isPositive; // Show all feedbacks, not just high-rated ones
               })
               .map(feedback => ({
                 name: feedback.client_id?.firstName && feedback.client_id?.lastName 
@@ -502,7 +504,16 @@ const AdvancedBusRentalHomepage = () => {
                 isReplied: !!(feedback.admin_reply || feedback.status === 'replied'),
                 isRealCustomer: true
               }))
-              .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+              .sort((a, b) => {
+                // Sort by priority: replied first, then by rating (high to low), then by date
+                if (a.isReplied !== b.isReplied) {
+                  return b.isReplied - a.isReplied; // replied first
+                }
+                if (a.rating !== b.rating) {
+                  return (b.rating || 0) - (a.rating || 0); // higher rating first
+                }
+                return new Date(b.date || 0) - new Date(a.date || 0); // newer first
+              })
               .slice(0, 10); // Limit to 10 most recent
 
             console.log('Filtered positive feedbacks from general endpoint:', positiveFeedbacks.length);

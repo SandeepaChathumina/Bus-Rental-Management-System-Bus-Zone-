@@ -45,26 +45,19 @@ const getPublicTestimonials = async (req, res) => {
   try {
     const { limit = 20 } = req.query;
     
-    // Fetch positive feedbacks for public display - more inclusive criteria
+    // Fetch all feedbacks for public display - show all feedbacks regardless of rating
+    // but prioritize those with good ratings and admin replies
     const testimonials = await Feedback.find({
-      type: 'feedback',
-      $or: [
-        { status: 'replied' }, // Show replied feedbacks
-        { admin_reply: { $exists: true, $ne: null } }, // Or has admin reply
-        { rating: { $gte: 4 } } // Or has good rating (4+)
-      ],
-      $and: [
-        {
-          $or: [
-            { rating: { $gte: 4 } }, // Rating 4 or 5
-            { rating: { $exists: false } }, // Or no rating (assuming positive)
-            { rating: { $eq: null } } // Or null rating
-          ]
-        }
-      ]
+      type: 'feedback'
     })
     .populate('client_id', 'firstName lastName username')
-    .sort({ send_date: -1, createdAt: -1 })
+    .sort({ 
+      // Sort by priority: replied first, then by rating (high to low), then by date
+      status: -1, // 'replied' comes before 'pending' alphabetically
+      rating: -1, // Higher ratings first
+      send_date: -1, 
+      createdAt: -1 
+    })
     .limit(parseInt(limit));
 
     console.log(`Found ${testimonials.length} testimonials for public display`);
