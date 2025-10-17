@@ -13,11 +13,17 @@ const busSchema = new mongoose.Schema({
   },
   brand: {
     type: String,
-    required: true,
+    required: false,
     trim: true,
-    default: 'Toyota',
-    minlength: 2,
-    maxlength: 50
+    maxlength: 50,
+    default: ''
+  },
+  modelName: {
+    type: String,
+    required: false,
+    trim: true,
+    maxlength: 50,
+    default: ''
   },
   engineNumber: {
     type: String,
