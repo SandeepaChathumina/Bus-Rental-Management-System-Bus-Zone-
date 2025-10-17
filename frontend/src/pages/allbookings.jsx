@@ -101,7 +101,10 @@ const AdminBookingCard = ({ booking, onViewDetails }) => {
           </div>
           <div>
             <h3 className="text-lg font-bold text-slate-800">
-              {booking.bus?.busType || 'Standard'} Coach
+              {booking.bus?.brand && booking.bus?.modelName 
+                ? `${booking.bus.brand} ${booking.bus.modelName}`
+                : `${booking.bus?.busType || 'Standard'} Coach`
+              }
             </h3>
             <p className="text-xs text-slate-500">
               by {booking.user?.firstName} {booking.user?.lastName}
