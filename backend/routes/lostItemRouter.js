@@ -4,6 +4,7 @@ import {
     getLostItems,
     updateLostItem,
     addAdminReply,
+    updateDeliveryStatus,
     deleteLostItem
 } from '../controllers/lostItemController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
@@ -24,5 +25,8 @@ router.route('/:id')
 
 router.route('/:id/reply')
     .post(admin, addAdminReply);
+
+router.route('/:id/delivery')
+    .put(admin, updateDeliveryStatus);
 
 export default router;

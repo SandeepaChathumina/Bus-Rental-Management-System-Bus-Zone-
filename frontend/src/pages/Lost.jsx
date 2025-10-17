@@ -49,7 +49,8 @@ const Lost = () => {
     itemName: '',
     description: '',
     dateLost: '',
-    busNumber: ''
+    busNumber: '',
+    deliveryAddress: ''
   });
 
   // Validation state
@@ -541,7 +542,8 @@ const Lost = () => {
         itemName: formData.itemName.trim(),
         description: formData.description.trim(),
         dateLost: formData.dateLost,
-        busNumber: formData.busNumber.trim()
+        busNumber: formData.busNumber.trim(),
+        deliveryAddress: formData.deliveryAddress.trim()
       };
 
       const response = await fetch(`${BACKEND_URL}/api/lost-items`, {
@@ -615,7 +617,8 @@ const Lost = () => {
       itemName: item.itemName || '',
       description: item.description || '',
       dateLost: item.dateLost ? new Date(item.dateLost).toISOString().split('T')[0] : '',
-      busNumber: item.busNumber || ''
+      busNumber: item.busNumber || '',
+      deliveryAddress: item.deliveryAddress || ''
     });
     setShowEditForm(true);
   };
@@ -657,7 +660,8 @@ const Lost = () => {
         itemName: formData.itemName.trim(),
         description: formData.description.trim(),
         dateLost: formData.dateLost,
-        busNumber: formData.busNumber.trim()
+        busNumber: formData.busNumber.trim(),
+        deliveryAddress: formData.deliveryAddress.trim()
       };
 
       const response = await fetch(`${BACKEND_URL}/api/lost-items/${editingItem._id}`, {
@@ -716,7 +720,8 @@ const Lost = () => {
       itemName: '',
       description: '',
       dateLost: '',
-      busNumber: ''
+      busNumber: '',
+      deliveryAddress: ''
     });
     setValidationErrors({
       busNumber: ''
@@ -1422,8 +1427,8 @@ const Lost = () => {
         {/* Report Lost Item Modal */}
         {showReportForm && (
           <div className="fixed inset-0 bg-blue-100 bg-opacity-90 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-md border border-blue-200 shadow-xl">
-              <div className="flex items-center justify-between mb-6">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-lg border border-blue-200 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-slate-800">Report Lost Item</h2>
                 <button
                   onClick={() => {
@@ -1436,9 +1441,9 @@ const Lost = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmitReport} className="space-y-4">
+              <form onSubmit={handleSubmitReport} className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
                     Item Name *
                   </label>
                   <input
@@ -1446,26 +1451,26 @@ const Lost = () => {
                     required
                     value={formData.itemName}
                     onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))}
-                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                    className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                     placeholder="e.g., Black backpack, Red umbrella"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
                     Description
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    rows={3}
-                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-sm"
+                    rows={2}
+                    className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-sm"
                     placeholder="Describe the item in detail..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
                     Date Lost
                   </label>
                   <input
@@ -1473,12 +1478,12 @@ const Lost = () => {
                     value={formData.dateLost}
                     onChange={(e) => setFormData(prev => ({ ...prev, dateLost: e.target.value }))}
                     max={new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                    className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
                     Bus Number *
                   </label>
                   <input
@@ -1486,7 +1491,7 @@ const Lost = () => {
                     required
                     value={formData.busNumber}
                     onChange={(e) => handleBusNumberChange(e.target.value)}
-                    className={`w-full px-4 py-3 bg-white border rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 shadow-sm ${
+                    className={`w-full px-3 py-2 bg-white border rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 shadow-sm ${
                       validationErrors.busNumber 
                         ? 'border-red-500 focus:ring-red-500' 
                         : 'border-blue-200 focus:ring-blue-500'
@@ -1498,7 +1503,23 @@ const Lost = () => {
                   )}
                 </div>
 
-                <div className="flex space-x-3 pt-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Delivery Address
+                  </label>
+                  <textarea
+                    value={formData.deliveryAddress}
+                    onChange={(e) => setFormData(prev => ({ ...prev, deliveryAddress: e.target.value }))}
+                    rows={2}
+                    className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-sm"
+                    placeholder="Enter your address where the item should be delivered (optional)"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Provide your address if you want the item delivered to you when found
+                  </p>
+                </div>
+
+                <div className="flex space-x-3 pt-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -1525,8 +1546,8 @@ const Lost = () => {
         {/* Edit Lost Item Modal */}
         {showEditForm && editingItem && (
           <div className="fixed inset-0 bg-blue-100 bg-opacity-90 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-md border border-blue-200 shadow-xl">
-              <div className="flex items-center justify-between mb-6">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-lg border border-blue-200 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-slate-800">Edit Lost Item</h2>
                 <button
                   onClick={() => {
@@ -1575,9 +1596,9 @@ const Lost = () => {
                 </div>
               )}
 
-              <form onSubmit={handleSubmitEdit} className="space-y-4">
+              <form onSubmit={handleSubmitEdit} className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
                     Item Name *
                   </label>
                   <input
@@ -1586,27 +1607,27 @@ const Lost = () => {
                     value={formData.itemName}
                     onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))}
                     disabled={user?.role !== 'admin' && !canEditItem(editingItem)}
-                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     placeholder="e.g., Black backpack, Red umbrella"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
                     Description
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    rows={3}
+                    rows={2}
                     disabled={user?.role !== 'admin' && !canEditItem(editingItem)}
-                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     placeholder="Describe the item in detail..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
                     Date Lost
                   </label>
                   <input
@@ -1615,12 +1636,12 @@ const Lost = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, dateLost: e.target.value }))}
                     max={new Date().toISOString().split('T')[0]}
                     disabled={user?.role !== 'admin' && !canEditItem(editingItem)}
-                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
                     Bus Number *
                   </label>
                   <input
@@ -1629,7 +1650,7 @@ const Lost = () => {
                     value={formData.busNumber}
                     onChange={(e) => handleBusNumberChange(e.target.value)}
                     disabled={user?.role !== 'admin' && !canEditItem(editingItem)}
-                    className={`w-full px-4 py-3 bg-white border rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ${
+                    className={`w-full px-3 py-2 bg-white border rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ${
                       validationErrors.busNumber 
                         ? 'border-red-500 focus:ring-red-500' 
                         : 'border-blue-200 focus:ring-blue-500'
@@ -1641,7 +1662,24 @@ const Lost = () => {
                   )}
                 </div>
 
-                <div className="flex space-x-3 pt-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Delivery Address
+                  </label>
+                  <textarea
+                    value={formData.deliveryAddress}
+                    onChange={(e) => setFormData(prev => ({ ...prev, deliveryAddress: e.target.value }))}
+                    rows={2}
+                    disabled={user?.role !== 'admin' && !canEditItem(editingItem)}
+                    className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    placeholder="Enter your address where the item should be delivered (optional)"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Provide your address if you want the item delivered to you when found
+                  </p>
+                </div>
+
+                <div className="flex space-x-3 pt-3">
                   <button
                     type="button"
                     onClick={() => {

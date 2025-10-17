@@ -5,7 +5,7 @@ import LostItem from '../models/lostItem.js';
 // @access  Private
 export const reportLostItem = async (req, res) => {
     try {
-        const { itemName, description, dateLost, busNumber } = req.body;
+        const { itemName, description, dateLost, busNumber, deliveryAddress } = req.body;
 
         // Validation
         if (!itemName || !dateLost || !busNumber) {
@@ -35,6 +35,7 @@ export const reportLostItem = async (req, res) => {
             description,
             dateLost: lostDate,
             busNumber: busNumber.toUpperCase(),
+            deliveryAddress: deliveryAddress || '',
             reportedBy: req.user.role === 'admin' ? 'Admin' : 'User',
             user: req.user.role === 'passenger' ? req.user._id : undefined
         });
@@ -194,6 +195,45 @@ export const addAdminReply = async (req, res) => {
 
     } catch (error) {
         console.error('Add admin reply error:', error);
+        res.status(500).json({ message: 'Server error: ' + error.message });
+    }
+};
+
+// @desc    Update delivery status and notes
+// @route   PUT /api/lost-items/:id/delivery
+// @access  Private/Admin
+export const updateDeliveryStatus = async (req, res) => {
+    try {
+        const { deliveryStatus, deliveryNotes } = req.body;
+
+        // Validate delivery status
+        if (deliveryStatus && !['Pending', 'In Transit', 'Delivered', 'Failed'].includes(deliveryStatus)) {
+            return res.status(400).json({ 
+                message: 'Invalid delivery status. Must be one of: Pending, In Transit, Delivered, Failed' 
+            });
+        }
+
+        const updateData = {};
+        if (deliveryStatus) updateData.deliveryStatus = deliveryStatus;
+        if (deliveryNotes !== undefined) updateData.deliveryNotes = deliveryNotes;
+
+        const lostItem = await LostItem.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true, runValidators: true }
+        ).populate('user', 'firstName lastName email phone');
+
+        if (!lostItem) {
+            return res.status(404).json({ message: 'Lost item report not found' });
+        }
+
+        res.json({
+            message: 'Delivery status updated successfully',
+            lostItem
+        });
+
+    } catch (error) {
+        console.error('Update delivery status error:', error);
         res.status(500).json({ message: 'Server error: ' + error.message });
     }
 };

@@ -118,6 +118,12 @@ const AdminLostFound = () => {
   const [selectedStatus, setSelectedStatus] = useState('Reported');
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingItem, setViewingItem] = useState(null);
+  
+  // Delivery management states
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [deliveryItem, setDeliveryItem] = useState(null);
+  const [deliveryStatus, setDeliveryStatus] = useState('Pending');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
 
   // Auto-generated message templates
   const generateAutoMessage = (status, itemName, userName) => {
@@ -385,6 +391,9 @@ const AdminLostFound = () => {
       'User Name',
       'User Email',
       'User Phone',
+      'Delivery Address',
+      'Delivery Status',
+      'Delivery Notes',
       'Admin Notes',
       'Admin Reply',
       'Reply Date',
@@ -403,6 +412,9 @@ const AdminLostFound = () => {
       item.user ? `${item.user.firstName} ${item.user.lastName}` : 'N/A',
       item.user?.email || 'N/A',
       item.user?.phone || 'N/A',
+      `"${(item.deliveryAddress || '').replace(/"/g, '""')}"`,
+      item.deliveryStatus || 'N/A',
+      `"${(item.deliveryNotes || '').replace(/"/g, '""')}"`,
       `"${(item.adminNotes || '').replace(/"/g, '""')}"`,
       `"${(item.adminReply || '').replace(/"/g, '""')}"`,
       item.repliedAt ? new Date(item.repliedAt).toLocaleString() : 'N/A',
@@ -618,24 +630,28 @@ const AdminLostFound = () => {
     
     // Prepare table data
     const tableColumns = [
-      { header: 'Item Name', dataKey: 'itemName', width: 40 },
-      { header: 'Bus No.', dataKey: 'busNumber', width: 20 },
-      { header: 'Date Lost', dataKey: 'dateLost', width: 25 },
-      { header: 'Status', dataKey: 'status', width: 20 },
-      { header: 'Reported By', dataKey: 'reportedBy', width: 25 },
-      { header: 'User Contact', dataKey: 'userContact', width: 30 },
-      { header: 'Admin Reply', dataKey: 'adminReply', width: 50 },
-      { header: 'Reply Date', dataKey: 'replyDate', width: 25 }
+      { header: 'Item Name', dataKey: 'itemName', width: 30 },
+      { header: 'Bus No.', dataKey: 'busNumber', width: 15 },
+      { header: 'Date Lost', dataKey: 'dateLost', width: 20 },
+      { header: 'Status', dataKey: 'status', width: 15 },
+      { header: 'Reported By', dataKey: 'reportedBy', width: 20 },
+      { header: 'User Contact', dataKey: 'userContact', width: 25 },
+      { header: 'Delivery Address', dataKey: 'deliveryAddress', width: 30 },
+      { header: 'Delivery Status', dataKey: 'deliveryStatus', width: 20 },
+      { header: 'Admin Reply', dataKey: 'adminReply', width: 40 },
+      { header: 'Reply Date', dataKey: 'replyDate', width: 20 }
     ];
     
     const tableRows = items.map((item, index) => ({
-      itemName: (item.itemName || '').substring(0, 25) + (item.itemName?.length > 25 ? '...' : ''),
+      itemName: (item.itemName || '').substring(0, 20) + (item.itemName?.length > 20 ? '...' : ''),
       busNumber: item.busNumber || 'N/A',
       dateLost: item.dateLost ? new Date(item.dateLost).toLocaleDateString('en-GB') : 'N/A',
       status: item.status || 'N/A',
       reportedBy: item.user ? `${item.user.firstName} ${item.user.lastName}` : (item.reportedBy || 'N/A'),
       userContact: item.user?.phone || 'N/A',
-      adminReply: (item.adminReply || '').substring(0, 40) + (item.adminReply?.length > 40 ? '...' : '') || 'N/A',
+      deliveryAddress: (item.deliveryAddress || '').substring(0, 25) + (item.deliveryAddress?.length > 25 ? '...' : '') || 'N/A',
+      deliveryStatus: item.deliveryStatus || 'N/A',
+      adminReply: (item.adminReply || '').substring(0, 30) + (item.adminReply?.length > 30 ? '...' : '') || 'N/A',
       replyDate: item.repliedAt ? new Date(item.repliedAt).toLocaleDateString('en-GB') : 'N/A'
     }));
 
@@ -764,6 +780,58 @@ const AdminLostFound = () => {
   const handleViewItem = (item) => {
     setViewingItem(item);
     setShowViewModal(true);
+  };
+
+  // Delivery management functions
+  const handleDeliveryManagement = (item) => {
+    setDeliveryItem(item);
+    setDeliveryStatus(item.deliveryStatus || 'Pending');
+    setDeliveryNotes(item.deliveryNotes || '');
+    setShowDeliveryModal(true);
+  };
+
+  const handleDeliveryUpdate = async () => {
+    if (!deliveryItem) return;
+
+    try {
+      setSubmitting(true);
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${BACKEND_URL}/api/lost-items/${deliveryItem._id}/delivery`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          deliveryStatus,
+          deliveryNotes
+        })
+      });
+
+      if (response.ok) {
+        const updatedItem = await response.json();
+        
+        // Update the item in the list
+        setLostItems(prev => prev.map(item => 
+          item._id === deliveryItem._id ? updatedItem.lostItem : item
+        ));
+        
+        toast.success('Delivery status updated successfully');
+        setShowDeliveryModal(false);
+        setDeliveryItem(null);
+        setDeliveryStatus('Pending');
+        setDeliveryNotes('');
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to update delivery status');
+      }
+    } catch (error) {
+      console.error('Error updating delivery status:', error);
+      toast.error('Failed to update delivery status');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Handle admin reply with status - FIXED VERSION
@@ -1139,6 +1207,32 @@ const AdminLostFound = () => {
                                   <span>{item.user.phone}</span>
                                 </div>
                               )}
+                            </div>
+                          </div>
+                        )}
+
+                        {item.deliveryAddress && (
+                          <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-sm font-medium text-orange-800">Delivery Address</h4>
+                              <Package className="w-4 h-4 text-orange-500" />
+                            </div>
+                            <p className="text-sm text-gray-700 mb-2">{item.deliveryAddress}</p>
+                            <div className="flex items-center justify-between">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                item.deliveryStatus === 'Delivered' ? 'bg-green-100 text-green-800' :
+                                item.deliveryStatus === 'In Transit' ? 'bg-blue-100 text-blue-800' :
+                                item.deliveryStatus === 'Failed' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {item.deliveryStatus || 'Pending'}
+                              </span>
+                              <button
+                                onClick={() => handleDeliveryManagement(item)}
+                                className="text-xs text-orange-600 hover:text-orange-700 font-medium"
+                              >
+                                Manage Delivery
+                              </button>
                             </div>
                           </div>
                         )}
@@ -1536,6 +1630,78 @@ const AdminLostFound = () => {
                 </div>
               )}
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delivery Management Modal */}
+      {showDeliveryModal && deliveryItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowDeliveryModal(false)}></div>
+          <div className="relative bg-white border border-blue-200 rounded-xl p-6 z-60 w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Manage Delivery</h3>
+              <button 
+                onClick={() => setShowDeliveryModal(false)} 
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Item: {deliveryItem.itemName}
+                </label>
+                <p className="text-sm text-gray-600 mb-4">{deliveryItem.deliveryAddress}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Delivery Status
+                </label>
+                <select
+                  value={deliveryStatus}
+                  onChange={(e) => setDeliveryStatus(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="In Transit">In Transit</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Failed">Failed</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Delivery Notes
+                </label>
+                <textarea
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  placeholder="Add delivery notes or instructions..."
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-2 mt-6">
+              <button
+                onClick={() => setShowDeliveryModal(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeliveryUpdate}
+                disabled={submitting}
+                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+              >
+                {submitting ? 'Updating...' : 'Update Delivery'}
+              </button>
             </div>
           </div>
         </div>
