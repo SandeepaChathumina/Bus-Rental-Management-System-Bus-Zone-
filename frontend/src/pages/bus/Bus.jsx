@@ -253,8 +253,8 @@ const Bus = () => {
               onChange={(e) => setSortBy(e.target.value)}
               className="px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="price">Sort by Price</option>
-              <option value="capacity">Sort by Capacity</option>
+              <option value="price">Sort by Capacity</option>
+              <option value="capacity">Sort by Price</option>
             </select>
           </div>
         </div>
