@@ -299,7 +299,12 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-emerald-700">Bus Type:</span>
-                      <span className="font-medium">{booking.bus?.busType} Coach</span>
+                      <span className="font-medium">
+                        {booking.bus?.brand && booking.bus?.modelName 
+                          ? `${booking.bus.brand} ${booking.bus.modelName}`
+                          : `${booking.bus?.busType || 'N/A'} Coach`
+                        }
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-emerald-700">Number Plate:</span>

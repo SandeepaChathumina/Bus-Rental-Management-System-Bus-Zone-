@@ -217,7 +217,12 @@ const AdminBookings = () => {
                   </td>
                   <td className="px-4 py-3 text-white">
                     {booking.bus?.numberPlate}
-                    <div className="text-slate-400 text-sm">{booking.bus?.busType}</div>
+                    <div className="text-slate-400 text-sm">
+                      {booking.bus?.brand && booking.bus?.modelName 
+                        ? `${booking.bus.brand} ${booking.bus.modelName}`
+                        : booking.bus?.busType || 'N/A'
+                      }
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-white">
                     {booking.route?.from} → {booking.route?.to}
