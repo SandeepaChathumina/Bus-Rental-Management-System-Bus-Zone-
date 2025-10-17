@@ -58,6 +58,7 @@ import axios from 'axios';
 import MaintenanceManagement from './MaintenanceManagement';
 import AllBookings from './allbookings';
 import DriverScheduleManagement from '../components/DriverScheduleManagement';
+import Analytics from './Analytics';
 
 
 const AdminDashboard = () => {
@@ -952,7 +953,7 @@ const AdminDashboard = () => {
       case 'lost-found': // ✅ Added Lost & Found case
         return <AdminLostFound />;
       case 'analytics':
-        return <div className="text-white p-6">Analytics (placeholder)</div>;
+        return <Analytics />;
       default:
         return <div className="text-white p-6">Module under development</div>;
     }
