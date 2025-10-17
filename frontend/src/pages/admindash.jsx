@@ -162,6 +162,23 @@ const AdminDashboard = () => {
           console.error('Failed to fetch booking stats:', bookingError);
           bookingStats = { totalRevenue: 0, confirmedBookings: 0 };
         }
+
+        // Fetch maintenance cost statistics
+        let maintenanceCostStats = { totalSpent: 0 };
+        try {
+          const maintenanceCostResponse = await fetch(`${BACKEND_URL}/api/maintenance/cost-stats`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (maintenanceCostResponse.ok) {
+            const costData = await maintenanceCostResponse.json();
+            maintenanceCostStats = {
+              totalSpent: costData.overall?.totalSpent || 0
+            };
+          }
+        } catch (costError) {
+          console.error('Failed to fetch maintenance cost stats:', costError);
+          maintenanceCostStats = { totalSpent: 0 };
+        }
         
         if (!mounted) return;
         
@@ -175,8 +192,8 @@ const AdminDashboard = () => {
           activeBookings: bookingStats.confirmedBookings,
           maintenanceRequests: busStats.maintenanceBuses,
           totalIncome: bookingStats.totalRevenue,
-          totalExpense: 0, // Not using expense calculation for now
-          netRevenue: bookingStats.totalRevenue
+          totalExpense: maintenanceCostStats.totalSpent,
+          netRevenue: bookingStats.totalRevenue - maintenanceCostStats.totalSpent
         }));
         
       } catch (err) {
