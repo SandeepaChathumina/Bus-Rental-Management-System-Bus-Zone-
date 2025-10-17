@@ -815,7 +815,7 @@ const AdminDashboard = () => {
         <StatCard
           title="Total Income"
           value={dashboardStats.totalIncome}
-          icon={DollarSign}
+          icon={BarChart3}
           isCurrency={true}
           onClick={() => setActiveTab('payments')}
         />
