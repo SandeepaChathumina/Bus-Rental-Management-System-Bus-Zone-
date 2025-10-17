@@ -96,11 +96,11 @@ const AdminDashboard = () => {
   });
 
   const [dashboardStats, setDashboardStats] = useState({
-    totalBuses: 48,
-    activeBookings: 156,
-    maintenanceRequests: 12,
-    revenue: 1256000,
-    occupancyRate: 78,
+    totalBuses: 0,
+    activeBookings: 0,
+    maintenanceRequests: 0,
+    revenue: 0,
+    occupancyRate: 0,
     totalIncome: 0,
     totalExpense: 0,
     netRevenue: 0
@@ -143,8 +143,8 @@ const AdminDashboard = () => {
           busStats = await busStatsResponse.json();
         }
 
-        // Fetch booking statistics for revenue calculation
-        let bookingStats = { totalRevenue: 0 };
+        // Fetch booking statistics for revenue calculation and active bookings
+        let bookingStats = { totalRevenue: 0, confirmedBookings: 0 };
         try {
           const bookingStatsResponse = await fetch(`${BACKEND_URL}/api/bookings/admin/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -153,13 +153,14 @@ const AdminDashboard = () => {
             const bookingData = await bookingStatsResponse.json();
             if (bookingData.success) {
               bookingStats = {
-                totalRevenue: bookingData.stats.totalRevenue || 0
+                totalRevenue: bookingData.stats.totalRevenue || 0,
+                confirmedBookings: bookingData.stats.confirmedBookings || 0
               };
             }
           }
         } catch (bookingError) {
           console.error('Failed to fetch booking stats:', bookingError);
-          bookingStats = { totalRevenue: 0 };
+          bookingStats = { totalRevenue: 0, confirmedBookings: 0 };
         }
         
         if (!mounted) return;
@@ -171,6 +172,7 @@ const AdminDashboard = () => {
         setDashboardStats(prev => ({
           ...prev,
           totalBuses: busStats.totalBuses,
+          activeBookings: bookingStats.confirmedBookings,
           maintenanceRequests: busStats.maintenanceBuses,
           totalIncome: bookingStats.totalRevenue,
           totalExpense: 0, // Not using expense calculation for now
@@ -184,6 +186,7 @@ const AdminDashboard = () => {
           // Set fallback booking stats
           setDashboardStats(prev => ({
             ...prev,
+            activeBookings: 0,
             totalIncome: 0,
             totalExpense: 0,
             netRevenue: 0
