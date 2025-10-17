@@ -15,6 +15,7 @@ import scheduleRouter from './routes/scheduleRouter.js';
 import staffProfileRoutes from './routes/staffProfileRoutes.js';
 import chatbotRouter from './routes/chatbotRouter.js';
 import realPlacesRouter from './routes/realPlacesRouter.js';
+import maintenanceRouter from './routes/maintenanceRouter.js';
 
 dotenv.config();
 
@@ -44,6 +45,9 @@ app.use('/api/schedules', scheduleRouter);
 app.use('/api/chatbot', chatbotRouter);
 app.use('/api/real-places', realPlacesRouter);
 
+// Add this route after other routes
+app.use('/api/maintenance', maintenanceRouter);
+
 app.get('/', (req, res) => {
   res.send('Bus Rental Management System API is running...');
 });
@@ -51,11 +55,3 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, console.log(`Server running on port ${PORT}`));
-
-// Add this route after other routes
-app.use('/api/buses', busRouter);
-// Add this import at the top with other imports
-import maintenanceRouter from './routes/maintenanceRouter.js';
-
-// Add this route after other routes
-app.use('/api/maintenance', maintenanceRouter);
