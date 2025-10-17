@@ -18,6 +18,7 @@ import {
   Save,
   X,
   Plus,
+  ArrowLeft,
   Download,
   FileText,
   RotateCcw
@@ -757,23 +758,30 @@ const DriverScheduleManagement = () => {
       { header: 'Booking ID', dataKey: 'bookingId', width: 25 },
       { header: 'Passenger', dataKey: 'passenger', width: 35 },
       { header: 'Route', dataKey: 'route', width: 40 },
-      { header: 'Date', dataKey: 'date', width: 25 },
+      { header: 'Travel Dates', dataKey: 'dates', width: 30 },
       { header: 'Time', dataKey: 'time', width: 20 },
       { header: 'Driver', dataKey: 'driver', width: 35 },
       { header: 'Status', dataKey: 'status', width: 25 },
       { header: 'Response', dataKey: 'response', width: 20 }
     ];
     
-    const tableRows = bookings.map((booking, index) => ({
-      bookingId: booking.bookingId || 'N/A',
-      passenger: `${booking.user?.firstName || 'N/A'} ${booking.user?.lastName || 'N/A'}`.trim().substring(0, 20),
-      route: `${booking.route?.from || 'N/A'} → ${booking.route?.to || 'N/A'}`.substring(0, 25),
-      date: formatDate(booking.travelDate),
-      time: formatTime(booking.departureTime),
-      driver: getDriverName(booking.assignedDriver).substring(0, 20),
-      status: booking.bookingStatus || 'N/A',
-      response: booking.driverResponse || 'N/A'
-    }));
+    const tableRows = bookings.map((booking, index) => {
+      let dateString = formatDate(booking.travelDate);
+      if (booking.tripType === 'round-trip' && booking.returnDate) {
+        dateString += `\nReturn: ${formatDate(booking.returnDate)}`;
+      }
+      
+      return {
+        bookingId: booking.bookingId || 'N/A',
+        passenger: `${booking.user?.firstName || 'N/A'} ${booking.user?.lastName || 'N/A'}`.trim().substring(0, 20),
+        route: `${booking.route?.from || 'N/A'} → ${booking.route?.to || 'N/A'}`.substring(0, 25),
+        dates: dateString,
+        time: formatTime(booking.departureTime),
+        driver: getDriverName(booking.assignedDriver).substring(0, 20),
+        status: booking.bookingStatus || 'N/A',
+        response: booking.driverResponse || 'N/A'
+      };
+    });
 
     autoTable(doc, {
       startY: tableStartY + 8,
@@ -1274,7 +1282,7 @@ const DriverScheduleManagement = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Passenger</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Bus Details</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Route</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Travel Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Travel Dates</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Assigned Driver</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Actions</th>
               </tr>
@@ -1307,10 +1315,21 @@ const DriverScheduleManagement = () => {
           </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-700">{formatDate(booking.travelDate)}</div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-sm text-gray-700">
+                      <div className="flex items-center">
+                        <Calendar className="w-4 h-4 mr-1 text-blue-500" />
+                        <span>Departure: {formatDate(booking.travelDate)}</span>
+                      </div>
+                      {booking.tripType === 'round-trip' && booking.returnDate && (
+                        <div className="flex items-center mt-1">
+                          <ArrowLeft className="w-4 h-4 mr-1 text-green-500" />
+                          <span className="text-sm text-gray-700">Return: {formatDate(booking.returnDate)}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
                       {booking.tripType === 'round-trip' ? 'Round Trip' : 'One Way'}
-              </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     {booking.assignedDriver ? (

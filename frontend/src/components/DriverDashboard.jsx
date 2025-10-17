@@ -32,6 +32,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DriverProfile from './driverProfile';
+import NotificationBell from './NotificationBell';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -1028,7 +1029,6 @@ const DriverDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState('schedule');
-  const [notificationCount] = useState(3);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   const { user, loading, logout } = useAuth();
@@ -1232,17 +1232,7 @@ const DriverDashboard = () => {
 
             <div className="flex items-center space-x-4">
               {/* Notifications */}
-              <button 
-                onClick={() => navigate('/notifications')}
-                className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <Bell className="w-5 h-5 text-gray-600" />
-                {notificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {notificationCount}
-                  </span>
-                )}
-              </button>
+              <NotificationBell />
 
               {/* User Menu */}
               <div className="flex items-center space-x-3">

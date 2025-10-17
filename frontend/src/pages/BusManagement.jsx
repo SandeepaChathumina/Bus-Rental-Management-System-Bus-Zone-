@@ -53,6 +53,7 @@ const BusManagement = () => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const [formErrors, setFormErrors] = useState({});
+  const [validatedFields, setValidatedFields] = useState({});
 
   useEffect(() => {
     fetchBuses();
@@ -99,6 +100,23 @@ const BusManagement = () => {
     setFilteredBuses(filtered);
   };
 
+  // Helper function to get validation styling
+  const getValidationStyle = (fieldName, isEditing = false) => {
+    if (isEditing) {
+      return 'border-gray-300 text-gray-400 cursor-not-allowed';
+    }
+    
+    if (formErrors[fieldName]) {
+      return 'border-red-500 focus:ring-red-500';
+    }
+    
+    if (validatedFields[fieldName]) {
+      return 'border-green-500 focus:ring-green-500 bg-green-50';
+    }
+    
+    return 'border-blue-300 focus:ring-blue-500';
+  };
+
   const validateForm = () => {
     const errors = {};
 
@@ -108,6 +126,14 @@ const BusManagement = () => {
         errors.engineNumber = 'Engine number is required';
       } else if (!/^ENG[A-Z0-9]{2,17}$/i.test(formData.engineNumber)) {
         errors.engineNumber = 'Engine number must start with ENG followed by letters and numbers (e.g., ENG123ABC)';
+      } else {
+        // Check for duplicate engine number
+        const duplicateEngine = buses.find(bus => 
+          bus.engineNumber.toLowerCase() === formData.engineNumber.toLowerCase()
+        );
+        if (duplicateEngine) {
+          errors.engineNumber = 'Engine number already exists. Please enter a unique engine number.';
+        }
       }
     }
 
@@ -122,6 +148,14 @@ const BusManagement = () => {
         
         if (!customPlateRegex.test(formData.numberPlate)) {
           errors.numberPlate = 'Number plate must start with N, second letter a-f, followed by 4 numbers (e.g., NA1234, NB5678)';
+        } else {
+          // Check for duplicate number plate
+          const duplicatePlate = buses.find(bus => 
+            bus.numberPlate.toLowerCase() === formData.numberPlate.toLowerCase()
+          );
+          if (duplicatePlate) {
+            errors.numberPlate = 'Number plate already exists. Please enter a unique number plate.';
+          }
         }
       }
     }
@@ -243,6 +277,7 @@ const BusManagement = () => {
       });
       setImagePreview(null);
       setFormErrors({});
+      setValidatedFields({});
       fetchBuses();
     } catch (error) {
       console.error('Failed to save bus', error);
@@ -274,6 +309,7 @@ const BusManagement = () => {
     });
     setImagePreview(bus.vehiclePhoto || null);
     setFormErrors({});
+    setValidatedFields({});
     setShowModal(true);
   };
 
@@ -310,6 +346,94 @@ const BusManagement = () => {
         'Double Decker': 78
       };
       newFormData.capacity = capacityMap[value] || '';
+    }
+
+    // Real-time validation for all fields
+    if (!editingBus) {
+      const newErrors = { ...formErrors };
+      const newValidatedFields = { ...validatedFields };
+      
+      // Clear previous validation state for this field
+      delete newValidatedFields[name];
+      
+      // Engine Number validation
+      if (name === 'engineNumber' && processedValue.trim()) {
+        const engineRegex = /^ENG[A-Z0-9]{2,17}$/i;
+        const duplicateEngine = buses.find(bus => 
+          bus.engineNumber.toLowerCase() === processedValue.toLowerCase()
+        );
+        
+        if (!engineRegex.test(processedValue)) {
+          newErrors.engineNumber = 'Engine number must start with ENG followed by letters and numbers (e.g., ENG123ABC)';
+        } else if (duplicateEngine) {
+          newErrors.engineNumber = 'Engine number already exists. Please enter a unique engine number.';
+        } else {
+          newValidatedFields.engineNumber = true;
+          delete newErrors.engineNumber;
+        }
+      }
+      
+      // Number Plate validation
+      if (name === 'numberPlate' && processedValue.trim()) {
+        const customPlateRegex = /^N[a-fA-F]\d{4}$/i;
+        const duplicatePlate = buses.find(bus => 
+          bus.numberPlate.toLowerCase() === processedValue.toLowerCase()
+        );
+        
+        if (!customPlateRegex.test(processedValue)) {
+          newErrors.numberPlate = 'Number plate must start with N, second letter a-f, followed by 4 numbers (e.g., NA1234, NB5678)';
+        } else if (duplicatePlate) {
+          newErrors.numberPlate = 'Number plate already exists. Please enter a unique number plate.';
+        } else {
+          newValidatedFields.numberPlate = true;
+          delete newErrors.numberPlate;
+        }
+      }
+      
+      // Brand validation
+      if (name === 'brand' && processedValue.trim()) {
+        if (processedValue.trim().length < 2) {
+          newErrors.brand = 'Brand must be at least 2 characters long';
+        } else {
+          newValidatedFields.brand = true;
+          delete newErrors.brand;
+        }
+      }
+      
+      // Model Name validation
+      if (name === 'modelName' && processedValue.trim()) {
+        if (processedValue.trim().length < 2) {
+          newErrors.modelName = 'Model name must be at least 2 characters long';
+        } else {
+          newValidatedFields.modelName = true;
+          delete newErrors.modelName;
+        }
+      }
+      
+      // Capacity validation
+      if (name === 'capacity' && processedValue.trim()) {
+        const capacity = parseInt(processedValue);
+        if (isNaN(capacity) || capacity < 1 || capacity > 100) {
+          newErrors.capacity = 'Capacity must be a number between 1 and 100';
+        } else {
+          newValidatedFields.capacity = true;
+          delete newErrors.capacity;
+        }
+      }
+      
+      // Price validation
+      if (name === 'pricePerDay' && processedValue.trim()) {
+        const price = parseFloat(processedValue);
+        if (isNaN(price) || price < 0) {
+          newErrors.pricePerDay = 'Price must be a valid positive number';
+        } else {
+          newValidatedFields.pricePerDay = true;
+          delete newErrors.pricePerDay;
+        }
+      }
+      
+      setFormErrors(newErrors);
+      setValidatedFields(newValidatedFields);
     }
 
     setFormData(newFormData);
@@ -1048,6 +1172,7 @@ const BusManagement = () => {
                   });
                   setImagePreview(null);
                   setFormErrors({});
+                  setValidatedFields({});
                 }}
                 className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
               >
@@ -1091,11 +1216,7 @@ const BusManagement = () => {
                     name="brand"
                     value={formData.brand}
                     onChange={handleInputChange}
-                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
-                      editingBus 
-                        ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
-                        : formErrors.brand ? 'border-red-500 focus:ring-red-500' : 'border-blue-300 focus:ring-blue-500'
-                    }`}
+                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${getValidationStyle('brand', editingBus)}`}
                     placeholder="Enter bus brand (e.g., Toyota, Mercedes, Volvo)"
                     required
                     disabled={editingBus}
@@ -1115,11 +1236,7 @@ const BusManagement = () => {
                     name="modelName"
                     value={formData.modelName}
                     onChange={handleInputChange}
-                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
-                      editingBus 
-                        ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
-                        : formErrors.modelName ? 'border-red-500 focus:ring-red-500' : 'border-blue-300 focus:ring-blue-500'
-                    }`}
+                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${getValidationStyle('modelName', editingBus)}`}
                     placeholder="e.g., Hiace, Sprinter, Coaster (optional)"
                     disabled={editingBus}
                   />
@@ -1138,11 +1255,7 @@ const BusManagement = () => {
                     name="engineNumber"
                     value={formData.engineNumber}
                     onChange={handleInputChange}
-                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
-                      editingBus 
-                        ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
-                        : formErrors.engineNumber ? 'border-red-500 focus:ring-red-500' : 'border-blue-300 focus:ring-blue-500'
-                    }`}
+                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${getValidationStyle('engineNumber', editingBus)}`}
                     placeholder="Enter engine number (e.g., ENG123ABC)"
                     required
                     disabled={editingBus}
@@ -1164,11 +1277,7 @@ const BusManagement = () => {
                     onChange={handleInputChange}
                     min="10"
                     max="100"
-                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
-                      editingBus 
-                        ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
-                        : formErrors.capacity ? 'border-red-500 focus:ring-red-500' : 'border-blue-300 focus:ring-blue-500'
-                    }`}
+                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${getValidationStyle('capacity', editingBus)}`}
                     placeholder="Enter seating capacity"
                     required
                     disabled={editingBus}
@@ -1191,11 +1300,7 @@ const BusManagement = () => {
                     name="numberPlate"
                     value={formData.numberPlate || ''}
                     onChange={handleInputChange}
-                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full uppercase ${
-                      editingBus 
-                        ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
-                        : formErrors.numberPlate ? 'border-red-500 focus:ring-red-500' : 'border-blue-300 focus:ring-blue-500'
-                    }`}
+                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full uppercase ${getValidationStyle('numberPlate', editingBus)}`}
                     placeholder="Enter number plate (e.g., NA1234)"
                     required
                     disabled={editingBus}
@@ -1219,9 +1324,7 @@ const BusManagement = () => {
                     min="0"
                     max="100000"
                     step="0.01"
-                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${
-                      formErrors.pricePerDay ? 'border-red-500 focus:ring-red-500' : 'border-blue-300 focus:ring-blue-500'
-                    }`}
+                    className={`p-3 bg-white border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors w-full ${getValidationStyle('pricePerDay', false)}`}
                     placeholder="Enter price per day in LKR"
                     required
                   />
@@ -1289,6 +1392,7 @@ const BusManagement = () => {
                     });
                     setImagePreview(null);
                     setFormErrors({});
+                    setValidatedFields({});
                   }}
                   className="px-4 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 transition-colors"
                 >

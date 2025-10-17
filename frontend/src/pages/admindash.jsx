@@ -18,7 +18,6 @@ import {
   Wrench,
   BookOpen,
   BarChart3,
-  Settings,
   Plus,
   MoreVertical,
   UserCheck,
@@ -59,6 +58,7 @@ import axios from 'axios';
 import MaintenanceManagement from './MaintenanceManagement';
 import AllBookings from './allbookings';
 import DriverScheduleManagement from '../components/DriverScheduleManagement';
+import Analytics from './Analytics';
 
 
 const AdminDashboard = () => {
@@ -96,11 +96,11 @@ const AdminDashboard = () => {
   });
 
   const [dashboardStats, setDashboardStats] = useState({
-    totalBuses: 48,
-    activeBookings: 156,
-    maintenanceRequests: 12,
-    revenue: 1256000,
-    occupancyRate: 78,
+    totalBuses: 0,
+    activeBookings: 0,
+    maintenanceRequests: 0,
+    revenue: 0,
+    occupancyRate: 0,
     totalIncome: 0,
     totalExpense: 0,
     netRevenue: 0
@@ -143,8 +143,8 @@ const AdminDashboard = () => {
           busStats = await busStatsResponse.json();
         }
 
-        // Fetch booking statistics for revenue calculation
-        let bookingStats = { totalRevenue: 0 };
+        // Fetch booking statistics for revenue calculation and active bookings
+        let bookingStats = { totalRevenue: 0, confirmedBookings: 0 };
         try {
           const bookingStatsResponse = await fetch(`${BACKEND_URL}/api/bookings/admin/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -153,13 +153,31 @@ const AdminDashboard = () => {
             const bookingData = await bookingStatsResponse.json();
             if (bookingData.success) {
               bookingStats = {
-                totalRevenue: bookingData.stats.totalRevenue || 0
+                totalRevenue: bookingData.stats.totalRevenue || 0,
+                confirmedBookings: bookingData.stats.confirmedBookings || 0
               };
             }
           }
         } catch (bookingError) {
           console.error('Failed to fetch booking stats:', bookingError);
-          bookingStats = { totalRevenue: 0 };
+          bookingStats = { totalRevenue: 0, confirmedBookings: 0 };
+        }
+
+        // Fetch maintenance cost statistics
+        let maintenanceCostStats = { totalSpent: 0 };
+        try {
+          const maintenanceCostResponse = await fetch(`${BACKEND_URL}/api/maintenance/cost-stats`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (maintenanceCostResponse.ok) {
+            const costData = await maintenanceCostResponse.json();
+            maintenanceCostStats = {
+              totalSpent: costData.overall?.totalSpent || 0
+            };
+          }
+        } catch (costError) {
+          console.error('Failed to fetch maintenance cost stats:', costError);
+          maintenanceCostStats = { totalSpent: 0 };
         }
         
         if (!mounted) return;
@@ -171,10 +189,11 @@ const AdminDashboard = () => {
         setDashboardStats(prev => ({
           ...prev,
           totalBuses: busStats.totalBuses,
+          activeBookings: bookingStats.confirmedBookings,
           maintenanceRequests: busStats.maintenanceBuses,
           totalIncome: bookingStats.totalRevenue,
-          totalExpense: 0, // Not using expense calculation for now
-          netRevenue: bookingStats.totalRevenue
+          totalExpense: maintenanceCostStats.totalSpent,
+          netRevenue: bookingStats.totalRevenue - maintenanceCostStats.totalSpent
         }));
         
       } catch (err) {
@@ -184,6 +203,7 @@ const AdminDashboard = () => {
           // Set fallback booking stats
           setDashboardStats(prev => ({
             ...prev,
+            activeBookings: 0,
             totalIncome: 0,
             totalExpense: 0,
             netRevenue: 0
@@ -737,8 +757,7 @@ const AdminDashboard = () => {
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'feedback', label: 'Feedback', icon: MessageSquare },
     { id: 'lost-found', label: 'Lost & Found', icon: Search }, 
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 }
   ];
 
   // Update StatCard to include payment statistics
@@ -812,7 +831,7 @@ const AdminDashboard = () => {
         <StatCard
           title="Total Income"
           value={dashboardStats.totalIncome}
-          icon={DollarSign}
+          icon={BarChart3}
           isCurrency={true}
           onClick={() => setActiveTab('payments')}
         />
@@ -934,9 +953,7 @@ const AdminDashboard = () => {
       case 'lost-found': // ✅ Added Lost & Found case
         return <AdminLostFound />;
       case 'analytics':
-        return <div className="text-white p-6">Analytics (placeholder)</div>;
-      case 'settings':
-        return <div className="text-white p-6">Settings (placeholder)</div>;
+        return <Analytics />;
       default:
         return <div className="text-white p-6">Module under development</div>;
     }

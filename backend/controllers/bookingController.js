@@ -547,7 +547,7 @@ export const getAllBookings = async (req, res) => {
 
     const bookings = await Booking.find(filter)
       .populate('user', 'firstName lastName email phone')
-      .populate('bus', 'busType numberPlate capacity')
+      .populate('bus', 'busType numberPlate capacity brand modelName')
       .sort({ createdAt: -1 });
 
     console.log('🔍 Admin getAllBookings - Found bookings:', bookings.length);

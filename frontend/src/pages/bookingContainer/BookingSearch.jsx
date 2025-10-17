@@ -111,6 +111,7 @@ const BookingSearch = () => {
     }
   };
 
+
   const swapLocations = () => {
     setSearchData(prev => ({
       ...prev,
@@ -166,17 +167,20 @@ const BookingSearch = () => {
                 <label className="text-slate-700 text-sm font-medium mb-2 block">From</label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-500" />
-                  <select
+                  <input
+                    type="text"
                     value={searchData.from}
                     onChange={(e) => handleInputChange('from', e.target.value)}
+                    placeholder="Enter departure location (e.g., Colombo, Kandy)"
                     className="w-full pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                     required
-                  >
-                    <option value="">Select Departure</option>
+                    list="from-suggestions"
+                  />
+                  <datalist id="from-suggestions">
                     {locations.map(location => (
-                      <option key={location} value={location}>{location}</option>
+                      <option key={location} value={location} />
                     ))}
-                  </select>
+                  </datalist>
                 </div>
               </div>
 
@@ -197,17 +201,20 @@ const BookingSearch = () => {
                 <label className="text-slate-700 text-sm font-medium mb-2 block">To</label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-500" />
-                  <select
+                  <input
+                    type="text"
                     value={searchData.to}
                     onChange={(e) => handleInputChange('to', e.target.value)}
+                    placeholder="Enter destination (e.g., Galle, Jaffna, Anuradhapura)"
                     className="w-full pl-10 pr-20 py-3 bg-white border border-slate-300 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                     required
-                  >
-                    <option value="">Select Destination</option>
+                    list="to-suggestions"
+                  />
+                  <datalist id="to-suggestions">
                     {locations.map(location => (
-                      <option key={location} value={location}>{location}</option>
+                      <option key={location} value={location} />
                     ))}
-                  </select>
+                  </datalist>
                   {searchData.to && (
                     <button
                       type="button"
@@ -318,7 +325,9 @@ const BookingSearch = () => {
                 { from: 'Colombo', to: 'Kandy' },
                 { from: 'Colombo', to: 'Galle' },
                 { from: 'Kandy', to: 'Nuwara Eliya' },
-                { from: 'Colombo', to: 'Jaffna' }
+                { from: 'Colombo', to: 'Jaffna' },
+                { from: 'Colombo', to: 'Anuradhapura' },
+                { from: 'Colombo', to: 'Trincomalee' }
               ].map((route, index) => (
                 <button
                   key={index}

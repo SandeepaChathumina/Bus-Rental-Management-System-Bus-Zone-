@@ -101,7 +101,10 @@ const AdminBookingCard = ({ booking, onViewDetails }) => {
           </div>
           <div>
             <h3 className="text-lg font-bold text-slate-800">
-              {booking.bus?.busType || 'Standard'} Coach
+              {booking.bus?.brand && booking.bus?.modelName 
+                ? `${booking.bus.brand} ${booking.bus.modelName}`
+                : `${booking.bus?.busType || 'Standard'} Coach`
+              }
             </h3>
             <p className="text-xs text-slate-500">
               by {booking.user?.firstName} {booking.user?.lastName}
@@ -299,7 +302,12 @@ const AdminBookingDetailsModal = ({ booking, isOpen, onClose }) => {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-emerald-700">Bus Type:</span>
-                      <span className="font-medium">{booking.bus?.busType} Coach</span>
+                      <span className="font-medium">
+                        {booking.bus?.brand && booking.bus?.modelName 
+                          ? `${booking.bus.brand} ${booking.bus.modelName}`
+                          : `${booking.bus?.busType || 'N/A'} Coach`
+                        }
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-emerald-700">Number Plate:</span>

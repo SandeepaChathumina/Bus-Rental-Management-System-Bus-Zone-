@@ -43,20 +43,24 @@ const getAllFeedbacks = async (req, res) => {
 // NEW: Public endpoint for positive testimonials (no auth required)
 const getPublicTestimonials = async (req, res) => {
   try {
-    const { limit = 10 } = req.query;
+    const { limit = 20 } = req.query;
     
-    // Fetch positive feedbacks for public display
+    // Fetch all feedbacks for public display - show all feedbacks regardless of rating
+    // but prioritize those with good ratings and admin replies
     const testimonials = await Feedback.find({
-      type: 'feedback',
-      status: 'replied', // Only show replied feedbacks for credibility
-      $or: [
-        { rating: { $gte: 4 } }, // Rating 4 or 5
-        { rating: { $exists: false } } // Or no rating (assuming positive)
-      ]
+      type: 'feedback'
     })
     .populate('client_id', 'firstName lastName username')
-    .sort({ send_date: -1 })
+    .sort({ 
+      // Sort by priority: replied first, then by rating (high to low), then by date
+      status: -1, // 'replied' comes before 'pending' alphabetically
+      rating: -1, // Higher ratings first
+      send_date: -1, 
+      createdAt: -1 
+    })
     .limit(parseInt(limit));
+
+    console.log(`Found ${testimonials.length} testimonials for public display`);
 
     // Transform data for public consumption (hide sensitive info)
     const publicTestimonials = testimonials.map(feedback => ({
@@ -65,7 +69,7 @@ const getPublicTestimonials = async (req, res) => {
       description: feedback.description,
       rating: feedback.rating || 5,
       type: feedback.type,
-      send_date: feedback.send_date,
+      send_date: feedback.send_date || feedback.createdAt,
       customer: {
         name: feedback.client_id?.firstName && feedback.client_id?.lastName 
           ? `${feedback.client_id.firstName} ${feedback.client_id.lastName}`

@@ -64,7 +64,6 @@ import busimg6 from "../assets/busimg6.webp";
 const AdvancedBusRentalHomepage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [testimonials, setTestimonials] = useState([]);
@@ -370,63 +369,9 @@ const AdvancedBusRentalHomepage = () => {
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       
-      // Try to fetch from local storage first (simulating real feedback data)
+      // First, try the dedicated testimonials endpoint (public, no auth required)
       try {
-        const storedFeedbacks = localStorage.getItem('buszone_feedbacks');
-        if (storedFeedbacks) {
-          const parsedFeedbacks = JSON.parse(storedFeedbacks);
-          console.log('Fetched from localStorage:', parsedFeedbacks.length);
-          
-          if (parsedFeedbacks.length > 0) {
-            // Filter and transform positive feedbacks
-            const positiveFeedbacks = parsedFeedbacks
-              .filter(feedback => {
-                const isPositive = feedback.type === 'feedback';
-                const hasGoodRating = !feedback.rating || feedback.rating >= 4;
-                const isReplied = feedback.status === 'replied' || feedback.admin_reply;
-                
-                return isPositive && hasGoodRating && isReplied;
-              })
-              .map(feedback => ({
-                name: feedback.client_id?.firstName && feedback.client_id?.lastName 
-                  ? `${feedback.client_id.firstName} ${feedback.client_id.lastName}`
-                  : feedback.client_id?.username 
-                  ? feedback.client_id.username
-                  : 'Anonymous Customer',
-                role: "Verified Customer",
-                company: "BusZone+ Customer",
-                text: feedback.description,
-                rating: feedback.rating || 5,
-                image: `https://images.unsplash.com/photo-${Math.floor(Math.random() * 1000) + 1494790108755}-2616b612b786?w=100&h=100&fit=crop&crop=face`,
-                type: "customer",
-                date: feedback.send_date || feedback.createdAt,
-                title: feedback.title,
-                isReplied: !!(feedback.admin_reply || feedback.status === 'replied'),
-                isRealCustomer: true
-              }))
-              .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
-              .slice(0, 6);
-
-            console.log('Filtered positive feedbacks from localStorage:', positiveFeedbacks.length);
-
-            if (positiveFeedbacks.length > 0) {
-              const combinedTestimonials = [
-                ...positiveFeedbacks,
-                ...defaultTestimonials.slice(0, Math.max(0, 6 - positiveFeedbacks.length))
-              ];
-              setTestimonials(combinedTestimonials);
-              console.log('Set combined testimonials from localStorage:', combinedTestimonials.length);
-              return;
-            }
-          }
-        }
-      } catch (err) {
-        console.log('localStorage fetch failed:', err);
-      }
-
-      // Try the dedicated testimonials endpoint
-      try {
-        const response = await fetch(`${backendUrl}/api/feedbacks/testimonials?limit=8`, {
+        const response = await fetch(`${backendUrl}/api/feedbacks/testimonials?limit=10`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -454,45 +399,30 @@ const AdvancedBusRentalHomepage = () => {
               isRealCustomer: true
             }));
             
-            // Add some default testimonials for variety if we have less than 6 real ones
-            const combinedTestimonials = [
-              ...transformedTestimonials,
-              ...defaultTestimonials.slice(0, Math.max(0, 6 - transformedTestimonials.length))
-            ];
-            
-            setTestimonials(combinedTestimonials);
-            console.log('Set combined testimonials:', combinedTestimonials.length);
+            setTestimonials(transformedTestimonials);
+            console.log('Set real testimonials from API:', transformedTestimonials.length);
             return;
           }
+        } else {
+          console.log('Testimonials endpoint returned error:', response.status);
         }
       } catch (err) {
-        console.log('Testimonials endpoint failed, trying general endpoint...', err);
+        console.log('Testimonials endpoint failed:', err);
       }
 
-      // Fallback to general feedbacks endpoint
+      // Try to fetch from local storage as backup
       try {
-        const response = await fetch(`${backendUrl}/api/feedbacks`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const allFeedbacks = Array.isArray(data) ? data : [];
-          console.log('Fetched from general endpoint:', allFeedbacks.length);
-
-          if (allFeedbacks.length > 0) {
-            // Filter and transform positive feedbacks
-            const positiveFeedbacks = allFeedbacks
+        const storedFeedbacks = localStorage.getItem('buszone_feedbacks');
+        if (storedFeedbacks) {
+          const parsedFeedbacks = JSON.parse(storedFeedbacks);
+          console.log('Fetched from localStorage:', parsedFeedbacks.length);
+          
+          if (parsedFeedbacks.length > 0) {
+            // Filter and transform all feedbacks (show all feedbacks regardless of rating)
+            const positiveFeedbacks = parsedFeedbacks
               .filter(feedback => {
-                // Filter criteria for good testimonials
                 const isPositive = feedback.type === 'feedback';
-                const hasGoodRating = !feedback.rating || feedback.rating >= 4;
-                const isReplied = feedback.status === 'replied' || feedback.admin_reply;
-                
-                return isPositive && hasGoodRating && isReplied;
+                return isPositive; // Show all feedbacks, not just high-rated ones
               })
               .map(feedback => ({
                 name: feedback.client_id?.firstName && feedback.client_id?.lastName 
@@ -511,119 +441,99 @@ const AdvancedBusRentalHomepage = () => {
                 isReplied: !!(feedback.admin_reply || feedback.status === 'replied'),
                 isRealCustomer: true
               }))
-              .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
-              .slice(0, 6); // Limit to 6 most recent
+              .sort((a, b) => {
+                // Sort by priority: replied first, then by rating (high to low), then by date
+                if (a.isReplied !== b.isReplied) {
+                  return b.isReplied - a.isReplied; // replied first
+                }
+                if (a.rating !== b.rating) {
+                  return (b.rating || 0) - (a.rating || 0); // higher rating first
+                }
+                return new Date(b.date || 0) - new Date(a.date || 0); // newer first
+              })
+              .slice(0, 10);
 
-            console.log('Filtered positive feedbacks:', positiveFeedbacks.length);
+            console.log('Filtered positive feedbacks from localStorage:', positiveFeedbacks.length);
 
             if (positiveFeedbacks.length > 0) {
-              // Combine with some default testimonials for variety
-              const combinedTestimonials = [
-                ...positiveFeedbacks,
-                ...defaultTestimonials.slice(0, Math.max(0, 6 - positiveFeedbacks.length))
-              ];
-              setTestimonials(combinedTestimonials);
-              console.log('Set combined testimonials:', combinedTestimonials.length);
+              setTestimonials(positiveFeedbacks);
+              console.log('Set real testimonials from localStorage:', positiveFeedbacks.length);
               return;
             }
           }
         }
       } catch (err) {
+        console.log('localStorage fetch failed:', err);
+      }
+
+      // Fallback to general feedbacks endpoint (requires auth, but let's try anyway)
+      try {
+        const response = await fetch(`${backendUrl}/api/feedbacks`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const allFeedbacks = Array.isArray(data) ? data : [];
+          console.log('Fetched from general endpoint:', allFeedbacks.length);
+
+          if (allFeedbacks.length > 0) {
+            // Filter and transform all feedbacks (show all feedbacks regardless of rating)
+            const positiveFeedbacks = allFeedbacks
+              .filter(feedback => {
+                const isPositive = feedback.type === 'feedback';
+                return isPositive; // Show all feedbacks, not just high-rated ones
+              })
+              .map(feedback => ({
+                name: feedback.client_id?.firstName && feedback.client_id?.lastName 
+                  ? `${feedback.client_id.firstName} ${feedback.client_id.lastName}`
+                  : feedback.client_id?.username 
+                  ? feedback.client_id.username
+                  : 'Anonymous Customer',
+                role: "Verified Customer",
+                company: "BusZone+ Customer",
+                text: feedback.description,
+                rating: feedback.rating || 5,
+                image: `https://images.unsplash.com/photo-${Math.floor(Math.random() * 1000) + 1494790108755}-2616b612b786?w=100&h=100&fit=crop&crop=face`,
+                type: "customer",
+                date: feedback.send_date || feedback.createdAt,
+                title: feedback.title,
+                isReplied: !!(feedback.admin_reply || feedback.status === 'replied'),
+                isRealCustomer: true
+              }))
+              .sort((a, b) => {
+                // Sort by priority: replied first, then by rating (high to low), then by date
+                if (a.isReplied !== b.isReplied) {
+                  return b.isReplied - a.isReplied; // replied first
+                }
+                if (a.rating !== b.rating) {
+                  return (b.rating || 0) - (a.rating || 0); // higher rating first
+                }
+                return new Date(b.date || 0) - new Date(a.date || 0); // newer first
+              })
+              .slice(0, 10); // Limit to 10 most recent
+
+            console.log('Filtered positive feedbacks from general endpoint:', positiveFeedbacks.length);
+
+            if (positiveFeedbacks.length > 0) {
+              setTestimonials(positiveFeedbacks);
+              console.log('Set real testimonials from general endpoint:', positiveFeedbacks.length);
+              return;
+            }
+          }
+        } else {
+          console.log('General endpoint returned error:', response.status);
+        }
+      } catch (err) {
         console.log('General endpoint also failed:', err);
       }
 
-      // If all else fails, use enhanced mock data with good feedback examples
-      console.log('No real feedbacks found, using enhanced mock data');
-      
-      const mockGoodFeedbacks = [
-        {
-          name: "Priya Fernando",
-          role: "Event Manager",
-          company: "Corporate Events Co.",
-          title: "Exceptional Service for Corporate Event",
-          text: "BusZone+ provided outstanding service for our annual company retreat. The luxury coach was immaculate, the driver was professional and punctual, and the onboard amenities made the 4-hour journey comfortable for all 50 employees. The booking process was seamless, and their customer service team was responsive throughout. Highly recommended!",
-          rating: 5,
-          image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
-          type: "customer",
-          date: new Date('2025-10-10').toISOString(),
-          isReplied: true,
-          isRealCustomer: true
-        },
-        {
-          name: "Rajesh Kumar",
-          role: "Tour Guide",
-          company: "Sri Lanka Tours",
-          title: "Perfect for Tourist Groups",
-          text: "We've been using BusZone+ for our tourist packages for over 2 years. Their buses are always clean, comfortable, and well-maintained. The drivers are knowledgeable about local routes and very professional. Our international tourists always compliment the service quality. Excellent value for money!",
-          rating: 5,
-          image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-          type: "customer",
-          date: new Date('2025-10-08').toISOString(),
-          isReplied: true,
-          isRealCustomer: true
-        },
-        {
-          name: "Nimal Perera",
-          role: "Wedding Planner",
-          company: "Dream Weddings",
-          title: "Beautiful Wedding Transportation",
-          text: "BusZone+ made our wedding day transportation absolutely perfect! They provided a beautifully decorated bus for our wedding party. The driver was courteous and arrived exactly on time. The bride and groom were thrilled with the service. Thank you for making our special day even more memorable!",
-          rating: 5,
-          image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-          type: "customer",
-          date: new Date('2025-10-05').toISOString(),
-          isReplied: true,
-          isRealCustomer: true
-        },
-        {
-          name: "Samantha Silva",
-          role: "HR Manager",
-          company: "Tech Solutions Ltd",
-          title: "Reliable Employee Shuttle Service",
-          text: "We've been using BusZone+ for our daily employee shuttle service for 6 months now. The service is incredibly reliable - never had a single delay or cancellation. The buses are comfortable and our employees love the WiFi and charging ports. Great service at competitive rates!",
-          rating: 5,
-          image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
-          type: "customer",
-          date: new Date('2025-10-03').toISOString(),
-          isReplied: true,
-          isRealCustomer: true
-        },
-        {
-          name: "David Chen",
-          role: "Travel Agent",
-          company: "Adventure Travels",
-          title: "Outstanding Airport Transfer Service",
-          text: "BusZone+ provides excellent airport transfer services for our clients. The buses are spacious, comfortable, and always on time. The drivers are professional and help with luggage. Our clients consistently praise the service quality. Highly recommended for airport transfers!",
-          rating: 5,
-          image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face",
-          type: "customer",
-          date: new Date('2025-10-01').toISOString(),
-          isReplied: true,
-          isRealCustomer: true
-        },
-        {
-          name: "Anjali Wickramasinghe",
-          role: "Event Coordinator",
-          company: "Celebration Events",
-          title: "Perfect for Birthday Parties",
-          text: "BusZone+ made our daughter's birthday party transportation amazing! The bus was decorated beautifully and the driver was so friendly with the kids. All the parents were impressed with the service. The kids had a blast and it made the party even more special. Thank you!",
-          rating: 5,
-          image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face",
-          type: "customer",
-          date: new Date('2025-09-28').toISOString(),
-          isReplied: true,
-          isRealCustomer: true
-        }
-      ];
-
-      // Combine mock data with default testimonials
-      const combinedTestimonials = [
-        ...mockGoodFeedbacks,
-        ...defaultTestimonials.slice(0, Math.max(0, 6 - mockGoodFeedbacks.length))
-      ];
-      
-      setTestimonials(combinedTestimonials);
-      console.log('Set enhanced mock testimonials:', combinedTestimonials.length);
+      // Only use mock data as last resort
+      console.log('No real feedbacks found, using default testimonials');
+      setTestimonials(defaultTestimonials);
       
     } catch (error) {
       console.error('Error fetching feedbacks:', error);
@@ -653,14 +563,7 @@ const AdvancedBusRentalHomepage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (testimonials.length > 0) {
-      const interval = setInterval(() => {
-        setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-      }, 4000);
-      return () => clearInterval(interval);
-    }
-  }, [testimonials.length]);
+  // Removed testimonial slider logic since we're using grid layout
 
   // Fetch feedbacks on component mount
   useEffect(() => {
@@ -1308,35 +1211,36 @@ const AdvancedBusRentalHomepage = () => {
                   <CheckCircle className="h-3 w-3" />
                   <span>{testimonials.filter(t => t.isRealCustomer).length} Real Customer Reviews</span>
                 </div>
+                <div className="flex items-center space-x-1 text-xs text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
+                  <Star className="h-3 w-3" />
+                  <span>All Verified</span>
+                </div>
               </div>
             )}
           </div>
 
-          <div className="relative max-w-4xl mx-auto">
-            {testimonials.length > 0 && testimonials.map((testimonial, index) => (
-              <div
-                key={`${testimonial.name}-${index}`}
-                className={`transition-all duration-700 ease-in-out ${
-                  index === currentTestimonial
-                    ? "opacity-100"
-                    : "opacity-0 absolute inset-0"
-                }`}
-              >
-                <div className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl border border-blue-200/50 shadow-lg">
-                  <div className="flex items-center justify-between mb-6">
+          <div className="relative max-w-7xl mx-auto">
+            {/* Grid layout for testimonials */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {testimonials.slice(0, 6).map((testimonial, index) => (
+                <div
+                  key={`${testimonial.name}-${index}`}
+                  className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                >
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
                       {[...Array(testimonial.rating || 5)].map((_, i) => (
                         <Star
                           key={i}
-                          className="h-5 w-5 text-yellow-400 fill-current"
+                          className="h-4 w-4 text-yellow-400 fill-current"
                         />
                       ))}
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       {testimonial.isRealCustomer && (
                         <div className="flex items-center space-x-1 text-xs text-emerald-600 bg-emerald-100 px-2 py-1 rounded-full border border-emerald-200">
                           <CheckCircle className="h-3 w-3" />
-                          <span>Real Customer</span>
+                          <span>Real</span>
                         </div>
                       )}
                       {testimonial.isReplied && (
@@ -1348,13 +1252,13 @@ const AdvancedBusRentalHomepage = () => {
                     </div>
                   </div>
 
-                  <div className="mb-6">
+                  <div className="mb-4">
                     {testimonial.title && (
-                      <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                      <h3 className="text-sm font-semibold text-slate-800 mb-2 line-clamp-2">
                         "{testimonial.title}"
                       </h3>
                     )}
-                    <p className="text-xl text-slate-700 leading-relaxed italic">
+                    <p className="text-sm text-slate-700 leading-relaxed italic line-clamp-4">
                       "{testimonial.text}"
                     </p>
                   </div>
@@ -1364,20 +1268,17 @@ const AdvancedBusRentalHomepage = () => {
                       <img
                         src={testimonial.image}
                         alt={testimonial.name}
-                        className="w-16 h-16 rounded-full mr-4 border-2 border-blue-400"
+                        className="w-10 h-10 rounded-full mr-3 border-2 border-blue-400"
                         onError={(e) => {
                           e.target.src = `https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face`;
                         }}
                       />
                       <div>
-                        <div className="font-bold text-slate-800 text-lg">
+                        <div className="font-bold text-slate-800 text-sm">
                           {testimonial.name}
                         </div>
-                        <div className="text-blue-600 font-medium">
+                        <div className="text-blue-600 font-medium text-xs">
                           {testimonial.role}
-                        </div>
-                        <div className="text-slate-600 text-sm">
-                          {testimonial.company}
                         </div>
                       </div>
                     </div>
@@ -1386,29 +1287,30 @@ const AdvancedBusRentalHomepage = () => {
                       <div className="text-slate-500 text-xs">
                         {new Date(testimonial.date).toLocaleDateString('en-US', {
                           month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
+                          day: 'numeric'
                         })}
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
 
-            {testimonials.length > 1 && (
-              <div className="flex justify-center mt-8 space-x-2">
-                {testimonials.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentTestimonial(index)}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      index === currentTestimonial
-                        ? "bg-blue-600"
-                        : "bg-slate-400"
-                    }`}
-                  />
-                ))}
+            {/* Show more testimonials if available */}
+            {testimonials.length > 6 && (
+              <div className="text-center">
+                <p className="text-slate-600 text-sm mb-4">
+                  Showing {Math.min(6, testimonials.length)} of {testimonials.length} testimonials
+                </p>
+                <button
+                  onClick={() => {
+                    // You can implement a modal or expand functionality here
+                    console.log('Show all testimonials');
+                  }}
+                  className="text-blue-600 hover:text-blue-800 font-medium text-sm underline"
+                >
+                  View All Testimonials
+                </button>
               </div>
             )}
 
