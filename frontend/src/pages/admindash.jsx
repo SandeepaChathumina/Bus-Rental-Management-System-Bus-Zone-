@@ -18,7 +18,6 @@ import {
   Wrench,
   BookOpen,
   BarChart3,
-  Settings,
   Plus,
   MoreVertical,
   UserCheck,
@@ -757,8 +756,7 @@ const AdminDashboard = () => {
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'feedback', label: 'Feedback', icon: MessageSquare },
     { id: 'lost-found', label: 'Lost & Found', icon: Search }, 
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 }
   ];
 
   // Update StatCard to include payment statistics
@@ -955,8 +953,6 @@ const AdminDashboard = () => {
         return <AdminLostFound />;
       case 'analytics':
         return <div className="text-white p-6">Analytics (placeholder)</div>;
-      case 'settings':
-        return <div className="text-white p-6">Settings (placeholder)</div>;
       default:
         return <div className="text-white p-6">Module under development</div>;
     }
