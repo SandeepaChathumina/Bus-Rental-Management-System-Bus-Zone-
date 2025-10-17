@@ -31,7 +31,7 @@ const lostItemSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Reported', 'Found', 'Claimed', 'Returned'],
+        enum: ['Reported', 'Found', 'Not Found', 'Claimed', 'Returned'],
         default: 'Reported'
     },
     reportedBy: {
@@ -62,6 +62,21 @@ const lostItemSchema = new mongoose.Schema({
     },
     repliedAt: {
         type: Date
+    },
+    deliveryAddress: {
+        type: String,
+        trim: true,
+        maxlength: [500, 'Delivery address cannot exceed 500 characters']
+    },
+    deliveryStatus: {
+        type: String,
+        enum: ['Pending', 'In Transit', 'Delivered', 'Failed'],
+        default: 'Pending'
+    },
+    deliveryNotes: {
+        type: String,
+        trim: true,
+        maxlength: [1000, 'Delivery notes cannot exceed 1000 characters']
     }
 }, {
     timestamps: true

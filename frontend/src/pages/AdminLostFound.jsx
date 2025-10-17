@@ -115,9 +115,15 @@ const AdminLostFound = () => {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyingItem, setReplyingItem] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('Reported');
+  const [selectedStatus, setSelectedStatus] = useState('Found');
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingItem, setViewingItem] = useState(null);
+  
+  // Delivery management states
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [deliveryItem, setDeliveryItem] = useState(null);
+  const [deliveryStatus, setDeliveryStatus] = useState('Pending');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
 
   // Auto-generated message templates
   const generateAutoMessage = (status, itemName, userName) => {
@@ -130,9 +136,7 @@ const AdminLostFound = () => {
     const templates = {
       'Found': `🎉 Great news! We have successfully located your lost item "${itemName}" from your recent bus journey.`,
       
-      'Claimed': `📦 Your lost item "${itemName}" is now ready for pickup!`,
-      
-      'Returned': `✅ Excellent news! Your lost item "${itemName}" has been successfully returned to you.`
+      'Not Found': `😔 We're sorry, but we were unable to locate your lost item "${itemName}" after thorough searching.`
     };
     
     return templates[status] || '';
@@ -144,7 +148,7 @@ const AdminLostFound = () => {
     description: '',
     dateLost: '',
     busNumber: '',
-    status: 'Reported',
+    status: 'Found',
     adminNotes: ''
   });
 
@@ -385,6 +389,9 @@ const AdminLostFound = () => {
       'User Name',
       'User Email',
       'User Phone',
+      'Delivery Address',
+      'Delivery Status',
+      'Delivery Notes',
       'Admin Notes',
       'Admin Reply',
       'Reply Date',
@@ -403,6 +410,9 @@ const AdminLostFound = () => {
       item.user ? `${item.user.firstName} ${item.user.lastName}` : 'N/A',
       item.user?.email || 'N/A',
       item.user?.phone || 'N/A',
+      `"${(item.deliveryAddress || '').replace(/"/g, '""')}"`,
+      item.deliveryStatus || 'N/A',
+      `"${(item.deliveryNotes || '').replace(/"/g, '""')}"`,
       `"${(item.adminNotes || '').replace(/"/g, '""')}"`,
       `"${(item.adminReply || '').replace(/"/g, '""')}"`,
       item.repliedAt ? new Date(item.repliedAt).toLocaleString() : 'N/A',
@@ -618,24 +628,28 @@ const AdminLostFound = () => {
     
     // Prepare table data
     const tableColumns = [
-      { header: 'Item Name', dataKey: 'itemName', width: 40 },
-      { header: 'Bus No.', dataKey: 'busNumber', width: 20 },
-      { header: 'Date Lost', dataKey: 'dateLost', width: 25 },
-      { header: 'Status', dataKey: 'status', width: 20 },
-      { header: 'Reported By', dataKey: 'reportedBy', width: 25 },
-      { header: 'User Contact', dataKey: 'userContact', width: 30 },
-      { header: 'Admin Reply', dataKey: 'adminReply', width: 50 },
-      { header: 'Reply Date', dataKey: 'replyDate', width: 25 }
+      { header: 'Item Name', dataKey: 'itemName', width: 30 },
+      { header: 'Bus No.', dataKey: 'busNumber', width: 15 },
+      { header: 'Date Lost', dataKey: 'dateLost', width: 20 },
+      { header: 'Status', dataKey: 'status', width: 15 },
+      { header: 'Reported By', dataKey: 'reportedBy', width: 20 },
+      { header: 'User Contact', dataKey: 'userContact', width: 25 },
+      { header: 'Delivery Address', dataKey: 'deliveryAddress', width: 30 },
+      { header: 'Delivery Status', dataKey: 'deliveryStatus', width: 20 },
+      { header: 'Admin Reply', dataKey: 'adminReply', width: 40 },
+      { header: 'Reply Date', dataKey: 'replyDate', width: 20 }
     ];
     
     const tableRows = items.map((item, index) => ({
-      itemName: (item.itemName || '').substring(0, 25) + (item.itemName?.length > 25 ? '...' : ''),
+      itemName: (item.itemName || '').substring(0, 20) + (item.itemName?.length > 20 ? '...' : ''),
       busNumber: item.busNumber || 'N/A',
       dateLost: item.dateLost ? new Date(item.dateLost).toLocaleDateString('en-GB') : 'N/A',
       status: item.status || 'N/A',
       reportedBy: item.user ? `${item.user.firstName} ${item.user.lastName}` : (item.reportedBy || 'N/A'),
       userContact: item.user?.phone || 'N/A',
-      adminReply: (item.adminReply || '').substring(0, 40) + (item.adminReply?.length > 40 ? '...' : '') || 'N/A',
+      deliveryAddress: (item.deliveryAddress || '').substring(0, 25) + (item.deliveryAddress?.length > 25 ? '...' : '') || 'N/A',
+      deliveryStatus: item.deliveryStatus || 'N/A',
+      adminReply: (item.adminReply || '').substring(0, 30) + (item.adminReply?.length > 30 ? '...' : '') || 'N/A',
       replyDate: item.repliedAt ? new Date(item.repliedAt).toLocaleDateString('en-GB') : 'N/A'
     }));
 
@@ -766,6 +780,58 @@ const AdminLostFound = () => {
     setShowViewModal(true);
   };
 
+  // Delivery management functions
+  const handleDeliveryManagement = (item) => {
+    setDeliveryItem(item);
+    setDeliveryStatus(item.deliveryStatus || 'Pending');
+    setDeliveryNotes(item.deliveryNotes || '');
+    setShowDeliveryModal(true);
+  };
+
+  const handleDeliveryUpdate = async () => {
+    if (!deliveryItem) return;
+
+    try {
+      setSubmitting(true);
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${BACKEND_URL}/api/lost-items/${deliveryItem._id}/delivery`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          deliveryStatus,
+          deliveryNotes
+        })
+      });
+
+      if (response.ok) {
+        const updatedItem = await response.json();
+        
+        // Update the item in the list
+        setLostItems(prev => prev.map(item => 
+          item._id === deliveryItem._id ? updatedItem.lostItem : item
+        ));
+        
+        toast.success('Delivery status updated successfully');
+        setShowDeliveryModal(false);
+        setDeliveryItem(null);
+        setDeliveryStatus('Pending');
+        setDeliveryNotes('');
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to update delivery status');
+      }
+    } catch (error) {
+      console.error('Error updating delivery status:', error);
+      toast.error('Failed to update delivery status');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Handle admin reply with status - FIXED VERSION
   const handleAdminReply = async (e) => {
     e.preventDefault();
@@ -786,10 +852,8 @@ const AdminLostFound = () => {
       // Add status-specific context to the reply
       if (selectedStatus === 'Found' && !replyMessage.includes('found')) {
         finalReplyMessage = `Good news! We have found your item "${replyingItem.itemName}". ${replyMessage}`;
-      } else if (selectedStatus === 'Returned' && !replyMessage.includes('returned')) {
-        finalReplyMessage = `We are pleased to inform you that your item "${replyingItem.itemName}" has been successfully returned. ${replyMessage}`;
-      } else if (selectedStatus === 'Claimed' && !replyMessage.includes('claimed')) {
-        finalReplyMessage = `Your item "${replyingItem.itemName}" is ready for pickup and has been marked as claimed. ${replyMessage}`;
+      } else if (selectedStatus === 'Not Found' && !replyMessage.includes('not found')) {
+        finalReplyMessage = `We're sorry, but we were unable to locate your item "${replyingItem.itemName}" after thorough searching. ${replyMessage}`;
       }
 
       const response = await fetch(`${BACKEND_URL}/api/lost-items/${replyingItem._id}/reply`, {
@@ -825,19 +889,11 @@ const AdminLostFound = () => {
               color: 'white'
             }
           });
-        } else if (selectedStatus === 'Returned') {
-          toast.success('Item marked as RETURNED and reply sent!', {
-            icon: '✅',
+        } else if (selectedStatus === 'Not Found') {
+          toast.success('Item marked as NOT FOUND and reply sent!', {
+            icon: '❌',
             style: {
-              background: '#8b5cf6',
-              color: 'white'
-            }
-          });
-        } else if (selectedStatus === 'Claimed') {
-          toast.success('Item marked as CLAIMED and reply sent!', {
-            icon: '📦',
-            style: {
-              background: '#3b82f6',
+              background: '#ef4444',
               color: 'white'
             }
           });
@@ -851,10 +907,8 @@ const AdminLostFound = () => {
         // Show status-specific success message for real API
         if (selectedStatus === 'Found') {
           toast.success('Item marked as FOUND and reply sent successfully!');
-        } else if (selectedStatus === 'Returned') {
-          toast.success('Item marked as RETURNED and reply sent successfully!');
-        } else if (selectedStatus === 'Claimed') {
-          toast.success('Item marked as CLAIMED and reply sent successfully!');
+        } else if (selectedStatus === 'Not Found') {
+          toast.success('Item marked as NOT FOUND and reply sent successfully!');
         } else {
           toast.success('Reply sent successfully');
         }
@@ -895,7 +949,7 @@ const AdminLostFound = () => {
       setShowReplyForm(false);
       setReplyingItem(null);
       setReplyMessage('');
-      setSelectedStatus('Reported');
+      setSelectedStatus('Found');
       
     } catch (error) {
       console.error('Error sending reply:', error);
@@ -936,32 +990,26 @@ const AdminLostFound = () => {
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
-      case 'reported': return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
       case 'found': return 'bg-green-100 text-green-800 border border-green-200';
-      case 'claimed': return 'bg-blue-100 text-blue-800 border border-blue-200';
-      case 'returned': return 'bg-purple-100 text-purple-800 border border-purple-200';
+      case 'not found': return 'bg-red-100 text-red-800 border border-red-200';
       default: return 'bg-gray-100 text-gray-800 border border-gray-200';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status.toLowerCase()) {
-      case 'reported': return <AlertCircle className="w-4 h-4" />;
       case 'found': return <CheckCircle className="w-4 h-4" />;
-      case 'claimed': return <User className="w-4 h-4" />;
-      case 'returned': return <CheckCircle className="w-4 h-4" />;
+      case 'not found': return <X className="w-4 h-4" />;
       default: return <AlertCircle className="w-4 h-4" />;
     }
   };
 
   const getStatistics = () => {
     const total = lostItems.length;
-    const reported = lostItems.filter(item => item.status === 'Reported').length;
     const found = lostItems.filter(item => item.status === 'Found').length;
-    const claimed = lostItems.filter(item => item.status === 'Claimed').length;
-    const returned = lostItems.filter(item => item.status === 'Returned').length;
+    const notFound = lostItems.filter(item => item.status === 'Not Found').length;
 
-    return { total, reported, found, claimed, returned };
+    return { total, found, notFound };
   };
 
   // Make statistics reactive to lostItems changes
@@ -988,23 +1036,13 @@ const AdminLostFound = () => {
             </div>
             
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Reported</span>
-              <span className="font-semibold text-yellow-600">{stats.reported}</span>
-            </div>
-            
-            <div className="flex justify-between items-center">
               <span className="text-gray-600">Found</span>
               <span className="font-semibold text-green-600">{stats.found}</span>
             </div>
             
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Claimed</span>
-              <span className="font-semibold text-blue-600">{stats.claimed}</span>
-            </div>
-            
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Returned</span>
-              <span className="font-semibold text-purple-600">{stats.returned}</span>
+              <span className="text-gray-600">Not Found</span>
+              <span className="font-semibold text-red-600">{stats.notFound}</span>
             </div>
           </div>
         </div>
@@ -1034,10 +1072,8 @@ const AdminLostFound = () => {
                 className="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Status</option>
-                <option value="reported">Reported</option>
                 <option value="found">Found</option>
-                <option value="claimed">Claimed</option>
-                <option value="returned">Returned</option>
+                <option value="not found">Not Found</option>
               </select>
             </div>
 
@@ -1143,6 +1179,32 @@ const AdminLostFound = () => {
                           </div>
                         )}
 
+                        {item.deliveryAddress && (
+                          <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-sm font-medium text-orange-800">Delivery Address</h4>
+                              <Package className="w-4 h-4 text-orange-500" />
+                            </div>
+                            <p className="text-sm text-gray-700 mb-2">{item.deliveryAddress}</p>
+                            <div className="flex items-center justify-between">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                item.deliveryStatus === 'Delivered' ? 'bg-green-100 text-green-800' :
+                                item.deliveryStatus === 'In Transit' ? 'bg-blue-100 text-blue-800' :
+                                item.deliveryStatus === 'Failed' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {item.deliveryStatus || 'Pending'}
+                              </span>
+                              <button
+                                onClick={() => handleDeliveryManagement(item)}
+                                className="text-xs text-orange-600 hover:text-orange-700 font-medium"
+                              >
+                                Manage Delivery
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
                         {item.adminNotes && (
                           <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                             <div className="flex items-start">
@@ -1194,8 +1256,8 @@ const AdminLostFound = () => {
                           setReplyingItem(item);
                           setSelectedStatus(item.status || 'Reported');
                           
-                          // Auto-generate message if status is Found, Claimed, or Returned
-                          if (['Found', 'Claimed', 'Returned'].includes(item.status)) {
+                          // Auto-generate message if status is Found, Not Found, Claimed, or Returned
+                          if (['Found', 'Not Found', 'Claimed', 'Returned'].includes(item.status)) {
                             const userName = item?.user ? `${item.user.firstName} ${item.user.lastName}` : 'Valued Customer';
                             const autoMessage = generateAutoMessage(item.status, item?.itemName || 'your item', userName);
                             setReplyMessage(autoMessage);
@@ -1248,8 +1310,7 @@ const AdminLostFound = () => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-slate-800">
                 {selectedStatus === 'Found' ? 'Mark as Found' :
-                 selectedStatus === 'Returned' ? 'Mark as Returned' :
-                 selectedStatus === 'Claimed' ? 'Mark as Claimed' :
+                 selectedStatus === 'Not Found' ? 'Mark as Not Found' :
                  'Reply to User'}
               </h2>
               <button
@@ -1257,7 +1318,7 @@ const AdminLostFound = () => {
                   setShowReplyForm(false);
                   setReplyingItem(null);
                   setReplyMessage('');
-                  setSelectedStatus('Reported');
+                  setSelectedStatus('Found');
                 }}
                 className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
               >
@@ -1282,8 +1343,8 @@ const AdminLostFound = () => {
                     const newStatus = e.target.value;
                     setSelectedStatus(newStatus);
                     
-                    // Auto-generate message for Found, Claimed, or Returned statuses
-                    if (['Found', 'Claimed', 'Returned'].includes(newStatus)) {
+                    // Auto-generate message for Found or Not Found statuses
+                    if (['Found', 'Not Found'].includes(newStatus)) {
                       const userName = replyingItem?.user ? `${replyingItem.user.firstName} ${replyingItem.user.lastName}` : 'Valued Customer';
                       const autoMessage = generateAutoMessage(newStatus, replyingItem?.itemName || 'your item', userName);
                       setReplyMessage(autoMessage);
@@ -1295,16 +1356,12 @@ const AdminLostFound = () => {
                   className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                   required
                 >
-                  <option value="Reported">📝 Reported - Initial report</option>
                   <option value="Found">🎉 Found - Item located</option>
-                  <option value="Claimed">📦 Claimed - Ready for pickup</option>
-                  <option value="Returned">✅ Returned - Given back to owner</option>
+                  <option value="Not Found">❌ Not Found - Item not located</option>
                 </select>
                 <p className="text-xs text-slate-500 mt-1">
                   {selectedStatus === 'Found' && 'Item has been located and is in our possession - Auto-message will be generated'}
-                  {selectedStatus === 'Claimed' && 'Item is ready for pickup by the owner - Auto-message will be generated'}
-                  {selectedStatus === 'Returned' && 'Item has been successfully returned to the owner - Auto-message will be generated'}
-                  {selectedStatus === 'Reported' && 'Initial report - still searching for item'}
+                  {selectedStatus === 'Not Found' && 'Item could not be located after thorough searching - Auto-message will be generated'}
                 </p>
               </div>
 
@@ -1313,12 +1370,11 @@ const AdminLostFound = () => {
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-slate-700">
                     {selectedStatus === 'Found' ? 'Found Notification Message *' :
-                     selectedStatus === 'Returned' ? 'Return Confirmation Message *' :
-                     selectedStatus === 'Claimed' ? 'Pickup Instructions *' :
+                     selectedStatus === 'Not Found' ? 'Not Found Notification Message *' :
                      'Reply Message *'}
                   </label>
                   <div className="flex items-center space-x-2">
-                    {['Found', 'Claimed', 'Returned'].includes(selectedStatus) && (
+                    {['Found', 'Not Found'].includes(selectedStatus) && (
                       <>
                         <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
                           ✨ Auto-generated
@@ -1352,7 +1408,7 @@ const AdminLostFound = () => {
                   required
                 />
                 <p className="text-xs text-slate-500 mt-1">
-                  {['Found', 'Claimed', 'Returned'].includes(selectedStatus) 
+                  {['Found', 'Not Found', 'Claimed', 'Returned'].includes(selectedStatus) 
                     ? 'Auto-generated message - you can edit it before sending to the user.'
                     : 'This message will be sent to the user with the status update.'
                   }
@@ -1366,7 +1422,7 @@ const AdminLostFound = () => {
                     setShowReplyForm(false);
                     setReplyingItem(null);
                     setReplyMessage('');
-                    setSelectedStatus('Reported');
+                    setSelectedStatus('Found');
                   }}
                   className="flex-1 px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors shadow-sm"
                 >
@@ -1536,6 +1592,78 @@ const AdminLostFound = () => {
                 </div>
               )}
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delivery Management Modal */}
+      {showDeliveryModal && deliveryItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowDeliveryModal(false)}></div>
+          <div className="relative bg-white border border-blue-200 rounded-xl p-6 z-60 w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Manage Delivery</h3>
+              <button 
+                onClick={() => setShowDeliveryModal(false)} 
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Item: {deliveryItem.itemName}
+                </label>
+                <p className="text-sm text-gray-600 mb-4">{deliveryItem.deliveryAddress}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Delivery Status
+                </label>
+                <select
+                  value={deliveryStatus}
+                  onChange={(e) => setDeliveryStatus(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="In Transit">In Transit</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Failed">Failed</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Delivery Notes
+                </label>
+                <textarea
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  placeholder="Add delivery notes or instructions..."
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-2 mt-6">
+              <button
+                onClick={() => setShowDeliveryModal(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeliveryUpdate}
+                disabled={submitting}
+                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+              >
+                {submitting ? 'Updating...' : 'Update Delivery'}
+              </button>
             </div>
           </div>
         </div>
