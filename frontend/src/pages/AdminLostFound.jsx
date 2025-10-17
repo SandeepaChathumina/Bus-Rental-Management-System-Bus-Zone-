@@ -115,7 +115,7 @@ const AdminLostFound = () => {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyingItem, setReplyingItem] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('Reported');
+  const [selectedStatus, setSelectedStatus] = useState('Found');
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingItem, setViewingItem] = useState(null);
   
@@ -136,9 +136,7 @@ const AdminLostFound = () => {
     const templates = {
       'Found': `🎉 Great news! We have successfully located your lost item "${itemName}" from your recent bus journey.`,
       
-      'Claimed': `📦 Your lost item "${itemName}" is now ready for pickup!`,
-      
-      'Returned': `✅ Excellent news! Your lost item "${itemName}" has been successfully returned to you.`
+      'Not Found': `😔 We're sorry, but we were unable to locate your lost item "${itemName}" after thorough searching.`
     };
     
     return templates[status] || '';
@@ -150,7 +148,7 @@ const AdminLostFound = () => {
     description: '',
     dateLost: '',
     busNumber: '',
-    status: 'Reported',
+    status: 'Found',
     adminNotes: ''
   });
 
@@ -854,10 +852,8 @@ const AdminLostFound = () => {
       // Add status-specific context to the reply
       if (selectedStatus === 'Found' && !replyMessage.includes('found')) {
         finalReplyMessage = `Good news! We have found your item "${replyingItem.itemName}". ${replyMessage}`;
-      } else if (selectedStatus === 'Returned' && !replyMessage.includes('returned')) {
-        finalReplyMessage = `We are pleased to inform you that your item "${replyingItem.itemName}" has been successfully returned. ${replyMessage}`;
-      } else if (selectedStatus === 'Claimed' && !replyMessage.includes('claimed')) {
-        finalReplyMessage = `Your item "${replyingItem.itemName}" is ready for pickup and has been marked as claimed. ${replyMessage}`;
+      } else if (selectedStatus === 'Not Found' && !replyMessage.includes('not found')) {
+        finalReplyMessage = `We're sorry, but we were unable to locate your item "${replyingItem.itemName}" after thorough searching. ${replyMessage}`;
       }
 
       const response = await fetch(`${BACKEND_URL}/api/lost-items/${replyingItem._id}/reply`, {
@@ -893,19 +889,11 @@ const AdminLostFound = () => {
               color: 'white'
             }
           });
-        } else if (selectedStatus === 'Returned') {
-          toast.success('Item marked as RETURNED and reply sent!', {
-            icon: '✅',
+        } else if (selectedStatus === 'Not Found') {
+          toast.success('Item marked as NOT FOUND and reply sent!', {
+            icon: '❌',
             style: {
-              background: '#8b5cf6',
-              color: 'white'
-            }
-          });
-        } else if (selectedStatus === 'Claimed') {
-          toast.success('Item marked as CLAIMED and reply sent!', {
-            icon: '📦',
-            style: {
-              background: '#3b82f6',
+              background: '#ef4444',
               color: 'white'
             }
           });
@@ -919,10 +907,8 @@ const AdminLostFound = () => {
         // Show status-specific success message for real API
         if (selectedStatus === 'Found') {
           toast.success('Item marked as FOUND and reply sent successfully!');
-        } else if (selectedStatus === 'Returned') {
-          toast.success('Item marked as RETURNED and reply sent successfully!');
-        } else if (selectedStatus === 'Claimed') {
-          toast.success('Item marked as CLAIMED and reply sent successfully!');
+        } else if (selectedStatus === 'Not Found') {
+          toast.success('Item marked as NOT FOUND and reply sent successfully!');
         } else {
           toast.success('Reply sent successfully');
         }
@@ -963,7 +949,7 @@ const AdminLostFound = () => {
       setShowReplyForm(false);
       setReplyingItem(null);
       setReplyMessage('');
-      setSelectedStatus('Reported');
+      setSelectedStatus('Found');
       
     } catch (error) {
       console.error('Error sending reply:', error);
@@ -1004,32 +990,26 @@ const AdminLostFound = () => {
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
-      case 'reported': return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
       case 'found': return 'bg-green-100 text-green-800 border border-green-200';
-      case 'claimed': return 'bg-blue-100 text-blue-800 border border-blue-200';
-      case 'returned': return 'bg-purple-100 text-purple-800 border border-purple-200';
+      case 'not found': return 'bg-red-100 text-red-800 border border-red-200';
       default: return 'bg-gray-100 text-gray-800 border border-gray-200';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status.toLowerCase()) {
-      case 'reported': return <AlertCircle className="w-4 h-4" />;
       case 'found': return <CheckCircle className="w-4 h-4" />;
-      case 'claimed': return <User className="w-4 h-4" />;
-      case 'returned': return <CheckCircle className="w-4 h-4" />;
+      case 'not found': return <X className="w-4 h-4" />;
       default: return <AlertCircle className="w-4 h-4" />;
     }
   };
 
   const getStatistics = () => {
     const total = lostItems.length;
-    const reported = lostItems.filter(item => item.status === 'Reported').length;
     const found = lostItems.filter(item => item.status === 'Found').length;
-    const claimed = lostItems.filter(item => item.status === 'Claimed').length;
-    const returned = lostItems.filter(item => item.status === 'Returned').length;
+    const notFound = lostItems.filter(item => item.status === 'Not Found').length;
 
-    return { total, reported, found, claimed, returned };
+    return { total, found, notFound };
   };
 
   // Make statistics reactive to lostItems changes
@@ -1056,23 +1036,13 @@ const AdminLostFound = () => {
             </div>
             
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Reported</span>
-              <span className="font-semibold text-yellow-600">{stats.reported}</span>
-            </div>
-            
-            <div className="flex justify-between items-center">
               <span className="text-gray-600">Found</span>
               <span className="font-semibold text-green-600">{stats.found}</span>
             </div>
             
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Claimed</span>
-              <span className="font-semibold text-blue-600">{stats.claimed}</span>
-            </div>
-            
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Returned</span>
-              <span className="font-semibold text-purple-600">{stats.returned}</span>
+              <span className="text-gray-600">Not Found</span>
+              <span className="font-semibold text-red-600">{stats.notFound}</span>
             </div>
           </div>
         </div>
@@ -1102,10 +1072,8 @@ const AdminLostFound = () => {
                 className="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Status</option>
-                <option value="reported">Reported</option>
                 <option value="found">Found</option>
-                <option value="claimed">Claimed</option>
-                <option value="returned">Returned</option>
+                <option value="not found">Not Found</option>
               </select>
             </div>
 
@@ -1342,8 +1310,7 @@ const AdminLostFound = () => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-slate-800">
                 {selectedStatus === 'Found' ? 'Mark as Found' :
-                 selectedStatus === 'Returned' ? 'Mark as Returned' :
-                 selectedStatus === 'Claimed' ? 'Mark as Claimed' :
+                 selectedStatus === 'Not Found' ? 'Mark as Not Found' :
                  'Reply to User'}
               </h2>
               <button
@@ -1351,7 +1318,7 @@ const AdminLostFound = () => {
                   setShowReplyForm(false);
                   setReplyingItem(null);
                   setReplyMessage('');
-                  setSelectedStatus('Reported');
+                  setSelectedStatus('Found');
                 }}
                 className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
               >
@@ -1376,8 +1343,8 @@ const AdminLostFound = () => {
                     const newStatus = e.target.value;
                     setSelectedStatus(newStatus);
                     
-                    // Auto-generate message for Found, Claimed, or Returned statuses
-                    if (['Found', 'Claimed', 'Returned'].includes(newStatus)) {
+                    // Auto-generate message for Found or Not Found statuses
+                    if (['Found', 'Not Found'].includes(newStatus)) {
                       const userName = replyingItem?.user ? `${replyingItem.user.firstName} ${replyingItem.user.lastName}` : 'Valued Customer';
                       const autoMessage = generateAutoMessage(newStatus, replyingItem?.itemName || 'your item', userName);
                       setReplyMessage(autoMessage);
@@ -1389,16 +1356,12 @@ const AdminLostFound = () => {
                   className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                   required
                 >
-                  <option value="Reported">📝 Reported - Initial report</option>
                   <option value="Found">🎉 Found - Item located</option>
-                  <option value="Claimed">📦 Claimed - Ready for pickup</option>
-                  <option value="Returned">✅ Returned - Given back to owner</option>
+                  <option value="Not Found">❌ Not Found - Item not located</option>
                 </select>
                 <p className="text-xs text-slate-500 mt-1">
                   {selectedStatus === 'Found' && 'Item has been located and is in our possession - Auto-message will be generated'}
-                  {selectedStatus === 'Claimed' && 'Item is ready for pickup by the owner - Auto-message will be generated'}
-                  {selectedStatus === 'Returned' && 'Item has been successfully returned to the owner - Auto-message will be generated'}
-                  {selectedStatus === 'Reported' && 'Initial report - still searching for item'}
+                  {selectedStatus === 'Not Found' && 'Item could not be located after thorough searching - Auto-message will be generated'}
                 </p>
               </div>
 
@@ -1407,12 +1370,11 @@ const AdminLostFound = () => {
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-slate-700">
                     {selectedStatus === 'Found' ? 'Found Notification Message *' :
-                     selectedStatus === 'Returned' ? 'Return Confirmation Message *' :
-                     selectedStatus === 'Claimed' ? 'Pickup Instructions *' :
+                     selectedStatus === 'Not Found' ? 'Not Found Notification Message *' :
                      'Reply Message *'}
                   </label>
                   <div className="flex items-center space-x-2">
-                    {['Found', 'Claimed', 'Returned'].includes(selectedStatus) && (
+                    {['Found', 'Not Found'].includes(selectedStatus) && (
                       <>
                         <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
                           ✨ Auto-generated
@@ -1460,7 +1422,7 @@ const AdminLostFound = () => {
                     setShowReplyForm(false);
                     setReplyingItem(null);
                     setReplyMessage('');
-                    setSelectedStatus('Reported');
+                    setSelectedStatus('Found');
                   }}
                   className="flex-1 px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors shadow-sm"
                 >
