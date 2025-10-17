@@ -15,10 +15,10 @@ export const reportLostItem = async (req, res) => {
         }
 
         // Validate bus number format
-        const busNumberPattern = /^[A-Z]{2}-\d{4}$/;
+        const busNumberPattern = /^N[A-Z]\d{4}$/;
         if (!busNumberPattern.test(busNumber)) {
             return res.status(400).json({ 
-                message: 'Bus number must be in format AB-1234' 
+                message: 'Bus number must be in format NT7657 (N + capital letter + 4 digits)' 
             });
         }
 
@@ -96,10 +96,10 @@ export const updateLostItem = async (req, res) => {
         }
 
         // Validate bus number format
-        const busNumberPattern = /^[A-Z]{2}-\d{4}$/;
+        const busNumberPattern = /^N[A-Z]\d{4}$/;
         if (!busNumberPattern.test(busNumber)) {
             return res.status(400).json({ 
-                message: 'Bus number must be in format AB-1234' 
+                message: 'Bus number must be in format NT7657 (N + capital letter + 4 digits)' 
             });
         }
 

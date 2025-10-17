@@ -67,7 +67,7 @@ const Lost = () => {
 
   // Bus number validation function
   const validateBusNumber = (busNumber) => {
-    const busNumberPattern = /^N[A-Z]-\d{4}$/;
+    const busNumberPattern = /^N[A-Z]\d{4}$/;
     return busNumberPattern.test(busNumber.trim());
   };
 
@@ -77,7 +77,7 @@ const Lost = () => {
       return 'Bus number is required';
     }
     if (!validateBusNumber(busNumber)) {
-      return 'Bus number must be in format NU-9861 (N + capital letter + dash + 4 digits)';
+      return 'Bus number must be in format NT7657 (N + capital letter + 4 digits)';
     }
     return null;
   };
@@ -1316,9 +1316,19 @@ const Lost = () => {
                       </div>
 
                       {item.deliveryAddress && (
-                        <div className="flex items-center text-sm text-slate-700">
-                          <Package className="w-4 h-4 mr-2 text-orange-500" />
-                          <span>Delivery Address: {item.deliveryAddress.substring(0, 50)}{item.deliveryAddress.length > 50 ? '...' : ''}</span>
+                        <div>
+                          <div className="flex items-center text-sm text-slate-700">
+                            <Package className="w-4 h-4 mr-2 text-orange-500" />
+                            <span>Delivery Address: {item.deliveryAddress.substring(0, 50)}{item.deliveryAddress.length > 50 ? '...' : ''}</span>
+                          </div>
+                          
+                          {/* Delivery Notes */}
+                          {item.deliveryNotes && (
+                            <div className="ml-6 mt-1 p-2 bg-orange-100 border border-orange-300 rounded-md">
+                              <p className="text-xs font-medium text-orange-800 mb-1">Delivery Notes:</p>
+                              <p className="text-xs text-gray-700">{item.deliveryNotes}</p>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -1617,7 +1627,7 @@ const Lost = () => {
                         ? 'border-red-500 focus:ring-red-500' 
                         : 'border-blue-200 focus:ring-blue-500'
                     }`}
-                    placeholder="e.g., NU-9861"
+                     placeholder="e.g., NT7657"
                   />
                   {validationErrors.busNumber && (
                     <p className="mt-1 text-sm text-red-500">{validationErrors.busNumber}</p>
@@ -1776,7 +1786,7 @@ const Lost = () => {
                         ? 'border-red-500 focus:ring-red-500' 
                         : 'border-blue-200 focus:ring-blue-500'
                     }`}
-                    placeholder="e.g., NU-9861"
+                     placeholder="e.g., NT7657"
                   />
                   {validationErrors.busNumber && (
                     <p className="mt-1 text-sm text-red-500">{validationErrors.busNumber}</p>

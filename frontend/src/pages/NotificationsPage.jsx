@@ -44,11 +44,7 @@ const NotificationsPage = () => {
     { id: "alert", label: "Alerts", icon: AlertCircle },
     { id: "discount", label: "Discounts", icon: Star },
     { id: "promotional", label: "Promotional", icon: Gift },
-    { id: "seasonal", label: "Seasonal", icon: Calendar },
-    { id: "booking", label: "Bookings", icon: CheckCircle },
     { id: "reminder", label: "Reminders", icon: Clock },
-    { id: "package", label: "Packages", icon: Package },
-    { id: "security", label: "Security", icon: Shield }
   ];
 
   useEffect(() => {
@@ -270,10 +266,6 @@ const NotificationsPage = () => {
               {stats.total} notification{stats.total !== 1 ? 's' : ''}
             </div>
           </div>
-          
-          <button className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-blue-50 text-gray-700 border border-blue-200">
-            <Share className="h-4 w-4" /> Share
-          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

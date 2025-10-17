@@ -27,7 +27,7 @@ const lostItemSchema = new mongoose.Schema({
         required: [true, 'Bus number is required'],
         trim: true,
         uppercase: true,
-        match: [/^[A-Z]{2}-\d{4}$/, 'Bus number must be in format: AB-1234']
+        match: [/^N[A-Z]\d{4}$/, 'Bus number must be in format: NT7657 (N + capital letter + 4 digits)']
     },
     status: {
         type: String,
