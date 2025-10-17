@@ -27,7 +27,9 @@ import {
   Save,
   Reply,
   ArrowLeftCircle,
-  ArrowLeft
+  ArrowLeft,
+  Package,
+  Truck
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -229,6 +231,46 @@ const Lost = () => {
                     toast.success('Admin has responded to your lost item report! Item is now locked.', {
                       duration: 5000,
                       icon: '🔒'
+                    });
+                  }
+                }
+              }
+
+              // Handle delivery status updates
+              if (updates.deliveryStatus && item.user?._id === user?._id) {
+                const previousStatus = item.deliveryStatus || 'Pending';
+                const newStatus = updates.deliveryStatus;
+                
+                if (previousStatus !== newStatus) {
+                  if (newStatus === 'Delivered') {
+                    toast.success('🎉 Your lost item has been delivered! Check the delivery notification below.', {
+                      duration: 8000,
+                      icon: '📦',
+                      style: {
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        color: 'white',
+                        fontWeight: 'bold'
+                      }
+                    });
+                  } else if (newStatus === 'In Transit') {
+                    toast.info('🚚 Your lost item is now in transit! It will be delivered soon.', {
+                      duration: 6000,
+                      icon: '🚚',
+                      style: {
+                        background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                        color: 'white',
+                        fontWeight: 'bold'
+                      }
+                    });
+                  } else if (newStatus === 'Failed') {
+                    toast.error('❌ Delivery failed. Please contact support for assistance.', {
+                      duration: 6000,
+                      icon: '❌',
+                      style: {
+                        background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                        color: 'white',
+                        fontWeight: 'bold'
+                      }
                     });
                   }
                 }
@@ -845,11 +887,12 @@ const Lost = () => {
     // Admin can edit everything
     if (user?.role === 'admin') return true;
     
-    // Users can only edit their own items that don't have admin responses
+    // Users can only edit their own items that don't have admin responses and are not delivered
     const isOwnItem = item.user && item.user._id === user?._id;
     const hasAdminResponse = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
+    const isDelivered = item.deliveryStatus === 'Delivered';
     
-    return isOwnItem && !hasAdminResponse;
+    return isOwnItem && !hasAdminResponse && !isDelivered;
   };
 
   const canDeleteItem = (item) => {
@@ -873,6 +916,11 @@ const Lost = () => {
   const getLockText = (item) => {
     const userCanEdit = canEditItem(item);
     const hasAdminResponse = (item.adminNotes && item.adminNotes.trim() !== '') || (item.adminReply && item.adminReply.trim() !== '');
+    const isDelivered = item.deliveryStatus === 'Delivered';
+    
+    if (isDelivered) {
+      return 'Delivered - Locked';
+    }
     
     if (hasAdminResponse && !userCanEdit) {
       return 'Locked - Admin Replied';
@@ -1220,7 +1268,17 @@ const Lost = () => {
                     <div className="mb-4">
                       <div className="flex items-center mb-1">
                         <h3 className="text-lg font-semibold text-slate-800">{item.itemName}</h3>
-                        {item.adminReply && item.adminReply.trim() !== '' && (
+                        {item.deliveryStatus === 'Delivered' && (
+                          <span className="ml-2 text-white px-2 py-1 rounded-full text-xs font-bold animate-pulse bg-green-500">
+                            📦 Delivered
+                          </span>
+                        )}
+                        {item.deliveryStatus === 'In Transit' && (
+                          <span className="ml-2 text-white px-2 py-1 rounded-full text-xs font-bold animate-pulse bg-blue-500">
+                            🚚 In Transit
+                          </span>
+                        )}
+                        {item.adminReply && item.adminReply.trim() !== '' && !item.deliveryStatus && (
                           <span className={`ml-2 text-white px-2 py-1 rounded-full text-xs font-bold animate-pulse ${
                             item.status === 'Found' ? 'bg-green-500' :
                             item.status === 'Claimed' ? 'bg-blue-500' :
@@ -1253,6 +1311,26 @@ const Lost = () => {
                         <span>Reported: {formatDate(item.createdAt)}</span>
                       </div>
 
+                      {item.deliveryAddress && (
+                        <div className="flex items-center text-sm text-slate-700">
+                          <Package className="w-4 h-4 mr-2 text-orange-500" />
+                          <span>Delivery Address: {item.deliveryAddress.substring(0, 50)}{item.deliveryAddress.length > 50 ? '...' : ''}</span>
+                        </div>
+                      )}
+
+                      {item.deliveryStatus && (
+                        <div className="flex items-center text-sm text-slate-700">
+                          <Truck className="w-4 h-4 mr-2 text-orange-500" />
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            item.deliveryStatus === 'Delivered' ? 'bg-green-100 text-green-800' :
+                            item.deliveryStatus === 'In Transit' ? 'bg-blue-100 text-blue-800' :
+                            item.deliveryStatus === 'Failed' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            Delivery: {item.deliveryStatus}
+                          </span>
+                        </div>
+                      )}
 
                       {item.user && (
                         <div className="flex items-center text-sm text-slate-700">
@@ -1269,6 +1347,37 @@ const Lost = () => {
                           <div>
                             <p className="text-sm font-medium text-blue-700 mb-1">Admin Notes:</p>
                             <p className="text-slate-700 text-sm">{item.adminNotes}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {item.deliveryStatus === 'Delivered' && (
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 mb-4 shadow-lg relative overflow-hidden animate-pulse">
+                        <div className="absolute inset-0 bg-gradient-to-r from-green-100/50 to-emerald-100/50 animate-pulse"></div>
+                        <div className="relative z-10">
+                          <div className="flex items-start">
+                            <div className="p-2 rounded-full mr-3 flex-shrink-0 animate-bounce shadow-lg bg-green-500">
+                              <CheckCircle className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-lg font-bold text-green-800 flex items-center">
+                                  🎉 Item Delivered Successfully!
+                                </h4>
+                                <span className="text-xs text-green-600 font-medium">
+                                  {item.deliveryStatus}
+                                </span>
+                              </div>
+                              <p className="text-green-700 text-sm mb-2">
+                                Your lost item has been successfully delivered to your address.
+                              </p>
+                              {item.deliveryNotes && (
+                                <p className="text-green-600 text-sm">
+                                  <strong>Delivery Notes:</strong> {item.deliveryNotes}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
