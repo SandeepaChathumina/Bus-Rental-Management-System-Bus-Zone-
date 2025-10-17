@@ -47,13 +47,13 @@ const validationUtils = {
     // Convert email to lowercase for validation
     const normalizedEmail = email.toLowerCase();
     
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Email format validation - only allow @gmail.com
+    const emailRegex = /^[a-z0-9]+@gmail\.com$/;
     if (!emailRegex.test(normalizedEmail)) {
       return {
         available: false,
         valid: false,
-        message: "Invalid email format",
+        message: "Only @gmail.com emails are allowed",
       };
     }
 
@@ -1708,10 +1708,21 @@ const UserManagement = () => {
             <FormField
               field="email"
               label="Email Address"
-              placeholder="Enter email address"
+              placeholder="Enter email address (only @gmail.com allowed)"
               type="email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value.toLowerCase() })}
+              onChange={(e) => {
+                let value = e.target.value.toLowerCase();
+                // Remove special characters except @ and .
+                value = value.replace(/[^a-z0-9@.]/g, '');
+                // Ensure it ends with @gmail.com
+                if (value.includes('@') && !value.endsWith('@gmail.com')) {
+                  // If @ is present but doesn't end with @gmail.com, force @gmail.com
+                  const beforeAt = value.split('@')[0];
+                  value = beforeAt + '@gmail.com';
+                }
+                setForm({ ...form, email: value });
+              }}
               validation={validation}
             />
 
@@ -1917,10 +1928,21 @@ const UserManagement = () => {
             <FormField
               field="email"
               label="Email Address"
-              placeholder="Enter email address"
+              placeholder="Enter email address (only @gmail.com allowed)"
               type="email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value.toLowerCase() })}
+              onChange={(e) => {
+                let value = e.target.value.toLowerCase();
+                // Remove special characters except @ and .
+                value = value.replace(/[^a-z0-9@.]/g, '');
+                // Ensure it ends with @gmail.com
+                if (value.includes('@') && !value.endsWith('@gmail.com')) {
+                  // If @ is present but doesn't end with @gmail.com, force @gmail.com
+                  const beforeAt = value.split('@')[0];
+                  value = beforeAt + '@gmail.com';
+                }
+                setForm({ ...form, email: value });
+              }}
               validation={validation}
             />
 
