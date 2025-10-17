@@ -108,6 +108,14 @@ const BusManagement = () => {
         errors.engineNumber = 'Engine number is required';
       } else if (!/^ENG[A-Z0-9]{2,17}$/i.test(formData.engineNumber)) {
         errors.engineNumber = 'Engine number must start with ENG followed by letters and numbers (e.g., ENG123ABC)';
+      } else {
+        // Check for duplicate engine number
+        const duplicateEngine = buses.find(bus => 
+          bus.engineNumber.toLowerCase() === formData.engineNumber.toLowerCase()
+        );
+        if (duplicateEngine) {
+          errors.engineNumber = 'Engine number already exists. Please enter a unique engine number.';
+        }
       }
     }
 
@@ -122,6 +130,14 @@ const BusManagement = () => {
         
         if (!customPlateRegex.test(formData.numberPlate)) {
           errors.numberPlate = 'Number plate must start with N, second letter a-f, followed by 4 numbers (e.g., NA1234, NB5678)';
+        } else {
+          // Check for duplicate number plate
+          const duplicatePlate = buses.find(bus => 
+            bus.numberPlate.toLowerCase() === formData.numberPlate.toLowerCase()
+          );
+          if (duplicatePlate) {
+            errors.numberPlate = 'Number plate already exists. Please enter a unique number plate.';
+          }
         }
       }
     }
@@ -310,6 +326,31 @@ const BusManagement = () => {
         'Double Decker': 78
       };
       newFormData.capacity = capacityMap[value] || '';
+    }
+
+    // Real-time duplicate validation for engine number and number plate
+    if (!editingBus && (name === 'engineNumber' || name === 'numberPlate')) {
+      const newErrors = { ...formErrors };
+      
+      if (name === 'engineNumber' && processedValue.trim()) {
+        const duplicateEngine = buses.find(bus => 
+          bus.engineNumber.toLowerCase() === processedValue.toLowerCase()
+        );
+        if (duplicateEngine) {
+          newErrors.engineNumber = 'Engine number already exists. Please enter a unique engine number.';
+        }
+      }
+      
+      if (name === 'numberPlate' && processedValue.trim()) {
+        const duplicatePlate = buses.find(bus => 
+          bus.numberPlate.toLowerCase() === processedValue.toLowerCase()
+        );
+        if (duplicatePlate) {
+          newErrors.numberPlate = 'Number plate already exists. Please enter a unique number plate.';
+        }
+      }
+      
+      setFormErrors(newErrors);
     }
 
     setFormData(newFormData);
