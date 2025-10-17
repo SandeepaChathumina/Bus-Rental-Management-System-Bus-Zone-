@@ -1256,8 +1256,8 @@ const AdminLostFound = () => {
                           setReplyingItem(item);
                           setSelectedStatus(item.status || 'Reported');
                           
-                          // Auto-generate message if status is Found, Claimed, or Returned
-                          if (['Found', 'Claimed', 'Returned'].includes(item.status)) {
+                          // Auto-generate message if status is Found, Not Found, Claimed, or Returned
+                          if (['Found', 'Not Found', 'Claimed', 'Returned'].includes(item.status)) {
                             const userName = item?.user ? `${item.user.firstName} ${item.user.lastName}` : 'Valued Customer';
                             const autoMessage = generateAutoMessage(item.status, item?.itemName || 'your item', userName);
                             setReplyMessage(autoMessage);
@@ -1408,7 +1408,7 @@ const AdminLostFound = () => {
                   required
                 />
                 <p className="text-xs text-slate-500 mt-1">
-                  {['Found', 'Claimed', 'Returned'].includes(selectedStatus) 
+                  {['Found', 'Not Found', 'Claimed', 'Returned'].includes(selectedStatus) 
                     ? 'Auto-generated message - you can edit it before sending to the user.'
                     : 'This message will be sent to the user with the status update.'
                   }

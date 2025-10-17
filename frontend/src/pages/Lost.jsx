@@ -970,6 +970,7 @@ const Lost = () => {
     switch (status.toLowerCase()) {
       case 'reported': return 'bg-yellow-100 text-yellow-800 border border-yellow-300';
       case 'found': return 'bg-green-100 text-green-800 border border-green-300';
+      case 'not found': return 'bg-red-100 text-red-800 border border-red-300';
       case 'claimed': return 'bg-blue-100 text-blue-800 border border-blue-300';
       case 'returned': return 'bg-purple-100 text-purple-800 border border-purple-300';
       default: return 'bg-gray-100 text-gray-800 border border-gray-300';
@@ -980,6 +981,7 @@ const Lost = () => {
     switch (status.toLowerCase()) {
       case 'reported': return <AlertCircle className="w-3 h-3" />;
       case 'found': return <CheckCircle className="w-3 h-3" />;
+      case 'not found': return <X className="w-3 h-3" />;
       case 'claimed': return <User className="w-3 h-3" />;
       case 'returned': return <CheckCircle className="w-3 h-3" />;
       default: return <AlertCircle className="w-3 h-3" />;
@@ -1281,11 +1283,13 @@ const Lost = () => {
                         {item.adminReply && item.adminReply.trim() !== '' && !item.deliveryStatus && (
                           <span className={`ml-2 text-white px-2 py-1 rounded-full text-xs font-bold animate-pulse ${
                             item.status === 'Found' ? 'bg-green-500' :
+                            item.status === 'Not Found' ? 'bg-red-500' :
                             item.status === 'Claimed' ? 'bg-blue-500' :
                             item.status === 'Returned' ? 'bg-purple-500' :
                             'bg-green-500'
                           }`}>
                             {item.status === 'Found' ? '🎉 Found & Replied' :
+                             item.status === 'Not Found' ? '❌ Not Found & Replied' :
                              item.status === 'Claimed' ? '📦 Ready for Pickup' :
                              item.status === 'Returned' ? '✅ Returned' :
                              'Admin Replied'}
@@ -1386,6 +1390,7 @@ const Lost = () => {
                     {item.adminReply && item.adminReply.trim() !== '' && (
                       <div className={`rounded-xl p-4 mb-4 shadow-lg relative overflow-hidden ${
                         item.status === 'Found' ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300' :
+                        item.status === 'Not Found' ? 'bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-300' :
                         item.status === 'Claimed' ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-300' :
                         item.status === 'Returned' ? 'bg-gradient-to-r from-purple-50 to-violet-50 border-2 border-purple-300' :
                         'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300'
@@ -1393,6 +1398,7 @@ const Lost = () => {
                         {/* Animated background effect */}
                         <div className={`absolute inset-0 animate-pulse ${
                           item.status === 'Found' ? 'bg-gradient-to-r from-green-100/50 to-emerald-100/50' :
+                          item.status === 'Not Found' ? 'bg-gradient-to-r from-red-100/50 to-rose-100/50' :
                           item.status === 'Claimed' ? 'bg-gradient-to-r from-blue-100/50 to-cyan-100/50' :
                           item.status === 'Returned' ? 'bg-gradient-to-r from-purple-100/50 to-violet-100/50' :
                           'bg-gradient-to-r from-green-100/50 to-emerald-100/50'
@@ -1402,6 +1408,7 @@ const Lost = () => {
                           <div className="flex items-start">
                             <div className={`p-2 rounded-full mr-3 flex-shrink-0 animate-bounce shadow-lg ${
                               item.status === 'Found' ? 'bg-green-500' :
+                              item.status === 'Not Found' ? 'bg-red-500' :
                               item.status === 'Claimed' ? 'bg-blue-500' :
                               item.status === 'Returned' ? 'bg-purple-500' :
                               'bg-green-500'
@@ -1412,17 +1419,20 @@ const Lost = () => {
                               <div className="flex items-center justify-between mb-2">
                                 <p className={`text-sm font-bold flex items-center ${
                                   item.status === 'Found' ? 'text-green-800' :
+                                  item.status === 'Not Found' ? 'text-red-800' :
                                   item.status === 'Claimed' ? 'text-blue-800' :
                                   item.status === 'Returned' ? 'text-purple-800' :
                                   'text-green-800'
                                 }`}>
                                   <span className={`px-2 py-1 rounded-full text-xs mr-2 animate-pulse shadow-md ${
                                     item.status === 'Found' ? 'bg-green-500 text-white' :
+                                    item.status === 'Not Found' ? 'bg-red-500 text-white' :
                                     item.status === 'Claimed' ? 'bg-blue-500 text-white' :
                                     item.status === 'Returned' ? 'bg-purple-500 text-white' :
                                     'bg-green-500 text-white'
                                   }`}>
                                     {item.status === 'Found' ? '🎉 FOUND' :
+                                     item.status === 'Not Found' ? '❌ NOT FOUND' :
                                      item.status === 'Claimed' ? '📦 CLAIMED' :
                                      item.status === 'Returned' ? '✅ RETURNED' :
                                      'NEW'}
@@ -1432,6 +1442,7 @@ const Lost = () => {
                                 {item.repliedBy && (
                                   <span className={`text-xs px-2 py-1 rounded-full shadow-sm ${
                                     item.status === 'Found' ? 'text-green-600 bg-green-100' :
+                                    item.status === 'Not Found' ? 'text-red-600 bg-red-100' :
                                     item.status === 'Claimed' ? 'text-blue-600 bg-blue-100' :
                                     item.status === 'Returned' ? 'text-purple-600 bg-purple-100' :
                                     'text-green-600 bg-green-100'
@@ -1442,6 +1453,7 @@ const Lost = () => {
                               </div>
                               <div className={`rounded-lg p-3 border shadow-sm ${
                                 item.status === 'Found' ? 'bg-white border-green-200' :
+                                item.status === 'Not Found' ? 'bg-white border-red-200' :
                                 item.status === 'Claimed' ? 'bg-white border-blue-200' :
                                 item.status === 'Returned' ? 'bg-white border-purple-200' :
                                 'bg-white border-green-200'

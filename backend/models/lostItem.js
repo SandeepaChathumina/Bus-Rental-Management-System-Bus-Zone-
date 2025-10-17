@@ -31,7 +31,7 @@ const lostItemSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Reported', 'Found', 'Claimed', 'Returned'],
+        enum: ['Reported', 'Found', 'Not Found', 'Claimed', 'Returned'],
         default: 'Reported'
     },
     reportedBy: {

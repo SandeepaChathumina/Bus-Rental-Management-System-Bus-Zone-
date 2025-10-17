@@ -104,9 +104,9 @@ export const updateLostItem = async (req, res) => {
         }
 
         // Validate status if provided
-        if (status && !['Reported', 'Found', 'Claimed', 'Returned'].includes(status)) {
+        if (status && !['Reported', 'Found', 'Not Found', 'Claimed', 'Returned'].includes(status)) {
             return res.status(400).json({ 
-                message: 'Invalid status. Must be one of: Reported, Found, Claimed, Returned' 
+                message: 'Invalid status. Must be one of: Reported, Found, Not Found, Claimed, Returned' 
             });
         }
 
@@ -162,8 +162,8 @@ export const addAdminReply = async (req, res) => {
         }
 
         // Validate status if provided
-        if (status && !['Reported', 'Found', 'Claimed', 'Returned'].includes(status)) {
-            return res.status(400).json({ message: 'Invalid status. Must be one of: Reported, Found, Claimed, Returned' });
+        if (status && !['Reported', 'Found', 'Not Found', 'Claimed', 'Returned'].includes(status)) {
+            return res.status(400).json({ message: 'Invalid status. Must be one of: Reported, Found, Not Found, Claimed, Returned' });
         }
 
         // Prepare update object
