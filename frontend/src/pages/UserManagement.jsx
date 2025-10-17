@@ -44,9 +44,12 @@ const validationUtils = {
 
   // Check if email is available and valid
   checkEmail: async (email) => {
+    // Convert email to lowercase for validation
+    const normalizedEmail = email.toLowerCase();
+    
     // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(normalizedEmail)) {
       return {
         available: false,
         valid: false,
@@ -58,7 +61,7 @@ const validationUtils = {
       const response = await axios.get(
         `${
           import.meta.env.VITE_BACKEND_URL
-        }/api/users/check-email?email=${email}`
+        }/api/users/check-email?email=${normalizedEmail}`
       );
       return {
         available: response.data.available,
@@ -1708,7 +1711,7 @@ const UserManagement = () => {
               placeholder="Enter email address"
               type="email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={(e) => setForm({ ...form, email: e.target.value.toLowerCase() })}
               validation={validation}
             />
 
@@ -1917,7 +1920,7 @@ const UserManagement = () => {
               placeholder="Enter email address"
               type="email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={(e) => setForm({ ...form, email: e.target.value.toLowerCase() })}
               validation={validation}
             />
 
