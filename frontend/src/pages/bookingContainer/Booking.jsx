@@ -431,9 +431,9 @@ const Category = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
-            { name: 'Private Bus', color: 'from-blue-500 to-blue-600' },
-            { name: 'Tourist Bus', color: 'from-sky-500 to-blue-500' },
-            { name: 'Government Bus', color: 'from-blue-500 to-indigo-500' }
+            { name: 'Standard', color: 'from-blue-500 to-blue-600' },
+            { name: 'Mini', color: 'from-sky-500 to-blue-500' },
+            { name: 'Luxury', color: 'from-blue-500 to-indigo-500' }
           ].map((category, index) => (
             <div key={index} className="group relative bg-white/70 backdrop-blur-sm rounded-2xl p-6 overflow-hidden hover:transform hover:scale-105 transition-all duration-300 shadow-lg border border-blue-200/50">
               <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-5 group-hover:opacity-10 transition-opacity`}></div>
