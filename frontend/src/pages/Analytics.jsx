@@ -267,7 +267,7 @@ const Analytics = () => {
     const maxValue = Math.max(...data.map(item => item.revenue || item.bookings));
     
     return (
-      <div className="bg-white rounded-lg p-6 shadow-sm border">
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-200">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
         <div className="space-y-3">
           {data.map((item, index) => {
@@ -297,7 +297,7 @@ const Analytics = () => {
     let cumulativePercentage = 0;
 
     return (
-      <div className="bg-white rounded-lg p-6 shadow-sm border">
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-200">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
         <div className="flex items-center justify-center">
           <div className="relative" style={{ width: size, height: size }}>
@@ -365,7 +365,7 @@ const Analytics = () => {
     const formatValue = isCurrency ? formatCurrency : formatNumber;
     
     return (
-      <div className="bg-white rounded-lg p-6 shadow-sm border hover:shadow-md transition-shadow">
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-200 hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-600">{title}</p>
@@ -410,7 +410,7 @@ const Analytics = () => {
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-blue-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="7">Last 7 days</option>
             <option value="30">Last 30 days</option>
@@ -484,7 +484,7 @@ const Analytics = () => {
 
       {/* Detailed Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg p-6 shadow-sm border">
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Booking Statistics</h3>
           <div className="space-y-3">
             <div className="flex justify-between">
@@ -499,14 +499,14 @@ const Analytics = () => {
               <span className="text-gray-600">Cancelled</span>
               <span className="font-medium">{analyticsData.bookings.cancelled}</span>
             </div>
-            <div className="flex justify-between border-t pt-3">
+            <div className="flex justify-between border-t border-blue-200 pt-3">
               <span className="text-gray-600 font-medium">Total</span>
               <span className="font-bold text-lg">{analyticsData.bookings.total}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow-sm border">
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Fleet Statistics</h3>
           <div className="space-y-3">
             <div className="flex justify-between">
@@ -521,14 +521,14 @@ const Analytics = () => {
               <span className="text-gray-600">Maintenance</span>
               <span className="font-medium text-orange-600">{analyticsData.buses.maintenance}</span>
             </div>
-            <div className="flex justify-between border-t pt-3">
+            <div className="flex justify-between border-t border-blue-200 pt-3">
               <span className="text-gray-600 font-medium">Total Fleet</span>
               <span className="font-bold text-lg">{analyticsData.buses.total}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow-sm border">
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Customer Feedback</h3>
           <div className="space-y-3">
             <div className="flex justify-between">
@@ -555,7 +555,7 @@ const Analytics = () => {
       </div>
 
       {/* Financial Overview */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border">
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-200">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Financial Overview</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
