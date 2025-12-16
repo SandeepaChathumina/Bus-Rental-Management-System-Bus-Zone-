@@ -292,70 +292,129 @@ const Analytics = () => {
     );
   };
 
-  const PieChart = ({ data, title, size = 200 }) => {
-    const total = data.reduce((sum, item) => sum + item.value, 0);
+  const PieChart = ({ data, title, size = 240 }) => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-200">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
+          <div className="flex items-center justify-center h-64 text-gray-400">
+            <div className="text-center">
+              <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p>No data available</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const total = data.reduce((sum, item) => sum + (item.value || 0), 0);
+    
+    if (total === 0) {
+      return (
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-200">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
+          <div className="flex items-center justify-center h-64 text-gray-400">
+            <div className="text-center">
+              <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p>No data to display</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     let cumulativePercentage = 0;
+    const innerRadius = size / 2 - 40; // Donut hole
+    const outerRadius = size / 2 - 15;
 
     return (
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-200">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
-        <div className="flex items-center justify-center">
-          <div className="relative" style={{ width: size, height: size }}>
-            <svg width={size} height={size} className="transform -rotate-90">
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-200 hover:shadow-md transition-all">
+        <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center">
+          <Activity className="w-5 h-5 mr-2 text-blue-600" />
+          {title}
+        </h3>
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+          {/* Donut Chart */}
+          <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+            <svg width={size} height={size} className="transform -rotate-90 filter drop-shadow-md">
+              {/* Outer Ring - Main Chart */}
               {data.map((item, index) => {
-                const percentage = (item.value / total) * 100;
+                const value = item.value || 0;
+                const percentage = total > 0 ? (value / total) * 100 : 0;
                 const startAngle = cumulativePercentage * 3.6;
                 const endAngle = (cumulativePercentage + percentage) * 3.6;
                 cumulativePercentage += percentage;
 
-                const radius = size / 2 - 10;
-                const x1 = size / 2 + radius * Math.cos((startAngle * Math.PI) / 180);
-                const y1 = size / 2 + radius * Math.sin((startAngle * Math.PI) / 180);
-                const x2 = size / 2 + radius * Math.cos((endAngle * Math.PI) / 180);
-                const y2 = size / 2 + radius * Math.sin((endAngle * Math.PI) / 180);
+                const x1Outer = size / 2 + outerRadius * Math.cos((startAngle * Math.PI) / 180);
+                const y1Outer = size / 2 + outerRadius * Math.sin((startAngle * Math.PI) / 180);
+                const x2Outer = size / 2 + outerRadius * Math.cos((endAngle * Math.PI) / 180);
+                const y2Outer = size / 2 + outerRadius * Math.sin((endAngle * Math.PI) / 180);
+                
+                const x1Inner = size / 2 + innerRadius * Math.cos((startAngle * Math.PI) / 180);
+                const y1Inner = size / 2 + innerRadius * Math.sin((startAngle * Math.PI) / 180);
+                const x2Inner = size / 2 + innerRadius * Math.cos((endAngle * Math.PI) / 180);
+                const y2Inner = size / 2 + innerRadius * Math.sin((endAngle * Math.PI) / 180);
+                
                 const largeArcFlag = percentage > 50 ? 1 : 0;
 
                 const pathData = [
-                  `M ${size / 2} ${size / 2}`,
-                  `L ${x1} ${y1}`,
-                  `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                  `M ${x1Inner} ${y1Inner}`,
+                  `L ${x1Outer} ${y1Outer}`,
+                  `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2Outer} ${y2Outer}`,
+                  `L ${x2Inner} ${y2Inner}`,
+                  `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x1Inner} ${y1Inner}`,
                   'Z'
                 ].join(' ');
 
                 return (
-                  <path
-                    key={index}
-                    d={pathData}
-                    fill={item.color}
-                    stroke="white"
-                    strokeWidth="2"
-                  />
+                  <g key={index}>
+                    <path
+                      d={pathData}
+                      fill={item.color}
+                      stroke="white"
+                      strokeWidth="3"
+                      className="hover:opacity-90 transition-all duration-300 cursor-pointer hover:scale-105"
+                      style={{ transformOrigin: 'center' }}
+                    />
+                  </g>
                 );
               })}
             </svg>
+            
+            {/* Center Content */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-800">{total}</div>
-                <div className="text-sm text-gray-600">Total</div>
+              <div className="text-center bg-white rounded-full w-28 h-28 flex flex-col items-center justify-center shadow-inner border-2 border-gray-100">
+                <div className="text-3xl font-bold text-gray-900">{total}</div>
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total</div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="mt-4 space-y-2">
-          {data.map((item, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-sm text-gray-600">{item.name}</span>
-              </div>
-              <span className="text-sm font-medium text-gray-800">
-                {item.value} ({((item.value / total) * 100).toFixed(1)}%)
-              </span>
-            </div>
-          ))}
+
+          {/* Legend */}
+          <div className="flex-1 w-full lg:w-auto space-y-3">
+            {data.map((item, index) => {
+              const value = item.value || 0;
+              const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+              return (
+                <div 
+                  key={index} 
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer border border-transparent hover:border-gray-200"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className="w-4 h-4 rounded-full shadow-sm group-hover:scale-110 transition-transform"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{item.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-gray-900">{value}</div>
+                    <div className="text-xs text-gray-500">{percentage}%</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
