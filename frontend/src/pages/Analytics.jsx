@@ -492,7 +492,7 @@ const Analytics = () => {
         <MetricCard
           title="Total Revenue"
           value={analyticsData.bookings.revenue}
-          icon={DollarSign}
+          icon={TrendingUp}
           color="green"
           isCurrency={true}
         />
