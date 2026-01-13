@@ -12,19 +12,74 @@ BusZone+ provides a digital platform where users can easily rent buses while adm
 
 ## 🚀 Features
 
-### 👤 User Features
+BusZone+ is a **feature-rich, real-world bus rental and management system** consisting of **10+ CRUD-based modules** along with intelligent and external API integrations.
 
-* User registration and authentication
-* Browse available buses
-* Book buses based on availability
-* View booking history
+### 🔁 Core CRUD Modules (10 Operations)
 
-### 🛠️ Admin Features
+1. **User Management**
 
-* Add, update, and remove bus details
-* Manage bookings and schedules
-* View user and booking information
-* Dashboard-style management interface
+   * User registration, login, profile updates
+   * Role-based access (User / Admin)
+
+2. **Booking Management**
+
+   * Create, view, update, and cancel bus bookings
+   * Booking status tracking
+
+3. **Bus Management**
+
+   * Add, update, delete bus details
+   * Manage bus capacity and availability
+
+4. **Maintenance Management**
+
+   * Track bus maintenance records
+   * Update maintenance status and history
+
+5. **Driver Management**
+
+   * Manage driver profiles and availability
+   * Assign drivers to buses
+
+6. **Schedule Management**
+
+   * Create and update trip schedules
+   * Assign buses and drivers to schedules
+
+7. **Payment Management**
+
+   * Handle booking payments
+   * Track payment status and records
+
+8. **Notification Management**
+
+   * Send booking and system notifications
+   * User alerts and updates
+
+9. **Feedback Management**
+
+   * Collect and manage user feedback
+   * Ratings and reviews
+
+10. **Lost & Found Management**
+
+    * Report lost items
+    * Manage found items and user claims
+
+---
+
+### 🤖 Intelligent & API-Based Features
+
+* **AI FAQ Chatbot (Ollama)**
+
+  * Provides instant answers to frequently asked questions
+  * Improves user support and system usability
+
+* **Travel Suggestion System (Google Places API)**
+
+  * Suggests nearby travel destinations
+  * Finds accommodations and restaurants
+  * Enhances trip planning experience for users
 
 ---
 
@@ -142,7 +197,13 @@ npm start
 
 ## 🤝 Contributors
 
-* **Sandeepa Chathumina Karunanayake**
+This project was developed as a **group project** with collaborative effort in design, development, and testing.
+
+* **Karunanayake. K. M. S. G. S. C** – Full-Stack Development
+* Handaragama. M. U*
+* Silva G.B.T.S*
+* Basnayake. B. M. A. S. S*
+* Thennakoon. T. M. S. N* 
 
 ---
 
