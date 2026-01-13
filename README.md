@@ -174,8 +174,6 @@ npm start
 
 ## 📷 Screenshots
 
-*Add screenshots of your application here*
-
 ---
 
 ## 🎓 Learning Outcomes
@@ -189,7 +187,7 @@ npm start
 
 ## 🔗 Links
 
-* GitHub Repository: [https://github.com/YOUR_USERNAME/BusZone+](https://github.com/YOUR_USERNAME/BusZone+)
+* GitHub Repository: https://github.com/SandeepaChathumina/Bus-Rental-Management-System-Bus-Zone-
 * Live Demo: YOUR_LIVE_DEMO_LINK
 * Demo Video: YOUR_DEMO_VIDEO_LINK
 
@@ -199,11 +197,11 @@ npm start
 
 This project was developed as a **group project** with collaborative effort in design, development, and testing.
 
-* **Karunanayake. K. M. S. G. S. C** – Full-Stack Development
-* Handaragama. M. U*
-* Silva G.B.T.S*
-* Basnayake. B. M. A. S. S*
-* Thennakoon. T. M. S. N* 
+* **Karunanayake. K. M. S. G. S. C** 
+* Handaragama. M. U
+* Silva G.B.T.S
+* Basnayake. B. M. A. S. S
+* Thennakoon. T. M. S. N
 
 ---
 
