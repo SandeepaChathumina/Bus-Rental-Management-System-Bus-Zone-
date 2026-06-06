@@ -1,0 +1,545 @@
+import User from '../models/user.js';
+import DriverProfile from '../models/driverProfile.js';
+import StaffProfile from '../models/staffProfile.js';
+import generateToken from '../utils/generateToken.js';
+import { sendDriverCredentials, sendStaffCredentials } from '../utils/emailService.js';
+
+// ==================== REGISTER USER ====================
+const registerUser = async (req, res) => {
+  try {
+    const {
+      username,
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      nic,
+      address,
+      role,
+      licenseNumber,
+      licenseExpiry,
+      emergencyContact,
+      staffRole,
+      employeeId
+    } = req.body;
+
+    const userExists = await User.findOne({ $or: [{ email }, { username }, { nic }] });
+    if (userExists) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Prevent self-registering as admin
+    if (role === 'admin') {
+      return res.status(403).json({ message: 'Admins cannot be self-registered' });
+    }
+
+    // Staff & drivers require admin
+    if ((role === 'staff' || role === 'driver') && (!req.user || req.user.role !== 'admin')) {
+      return res.status(403).json({ message: 'Only admins can create staff and drivers' });
+    }
+
+    const user = await User.create({
+      username,
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      nic,
+      address,
+      role: role || 'passenger'
+    });
+
+    // Create driver profile if admin creates driver
+    if (role === 'driver') {
+      if (!licenseNumber || !licenseExpiry) {
+        return res.status(400).json({ message: 'Driver must have licenseNumber and licenseExpiry' });
+      }
+      await DriverProfile.create({
+        user: user._id,
+        licenseNumber,
+        licenseExpiry: new Date(licenseExpiry),
+        emergencyContact
+      });
+    }
+
+    // Create staff profile if admin creates staff
+    if (role === 'staff') {
+      if (!staffRole || !employeeId) {
+        return res.status(400).json({ message: 'Staff must have staffRole and employeeId' });
+      }
+      await StaffProfile.create({
+        user: user._id,
+        staffRole,
+        employeeId
+      });
+    }
+
+    let userWithProfile = user.toJSON();
+    if (role === 'driver') {
+      userWithProfile.driverProfile = await DriverProfile.findOne({ user: user._id });
+      
+      // Send email with credentials to driver
+      try {
+        console.log('🚀 Starting email sending process for driver:', user.email);
+        console.log('🔍 Environment check:');
+        console.log('EMAIL_USER:', process.env.EMAIL_USER);
+        console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set (length: ' + process.env.EMAIL_PASS.length + ')' : 'Not set');
+        console.log('EMAIL_SERVICE:', process.env.EMAIL_SERVICE);
+        
+        const emailData = {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username,
+          email: user.email,
+          password: password, // Send the original password before hashing
+          phone: user.phone,
+          licenseNumber: licenseNumber,
+          emergencyContact: emergencyContact
+        };
+        
+        console.log('📧 Email data prepared:', {
+          firstName: emailData.firstName,
+          lastName: emailData.lastName,
+          email: emailData.email,
+          username: emailData.username
+        });
+        
+        const emailResult = await sendDriverCredentials(emailData);
+        if (emailResult.success) {
+          console.log('✅ Driver credentials email sent successfully');
+        } else {
+          console.error('❌ Failed to send driver credentials email:', emailResult.error);
+        }
+      } catch (emailError) {
+        console.error('❌ Error sending driver credentials email:', emailError);
+        // Don't fail the user creation if email fails
+      }
+    } else if (role === 'staff') {
+      userWithProfile.staffProfile = await StaffProfile.findOne({ user: user._id });
+      
+      // Send email with credentials to staff
+      try {
+        console.log('🚀 Starting email sending process for staff:', user.email);
+        console.log('🔍 Environment check:');
+        console.log('EMAIL_USER:', process.env.EMAIL_USER);
+        console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set (length: ' + process.env.EMAIL_PASS.length + ')' : 'Not set');
+        console.log('EMAIL_SERVICE:', process.env.EMAIL_SERVICE);
+        
+        const emailData = {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username,
+          email: user.email,
+          password: password, // Send the original password before hashing
+          phone: user.phone,
+          employeeId: employeeId,
+          staffRole: staffRole
+        };
+        
+        console.log('📧 Email data prepared:', {
+          firstName: emailData.firstName,
+          lastName: emailData.lastName,
+          email: emailData.email,
+          username: emailData.username,
+          employeeId: emailData.employeeId,
+          staffRole: emailData.staffRole
+        });
+        
+        const emailResult = await sendStaffCredentials(emailData);
+        if (emailResult.success) {
+          console.log('✅ Staff credentials email sent successfully');
+        } else {
+          console.error('❌ Failed to send staff credentials email:', emailResult.error);
+        }
+      } catch (emailError) {
+        console.error('❌ Error sending staff credentials email:', emailError);
+        // Don't fail the user creation if email fails
+      }
+    }
+
+    res.status(201).json({
+      ...userWithProfile,
+      token: generateToken(user)
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== LOGIN ====================
+// controllers/userController.js - Update the loginUser function
+const loginUser = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    console.log('Login attempt for username:', username);
+
+    const user = await User.findOne({ username });
+    if (!user) {
+      console.log('User not found:', username);
+      return res.status(401).json({ message: 'Invalid username or password' });
+    }
+
+    console.log('User found:', user.username, 'Role:', user.role);
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      console.log('Password mismatch for user:', username);
+      return res.status(401).json({ message: 'Invalid username or password' });
+    }
+
+    console.log('Password matched for user:', username);
+
+    // Check if user is active
+    if (!user.isActive) {
+      console.log('User is deactivated:', username);
+      return res.status(401).json({ message: 'Account is deactivated. Please contact administrator.' });
+    }
+
+    console.log('User is active:', username);
+
+    // Convert user to object and remove password
+    let userData = user.toObject();
+    delete userData.password;
+
+    // Add role-specific profiles
+    if (user.role === 'driver') {
+      userData.driverProfile = await DriverProfile.findOne({ user: user._id });
+    } else if (user.role === 'staff') {
+      userData.staffProfile = await StaffProfile.findOne({ user: user._id });
+    }
+
+    const token = generateToken(user);
+
+    console.log('Login successful for user:', username, 'Role:', user.role);
+
+    res.json({
+      user: userData,
+      token: token
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== GET ALL USERS ====================
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.find({}).select('-password');
+    console.log('Found users:', users.length, 'users with isActive status:', users.map(u => ({ username: u.username, isActive: u.isActive })));
+
+    const usersWithProfiles = await Promise.all(
+      users.map(async (user) => {
+        const userObj = user.toObject();
+        if (user.role === 'driver') {
+          userObj.driverProfile = await DriverProfile.findOne({ user: user._id });
+        } else if (user.role === 'staff') {
+          userObj.staffProfile = await StaffProfile.findOne({ user: user._id });
+        }
+        return userObj;
+      })
+    );
+
+    console.log('Returning users with profiles:', usersWithProfiles.map(u => ({ username: u.username, isActive: u.isActive })));
+    res.json(usersWithProfiles);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== GET USER BY ID ====================
+const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // 🚨 Allow only self or admin to view
+    if (req.user.role !== 'admin' && req.user._id.toString() !== user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to view this account' });
+    }
+
+    const userObj = user.toObject();
+    if (user.role === 'driver') {
+      userObj.driverProfile = await DriverProfile.findOne({ user: user._id });
+    } else if (user.role === 'staff') {
+      userObj.staffProfile = await StaffProfile.findOne({ user: user._id });
+    }
+
+    res.json(userObj);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== UPDATE USER ====================
+const updateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // 🚨 Authorization check
+    if (req.user.role !== 'admin' && req.user._id.toString() !== user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this account' });
+    }
+
+    // 🚨 Admin cannot change passenger details (only deactivate)
+    if (req.user.role === 'admin' && user.role === 'passenger') {
+      if (Object.keys(req.body).some(field => field !== 'isActive')) {
+        return res.status(403).json({ message: 'Admins cannot modify passenger details' });
+      }
+    }
+
+    const updatableFields = [
+      'username',
+      'email',
+      'firstName',
+      'lastName',
+      'phone',
+      'nic',
+      'address',
+      'role',
+      'isActive'
+    ];
+
+    updatableFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        user[field] = req.body[field];
+      }
+    });
+
+    if (req.body.password) {
+      user.password = req.body.password;
+    }
+
+    const updatedUser = await user.save();
+
+    if (user.role === 'driver' && req.body.driverProfile) {
+      await DriverProfile.findOneAndUpdate(
+        { user: user._id },
+        { ...req.body.driverProfile },
+        { upsert: true, new: true }
+      );
+    } else if (user.role === 'staff' && req.body.staffProfile) {
+      await StaffProfile.findOneAndUpdate(
+        { user: user._id },
+        { ...req.body.staffProfile },
+        { upsert: true, new: true }
+      );
+    }
+
+    const userObj = updatedUser.toObject();
+    if (user.role === 'driver') {
+      userObj.driverProfile = await DriverProfile.findOne({ user: user._id });
+    } else if (user.role === 'staff') {
+      userObj.staffProfile = await StaffProfile.findOne({ user: user._id });
+    }
+
+    res.json(userObj);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== DELETE / DEACTIVATE ====================
+const deleteUser = async (req, res) => {
+  try {
+    console.log('Deactivating user with ID:', req.params.id);
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      console.log('User not found:', req.params.id);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log('User found:', user.username, 'Current isActive:', user.isActive);
+
+    // Only admin can deactivate
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to deactivate users' });
+    }
+
+    user.isActive = false;
+    await user.save();
+
+    console.log('User deactivated successfully:', user.username, 'New isActive:', user.isActive);
+    res.json({ message: 'User deactivated successfully' });
+  } catch (error) {
+    console.error('Deactivate user error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== REPORT ====================
+const getUserReport = async (req, res) => {
+  try {
+    const users = await User.find({}).select('-password');
+
+    const report = {
+      totalUsers: users.length,
+      byRole: {
+        admin: users.filter((u) => u.role === 'admin').length,
+        driver: users.filter((u) => u.role === 'driver').length,
+        staff: users.filter((u) => u.role === 'staff').length,
+        passenger: users.filter((u) => u.role === 'passenger').length
+      },
+      activeUsers: users.filter((u) => u.isActive).length,
+      users: await Promise.all(
+        users.map(async (user) => {
+          const userObj = user.toObject();
+          if (user.role === 'driver') {
+            userObj.driverProfile = await DriverProfile.findOne({ user: user._id });
+          } else if (user.role === 'staff') {
+            userObj.staffProfile = await StaffProfile.findOne({ user: user._id });
+          }
+          return userObj;
+        })
+      )
+    };
+
+    res.json(report);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== CHECK USERNAME AVAILABILITY ====================
+const checkUsernameAvailability = async (req, res) => {
+  try {
+    const { username } = req.query;
+    
+    if (!username) {
+      return res.status(400).json({ message: 'Username parameter is required' });
+    }
+    
+    const existingUser = await User.findOne({ username });
+    
+    return res.json({ available: !existingUser });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== CHECK EMAIL AVAILABILITY ====================
+const checkEmailAvailability = async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email parameter is required' });
+    }
+    
+    const existingUser = await User.findOne({ email });
+    
+    return res.json({ available: !existingUser });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== CHECK PHONE AVAILABILITY ====================
+const checkPhoneAvailability = async (req, res) => {
+  try {
+    const { phone } = req.query;
+
+    if (!phone) {
+      return res.status(400).json({ message: 'Phone parameter is required' });
+    }
+
+    // 🚨 Validate Sri Lankan phone number format (10 digits, starting with 0)
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ message: 'Invalid phone number format. Must start with 0 and be 10 digits.' });
+    }
+
+    const existingUser = await User.findOne({ phone });
+    return res.json({ available: !existingUser });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== CHECK NIC AVAILABILITY ====================
+const checkNICAvailability = async (req, res) => {
+  try {
+    const { nic } = req.query;
+    
+    if (!nic) {
+      return res.status(400).json({ message: 'NIC parameter is required' });
+    }
+    
+    const existingUser = await User.findOne({ nic });
+    
+    return res.json({ available: !existingUser });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== CHECK EMPLOYEE ID AVAILABILITY ====================
+const checkEmployeeIdAvailability = async (req, res) => {
+  try {
+    const { employeeId } = req.query;
+    
+    if (!employeeId) {
+      return res.status(400).json({ message: 'Employee ID parameter is required' });
+    }
+    
+    // Check if employee ID already exists in staff profiles
+    const existingStaff = await StaffProfile.findOne({ employeeId });
+    
+    return res.json({ available: !existingStaff });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==================== ACTIVATE USER ====================
+const activateUser = async (req, res) => {
+  try {
+    console.log('Activating user with ID:', req.params.id);
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      console.log('User not found:', req.params.id);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log('User found:', user.username, 'Current isActive:', user.isActive);
+
+    // Only admin can activate
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to activate users' });
+    }
+
+    user.isActive = true;
+    await user.save();
+
+    console.log('User activated successfully:', user.username, 'New isActive:', user.isActive);
+    res.json({ message: 'User activated successfully' });
+  } catch (error) {
+    console.error('Activate user error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export {
+  registerUser,
+  loginUser,
+  getUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+  activateUser, 
+  getUserReport,
+  checkUsernameAvailability,
+  checkEmailAvailability,
+  checkPhoneAvailability,
+  checkNICAvailability,
+  checkEmployeeIdAvailability
+};
